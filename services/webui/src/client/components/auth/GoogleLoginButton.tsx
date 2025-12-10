@@ -1,7 +1,5 @@
-import React, { useState } from 'react';
-import { useNavigate, useLocation } from 'react-router-dom';
-import { useAuth } from '../../hooks/useAuth';
-import Button from '../Button';
+import { useState } from 'react';
+import { useLocation } from 'react-router-dom';
 
 interface LocationState {
   from?: { pathname: string };
@@ -15,9 +13,7 @@ interface GoogleLoginButtonProps {
 export default function GoogleLoginButton({ className = '', variant = 'secondary' }: GoogleLoginButtonProps) {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
-  const navigate = useNavigate();
   const location = useLocation();
-  const { useAuthStore } = useAuth();
 
   // State to track OAuth callback - use window session storage to communicate
   const handleGoogleSignIn = async () => {

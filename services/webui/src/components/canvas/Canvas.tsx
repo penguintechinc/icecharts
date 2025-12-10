@@ -321,8 +321,8 @@ const Canvas: React.FC<CanvasProps> = ({
     [nodes, edges, setNodes, saveToHistory, onNodesChange]
   );
 
-  const selectedNode = selectedNodes.length === 1 ? nodes.find((n) => n.id === selectedNodes[0]) : null;
-  const selectedEdge = selectedEdges.length === 1 ? edges.find((e) => e.id === selectedEdges[0]) : null;
+  const selectedNode = selectedNodes.length === 1 ? (nodes.find((n) => n.id === selectedNodes[0]) || null) : null;
+  const selectedEdge = selectedEdges.length === 1 ? (edges.find((e) => e.id === selectedEdges[0]) || null) : null;
 
   return (
     <div className="flex h-screen w-screen">

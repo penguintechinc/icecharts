@@ -1,8 +1,11 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 
-interface ToggleProps extends Omit<React.InputHTMLAttributes<HTMLInputElement>, 'type'> {
+interface ToggleProps {
   label?: string;
   onChange?: (checked: boolean) => void;
+  checked?: boolean;
+  defaultChecked?: boolean;
+  className?: string;
 }
 
 export default function Toggle({
@@ -11,7 +14,6 @@ export default function Toggle({
   checked: controlledChecked,
   defaultChecked,
   className = '',
-  ...props
 }: ToggleProps) {
   const [internalChecked, setInternalChecked] = useState(defaultChecked || false);
   const isControlled = controlledChecked !== undefined;

@@ -1,4 +1,3 @@
-import React from 'react';
 import Card from '../Card';
 import Avatar from '../Avatar';
 import Dropdown from '../Dropdown';

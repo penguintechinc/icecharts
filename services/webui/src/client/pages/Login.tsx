@@ -51,7 +51,7 @@ export default function Login() {
       }
 
       const data = await response.json();
-      const { access_token, refresh_token, user, is_new_user } = data;
+      const { access_token, refresh_token, user } = data;
 
       // Store tokens
       localStorage.setItem('authToken', access_token);

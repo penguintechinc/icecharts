@@ -5,7 +5,7 @@
  * in the IceCharts common component library.
  */
 
-import React, { useState } from 'react';
+import { useState } from 'react';
 import {
   Button,
   Input,
@@ -89,8 +89,6 @@ export function FormExamples() {
     notifications: true,
   });
 
-  const [errors, setErrors] = useState<Record<string, string>>({});
-
   return (
     <Card title="Contact Form" className="max-w-md">
       <div className="space-y-4">
@@ -108,7 +106,6 @@ export function FormExamples() {
           placeholder="john@example.com"
           value={formData.email}
           onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-          error={errors.email}
           required
         />
 

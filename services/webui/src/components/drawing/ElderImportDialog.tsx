@@ -6,7 +6,7 @@
  */
 
 import React, { useState, useCallback, useEffect } from 'react';
-import { useElderImport, ElderEntity } from '../../hooks/useElderImport';
+import { useElderImport } from '../../hooks/useElderImport';
 
 interface ElderImportDialogProps {
   drawingId: string;
@@ -37,7 +37,6 @@ const ElderImportDialog: React.FC<ElderImportDialogProps> = ({
     error,
     entities,
     selectedEntities,
-    isConnected,
     validateConnection,
     fetchEntities,
     toggleEntitySelection,
@@ -316,7 +315,7 @@ const ElderImportDialog: React.FC<ElderImportDialogProps> = ({
         </div>
       </div>
 
-      <style jsx>{`
+      <style>{`
         .elder-import-dialog-overlay {
           position: fixed;
           top: 0;

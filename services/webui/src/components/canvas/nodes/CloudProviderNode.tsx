@@ -54,13 +54,14 @@ const providerIcons: Record<CloudProvider, { viewBox: string; path: string; fill
   },
 };
 
-const CloudProviderNode: React.FC<NodeProps<CloudProviderNodeData>> = ({ id, data, selected }) => {
-  const provider = data.provider || 'aws';
-  const label = data.label || provider.toUpperCase();
-  const size = data.size || 64;
-  const showLabel = data.showLabel !== false;
+const CloudProviderNode: React.FC<NodeProps> = ({ data, selected }) => {
+  const nodeData = data as unknown as CloudProviderNodeData;
+  const provider = nodeData.provider || 'aws';
+  const label = nodeData.label || provider.toUpperCase();
+  const size = nodeData.size || 64;
+  const showLabel = nodeData.showLabel !== false;
 
-  const icon = providerIcons[provider];
+  const icon = providerIcons[provider as CloudProvider];
 
   return (
     <>

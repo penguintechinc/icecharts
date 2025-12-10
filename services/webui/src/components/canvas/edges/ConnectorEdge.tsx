@@ -4,7 +4,6 @@ import {
   getBezierPath,
   EdgeLabelRenderer,
   BaseEdge,
-  MarkerType,
 } from '@xyflow/react';
 
 export type MarkerStyle = 'none' | 'arrow' | 'circle' | 'diamond';
@@ -20,7 +19,7 @@ export interface ConnectorEdgeData {
   bidirectional?: boolean;
 }
 
-const ConnectorEdge: React.FC<EdgeProps<ConnectorEdgeData>> = ({
+const ConnectorEdge: React.FC<EdgeProps> = ({
   id,
   sourceX,
   sourceY,
@@ -29,18 +28,17 @@ const ConnectorEdge: React.FC<EdgeProps<ConnectorEdgeData>> = ({
   sourcePosition,
   targetPosition,
   style = {},
-  markerEnd,
-  markerStart,
   data,
   selected,
 }) => {
-  const label = data?.label || '';
-  const strokeColor = data?.strokeColor || '#b1b1b7';
-  const strokeWidth = data?.strokeWidth || 2;
-  const dashPattern = data?.dashPattern || 'solid';
-  const endMarkerStyle = data?.endMarker || 'arrow';
-  const startMarkerStyle = data?.startMarker || 'none';
-  const bidirectional = data?.bidirectional || false;
+  const edgeData = (data || {}) as unknown as ConnectorEdgeData;
+  const label = edgeData.label || '';
+  const strokeColor = edgeData.strokeColor || '#b1b1b7';
+  const strokeWidth = edgeData.strokeWidth || 2;
+  const dashPattern = edgeData.dashPattern || 'solid';
+  const endMarkerStyle = edgeData.endMarker || 'arrow';
+  const startMarkerStyle = edgeData.startMarker || 'none';
+  const bidirectional = edgeData.bidirectional || false;
 
   const [edgePath, labelX, labelY] = getBezierPath({
     sourceX,
@@ -77,20 +75,20 @@ const ConnectorEdge: React.FC<EdgeProps<ConnectorEdgeData>> = ({
     }
   };
 
-  const getMarkerEnd = () => {
+  const getMarkerEnd = (): string | undefined => {
     if (endMarkerStyle === 'none') return undefined;
-    return {
-      type: MarkerType.ArrowClosed,
-      color: selected ? '#d4af37' : strokeColor,
-    };
+    if (endMarkerStyle === 'arrow') {
+      return `url(#arrow-end-${id})`;
+    }
+    return `url(#marker-end-${id})`;
   };
 
-  const getMarkerStart = () => {
+  const getMarkerStart = (): string | undefined => {
     if (bidirectional || startMarkerStyle !== 'none') {
-      return {
-        type: MarkerType.ArrowClosed,
-        color: selected ? '#d4af37' : strokeColor,
-      };
+      if (startMarkerStyle === 'arrow' || bidirectional) {
+        return `url(#arrow-start-${id})`;
+      }
+      return `url(#marker-start-${id})`;
     }
     return undefined;
   };
@@ -99,6 +97,22 @@ const ConnectorEdge: React.FC<EdgeProps<ConnectorEdgeData>> = ({
     <>
       <defs>
         {/* Custom marker definitions */}
+        {endMarkerStyle === 'arrow' && (
+          <marker
+            id={`arrow-end-${id}`}
+            markerWidth="10"
+            markerHeight="10"
+            refX="9"
+            refY="5"
+            orient="auto"
+            markerUnits="strokeWidth"
+          >
+            <path
+              d="M 0,-5 L 10,0 L 0,5 Z"
+              fill={selected ? '#d4af37' : strokeColor}
+            />
+          </marker>
+        )}
         {endMarkerStyle !== 'none' && endMarkerStyle !== 'arrow' && (
           <marker
             id={`marker-end-${id}`}
@@ -111,6 +125,22 @@ const ConnectorEdge: React.FC<EdgeProps<ConnectorEdgeData>> = ({
           >
             <path
               d={createMarkerPath(endMarkerStyle)}
+              fill={selected ? '#d4af37' : strokeColor}
+            />
+          </marker>
+        )}
+        {(bidirectional || (startMarkerStyle !== 'none' && startMarkerStyle === 'arrow')) && (
+          <marker
+            id={`arrow-start-${id}`}
+            markerWidth="10"
+            markerHeight="10"
+            refX="1"
+            refY="5"
+            orient="auto-start-reverse"
+            markerUnits="strokeWidth"
+          >
+            <path
+              d="M 0,-5 L 10,0 L 0,5 Z"
               fill={selected ? '#d4af37' : strokeColor}
             />
           </marker>

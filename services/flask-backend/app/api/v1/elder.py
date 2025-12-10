@@ -9,7 +9,7 @@ from typing import Optional
 
 from flask import Blueprint, current_app, jsonify, request
 
-from app.auth import auth_required
+from app.middleware import auth_required
 from app.services.elder_service import ElderClient, ElderEntity, ElderDependency
 
 logger = logging.getLogger(__name__)
@@ -19,7 +19,7 @@ elder_v1_bp = Blueprint("elder", __name__, url_prefix="/elder")
 
 
 @elder_v1_bp.route("/validate-connection", methods=["POST"])
-@auth_required()
+@auth_required
 async def validate_elder_connection():
     """Validate connection to Elder instance.
 
@@ -63,7 +63,7 @@ async def validate_elder_connection():
 
 
 @elder_v1_bp.route("/entities", methods=["GET"])
-@auth_required()
+@auth_required
 async def get_entities():
     """Proxy entities from Elder API.
 
@@ -118,7 +118,7 @@ async def get_entities():
 
 
 @elder_v1_bp.route("/relationships", methods=["GET"])
-@auth_required()
+@auth_required
 async def get_relationships():
     """Proxy relationships from Elder API.
 
@@ -168,7 +168,7 @@ async def get_relationships():
 
 
 @elder_v1_bp.route("/graph", methods=["GET"])
-@auth_required()
+@auth_required
 async def get_graph():
     """Get dependency graph from Elder API.
 
@@ -217,7 +217,7 @@ async def get_graph():
 
 
 @elder_v1_bp.route("/import", methods=["POST"])
-@auth_required()
+@auth_required
 async def import_entities():
     """Import Elder entities as shapes into a drawing.
 

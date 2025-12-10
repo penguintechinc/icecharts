@@ -19,7 +19,7 @@ const Toolbar: React.FC<ToolbarProps> = ({
   onAddNode,
 }) => {
   const [activeMode, setActiveMode] = useState<ToolMode>('select');
-  const [selectedShape, setSelectedShape] = useState<ShapeType>('rectangle');
+  const [_selectedShape, setSelectedShape] = useState<ShapeType>('rectangle');
 
   const handleModeChange = (mode: ToolMode) => {
     setActiveMode(mode);
@@ -48,13 +48,6 @@ const Toolbar: React.FC<ToolbarProps> = ({
       showBorder: false,
     });
   };
-
-  const buttonClass = (isActive: boolean) =>
-    `px-3 py-2 rounded-md transition-colors ${
-      isActive
-        ? 'bg-yellow-600 text-white shadow-md'
-        : 'bg-white text-gray-700 hover:bg-gray-50 border border-gray-200'
-    }`;
 
   const iconButtonClass = (isActive: boolean) =>
     `p-2 rounded-md transition-colors ${

@@ -19,10 +19,10 @@ const PropertiesPanel: React.FC<PropertiesPanelProps> = ({
   const [newValue, setNewValue] = useState('');
 
   useEffect(() => {
-    if (selectedNode?.data?.metadata) {
-      setMetadata(selectedNode.data.metadata);
-    } else if (selectedEdge?.data?.metadata) {
-      setMetadata(selectedEdge.data.metadata);
+    if (selectedNode?.data && typeof selectedNode.data === 'object' && 'metadata' in selectedNode.data) {
+      setMetadata((selectedNode.data as { metadata?: Record<string, string> }).metadata || {});
+    } else if (selectedEdge?.data && typeof selectedEdge.data === 'object' && 'metadata' in selectedEdge.data) {
+      setMetadata((selectedEdge.data as { metadata?: Record<string, string> }).metadata || {});
     } else {
       setMetadata({});
     }
@@ -143,7 +143,7 @@ const PropertiesPanel: React.FC<PropertiesPanelProps> = ({
                     <label className="block text-xs text-gray-500 mb-1">Width</label>
                     <input
                       type="number"
-                      value={selectedNode.data.width}
+                      value={(selectedNode.data as any).width || 100}
                       onChange={(e) =>
                         handleNodeChange('width', parseInt(e.target.value) || 100)
                       }
@@ -154,7 +154,7 @@ const PropertiesPanel: React.FC<PropertiesPanelProps> = ({
                     <label className="block text-xs text-gray-500 mb-1">Height</label>
                     <input
                       type="number"
-                      value={selectedNode.data.height}
+                      value={(selectedNode.data as any).height || 100}
                       onChange={(e) =>
                         handleNodeChange('height', parseInt(e.target.value) || 100)
                       }
@@ -173,10 +173,10 @@ const PropertiesPanel: React.FC<PropertiesPanelProps> = ({
                 </label>
                 <input
                   type="text"
-                  value={selectedNode.data?.label || selectedNode.data?.text || ''}
+                  value={(selectedNode.data as any)?.label || (selectedNode.data as any)?.text || ''}
                   onChange={(e) =>
                     handleNodeChange(
-                      selectedNode.data?.text !== undefined ? 'text' : 'label',
+                      (selectedNode.data as any)?.text !== undefined ? 'text' : 'label',
                       e.target.value
                     )
                   }
@@ -192,13 +192,13 @@ const PropertiesPanel: React.FC<PropertiesPanelProps> = ({
                 <div className="flex gap-2">
                   <input
                     type="color"
-                    value={selectedNode.data.fillColor}
+                    value={(selectedNode.data as any).fillColor || '#ffffff'}
                     onChange={(e) => handleNodeChange('fillColor', e.target.value)}
                     className="h-10 w-16 rounded cursor-pointer"
                   />
                   <input
                     type="text"
-                    value={selectedNode.data.fillColor}
+                    value={(selectedNode.data as any).fillColor || '#ffffff'}
                     onChange={(e) => handleNodeChange('fillColor', e.target.value)}
                     className="flex-1 px-3 py-2 text-sm border border-gray-300 rounded focus:ring-2 focus:ring-yellow-600 focus:border-transparent"
                   />
@@ -215,13 +215,13 @@ const PropertiesPanel: React.FC<PropertiesPanelProps> = ({
                 <div className="flex gap-2">
                   <input
                     type="color"
-                    value={selectedNode.data.strokeColor}
+                    value={(selectedNode.data as any).strokeColor || '#000000'}
                     onChange={(e) => handleNodeChange('strokeColor', e.target.value)}
                     className="h-10 w-16 rounded cursor-pointer"
                   />
                   <input
                     type="text"
-                    value={selectedNode.data.strokeColor}
+                    value={(selectedNode.data as any).strokeColor || '#000000'}
                     onChange={(e) => handleNodeChange('strokeColor', e.target.value)}
                     className="flex-1 px-3 py-2 text-sm border border-gray-300 rounded focus:ring-2 focus:ring-yellow-600 focus:border-transparent"
                   />
@@ -239,7 +239,7 @@ const PropertiesPanel: React.FC<PropertiesPanelProps> = ({
                   type="number"
                   min="0"
                   max="10"
-                  value={selectedNode.data.strokeWidth}
+                  value={(selectedNode.data as any).strokeWidth || 1}
                   onChange={(e) =>
                     handleNodeChange('strokeWidth', parseInt(e.target.value) || 1)
                   }
@@ -255,13 +255,13 @@ const PropertiesPanel: React.FC<PropertiesPanelProps> = ({
                 <div className="flex gap-2">
                   <input
                     type="color"
-                    value={selectedNode.data.textColor}
+                    value={(selectedNode.data as any).textColor || '#000000'}
                     onChange={(e) => handleNodeChange('textColor', e.target.value)}
                     className="h-10 w-16 rounded cursor-pointer"
                   />
                   <input
                     type="text"
-                    value={selectedNode.data.textColor}
+                    value={(selectedNode.data as any).textColor || '#000000'}
                     onChange={(e) => handleNodeChange('textColor', e.target.value)}
                     className="flex-1 px-3 py-2 text-sm border border-gray-300 rounded focus:ring-2 focus:ring-yellow-600 focus:border-transparent"
                   />
@@ -277,7 +277,7 @@ const PropertiesPanel: React.FC<PropertiesPanelProps> = ({
                   type="number"
                   min="8"
                   max="72"
-                  value={selectedNode.data.fontSize}
+                  value={(selectedNode.data as any).fontSize || 14}
                   onChange={(e) => handleNodeChange('fontSize', parseInt(e.target.value) || 14)}
                   className="w-full px-3 py-2 text-sm border border-gray-300 rounded focus:ring-2 focus:ring-yellow-600 focus:border-transparent"
                 />
@@ -293,7 +293,7 @@ const PropertiesPanel: React.FC<PropertiesPanelProps> = ({
               <label className="block text-xs font-medium text-gray-600 mb-1">Label</label>
               <input
                 type="text"
-                value={selectedEdge.data?.label || ''}
+                value={(selectedEdge.data as any)?.label || ''}
                 onChange={(e) => handleEdgeChange('label', e.target.value)}
                 className="w-full px-3 py-2 text-sm border border-gray-300 rounded focus:ring-2 focus:ring-yellow-600 focus:border-transparent"
               />
@@ -305,13 +305,13 @@ const PropertiesPanel: React.FC<PropertiesPanelProps> = ({
               <div className="flex gap-2">
                 <input
                   type="color"
-                  value={selectedEdge.data?.strokeColor || '#b1b1b7'}
+                  value={(selectedEdge.data?.strokeColor as string) || '#b1b1b7'}
                   onChange={(e) => handleEdgeChange('strokeColor', e.target.value)}
                   className="h-10 w-16 rounded cursor-pointer"
                 />
                 <input
                   type="text"
-                  value={selectedEdge.data?.strokeColor || '#b1b1b7'}
+                  value={(selectedEdge.data?.strokeColor as string) || '#b1b1b7'}
                   onChange={(e) => handleEdgeChange('strokeColor', e.target.value)}
                   className="flex-1 px-3 py-2 text-sm border border-gray-300 rounded focus:ring-2 focus:ring-yellow-600 focus:border-transparent"
                 />
@@ -325,7 +325,7 @@ const PropertiesPanel: React.FC<PropertiesPanelProps> = ({
                 type="number"
                 min="1"
                 max="10"
-                value={selectedEdge.data?.strokeWidth || 2}
+                value={(selectedEdge.data?.strokeWidth as number) || 2}
                 onChange={(e) => handleEdgeChange('strokeWidth', parseInt(e.target.value) || 2)}
                 className="w-full px-3 py-2 text-sm border border-gray-300 rounded focus:ring-2 focus:ring-yellow-600 focus:border-transparent"
               />
@@ -335,7 +335,7 @@ const PropertiesPanel: React.FC<PropertiesPanelProps> = ({
             <div className="mb-4">
               <label className="block text-xs font-medium text-gray-600 mb-1">Line Style</label>
               <select
-                value={selectedEdge.data?.dashPattern || 'solid'}
+                value={(selectedEdge.data?.dashPattern as string) || 'solid'}
                 onChange={(e) => handleEdgeChange('dashPattern', e.target.value)}
                 className="w-full px-3 py-2 text-sm border border-gray-300 rounded focus:ring-2 focus:ring-yellow-600 focus:border-transparent"
               >
@@ -349,7 +349,7 @@ const PropertiesPanel: React.FC<PropertiesPanelProps> = ({
             <div className="mb-4">
               <label className="block text-xs font-medium text-gray-600 mb-1">End Marker</label>
               <select
-                value={selectedEdge.data?.endMarker || 'arrow'}
+                value={(selectedEdge.data?.endMarker as string) || 'arrow'}
                 onChange={(e) => handleEdgeChange('endMarker', e.target.value)}
                 className="w-full px-3 py-2 text-sm border border-gray-300 rounded focus:ring-2 focus:ring-yellow-600 focus:border-transparent"
               >
@@ -366,7 +366,7 @@ const PropertiesPanel: React.FC<PropertiesPanelProps> = ({
                 Start Marker
               </label>
               <select
-                value={selectedEdge.data?.startMarker || 'none'}
+                value={(selectedEdge.data?.startMarker as string) || 'none'}
                 onChange={(e) => handleEdgeChange('startMarker', e.target.value)}
                 className="w-full px-3 py-2 text-sm border border-gray-300 rounded focus:ring-2 focus:ring-yellow-600 focus:border-transparent"
               >
@@ -382,7 +382,7 @@ const PropertiesPanel: React.FC<PropertiesPanelProps> = ({
               <label className="flex items-center gap-2">
                 <input
                   type="checkbox"
-                  checked={selectedEdge.data?.bidirectional || false}
+                  checked={(selectedEdge.data?.bidirectional as boolean) || false}
                   onChange={(e) => handleEdgeChange('bidirectional', e.target.checked)}
                   className="rounded text-yellow-600 focus:ring-yellow-600"
                 />

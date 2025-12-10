@@ -1,4 +1,3 @@
-import React from 'react';
 import DrawingCard from './DrawingCard';
 
 export interface Drawing {

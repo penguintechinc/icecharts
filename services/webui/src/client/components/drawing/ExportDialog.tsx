@@ -1,9 +1,8 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { useExport } from '../../hooks/useExport';
 
 interface ExportDialogProps {
   drawingId: string;
-  drawingName: string;
   isOpen: boolean;
   onClose: () => void;
 }
@@ -21,7 +20,6 @@ interface ExportConfig {
 
 export const ExportDialog: React.FC<ExportDialogProps> = ({
   drawingId,
-  drawingName,
   isOpen,
   onClose,
 }) => {

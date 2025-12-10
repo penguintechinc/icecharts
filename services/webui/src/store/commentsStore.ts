@@ -24,7 +24,7 @@ interface CommentsState {
   clearDrawingComments: (drawingId: string) => void;
 }
 
-export const useCommentsStore = create<CommentsState>((set, get) => ({
+export const useCommentsStore = create<CommentsState>((set) => ({
   commentsByDrawing: {},
   summaryByDrawing: {},
   isLoading: false,

@@ -15,21 +15,22 @@ export interface ContainerNodeData {
   opacity?: number;
 }
 
-const ContainerNode: React.FC<NodeProps<ContainerNodeData>> = ({ id, data, selected }) => {
+const ContainerNode: React.FC<NodeProps> = ({ data, selected }) => {
   const [isEditing, setIsEditing] = useState(false);
-  const [label, setLabel] = useState(data.label || 'Container');
+  const nodeData = data as unknown as ContainerNodeData;
+  const [label, setLabel] = useState(nodeData.label || 'Container');
   const inputRef = useRef<HTMLInputElement>(null);
 
-  const width = data.width || 300;
-  const height = data.height || 200;
-  const backgroundColor = data.backgroundColor || '#f9fafb';
-  const borderColor = data.borderColor || '#6b7280';
-  const borderWidth = data.borderWidth || 2;
-  const borderStyle = data.borderStyle || 'dashed';
-  const labelPosition = data.labelPosition || 'top';
-  const textColor = data.textColor || '#374151';
-  const fontSize = data.fontSize || 14;
-  const opacity = data.opacity || 0.9;
+  const width = nodeData.width || 300;
+  const height = nodeData.height || 200;
+  const backgroundColor = nodeData.backgroundColor || '#f9fafb';
+  const borderColor = nodeData.borderColor || '#6b7280';
+  const borderWidth = nodeData.borderWidth || 2;
+  const borderStyle = nodeData.borderStyle || 'dashed';
+  const labelPosition = nodeData.labelPosition || 'top';
+  const textColor = nodeData.textColor || '#374151';
+  const fontSize = nodeData.fontSize || 14;
+  const opacity = nodeData.opacity || 0.9;
 
   useEffect(() => {
     if (isEditing && inputRef.current) {
@@ -53,12 +54,12 @@ const ContainerNode: React.FC<NodeProps<ContainerNodeData>> = ({ id, data, selec
         inputRef.current?.blur();
       }
       if (event.key === 'Escape') {
-        setLabel(data.label || 'Container');
+        setLabel(nodeData.label || 'Container');
         setIsEditing(false);
         inputRef.current?.blur();
       }
     },
-    [data.label]
+    [nodeData.label]
   );
 
   const getBorderStyle = () => {
@@ -77,7 +78,7 @@ const ContainerNode: React.FC<NodeProps<ContainerNodeData>> = ({ id, data, selec
     <>
       <NodeResizer
         color={selected ? '#d4af37' : '#b1b1b7'}
-        isVisible={selected}
+        isVisible={selected || false}
         minWidth={150}
         minHeight={100}
         handleStyle={{

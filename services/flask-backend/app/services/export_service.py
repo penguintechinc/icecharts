@@ -3,7 +3,7 @@
 Provides functionality to export drawing content to various formats:
 - PNG (raster image)
 - SVG (vector image)
-- PDF (portable document)
+- PDF (portable document - requires weasyprint)
 - JSON (data interchange)
 """
 
@@ -13,7 +13,15 @@ from dataclasses import dataclass
 from typing import Optional, Union
 
 from PIL import Image, ImageDraw
-from weasyprint import CSS, HTML
+
+# Optional PDF export support - requires weasyprint (heavy dependencies)
+try:
+    from weasyprint import CSS, HTML
+    PDF_EXPORT_AVAILABLE = True
+except ImportError:
+    PDF_EXPORT_AVAILABLE = False
+    CSS = None  # type: ignore
+    HTML = None  # type: ignore
 
 
 @dataclass(slots=True)

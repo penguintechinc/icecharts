@@ -14,7 +14,7 @@ export default function Tooltip({
   delay = 200,
 }: TooltipProps) {
   const [isVisible, setIsVisible] = useState(false);
-  const timeoutRef = useRef<NodeJS.Timeout>();
+  const timeoutRef = useRef<ReturnType<typeof setTimeout>>();
   const triggerRef = useRef<HTMLDivElement>(null);
 
   const handleMouseEnter = () => {

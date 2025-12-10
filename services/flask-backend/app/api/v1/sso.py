@@ -14,6 +14,9 @@ from ...middleware import auth_required, get_current_user
 sso_v1_bp = Blueprint('sso', __name__, url_prefix='/sso')
 logger = logging.getLogger(__name__)
 
+# Check if SSO modules are available (may be None if dependencies are missing)
+SSO_AVAILABLE = all([SAMLConfig, SAMLHandler, OIDCConfig, OIDCHandler, JITConfig, JITProvisioner])
+
 
 # ============================================================================
 # SAML 2.0 Endpoints

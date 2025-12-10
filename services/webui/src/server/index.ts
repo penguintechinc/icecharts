@@ -2,6 +2,7 @@ import express, { Request, Response, NextFunction } from 'express';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import { createProxyMiddleware, Options } from 'http-proxy-middleware';
+import type { ClientRequest, IncomingMessage, ServerResponse } from 'http';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -35,10 +36,10 @@ const flaskProxyOptions: Options = {
   changeOrigin: true,
   pathRewrite: undefined, // Keep original path
   on: {
-    proxyReq: (proxyReq, req) => {
+    proxyReq: (_proxyReq: ClientRequest, req: IncomingMessage) => {
       console.log(`[Flask Proxy] ${req.method} ${req.url} -> ${config.flaskApiUrl}`);
     },
-    error: (err, _req, res) => {
+    error: (err: Error, _req: IncomingMessage, res: ServerResponse | Response) => {
       console.error('[Flask Proxy Error]', err);
       if (res && 'writeHead' in res) {
         (res as Response).status(502).json({ error: 'Flask API unavailable' });
@@ -55,10 +56,10 @@ const goProxyOptions: Options = {
     '^/api/go': '/api/v1', // Rewrite /api/go/* to /api/v1/*
   },
   on: {
-    proxyReq: (proxyReq, req) => {
+    proxyReq: (_proxyReq: ClientRequest, req: IncomingMessage) => {
       console.log(`[Go Proxy] ${req.method} ${req.url} -> ${config.goApiUrl}`);
     },
-    error: (err, _req, res) => {
+    error: (err: Error, _req: IncomingMessage, res: ServerResponse | Response) => {
       console.error('[Go Proxy Error]', err);
       if (res && 'writeHead' in res) {
         (res as Response).status(502).json({ error: 'Go API unavailable' });

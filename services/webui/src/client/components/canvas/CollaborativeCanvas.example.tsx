@@ -19,8 +19,6 @@ export const CollaborativeCanvas: React.FC<CollaborativeCanvasProps> = ({
   const {
     sendCursorPosition,
     lockShape,
-    unlockShape,
-    sendShapeUpdate,
     requestPresence,
   } = useCollaboration({
     roomId: drawingId,
@@ -77,17 +75,6 @@ export const CollaborativeCanvas: React.FC<CollaborativeCanvasProps> = ({
       }
     },
     [connected, isShapeLocked, lockShape]
-  );
-
-  // Handle shape updates
-  const handleShapeUpdate = useCallback(
-    (shapeId: string, newData: any) => {
-      if (!connected) return;
-
-      // Send update to other collaborators
-      sendShapeUpdate(shapeId, newData);
-    },
-    [connected, sendShapeUpdate]
   );
 
   // Listen for shape updates from other users

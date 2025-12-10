@@ -79,10 +79,12 @@ ARG JWT_REFRESH_TOKEN_DAYS=30
 # Set working directory
 WORKDIR /app
 
-# Install runtime dependencies only
+# Install runtime dependencies only (including SAML/xmlsec support)
 RUN apt-get update && apt-get install -y --no-install-recommends \
     libpq5 \
     curl \
+    libxml2 \
+    libxmlsec1 \
     && rm -rf /var/lib/apt/lists/*
 
 # Create non-root user for security

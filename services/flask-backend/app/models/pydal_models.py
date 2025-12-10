@@ -422,3 +422,113 @@ def define_all_tables(db):
         Field("left_at", "datetime"),
         migrate=True,
     )
+
+    # ==========================================
+    # Additional tables for API compatibility
+    # ==========================================
+
+    # Group members table (similar to group_memberships but with role field)
+    db.define_table(
+        "group_members",
+        Field("user_id", "reference identities", notnull=True, ondelete="CASCADE"),
+        Field("group_id", "reference groups", notnull=True, ondelete="CASCADE"),
+        Field(
+            "role",
+            "string",
+            length=50,
+            default="member",
+            requires=IS_IN_SET(["admin", "member"]),
+        ),
+        Field("joined_at", "datetime", default=lambda: datetime.datetime.now(datetime.timezone.utc)),
+        migrate=True,
+    )
+
+    # Add owner_id field to groups table
+    db.groups._extra_fields.append(Field("owner_id", "reference identities", ondelete="CASCADE"))
+
+    # Add owner_id and user_id fields to drawings table for API compatibility
+    db.drawings._extra_fields.append(Field("owner_id", "reference identities", ondelete="CASCADE"))
+    db.drawings._extra_fields.append(Field("user_id", "reference identities", ondelete="CASCADE"))
+
+    # Update comments table to add user_id, x_position, y_position fields and other missing fields
+    db.comments._extra_fields.append(Field("user_id", "reference identities", ondelete="CASCADE"))
+    db.comments._extra_fields.append(Field("x_position", "double"))
+    db.comments._extra_fields.append(Field("y_position", "double"))
+    db.comments._extra_fields.append(Field("resolved_by", "reference identities", ondelete="SET NULL"))
+    db.comments._extra_fields.append(Field("resolved_at", "datetime"))
+
+    # Add comment_replies table
+    db.define_table(
+        "comment_replies",
+        Field("comment_id", "reference comments", notnull=True, ondelete="CASCADE"),
+        Field("user_id", "reference identities", notnull=True, ondelete="CASCADE"),
+        Field("content", "text", notnull=True, requires=IS_NOT_EMPTY()),
+        Field(
+            "created_at",
+            "datetime",
+            default=lambda: datetime.datetime.now(datetime.timezone.utc),
+        ),
+        migrate=True,
+    )
+
+    # Update drawing_shares table for API compatibility
+    db.drawing_shares._extra_fields.append(Field("user_id", "reference identities", ondelete="CASCADE"))
+    db.drawing_shares._extra_fields.append(Field("group_id", "reference groups", ondelete="CASCADE"))
+    db.drawing_shares._extra_fields.append(Field("is_public", "boolean", default=False, notnull=True))
+    db.drawing_shares._extra_fields.append(Field("shared_by", "reference identities", ondelete="SET NULL"))
+
+    # Update storage_providers table for API compatibility
+    db.storage_providers._extra_fields.append(Field("user_id", "reference identities", ondelete="CASCADE"))
+    db.storage_providers._extra_fields.append(Field("config", "json"))
+    db.storage_providers._extra_fields.append(Field("is_system_default", "boolean", default=False, notnull=True"))
+
+    # Shape libraries table
+    db.define_table(
+        "shape_libraries",
+        Field(
+            "tenant_id",
+            "reference tenants",
+            default=1,
+            notnull=True,
+            ondelete="CASCADE",
+        ),
+        Field("name", "string", length=255, notnull=True, requires=IS_NOT_EMPTY()),
+        Field("description", "text"),
+        Field("owner_id", "reference identities", notnull=True, ondelete="CASCADE"),
+        Field("is_public", "boolean", default=False, notnull=True),
+        Field(
+            "created_at",
+            "datetime",
+            default=lambda: datetime.datetime.now(datetime.timezone.utc),
+        ),
+        Field(
+            "updated_at",
+            "datetime",
+            update=lambda: datetime.datetime.now(datetime.timezone.utc),
+        ),
+        migrate=True,
+    )
+
+    # Library shapes table
+    db.define_table(
+        "library_shapes",
+        Field("library_id", "reference shape_libraries", notnull=True, ondelete="CASCADE"),
+        Field("name", "string", length=255, notnull=True, requires=IS_NOT_EMPTY()),
+        Field("description", "text"),
+        Field("shape_data", "json", notnull=True),
+        Field("category", "string", length=100, default="custom"),
+        Field(
+            "created_at",
+            "datetime",
+            default=lambda: datetime.datetime.now(datetime.timezone.utc),
+        ),
+        Field(
+            "updated_at",
+            "datetime",
+            update=lambda: datetime.datetime.now(datetime.timezone.utc),
+        ),
+        migrate=True,
+    )
+
+    # Create alias for identities table as users
+    db.users = db.identities

@@ -15,19 +15,20 @@ export interface ShapeNodeData {
   fontSize?: number;
 }
 
-const ShapeNode: React.FC<NodeProps<ShapeNodeData>> = ({ id, data, selected }) => {
+const ShapeNode: React.FC<NodeProps> = ({ data, selected }) => {
   const [isEditing, setIsEditing] = useState(false);
-  const [label, setLabel] = useState(data.label || '');
+  const nodeData = data as unknown as ShapeNodeData;
+  const [label, setLabel] = useState(nodeData.label || '');
   const inputRef = useRef<HTMLInputElement>(null);
 
-  const width = data.width || 120;
-  const height = data.height || 80;
-  const fillColor = data.fillColor || '#ffffff';
-  const strokeColor = data.strokeColor || '#000000';
-  const strokeWidth = data.strokeWidth || 2;
-  const textColor = data.textColor || '#000000';
-  const fontSize = data.fontSize || 14;
-  const shapeType = data.shapeType || 'rectangle';
+  const width = nodeData.width || 120;
+  const height = nodeData.height || 80;
+  const fillColor = nodeData.fillColor || '#ffffff';
+  const strokeColor = nodeData.strokeColor || '#000000';
+  const strokeWidth = nodeData.strokeWidth || 2;
+  const textColor = nodeData.textColor || '#000000';
+  const fontSize = nodeData.fontSize || 14;
+  const shapeType = nodeData.shapeType || 'rectangle';
 
   useEffect(() => {
     if (isEditing && inputRef.current) {
@@ -43,11 +44,11 @@ const ShapeNode: React.FC<NodeProps<ShapeNodeData>> = ({ id, data, selected }) =
   const handleBlur = useCallback(() => {
     setIsEditing(false);
     // Update node data through parent component
-    if (data.label !== label) {
+    if (nodeData.label !== label) {
       // This would need to be handled by the parent Canvas component
       // For now, just update local state
     }
-  }, [data.label, label]);
+  }, [nodeData.label, label]);
 
   const handleKeyDown = useCallback(
     (event: React.KeyboardEvent<HTMLInputElement>) => {
@@ -56,12 +57,12 @@ const ShapeNode: React.FC<NodeProps<ShapeNodeData>> = ({ id, data, selected }) =
         inputRef.current?.blur();
       }
       if (event.key === 'Escape') {
-        setLabel(data.label || '');
+        setLabel(nodeData.label || '');
         setIsEditing(false);
         inputRef.current?.blur();
       }
     },
-    [data.label]
+    [nodeData.label]
   );
 
   const renderShape = () => {
@@ -129,7 +130,7 @@ const ShapeNode: React.FC<NodeProps<ShapeNodeData>> = ({ id, data, selected }) =
     <>
       <NodeResizer
         color={selected ? '#d4af37' : '#b1b1b7'}
-        isVisible={selected}
+        isVisible={selected || false}
         minWidth={60}
         minHeight={40}
         handleStyle={{

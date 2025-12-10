@@ -2,7 +2,6 @@ import React, { useEffect, useState } from 'react';
 import { useCommentsStore } from '../../store/commentsStore';
 import { useAuthStore } from '../../store/authStore';
 import { CommentThread } from '../common/CommentThread';
-import type { Comment } from '../../types';
 
 interface CommentsPanelProps {
   drawingId: string;
@@ -101,7 +100,7 @@ export const CommentsPanel: React.FC<CommentsPanelProps> = ({
             onClick={onClose}
             className="text-gray-500 hover:text-gray-700 text-xl"
           >
-            ×
+            ï¿½
           </button>
         )}
       </div>

@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom';
 import { usersApi } from '../hooks/useApi';
 import Card from '../components/Card';
 import Button from '../components/Button';
-import type { User } from '../types';
+import type { User, UserRole } from '../types';
 
 export default function Users() {
   const [users, setUsers] = useState<User[]>([]);
@@ -16,7 +16,7 @@ export default function Users() {
     email: '',
     password: '',
     full_name: '',
-    role: 'viewer' as const,
+    role: 'viewer' as UserRole,
   });
   const [createLoading, setCreateLoading] = useState(false);
 
@@ -176,7 +176,7 @@ export default function Users() {
                 <label className="block text-sm text-dark-400 mb-1">Role</label>
                 <select
                   value={newUser.role}
-                  onChange={(e) => setNewUser({ ...newUser, role: e.target.value as 'admin' | 'maintainer' | 'viewer' })}
+                  onChange={(e) => setNewUser({ ...newUser, role: e.target.value as UserRole })}
                   className="input"
                 >
                   <option value="viewer">Viewer</option>

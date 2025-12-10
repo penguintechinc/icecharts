@@ -16,22 +16,23 @@ export interface TextNodeData {
   showBorder?: boolean;
 }
 
-const TextNode: React.FC<NodeProps<TextNodeData>> = ({ id, data, selected }) => {
+const TextNode: React.FC<NodeProps> = ({ data, selected }) => {
   const [isEditing, setIsEditing] = useState(false);
-  const [text, setText] = useState(data.text || 'Text');
+  const nodeData = data as unknown as TextNodeData;
+  const [text, setText] = useState(nodeData.text || 'Text');
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
-  const fontSize = data.fontSize || 14;
-  const fontWeight = data.fontWeight || 'normal';
-  const textColor = data.textColor || '#000000';
-  const backgroundColor = data.backgroundColor || 'transparent';
-  const padding = data.padding || 8;
-  const textAlign = data.textAlign || 'left';
-  const width = data.width || 150;
-  const height = data.height || 60;
-  const borderColor = data.borderColor || '#e5e7eb';
-  const borderWidth = data.borderWidth || 1;
-  const showBorder = data.showBorder !== false;
+  const fontSize = nodeData.fontSize || 14;
+  const fontWeight = nodeData.fontWeight || 'normal';
+  const textColor = nodeData.textColor || '#000000';
+  const backgroundColor = nodeData.backgroundColor || 'transparent';
+  const padding = nodeData.padding || 8;
+  const textAlign = nodeData.textAlign || 'left';
+  const width = nodeData.width || 150;
+  const height = nodeData.height || 60;
+  const borderColor = nodeData.borderColor || '#e5e7eb';
+  const borderWidth = nodeData.borderWidth || 1;
+  const showBorder = nodeData.showBorder !== false;
 
   useEffect(() => {
     if (isEditing && textareaRef.current) {
@@ -52,7 +53,7 @@ const TextNode: React.FC<NodeProps<TextNodeData>> = ({ id, data, selected }) => 
     (event: React.KeyboardEvent<HTMLTextAreaElement>) => {
       // Allow Enter for new lines in textarea
       if (event.key === 'Escape') {
-        setText(data.text || 'Text');
+        setText(nodeData.text || 'Text');
         setIsEditing(false);
         textareaRef.current?.blur();
       }
@@ -62,7 +63,7 @@ const TextNode: React.FC<NodeProps<TextNodeData>> = ({ id, data, selected }) => 
         textareaRef.current?.blur();
       }
     },
-    [data.text]
+    [nodeData.text]
   );
 
   const getFontWeight = () => {
@@ -81,7 +82,7 @@ const TextNode: React.FC<NodeProps<TextNodeData>> = ({ id, data, selected }) => 
     <>
       <NodeResizer
         color={selected ? '#d4af37' : '#b1b1b7'}
-        isVisible={selected}
+        isVisible={selected || false}
         minWidth={80}
         minHeight={40}
         handleStyle={{

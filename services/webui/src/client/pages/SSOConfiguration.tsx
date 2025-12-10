@@ -210,8 +210,8 @@ export default function SSOConfiguration() {
 
       <TabNavigation
         tabs={[
-          { id: 'saml', label: 'SAML 2.0', count: samlConfig ? 1 : 0 },
-          { id: 'oidc', label: 'OpenID Connect', count: oidcConfig ? 1 : 0 },
+          { id: 'saml', label: 'SAML 2.0' },
+          { id: 'oidc', label: 'OpenID Connect' },
         ]}
         activeTab={activeTab}
         onChange={(tab) => setActiveTab(tab as 'saml' | 'oidc')}

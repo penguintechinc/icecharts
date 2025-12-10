@@ -15,17 +15,12 @@ interface UseCollaborationOptions {
   onError?: (error: string) => void;
 }
 
-interface ShapeUpdate {
-  shapeId: string;
-  shapeData: any;
-}
-
 export const useCollaboration = (options: UseCollaborationOptions = {}) => {
   const { roomId, enabled = true, onConnected, onDisconnected, onError } = options;
 
   const socketRef = useRef<Socket | null>(null);
-  const reconnectTimeoutRef = useRef<NodeJS.Timeout>();
-  const cursorThrottleRef = useRef<NodeJS.Timeout>();
+  const reconnectTimeoutRef = useRef<ReturnType<typeof setTimeout>>();
+  const cursorThrottleRef = useRef<ReturnType<typeof setTimeout>>();
 
   const {
     setConnected,
@@ -36,14 +31,12 @@ export const useCollaboration = (options: UseCollaborationOptions = {}) => {
     setMyColor,
     updateCollaborators,
     updateCursor,
-    removeCursor,
     addLock,
     removeLock,
     clearCollaborators,
     clearCursors,
     clearLocks,
     reset,
-    sessionId,
   } = useCollaborationStore();
 
   /**
