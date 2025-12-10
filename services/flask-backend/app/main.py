@@ -199,13 +199,28 @@ def _register_error_handlers(app: Flask) -> None:
     logger.info("error_handlers_registered")
 
 
+def create_asgi_app() -> "ASGIApplication":
+    """
+    Create ASGI-compatible application for uvicorn.
+
+    Flask is WSGI, so we wrap it with WsgiToAsgi adapter.
+
+    Returns:
+        ASGI application that wraps Flask
+    """
+    from asgiref.wsgi import WsgiToAsgi
+
+    flask_app = create_app()
+    return WsgiToAsgi(flask_app)
+
+
 if __name__ == "__main__":
     # Development server (use uvicorn in production)
     import uvicorn
 
     app = create_app()
     uvicorn.run(
-        "app.main:create_app",
+        "app.main:create_asgi_app",
         factory=True,
         host=os.getenv("FLASK_HOST", "0.0.0.0"),
         port=int(os.getenv("FLASK_PORT", 5000)),

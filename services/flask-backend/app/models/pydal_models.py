@@ -369,7 +369,7 @@ def define_all_tables(db):
         Field("content", "text", notnull=True, requires=IS_NOT_EMPTY()),
         Field("x", "double"),  # Position on canvas
         Field("y", "double"),
-        Field("shape_id", "string", length=100"),  # Associated shape (optional)
+        Field("shape_id", "string", length=100),  # Associated shape (optional)
         Field("is_resolved", "boolean", default=False, notnull=True),
         Field(
             "created_at",
@@ -480,7 +480,7 @@ def define_all_tables(db):
     # Update storage_providers table for API compatibility
     db.storage_providers._extra_fields.append(Field("user_id", "reference identities", ondelete="CASCADE"))
     db.storage_providers._extra_fields.append(Field("config", "json"))
-    db.storage_providers._extra_fields.append(Field("is_system_default", "boolean", default=False, notnull=True"))
+    db.storage_providers._extra_fields.append(Field("is_system_default", "boolean", default=False, notnull=True))
 
     # Shape libraries table
     db.define_table(

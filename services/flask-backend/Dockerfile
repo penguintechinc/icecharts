@@ -121,9 +121,9 @@ ENV PYTHONDONTWRITEBYTECODE=1
 ENV JWT_ACCESS_TOKEN_HOURS=${JWT_ACCESS_TOKEN_HOURS}
 ENV JWT_REFRESH_TOKEN_DAYS=${JWT_REFRESH_TOKEN_DAYS}
 
-# Run application with uvicorn ASGI server for async Flask support
+# Run application with uvicorn ASGI server (Flask wrapped with WsgiToAsgi adapter)
 CMD ["uvicorn", \
-     "app.main:create_app", \
+     "app.main:create_asgi_app", \
      "--factory", \
      "--host", "0.0.0.0", \
      "--port", "5000", \
