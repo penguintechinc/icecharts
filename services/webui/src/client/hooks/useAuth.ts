@@ -126,6 +126,8 @@ export const useAuth = () => {
     login: store.login,
     logout: store.logout,
     checkAuth: store.checkAuth,
+    setUser: store.setUser,
+    useAuthStore: () => store,
     hasRole: (roles: string[]) => {
       if (!store.user) return false;
       return roles.includes(store.user.role);

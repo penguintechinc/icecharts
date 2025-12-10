@@ -1,0 +1,29 @@
+# Storage Provider Dependencies for IceCharts
+# Install specific providers as needed
+
+# MinIO provider
+minio>=7.2.0
+
+# AWS S3 provider
+boto3>=1.35.0
+botocore>=1.35.0
+
+# Google Cloud Storage provider
+google-cloud-storage>=2.18.0
+
+# OneDrive provider (Microsoft Graph API)
+msal>=1.31.0
+requests>=2.32.0
+
+# Google Drive provider
+google-auth>=2.35.0
+google-auth-oauthlib>=1.2.0
+google-auth-httplib2>=0.2.0
+google-api-python-client>=2.149.0
+
+# Note: Install only the providers you need, e.g.:
+# pip install minio  # For MinIO
+# pip install boto3  # For AWS S3
+# pip install google-cloud-storage  # For GCS
+# pip install msal requests  # For OneDrive
+# pip install google-auth google-auth-oauthlib google-api-python-client  # For Google Drive

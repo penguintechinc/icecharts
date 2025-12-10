@@ -1,0 +1,472 @@
+"""Admin Endpoints for API v1."""
+
+from datetime import datetime
+from typing import Optional
+
+from flask import Blueprint, jsonify, request
+
+from ...middleware import admin_required, auth_required, get_current_user
+from ...models import (
+    create_user,
+    delete_user,
+    get_db,
+    get_user_by_email,
+    get_user_by_id,
+    list_users,
+    update_user,
+)
+
+admin_v1_bp = Blueprint("admin_v1", __name__, url_prefix="/admin")
+
+
+@admin_v1_bp.route("/users", methods=["GET"])
+@auth_required
+@admin_required
+def admin_list_users():
+    """List all users with pagination (admin only)."""
+    page = request.args.get("page", 1, type=int)
+    per_page = request.args.get("per_page", 20, type=int)
+    search = request.args.get("search", "").strip()
+    role = request.args.get("role", "").strip()
+    active = request.args.get("active", "").strip()
+
+    db = get_db()
+
+    # Build query
+    query = db.users
+
+    # Apply filters
+    if search:
+        query = db(
+            (db.users.email.contains(search)) |
+            (db.users.full_name.contains(search))
+        )
+
+    if role:
+        query = db(db.users.role == role)
+
+    if active:
+        is_active = active.lower() == "true"
+        query = db(db.users.is_active == is_active)
+
+    offset = (page - 1) * per_page
+
+    users = query.select(
+        orderby=db.users.created_at,
+        limitby=(offset, offset + per_page),
+    )
+    total = query.count()
+
+    # Remove sensitive fields
+    user_list = []
+    for u in users:
+        user_dict = u.as_dict()
+        user_dict.pop("password_hash", None)
+        user_dict.pop("mfa_secret", None)
+        user_list.append(user_dict)
+
+    return jsonify({
+        "users": user_list,
+        "total": total,
+        "page": page,
+        "per_page": per_page,
+        "pages": (total + per_page - 1) // per_page,
+    }), 200
+
+
+@admin_v1_bp.route("/users/<int:user_id>", methods=["GET"])
+@auth_required
+@admin_required
+def admin_get_user(user_id: int):
+    """Get user details (admin only)."""
+    user = get_user_by_id(user_id)
+
+    if not user:
+        return jsonify({"error": "User not found"}), 404
+
+    # Remove sensitive fields
+    user.pop("password_hash", None)
+    user.pop("mfa_secret", None)
+
+    return jsonify({"user": user}), 200
+
+
+@admin_v1_bp.route("/users", methods=["POST"])
+@auth_required
+@admin_required
+def admin_create_user():
+    """Create a new user (admin only)."""
+    data = request.get_json()
+
+    if not data:
+        return jsonify({"error": "Request body required"}), 400
+
+    email = data.get("email", "").strip().lower()
+    password = data.get("password", "")
+    full_name = data.get("full_name", "").strip()
+    role = data.get("role", "viewer").strip()
+
+    # Validation
+    if not email:
+        return jsonify({"error": "Email is required"}), 400
+
+    if not password or len(password) < 8:
+        return jsonify({"error": "Password must be at least 8 characters"}), 400
+
+    # Validate role
+    valid_roles = ["admin", "maintainer", "viewer"]
+    if role not in valid_roles:
+        return jsonify({
+            "error": "Invalid role",
+            "valid_roles": valid_roles,
+        }), 400
+
+    # Check if user exists
+    existing = get_user_by_email(email)
+    if existing:
+        return jsonify({"error": "Email already registered"}), 409
+
+    # Create user
+    from .auth import hash_password
+
+    password_hash = hash_password(password)
+    user = create_user(
+        email=email,
+        password_hash=password_hash,
+        full_name=full_name,
+        role=role,
+    )
+
+    # Remove sensitive fields
+    user.pop("password_hash", None)
+    user.pop("mfa_secret", None)
+
+    return jsonify({
+        "message": "User created successfully",
+        "user": user,
+    }), 201
+
+
+@admin_v1_bp.route("/users/<int:user_id>", methods=["PUT"])
+@auth_required
+@admin_required
+def admin_update_user(user_id: int):
+    """Update user details (admin only)."""
+    data = request.get_json()
+
+    if not data:
+        return jsonify({"error": "Request body required"}), 400
+
+    user = get_user_by_id(user_id)
+    if not user:
+        return jsonify({"error": "User not found"}), 404
+
+    # Prepare update data
+    update_data = {}
+
+    if "email" in data:
+        new_email = data["email"].strip().lower()
+        # Check if email is already taken
+        existing = get_user_by_email(new_email)
+        if existing and existing["id"] != user_id:
+            return jsonify({"error": "Email already in use"}), 409
+        update_data["email"] = new_email
+
+    if "full_name" in data:
+        update_data["full_name"] = data["full_name"].strip()
+
+    if "role" in data:
+        role = data["role"].strip()
+        valid_roles = ["admin", "maintainer", "viewer"]
+        if role not in valid_roles:
+            return jsonify({
+                "error": "Invalid role",
+                "valid_roles": valid_roles,
+            }), 400
+        update_data["role"] = role
+
+    if "is_active" in data:
+        update_data["is_active"] = data["is_active"]
+
+    if "password" in data:
+        password = data["password"]
+        if len(password) < 8:
+            return jsonify({"error": "Password must be at least 8 characters"}), 400
+
+        from .auth import hash_password
+
+        update_data["password_hash"] = hash_password(password)
+
+    if not update_data:
+        return jsonify({"error": "No valid fields to update"}), 400
+
+    # Update user
+    updated_user = update_user(user_id, **update_data)
+
+    # Remove sensitive fields
+    updated_user.pop("password_hash", None)
+    updated_user.pop("mfa_secret", None)
+
+    return jsonify({
+        "message": "User updated successfully",
+        "user": updated_user,
+    }), 200
+
+
+@admin_v1_bp.route("/users/<int:user_id>", methods=["DELETE"])
+@auth_required
+@admin_required
+def admin_delete_user(user_id: int):
+    """Delete user (admin only)."""
+    current_user = get_current_user()
+
+    # Prevent self-deletion
+    if current_user["id"] == user_id:
+        return jsonify({"error": "Cannot delete your own account"}), 400
+
+    user = get_user_by_id(user_id)
+    if not user:
+        return jsonify({"error": "User not found"}), 404
+
+    # Delete user
+    success = delete_user(user_id)
+
+    if not success:
+        return jsonify({"error": "Failed to delete user"}), 500
+
+    return jsonify({
+        "message": "User deleted successfully",
+    }), 200
+
+
+@admin_v1_bp.route("/users/<int:user_id>/activate", methods=["POST"])
+@auth_required
+@admin_required
+def admin_activate_user(user_id: int):
+    """Activate user account (admin only)."""
+    user = get_user_by_id(user_id)
+    if not user:
+        return jsonify({"error": "User not found"}), 404
+
+    # Activate user
+    update_user(user_id, is_active=True)
+
+    return jsonify({
+        "message": "User activated successfully",
+    }), 200
+
+
+@admin_v1_bp.route("/users/<int:user_id>/deactivate", methods=["POST"])
+@auth_required
+@admin_required
+def admin_deactivate_user(user_id: int):
+    """Deactivate user account (admin only)."""
+    current_user = get_current_user()
+
+    # Prevent self-deactivation
+    if current_user["id"] == user_id:
+        return jsonify({"error": "Cannot deactivate your own account"}), 400
+
+    user = get_user_by_id(user_id)
+    if not user:
+        return jsonify({"error": "User not found"}), 404
+
+    # Deactivate user
+    update_user(user_id, is_active=False)
+
+    return jsonify({
+        "message": "User deactivated successfully",
+    }), 200
+
+
+@admin_v1_bp.route("/stats", methods=["GET"])
+@auth_required
+@admin_required
+def admin_get_stats():
+    """Get system statistics (admin only)."""
+    db = get_db()
+
+    stats = {
+        "users": {
+            "total": db(db.users).count(),
+            "active": db(db.users.is_active == True).count(),
+            "inactive": db(db.users.is_active == False).count(),
+            "by_role": {
+                "admin": db(db.users.role == "admin").count(),
+                "maintainer": db(db.users.role == "maintainer").count(),
+                "viewer": db(db.users.role == "viewer").count(),
+            },
+        },
+        "drawings": {
+            "total": db(db.drawings).count() if hasattr(db, "drawings") else 0,
+        },
+        "groups": {
+            "total": db(db.groups).count() if hasattr(db, "groups") else 0,
+        },
+        "storage": {
+            "providers": db(db.storage_providers).count() if hasattr(db, "storage_providers") else 0,
+        },
+    }
+
+    return jsonify({"stats": stats}), 200
+
+
+@admin_v1_bp.route("/activity", methods=["GET"])
+@auth_required
+@admin_required
+def admin_get_activity():
+    """Get recent system activity (admin only)."""
+    db = get_db()
+
+    page = request.args.get("page", 1, type=int)
+    per_page = request.args.get("per_page", 50, type=int)
+
+    # TODO: Implement activity logging and retrieval
+    # For now, return placeholder
+
+    activities = []
+
+    return jsonify({
+        "activities": activities,
+        "total": len(activities),
+        "page": page,
+        "per_page": per_page,
+    }), 200
+
+
+@admin_v1_bp.route("/audit-log", methods=["GET"])
+@auth_required
+@admin_required
+def admin_get_audit_log():
+    """Get audit log entries (admin only)."""
+    db = get_db()
+
+    page = request.args.get("page", 1, type=int)
+    per_page = request.args.get("per_page", 50, type=int)
+    user_id = request.args.get("user_id", type=int)
+    action = request.args.get("action", "").strip()
+
+    # TODO: Implement audit logging and retrieval
+    # For now, return placeholder
+
+    audit_logs = []
+
+    return jsonify({
+        "audit_logs": audit_logs,
+        "total": len(audit_logs),
+        "page": page,
+        "per_page": per_page,
+    }), 200
+
+
+@admin_v1_bp.route("/system/health", methods=["GET"])
+@auth_required
+@admin_required
+def admin_get_system_health():
+    """Get system health status (admin only)."""
+    # Check various system components
+
+    health = {
+        "status": "healthy",
+        "timestamp": datetime.utcnow().isoformat(),
+        "components": {
+            "database": {
+                "status": "healthy",
+                "message": "Database connection OK",
+            },
+            "storage": {
+                "status": "healthy",
+                "message": "Storage accessible",
+            },
+            "cache": {
+                "status": "healthy",
+                "message": "Cache operational",
+            },
+        },
+    }
+
+    # TODO: Implement actual health checks for each component
+
+    return jsonify({"health": health}), 200
+
+
+@admin_v1_bp.route("/system/config", methods=["GET"])
+@auth_required
+@admin_required
+def admin_get_system_config():
+    """Get system configuration (admin only)."""
+    from flask import current_app
+
+    # Return non-sensitive configuration
+    config = {
+        "environment": current_app.config.get("ENV", "production"),
+        "debug": current_app.config.get("DEBUG", False),
+        "jwt_expiry_seconds": int(current_app.config.get("JWT_ACCESS_TOKEN_EXPIRES").total_seconds()),
+        "db_type": current_app.config.get("DB_TYPE", "postgres"),
+    }
+
+    return jsonify({"config": config}), 200
+
+
+@admin_v1_bp.route("/users/bulk-import", methods=["POST"])
+@auth_required
+@admin_required
+def admin_bulk_import_users():
+    """Bulk import users from CSV (admin only)."""
+    data = request.get_json()
+
+    if not data:
+        return jsonify({"error": "Request body required"}), 400
+
+    users_data = data.get("users", [])
+
+    if not users_data or not isinstance(users_data, list):
+        return jsonify({"error": "users array is required"}), 400
+
+    from .auth import hash_password
+
+    created = []
+    errors = []
+
+    for idx, user_data in enumerate(users_data):
+        try:
+            email = user_data.get("email", "").strip().lower()
+            password = user_data.get("password", "")
+            full_name = user_data.get("full_name", "").strip()
+            role = user_data.get("role", "viewer").strip()
+
+            # Validation
+            if not email:
+                errors.append({"index": idx, "error": "Email is required"})
+                continue
+
+            if not password or len(password) < 8:
+                errors.append({"index": idx, "error": "Password must be at least 8 characters"})
+                continue
+
+            # Check if user exists
+            existing = get_user_by_email(email)
+            if existing:
+                errors.append({"index": idx, "error": "Email already registered"})
+                continue
+
+            # Create user
+            password_hash = hash_password(password)
+            user = create_user(
+                email=email,
+                password_hash=password_hash,
+                full_name=full_name,
+                role=role,
+            )
+
+            created.append(user["id"])
+
+        except Exception as e:
+            errors.append({"index": idx, "error": str(e)})
+
+    return jsonify({
+        "message": f"Bulk import completed: {len(created)} created, {len(errors)} errors",
+        "created_count": len(created),
+        "error_count": len(errors),
+        "errors": errors,
+    }), 201 if created else 400

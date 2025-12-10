@@ -47,5 +47,10 @@ isort==5.13.2
 flake8==7.1.1
 mypy==1.14.0
 
+# Image & Document Export
+Pillow==10.4.0
+cairosvg==2.7.2
+WeasyPrint==62.0
+
 # License Server Integration
 # (Using requests for HTTP client - already included above)

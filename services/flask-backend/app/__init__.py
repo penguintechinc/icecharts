@@ -1,62 +1,78 @@
-"""Flask Backend Application Factory."""
+"""IceCharts Flask Application Package."""
+
+import logging
+import os
 
 from flask import Flask
 from flask_cors import CORS
-from prometheus_client import make_wsgi_app
-from werkzeug.middleware.dispatcher import DispatcherMiddleware
 
 from .config import Config
-from .models import init_db, get_db
+from .models import init_db
 
 
-def create_app(config_class: type = Config) -> Flask:
-    """Create and configure the Flask application."""
+__version__ = "0.1.0"
+
+
+logger = logging.getLogger(__name__)
+
+
+def create_app(config_class=None):
+    """
+    Create and configure Flask application.
+
+    Args:
+        config_class: Configuration class to use (defaults to Config)
+
+    Returns:
+        Configured Flask app instance
+    """
+    if config_class is None:
+        config_class = Config
+
     app = Flask(__name__)
     app.config.from_object(config_class)
 
-    # Initialize CORS
-    CORS(app, resources={
-        r"/api/*": {
-            "origins": app.config.get("CORS_ORIGINS", "*"),
-            "methods": ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
-            "allow_headers": ["Content-Type", "Authorization"],
-        }
-    })
-
     # Initialize database
-    with app.app_context():
-        init_db(app)
+    init_db(app)
+
+    # Configure CORS
+    CORS(app, origins=app.config["CORS_ORIGINS"])
+
+    # Initialize WebSocket support
+    from .websocket import init_socketio
+    socketio = init_socketio(app)
+    app.socketio = socketio
+
+    # Initialize licensing
+    try:
+        from .licensing import initialize_licensing
+        if initialize_licensing():
+            logger.info("License server integration enabled")
+        else:
+            logger.info("License server integration disabled (no license key)")
+    except Exception as e:
+        logger.warning(f"Failed to initialize licensing: {e}")
 
     # Register blueprints
-    from .auth import auth_bp
-    from .users import users_bp
-    from .hello import hello_bp
-
-    app.register_blueprint(auth_bp, url_prefix="/api/v1/auth")
-    app.register_blueprint(users_bp, url_prefix="/api/v1/users")
-    app.register_blueprint(hello_bp, url_prefix="/api/v1")
+    from .api import api_v1_bp
+    app.register_blueprint(api_v1_bp)
 
     # Health check endpoint
     @app.route("/healthz")
     def health_check():
         """Health check endpoint."""
-        try:
-            db = get_db()
-            db.executesql("SELECT 1")
-            return {"status": "healthy", "database": "connected"}, 200
-        except Exception as e:
-            return {"status": "unhealthy", "error": str(e)}, 503
+        return {"status": "healthy"}, 200
 
-    # Readiness check endpoint
     @app.route("/readyz")
     def readiness_check():
         """Readiness check endpoint."""
-        return {"status": "ready"}, 200
-
-    # Add Prometheus metrics endpoint
-    app.wsgi_app = DispatcherMiddleware(
-        app.wsgi_app,
-        {"/metrics": make_wsgi_app()}
-    )
+        try:
+            from .models import get_db
+            db = get_db()
+            db.executesql("SELECT 1")
+            return {"status": "ready"}, 200
+        except Exception as e:
+            logger.error(f"Readiness check failed: {e}")
+            return {"status": "not_ready", "error": str(e)}, 503
 
     return app
