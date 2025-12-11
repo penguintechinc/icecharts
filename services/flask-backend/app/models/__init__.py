@@ -28,6 +28,98 @@ VALID_DB_TYPES = {
 }
 
 
+def _initialize_default_settings(db) -> None:
+    """
+    Initialize default system settings in the database.
+
+    This should be called after all tables are created to avoid transaction errors.
+
+    Args:
+        db: PyDAL database instance
+    """
+    try:
+        # Signup and registration settings
+        db.system_settings.update_or_insert(
+            db.system_settings.setting_key == "signup_enabled",
+            setting_key="signup_enabled",
+            setting_value="true",
+            setting_type="boolean",
+            description="Enable/disable user registration",
+        )
+
+        db.system_settings.update_or_insert(
+            db.system_settings.setting_key == "signup_mode",
+            setting_key="signup_mode",
+            setting_value="open",
+            setting_type="string",
+            description="Signup mode: open, domain_restricted, sso_only, disabled",
+        )
+
+        db.system_settings.update_or_insert(
+            db.system_settings.setting_key == "signup_allowed_domains",
+            setting_key="signup_allowed_domains",
+            setting_value="[]",
+            setting_type="json",
+            description="List of allowed email domains for signup (domain_restricted mode)",
+        )
+
+        db.system_settings.update_or_insert(
+            db.system_settings.setting_key == "email_verification_required",
+            setting_key="email_verification_required",
+            setting_value="false",
+            setting_type="boolean",
+            description="Require email verification for new accounts",
+        )
+
+        # Email provider settings
+        db.system_settings.update_or_insert(
+            db.system_settings.setting_key == "email_provider",
+            setting_key="email_provider",
+            setting_value="sendmail",
+            setting_type="string",
+            description="Email provider: sendmail, smtp, sendgrid, aws_ses, mailgun, gmail",
+        )
+
+        db.system_settings.update_or_insert(
+            db.system_settings.setting_key == "email_from",
+            setting_key="email_from",
+            setting_value="noreply@icecharts.com",
+            setting_type="string",
+            description="From email address for system emails",
+        )
+
+        db.system_settings.update_or_insert(
+            db.system_settings.setting_key == "email_from_name",
+            setting_key="email_from_name",
+            setting_value="IceCharts",
+            setting_type="string",
+            description="From name for system emails",
+        )
+
+        # Site settings
+        db.system_settings.update_or_insert(
+            db.system_settings.setting_key == "site_url",
+            setting_key="site_url",
+            setting_value="http://localhost:5173",
+            setting_type="string",
+            description="Base URL for the application",
+        )
+
+        db.system_settings.update_or_insert(
+            db.system_settings.setting_key == "site_name",
+            setting_key="site_name",
+            setting_value="IceCharts",
+            setting_type="string",
+            description="Application name",
+        )
+
+        db.commit()
+    except Exception as e:
+        # Settings initialization can fail - just log and continue
+        # Settings will be initialized on first access
+        db.rollback()
+
+
 def get_db_uri(config) -> str:
     """
     Build PyDAL database URI from configuration.
@@ -93,7 +185,7 @@ def get_db() -> DAL:
             db_uri,
             pool_size=config.DB_POOL_SIZE,
             migrate_enabled=True,
-            fake_migrate_all=True,  # Don't try to create existing tables
+            fake_migrate_all=False,  # Allow migrations so tables are actually created
             check_reserved=["common"],
             lazy_tables=True,
             folder=instance_folder,
@@ -155,8 +247,11 @@ def init_db(app):
             table_count=len(table_names),
         )
 
-        # Close this connection - it was just for initialization
-        close_db()
+        # Initialize default system settings now that tables exist
+        _initialize_default_settings(db)
+
+        # Don't close the connection yet - keep it so tables stay in place
+        # The connection will be replaced when needed in get_db()
 
         logger.info("database_init_complete", message="Database initialization complete")
 

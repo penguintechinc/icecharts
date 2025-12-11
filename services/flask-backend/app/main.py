@@ -135,6 +135,11 @@ def _init_socketio(app: Flask) -> None:
         message_queue=app.config.get("SOCKETIO_MESSAGE_QUEUE"),
         async_mode="threading",
     )
+
+    # Register WebSocket handlers after SocketIO is initialized
+    from app.api.v1.collaboration_socket import register_handlers
+    register_handlers(socketio)
+
     logger.info("socketio_initialized")
 
 
@@ -210,6 +215,11 @@ def _create_default_admin(app: Flask) -> None:
     with app.app_context():
         try:
             db = get_db()
+
+            # Force table creation for lazy tables by accessing them
+            # This ensures the underlying database tables are created
+            _ = db.tenants
+            _ = db.identities
 
             # Ensure default tenant exists (required for foreign key constraint)
             tenant_count = db(db.tenants).count()

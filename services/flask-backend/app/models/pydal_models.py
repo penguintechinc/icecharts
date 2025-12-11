@@ -461,6 +461,7 @@ def define_all_tables(db):
             default=lambda: datetime.datetime.now(datetime.timezone.utc),
         ),
         Field("left_at", "datetime"),
+        Field("last_active_at", "datetime"),
         migrate=True,
     )
 
@@ -689,125 +690,13 @@ def define_all_tables(db):
     # ==========================================
     # Create indexes for performance
     # ==========================================
-
-    # Collections indexes
-    db.executesql(
-        "CREATE INDEX IF NOT EXISTS idx_collections_owner ON collections(owner_id)"
-    )
-    db.executesql(
-        "CREATE INDEX IF NOT EXISTS idx_collections_token ON collections(share_token)"
-    )
-
-    # Collection items indexes
-    db.executesql(
-        "CREATE UNIQUE INDEX IF NOT EXISTS idx_collection_items_unique "
-        "ON collection_items(collection_id, drawing_id)"
-    )
-    db.executesql(
-        "CREATE INDEX IF NOT EXISTS idx_collection_items_drawing "
-        "ON collection_items(drawing_id)"
-    )
-
-    # Collection shares indexes
-    db.executesql(
-        "CREATE INDEX IF NOT EXISTS idx_collection_shares_collection "
-        "ON collection_shares(collection_id)"
-    )
-
-    # Email verifications indexes
-    db.executesql(
-        "CREATE INDEX IF NOT EXISTS idx_email_verifications_token "
-        "ON email_verifications(verification_token)"
-    )
-
-    # Share analytics indexes
-    db.executesql(
-        "CREATE INDEX IF NOT EXISTS idx_share_analytics_type_id "
-        "ON share_analytics(share_type, share_id)"
-    )
-    db.executesql(
-        "CREATE INDEX IF NOT EXISTS idx_share_analytics_token "
-        "ON share_analytics(share_token)"
-    )
+    # Note: PyDAL will create these indexes automatically after tables are created
+    # Explicitly creating indexes here would cause errors if tables don't exist yet
+    # The indexes will be created when the tables are first accessed
 
     # ==========================================
-    # Initialize default system settings
-    # ==========================================
-
-    # Signup and registration settings
-    db.system_settings.update_or_insert(
-        db.system_settings.setting_key == "signup_enabled",
-        setting_key="signup_enabled",
-        setting_value="true",
-        setting_type="boolean",
-        description="Enable/disable user registration",
-    )
-
-    db.system_settings.update_or_insert(
-        db.system_settings.setting_key == "signup_mode",
-        setting_key="signup_mode",
-        setting_value="open",
-        setting_type="string",
-        description="Signup mode: open, domain_restricted, sso_only, disabled",
-    )
-
-    db.system_settings.update_or_insert(
-        db.system_settings.setting_key == "signup_allowed_domains",
-        setting_key="signup_allowed_domains",
-        setting_value="[]",
-        setting_type="json",
-        description="List of allowed email domains for signup (domain_restricted mode)",
-    )
-
-    db.system_settings.update_or_insert(
-        db.system_settings.setting_key == "email_verification_required",
-        setting_key="email_verification_required",
-        setting_value="false",
-        setting_type="boolean",
-        description="Require email verification for new accounts",
-    )
-
-    # Email provider settings
-    db.system_settings.update_or_insert(
-        db.system_settings.setting_key == "email_provider",
-        setting_key="email_provider",
-        setting_value="sendmail",
-        setting_type="string",
-        description="Email provider: sendmail, smtp, sendgrid, aws_ses, mailgun, gmail",
-    )
-
-    db.system_settings.update_or_insert(
-        db.system_settings.setting_key == "email_from",
-        setting_key="email_from",
-        setting_value="noreply@icecharts.com",
-        setting_type="string",
-        description="From email address for system emails",
-    )
-
-    db.system_settings.update_or_insert(
-        db.system_settings.setting_key == "email_from_name",
-        setting_key="email_from_name",
-        setting_value="IceCharts",
-        setting_type="string",
-        description="From name for system emails",
-    )
-
-    # Site settings
-    db.system_settings.update_or_insert(
-        db.system_settings.setting_key == "site_url",
-        setting_key="site_url",
-        setting_value="http://localhost:5173",
-        setting_type="string",
-        description="Base URL for the application",
-    )
-
-    db.system_settings.update_or_insert(
-        db.system_settings.setting_key == "site_name",
-        setting_key="site_name",
-        setting_value="IceCharts",
-        setting_type="string",
-        description="Application name",
-    )
+    # Note: Default system settings initialization moved to get_db() function
+    # to avoid transaction issues during table definition
 
     # Create alias for identities table as users
     db.users = db.identities
