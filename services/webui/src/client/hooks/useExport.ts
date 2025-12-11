@@ -1,10 +1,10 @@
 // Hook for managing drawing exports
 
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect, useRef } from 'react';
 import apiClient from '../../lib/api';
 
 interface ExportOptions {
-  format: 'png' | 'svg' | 'pdf' | 'json';
+  format: 'png' | 'svg' | 'pdf' | 'json' | 'jpg';
   width?: number;
   height?: number;
   quality?: number;
@@ -16,6 +16,11 @@ interface ExportState {
   loading: boolean;
   error: string | null;
   success: boolean;
+}
+
+interface ProgressState {
+  percentage: number;
+  status: 'processing' | 'completed' | 'failed';
 }
 
 export const useExport = () => {

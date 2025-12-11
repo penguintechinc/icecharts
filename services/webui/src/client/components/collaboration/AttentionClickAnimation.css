@@ -1,0 +1,37 @@
+@keyframes ripple {
+  0% {
+    transform: scale(0);
+    opacity: 1;
+  }
+  100% {
+    transform: scale(4);
+    opacity: 0;
+  }
+}
+
+.attention-click-animation {
+  /* Container for the animation */
+}
+
+.ripple-ring {
+  position: absolute;
+  width: 40px;
+  height: 40px;
+  border: 3px solid #FFD700;
+  border-radius: 50%;
+  top: -20px;
+  left: -20px;
+  animation: ripple 1s ease-out forwards;
+}
+
+.ripple-ring.ring-1 {
+  animation-delay: 0s;
+}
+
+.ripple-ring.ring-2 {
+  animation-delay: 0.2s;
+}
+
+.ripple-ring.ring-3 {
+  animation-delay: 0.4s;
+}

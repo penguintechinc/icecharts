@@ -19,7 +19,6 @@ import {
   CheckmarkCircle20Regular,
   Warning20Regular,
   ErrorCircle20Regular,
-  Document20Regular,
   Folder20Regular,
   Image20Regular,
   Video20Regular,
@@ -37,7 +36,7 @@ import {
   Router20Regular,
 } from '@fluentui/react-icons';
 
-import type { IconProps, IconComponent } from '../types';
+import type { IconComponent } from '../types';
 
 /**
  * Wrapper component factory that normalizes IconProps

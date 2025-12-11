@@ -5,6 +5,8 @@ import secrets
 from dataclasses import dataclass
 from typing import Optional
 
+from flask import request
+
 from app.models import get_db
 from app.services.permission_service import PermissionService, Permission
 
@@ -493,3 +495,91 @@ class ShareService:
         total = db(db.drawings.id.belongs(drawing_ids)).count()
 
         return [d.as_dict() for d in drawings], total
+
+    @staticmethod
+    def get_drawing_by_token(
+        token: str,
+        user_id: Optional[int] = None,
+        log_access: bool = True
+    ) -> Optional[dict]:
+        """
+        Access drawing via public share token.
+
+        This method verifies that the token exists and is not expired,
+        then checks share permissions (link_only vs registered_users).
+        If permitted, it logs the access and returns the drawing data.
+
+        Args:
+            token: Public share token
+            user_id: ID of the accessing user (None if unauthenticated)
+            log_access: Whether to log access to share_analytics table
+
+        Returns:
+            Dictionary containing drawing data if permission allows, None otherwise
+
+        Raises:
+            ValueError: If token format is invalid or other validation fails
+        """
+        db = get_db()
+
+        # Get share by token
+        share = db(db.drawing_shares.share_token == token).select().first()
+        if not share:
+            return None
+
+        # Check if share is public
+        if not share.is_public:
+            return None
+
+        # Check if expired
+        if share.expires_at:
+            if share.expires_at < datetime.datetime.now(datetime.timezone.utc):
+                return None
+
+        # Get drawing
+        drawing = db(db.drawings.id == share.drawing_id).select().first()
+        if not drawing:
+            return None
+
+        # Determine share mode (default to link_only for backwards compatibility)
+        share_mode = share.get("share_mode", "link_only") if hasattr(share, "get") else "link_only"
+
+        # Check access permissions
+        if share_mode == "registered_users" and user_id is None:
+            # Registered users mode requires authentication
+            return None
+
+        # Log access if requested
+        if log_access:
+            try:
+                # Get client IP address (handle proxy headers)
+                client_ip = request.remote_addr
+                if request.headers.getlist("X-Forwarded-For"):
+                    client_ip = request.headers.getlist("X-Forwarded-For")[0]
+                elif request.headers.get("X-Real-IP"):
+                    client_ip = request.headers.get("X-Real-IP")
+
+                # Get user agent
+                user_agent = request.headers.get("User-Agent", "")[:500]
+
+                # Log to share_analytics table
+                db.share_analytics.insert(
+                    share_type="drawing",
+                    share_id=share.drawing_id,
+                    share_token=token,
+                    accessed_by_id=user_id,
+                    access_ip=client_ip,
+                    user_agent=user_agent,
+                    accessed_at=datetime.datetime.now(datetime.timezone.utc),
+                )
+                db.commit()
+            except Exception as e:
+                # Log errors but don't fail the request if analytics logging fails
+                db.rollback()
+                # In production, you might want to log this error properly
+
+        # Return drawing with permission info
+        drawing_dict = drawing.as_dict()
+        drawing_dict["share_permission"] = share.permission
+        drawing_dict["share_mode"] = share_mode
+        return drawing_dict

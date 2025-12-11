@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
-import api, { setTokens, clearTokens, getAccessToken } from '../lib/api';
+import api, { setTokens, clearTokens, getAccessToken, authApi } from '../lib/api';
 import type { User, LoginCredentials, AuthState } from '../types';
 
 interface AuthStore extends AuthState {
@@ -9,6 +9,8 @@ interface AuthStore extends AuthState {
   fetchUser: () => Promise<void>;
   checkAuth: () => Promise<boolean>;
   setUser: (user: User | null) => void;
+  verifyEmail: (token: string) => Promise<void>;
+  resendVerification: () => Promise<void>;
 }
 
 export const useAuthStore = create<AuthStore>()(
@@ -104,6 +106,41 @@ export const useAuthStore = create<AuthStore>()(
       setUser: (user: User | null) => {
         set({ user });
       },
+
+      verifyEmail: async (token: string) => {
+        try {
+          const response = await authApi.verifyEmail(token);
+          const { access_token, refresh_token, user } = response.data;
+
+          setTokens(access_token, refresh_token);
+
+          set({
+            user,
+            accessToken: access_token,
+            refreshToken: refresh_token,
+            isAuthenticated: true,
+            isLoading: false,
+          });
+        } catch (error) {
+          clearTokens();
+          set({
+            user: null,
+            accessToken: null,
+            refreshToken: null,
+            isAuthenticated: false,
+            isLoading: false,
+          });
+          throw error;
+        }
+      },
+
+      resendVerification: async () => {
+        try {
+          await authApi.resendVerification();
+        } catch (error) {
+          throw error;
+        }
+      },
     }),
     {
       name: 'auth-storage',
@@ -127,6 +164,8 @@ export const useAuth = () => {
     logout: store.logout,
     checkAuth: store.checkAuth,
     setUser: store.setUser,
+    verifyEmail: store.verifyEmail,
+    resendVerification: store.resendVerification,
     useAuthStore: () => store,
     hasRole: (roles: string[]) => {
       if (!store.user) return false;

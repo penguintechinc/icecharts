@@ -67,8 +67,8 @@ export default function Users() {
       {/* Header */}
       <div className="flex items-center justify-between mb-6">
         <div>
-          <h1 className="text-2xl font-bold text-gold-400">User Management</h1>
-          <p className="text-dark-400 mt-1">Manage system users and permissions</p>
+          <h1 className="text-2xl font-bold text-ice-gold-400">User Management</h1>
+          <p className="text-ice-navy-400 mt-1">Manage system users and permissions</p>
         </div>
         <Button onClick={() => setShowCreateModal(true)}>+ Add User</Button>
       </div>
@@ -85,7 +85,7 @@ export default function Users() {
         {isLoading ? (
           <div className="animate-pulse space-y-4">
             {[1, 2, 3].map((i) => (
-              <div key={i} className="h-12 bg-dark-700 rounded"></div>
+              <div key={i} className="h-12 bg-ice-navy-700 rounded"></div>
             ))}
           </div>
         ) : (
@@ -102,8 +102,8 @@ export default function Users() {
             <tbody>
               {users.map((user) => (
                 <tr key={user.id}>
-                  <td className="text-gold-400">{user.full_name}</td>
-                  <td className="text-dark-300">{user.email}</td>
+                  <td className="text-ice-gold-400">{user.full_name}</td>
+                  <td className="text-ice-navy-300">{user.email}</td>
                   <td>
                     <span className={`badge badge-${user.role}`}>{user.role}</span>
                   </td>
@@ -116,7 +116,7 @@ export default function Users() {
                     <div className="flex items-center gap-2">
                       <Link
                         to={`/users/${user.id}`}
-                        className="text-gold-400 hover:text-gold-300"
+                        className="text-ice-gold-400 hover:text-ice-gold-300"
                       >
                         Edit
                       </Link>
@@ -139,10 +139,10 @@ export default function Users() {
       {showCreateModal && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
           <div className="card w-full max-w-md">
-            <h2 className="text-xl font-bold text-gold-400 mb-4">Create New User</h2>
+            <h2 className="text-xl font-bold text-ice-gold-400 mb-4">Create New User</h2>
             <form onSubmit={handleCreateUser} className="space-y-4">
               <div>
-                <label className="block text-sm text-dark-400 mb-1">Full Name</label>
+                <label className="block text-sm text-ice-navy-400 mb-1">Full Name</label>
                 <input
                   type="text"
                   value={newUser.full_name}
@@ -152,7 +152,7 @@ export default function Users() {
                 />
               </div>
               <div>
-                <label className="block text-sm text-dark-400 mb-1">Email</label>
+                <label className="block text-sm text-ice-navy-400 mb-1">Email</label>
                 <input
                   type="email"
                   value={newUser.email}
@@ -162,7 +162,7 @@ export default function Users() {
                 />
               </div>
               <div>
-                <label className="block text-sm text-dark-400 mb-1">Password</label>
+                <label className="block text-sm text-ice-navy-400 mb-1">Password</label>
                 <input
                   type="password"
                   value={newUser.password}
@@ -173,7 +173,7 @@ export default function Users() {
                 />
               </div>
               <div>
-                <label className="block text-sm text-dark-400 mb-1">Role</label>
+                <label className="block text-sm text-ice-navy-400 mb-1">Role</label>
                 <select
                   value={newUser.role}
                   onChange={(e) => setNewUser({ ...newUser, role: e.target.value as UserRole })}

@@ -25,9 +25,13 @@ const Login: React.FC = () => {
     <div className="min-h-screen bg-ice-navy-900 flex items-center justify-center px-4">
       <div className="max-w-md w-full">
         <div className="bg-gray-800 border border-ice-navy-700 rounded-lg p-8 shadow-lg">
-          <h1 className="text-3xl font-bold text-ice-gold-400 mb-6 text-center">
-            IceCharts
-          </h1>
+          <div className="flex justify-center mb-6">
+            <img
+              src="/logo-transparent.png"
+              alt="IceCharts"
+              className="h-40 w-auto"
+            />
+          </div>
           <h2 className="text-xl text-ice-gold-400 mb-6 text-center">
             Sign in to your account
           </h2>

@@ -1,5 +1,5 @@
 import React, { useState, useCallback, useEffect, useRef } from 'react';
-import type { IconDefinition, IconComponent, IconMap } from '../types';
+import type { IconDefinition, IconMap } from '../types';
 import { useIconSearch } from './useIconSearch';
 
 interface IconSearchProps {
@@ -31,21 +31,20 @@ export default function IconSearch({
   const [selectedIndex, setSelectedIndex] = useState(-1);
   const inputRef = useRef<HTMLInputElement>(null);
   const dropdownRef = useRef<HTMLDivElement>(null);
-  const selectedItemRef = useRef<HTMLDivElement>(null);
+  const selectedItemRef = useRef<HTMLLIElement>(null);
 
-  const { results, isLoading, search, clear } = useIconSearch({ maxResults: 30 });
+  const { results, isLoading, setQuery } = useIconSearch(allIcons, { maxResults: 30 });
 
   // Handle search query changes
   useEffect(() => {
+    setQuery(searchQuery);
     if (searchQuery.trim()) {
-      search(searchQuery, allIcons);
       setIsOpen(true);
       setSelectedIndex(-1);
     } else {
-      clear();
       setIsOpen(false);
     }
-  }, [searchQuery, allIcons, search, clear]);
+  }, [searchQuery, setQuery]);
 
   // Auto-scroll selected item into view
   useEffect(() => {
@@ -315,3 +314,5 @@ export default function IconSearch({
     </div>
   );
 }
+
+export { IconSearch };

@@ -106,7 +106,7 @@ export function buildSearchIndex(icons: IconDefinition[]): SearchIndex {
 function calculateRelevanceScore(
   icon: IconDefinition,
   queryTokens: string[],
-  index: SearchIndex
+  _index: SearchIndex
 ): number {
   let score = 0;
   const labelLower = icon.label.toLowerCase();

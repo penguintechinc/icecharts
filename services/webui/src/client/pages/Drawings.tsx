@@ -65,8 +65,8 @@ export default function Drawings() {
       {/* Header */}
       <div className="flex items-center justify-between mb-6">
         <div>
-          <h1 className="text-2xl font-bold text-gold-400">Drawings</h1>
-          <p className="text-dark-400 mt-1">
+          <h1 className="text-2xl font-bold text-ice-gold-400">Drawings</h1>
+          <p className="text-ice-navy-400 mt-1">
             {pagination.total} drawing{pagination.total !== 1 ? 's' : ''} total
           </p>
         </div>
@@ -107,8 +107,8 @@ export default function Drawings() {
               onClick={() => setViewMode('grid')}
               className={`px-3 py-2 rounded-lg transition-colors ${
                 viewMode === 'grid'
-                  ? 'bg-gold-600 text-white'
-                  : 'bg-dark-800 text-gold-400 hover:bg-dark-700'
+                  ? 'bg-ice-gold-600 text-white'
+                  : 'bg-ice-navy-800 text-ice-gold-400 hover:bg-ice-navy-700'
               }`}
               title="Grid View"
             >
@@ -120,8 +120,8 @@ export default function Drawings() {
               onClick={() => setViewMode('list')}
               className={`px-3 py-2 rounded-lg transition-colors ${
                 viewMode === 'list'
-                  ? 'bg-gold-600 text-white'
-                  : 'bg-dark-800 text-gold-400 hover:bg-dark-700'
+                  ? 'bg-ice-gold-600 text-white'
+                  : 'bg-ice-navy-800 text-ice-gold-400 hover:bg-ice-navy-700'
               }`}
               title="List View"
             >
@@ -149,10 +149,10 @@ export default function Drawings() {
           {[...Array(6)].map((_, i) => (
             <div key={i} className="card animate-pulse">
               {viewMode === 'grid' && (
-                <div className="h-32 bg-dark-700 rounded mb-3"></div>
+                <div className="h-32 bg-ice-navy-700 rounded mb-3"></div>
               )}
-              <div className="h-4 bg-dark-700 rounded w-3/4 mb-2"></div>
-              <div className="h-3 bg-dark-700 rounded w-1/2"></div>
+              <div className="h-4 bg-ice-navy-700 rounded w-3/4 mb-2"></div>
+              <div className="h-3 bg-ice-navy-700 rounded w-1/2"></div>
             </div>
           ))}
         </div>
@@ -164,10 +164,10 @@ export default function Drawings() {
                 <Link
                   key={drawing.id}
                   to={`/drawings/${drawing.id}`}
-                  className="card hover:bg-dark-850 transition-colors group"
+                  className="card hover:bg-ice-navy-850 transition-colors group"
                 >
                   {/* Thumbnail */}
-                  <div className="h-32 bg-dark-800 rounded mb-3 flex items-center justify-center overflow-hidden">
+                  <div className="h-32 bg-ice-navy-800 rounded mb-3 flex items-center justify-center overflow-hidden">
                     {drawing.thumbnail_url ? (
                       <img
                         src={drawing.thumbnail_url}
@@ -176,7 +176,7 @@ export default function Drawings() {
                       />
                     ) : (
                       <svg
-                        className="w-12 h-12 text-dark-600"
+                        className="w-12 h-12 text-ice-navy-600"
                         fill="none"
                         stroke="currentColor"
                         viewBox="0 0 24 24"
@@ -191,10 +191,10 @@ export default function Drawings() {
                     )}
                   </div>
 
-                  <h3 className="font-medium text-gold-400 group-hover:text-gold-300 truncate mb-1">
+                  <h3 className="font-medium text-ice-gold-400 group-hover:text-ice-gold-300 truncate mb-1">
                     {drawing.name}
                   </h3>
-                  <p className="text-xs text-dark-400">
+                  <p className="text-xs text-ice-navy-400">
                     Updated {new Date(drawing.updated_at).toLocaleDateString()}
                   </p>
                   <div className="flex items-center gap-2 mt-2">
@@ -224,9 +224,9 @@ export default function Drawings() {
                 <Link
                   key={drawing.id}
                   to={`/drawings/${drawing.id}`}
-                  className="card hover:bg-dark-850 transition-colors flex items-center gap-4"
+                  className="card hover:bg-ice-navy-850 transition-colors flex items-center gap-4"
                 >
-                  <div className="w-16 h-16 bg-dark-800 rounded flex-shrink-0 flex items-center justify-center overflow-hidden">
+                  <div className="w-16 h-16 bg-ice-navy-800 rounded flex-shrink-0 flex items-center justify-center overflow-hidden">
                     {drawing.thumbnail_url ? (
                       <img
                         src={drawing.thumbnail_url}
@@ -235,7 +235,7 @@ export default function Drawings() {
                       />
                     ) : (
                       <svg
-                        className="w-8 h-8 text-dark-600"
+                        className="w-8 h-8 text-ice-navy-600"
                         fill="none"
                         stroke="currentColor"
                         viewBox="0 0 24 24"
@@ -250,16 +250,16 @@ export default function Drawings() {
                     )}
                   </div>
                   <div className="flex-1 min-w-0">
-                    <h3 className="font-medium text-gold-400 truncate">
+                    <h3 className="font-medium text-ice-gold-400 truncate">
                       {drawing.name}
                     </h3>
                     {drawing.description && (
-                      <p className="text-sm text-dark-400 truncate">
+                      <p className="text-sm text-ice-navy-400 truncate">
                         {drawing.description}
                       </p>
                     )}
                     <div className="flex items-center gap-3 mt-1">
-                      <span className="text-xs text-dark-500">
+                      <span className="text-xs text-ice-navy-500">
                         {new Date(drawing.updated_at).toLocaleDateString()}
                       </span>
                       <span
@@ -288,11 +288,11 @@ export default function Drawings() {
                   setPagination((prev) => ({ ...prev, page: prev.page - 1 }))
                 }
                 disabled={pagination.page === 1}
-                className="px-3 py-2 rounded-lg bg-dark-800 text-gold-400 hover:bg-dark-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                className="px-3 py-2 rounded-lg bg-ice-navy-800 text-ice-gold-400 hover:bg-ice-navy-700 disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 Previous
               </button>
-              <span className="text-dark-400">
+              <span className="text-ice-navy-400">
                 Page {pagination.page} of {pagination.pages}
               </span>
               <button
@@ -300,7 +300,7 @@ export default function Drawings() {
                   setPagination((prev) => ({ ...prev, page: prev.page + 1 }))
                 }
                 disabled={pagination.page === pagination.pages}
-                className="px-3 py-2 rounded-lg bg-dark-800 text-gold-400 hover:bg-dark-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                className="px-3 py-2 rounded-lg bg-ice-navy-800 text-ice-gold-400 hover:bg-ice-navy-700 disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 Next
               </button>
@@ -309,7 +309,7 @@ export default function Drawings() {
         </>
       ) : (
         <div className="card text-center py-12">
-          <p className="text-dark-400 mb-4">
+          <p className="text-ice-navy-400 mb-4">
             {searchQuery || filterVisibility !== 'all'
               ? 'No drawings found matching your filters'
               : 'No drawings yet'}

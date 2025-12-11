@@ -1,10 +1,10 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
 import api from '../lib/api';
 import Button from '../components/Button';
 import Card from '../components/Card';
-import type { Group, GroupMember, Drawing } from '../types';
+import type { Group, GroupMember, Drawing, User } from '../types';
 
 export default function GroupDetail() {
   const { id } = useParams<{ id: string }>();
@@ -15,8 +15,15 @@ export default function GroupDetail() {
   const [drawings, setDrawings] = useState<Drawing[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [showAddMemberModal, setShowAddMemberModal] = useState(false);
-  const [newMemberEmail, setNewMemberEmail] = useState('');
+  const [searchQuery, setSearchQuery] = useState('');
+  const [searchResults, setSearchResults] = useState<User[]>([]);
+  const [selectedUser, setSelectedUser] = useState<User | null>(null);
+  const [selectedRole, setSelectedRole] = useState<'member' | 'admin'>('member');
+  const [isSearching, setIsSearching] = useState(false);
   const [isAddingMember, setIsAddingMember] = useState(false);
+  const [showDropdown, setShowDropdown] = useState(false);
+  const searchTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const dropdownRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     fetchGroupData();
@@ -27,27 +34,85 @@ export default function GroupDetail() {
     try {
       const [groupRes, membersRes, drawingsRes] = await Promise.all([
         api.get<Group>(`/groups/${id}`),
-        api.get<{ items: GroupMember[] }>(`/groups/${id}/members`),
-        api.get<{ items: Drawing[] }>(`/drawings?group_id=${id}`),
+        api.get<{ items?: GroupMember[]; members?: GroupMember[] }>(`/groups/${id}/members`),
+        api.get<{ items?: Drawing[]; drawings?: Drawing[] }>(`/drawings?group_id=${id}`),
       ]);
 
       setGroup(groupRes.data);
-      setMembers(membersRes.data.items);
-      setDrawings(drawingsRes.data.items);
+      setMembers(membersRes.data.items || membersRes.data.members || []);
+      setDrawings(drawingsRes.data.items || drawingsRes.data.drawings || []);
     } catch (err) {
       console.error('Failed to fetch group data:', err);
+      // Set empty arrays on error to prevent undefined errors
+      setMembers([]);
+      setDrawings([]);
     } finally {
       setIsLoading(false);
     }
   };
 
+  // Handle search with debouncing
+  useEffect(() => {
+    if (searchTimeoutRef.current) {
+      clearTimeout(searchTimeoutRef.current);
+    }
+
+    if (!searchQuery || searchQuery.length < 2) {
+      setSearchResults([]);
+      setShowDropdown(false);
+      return;
+    }
+
+    setIsSearching(true);
+    searchTimeoutRef.current = setTimeout(async () => {
+      try {
+        const response = await api.get<{ users: User[] }>(
+          `/users/search?q=${encodeURIComponent(searchQuery)}&exclude_group=${id}&limit=10`
+        );
+        setSearchResults(response.data.users || []);
+        setShowDropdown(true);
+      } catch (err) {
+        console.error('Failed to search users:', err);
+        setSearchResults([]);
+      } finally {
+        setIsSearching(false);
+      }
+    }, 300);
+
+    return () => {
+      if (searchTimeoutRef.current) {
+        clearTimeout(searchTimeoutRef.current);
+      }
+    };
+  }, [searchQuery, id]);
+
+  // Close dropdown when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+        setShowDropdown(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
   const handleAddMember = async (e: React.FormEvent) => {
     e.preventDefault();
+
+    if (!selectedUser) {
+      return;
+    }
+
     setIsAddingMember(true);
 
     try {
-      await api.post(`/groups/${id}/members`, { email: newMemberEmail });
-      setNewMemberEmail('');
+      await api.post(`/groups/${id}/members`, { user_id: selectedUser.id, role: selectedRole });
+      setSearchQuery('');
+      setSelectedUser(null);
+      setSelectedRole('member');
+      setSearchResults([]);
       setShowAddMemberModal(false);
       fetchGroupData();
     } catch (err) {
@@ -55,6 +120,12 @@ export default function GroupDetail() {
     } finally {
       setIsAddingMember(false);
     }
+  };
+
+  const handleSelectUser = (user: User) => {
+    setSelectedUser(user);
+    setSearchQuery(user.email);
+    setShowDropdown(false);
   };
 
   const handleRemoveMember = async (memberId: number) => {
@@ -84,7 +155,7 @@ export default function GroupDetail() {
   if (isLoading) {
     return (
       <div className="flex items-center justify-center h-64">
-        <div className="text-gold-400 text-xl">Loading group...</div>
+        <div className="text-ice-gold-400 text-xl">Loading group...</div>
       </div>
     );
   }
@@ -106,11 +177,11 @@ export default function GroupDetail() {
       <div className="mb-6">
         <div className="flex items-start justify-between">
           <div>
-            <h1 className="text-2xl font-bold text-gold-400">{group.name}</h1>
+            <h1 className="text-2xl font-bold text-ice-gold-400">{group.name}</h1>
             {group.description && (
-              <p className="text-dark-400 mt-2">{group.description}</p>
+              <p className="text-ice-navy-400 mt-2">{group.description}</p>
             )}
-            <p className="text-dark-500 text-sm mt-2">
+            <p className="text-ice-navy-500 text-sm mt-2">
               Created {new Date(group.created_at).toLocaleDateString()} by{' '}
               {group.owner_name}
             </p>
@@ -136,13 +207,13 @@ export default function GroupDetail() {
               {members.map((member) => (
                 <div
                   key={member.id}
-                  className="flex items-center justify-between p-2 rounded bg-dark-850"
+                  className="flex items-center justify-between p-2 rounded bg-ice-navy-850"
                 >
                   <div className="flex-1 min-w-0">
-                    <p className="text-sm font-medium text-gold-400 truncate">
+                    <p className="text-sm font-medium text-ice-gold-400 truncate">
                       {member.user_name}
                     </p>
-                    <p className="text-xs text-dark-400 truncate">
+                    <p className="text-xs text-ice-navy-400 truncate">
                       {member.user_email}
                     </p>
                   </div>
@@ -150,8 +221,8 @@ export default function GroupDetail() {
                     <span
                       className={`text-xs px-2 py-0.5 rounded ${
                         member.role === 'owner'
-                          ? 'bg-gold-900/30 text-gold-400'
-                          : 'bg-dark-800 text-dark-400'
+                          ? 'bg-ice-gold-900/30 text-ice-gold-400'
+                          : 'bg-ice-navy-800 text-ice-navy-400'
                       }`}
                     >
                       {member.role}
@@ -190,7 +261,7 @@ export default function GroupDetail() {
         {/* Drawings Section */}
         <div className="lg:col-span-2">
           <div className="flex items-center justify-between mb-4">
-            <h2 className="text-xl font-semibold text-gold-400">
+            <h2 className="text-xl font-semibold text-ice-gold-400">
               Group Drawings ({drawings.length})
             </h2>
           </div>
@@ -201,9 +272,9 @@ export default function GroupDetail() {
                 <Link
                   key={drawing.id}
                   to={`/drawings/${drawing.id}`}
-                  className="card hover:bg-dark-850 transition-colors"
+                  className="card hover:bg-ice-navy-850 transition-colors"
                 >
-                  <div className="h-24 bg-dark-800 rounded mb-3 flex items-center justify-center overflow-hidden">
+                  <div className="h-24 bg-ice-navy-800 rounded mb-3 flex items-center justify-center overflow-hidden">
                     {drawing.thumbnail_url ? (
                       <img
                         src={drawing.thumbnail_url}
@@ -212,7 +283,7 @@ export default function GroupDetail() {
                       />
                     ) : (
                       <svg
-                        className="w-10 h-10 text-dark-600"
+                        className="w-10 h-10 text-ice-navy-600"
                         fill="none"
                         stroke="currentColor"
                         viewBox="0 0 24 24"
@@ -226,13 +297,13 @@ export default function GroupDetail() {
                       </svg>
                     )}
                   </div>
-                  <h3 className="font-medium text-gold-400 truncate mb-1">
+                  <h3 className="font-medium text-ice-gold-400 truncate mb-1">
                     {drawing.name}
                   </h3>
-                  <p className="text-xs text-dark-400">
+                  <p className="text-xs text-ice-navy-400">
                     By {drawing.owner_name}
                   </p>
-                  <p className="text-xs text-dark-500">
+                  <p className="text-xs text-ice-navy-500">
                     Updated {new Date(drawing.updated_at).toLocaleDateString()}
                   </p>
                 </Link>
@@ -240,7 +311,7 @@ export default function GroupDetail() {
             </div>
           ) : (
             <div className="card text-center py-12">
-              <p className="text-dark-400">No drawings in this group yet</p>
+              <p className="text-ice-navy-400">No drawings in this group yet</p>
             </div>
           )}
         </div>
@@ -250,25 +321,114 @@ export default function GroupDetail() {
       {showAddMemberModal && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
           <div className="card max-w-md w-full">
-            <h2 className="text-xl font-bold text-gold-400 mb-4">Add Member</h2>
+            <h2 className="text-xl font-bold text-ice-gold-400 mb-4">Add Member</h2>
 
             <form onSubmit={handleAddMember} className="space-y-4">
-              <div>
-                <label className="block text-sm font-medium text-gold-400 mb-2">
-                  Member Email
+              <div className="relative" ref={dropdownRef}>
+                <label className="block text-sm font-medium text-ice-gold-400 mb-2">
+                  Search for user
                 </label>
-                <input
-                  type="email"
-                  value={newMemberEmail}
-                  onChange={(e) => setNewMemberEmail(e.target.value)}
-                  className="input w-full"
-                  placeholder="user@example.com"
-                  required
-                  autoFocus
-                />
-                <p className="text-xs text-dark-500 mt-1">
-                  User must have an existing account
+                <div className="relative">
+                  <input
+                    type="text"
+                    value={searchQuery}
+                    onChange={(e) => {
+                      setSearchQuery(e.target.value);
+                      setSelectedUser(null);
+                    }}
+                    onFocus={() => searchResults.length > 0 && setShowDropdown(true)}
+                    className="input w-full pr-10"
+                    placeholder="Search by email or name..."
+                    autoFocus
+                  />
+                  {isSearching && (
+                    <div className="absolute right-3 top-1/2 -translate-y-1/2">
+                      <svg className="animate-spin h-5 w-5 text-ice-gold-400" fill="none" viewBox="0 0 24 24">
+                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                      </svg>
+                    </div>
+                  )}
+                  {selectedUser && (
+                    <div className="absolute right-3 top-1/2 -translate-y-1/2">
+                      <svg className="h-5 w-5 text-green-400" fill="currentColor" viewBox="0 0 20 20">
+                        <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                      </svg>
+                    </div>
+                  )}
+                </div>
+
+                {/* Search results dropdown */}
+                {showDropdown && searchResults.length > 0 && (
+                  <div className="absolute z-10 w-full mt-1 bg-ice-navy-800 border border-ice-navy-600 rounded-lg shadow-lg max-h-60 overflow-auto">
+                    {searchResults.map((user) => (
+                      <button
+                        key={user.id}
+                        type="button"
+                        onClick={() => handleSelectUser(user)}
+                        className="w-full px-4 py-3 text-left hover:bg-ice-navy-700 transition-colors flex items-center gap-3 border-b border-ice-navy-700 last:border-b-0"
+                      >
+                        <div className="w-8 h-8 rounded-full bg-ice-gold-500/20 flex items-center justify-center flex-shrink-0">
+                          <span className="text-ice-gold-400 font-medium text-sm">
+                            {user.full_name.charAt(0).toUpperCase()}
+                          </span>
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <p className="text-sm font-medium text-ice-gold-400 truncate">
+                            {user.full_name}
+                          </p>
+                          <p className="text-xs text-ice-navy-400 truncate">
+                            {user.email}
+                          </p>
+                        </div>
+                      </button>
+                    ))}
+                  </div>
+                )}
+
+                {/* No results message */}
+                {!isSearching && searchQuery.length >= 2 && searchResults.length === 0 && !selectedUser && (
+                  <p className="text-xs text-ice-navy-400 mt-2">
+                    No users found matching "{searchQuery}"
+                  </p>
+                )}
+
+                <p className="text-xs text-ice-navy-500 mt-1">
+                  Type at least 2 characters to search for users
                 </p>
+              </div>
+
+              {/* Role Selection */}
+              <div>
+                <label className="block text-sm font-medium text-ice-gold-400 mb-2">
+                  Role
+                </label>
+                <div className="grid grid-cols-2 gap-3">
+                  <button
+                    type="button"
+                    onClick={() => setSelectedRole('member')}
+                    className={`p-3 rounded-lg border-2 transition-all text-left ${
+                      selectedRole === 'member'
+                        ? 'border-ice-gold-500 bg-ice-gold-500/10'
+                        : 'border-ice-navy-600 bg-ice-navy-800 hover:border-ice-navy-500'
+                    }`}
+                  >
+                    <div className="font-medium text-ice-gold-400 mb-1">Member</div>
+                    <div className="text-xs text-ice-navy-400">Can view and comment</div>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setSelectedRole('admin')}
+                    className={`p-3 rounded-lg border-2 transition-all text-left ${
+                      selectedRole === 'admin'
+                        ? 'border-ice-gold-500 bg-ice-gold-500/10'
+                        : 'border-ice-navy-600 bg-ice-navy-800 hover:border-ice-navy-500'
+                    }`}
+                  >
+                    <div className="font-medium text-ice-gold-400 mb-1">Admin</div>
+                    <div className="text-xs text-ice-navy-400">Can manage members</div>
+                  </button>
+                </div>
               </div>
 
               <div className="flex gap-3 pt-2">
@@ -276,13 +436,21 @@ export default function GroupDetail() {
                   type="button"
                   onClick={() => {
                     setShowAddMemberModal(false);
-                    setNewMemberEmail('');
+                    setSearchQuery('');
+                    setSelectedUser(null);
+                    setSelectedRole('member');
+                    setSearchResults([]);
                   }}
-                  className="flex-1 bg-dark-800 hover:bg-dark-700"
+                  className="flex-1 bg-ice-navy-800 hover:bg-ice-navy-700"
                 >
                   Cancel
                 </Button>
-                <Button type="submit" className="flex-1" isLoading={isAddingMember}>
+                <Button
+                  type="submit"
+                  className="flex-1"
+                  isLoading={isAddingMember}
+                  disabled={!selectedUser}
+                >
                   Add Member
                 </Button>
               </div>

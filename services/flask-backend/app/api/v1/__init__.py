@@ -19,6 +19,12 @@ from .libraries import libraries_v1_bp
 from .storage import storage_v1_bp
 from .admin import admin_v1_bp
 from .health import health_v1_bp
+from .dashboard import dashboard_v1_bp
+from .users import users_v1_bp
+from .admin_stats import admin_stats_v1_bp
+
+# Import collaboration socket handlers (WebSocket events, not a blueprint)
+from . import collaboration_socket  # noqa: F401
 
 # Register all blueprints
 api_v1_bp.register_blueprint(auth_v1_bp)
@@ -34,5 +40,8 @@ api_v1_bp.register_blueprint(libraries_v1_bp)
 api_v1_bp.register_blueprint(storage_v1_bp)
 api_v1_bp.register_blueprint(admin_v1_bp)
 api_v1_bp.register_blueprint(health_v1_bp)
+api_v1_bp.register_blueprint(dashboard_v1_bp)
+api_v1_bp.register_blueprint(users_v1_bp)
+api_v1_bp.register_blueprint(admin_stats_v1_bp)
 
 __all__ = ["api_v1_bp"]

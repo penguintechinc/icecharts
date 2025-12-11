@@ -179,3 +179,72 @@ export interface SSOConfiguration {
   created_at: string;
   updated_at: string;
 }
+
+// Collection types
+export type CollectionShareMode = 'private' | 'link_only' | 'registered_users';
+export type CollectionPermission = 'viewer' | 'editor' | 'admin';
+
+export interface Collection {
+  id: number;
+  name: string;
+  description: string | null;
+  owner_id: number;
+  owner_name: string;
+  thumbnail_url: string | null;
+  is_public: boolean;
+  share_token: string | null;
+  share_mode: CollectionShareMode;
+  drawing_count: number;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface CreateCollectionData {
+  name: string;
+  description?: string;
+  is_public?: boolean;
+  share_mode?: CollectionShareMode;
+}
+
+export interface UpdateCollectionData {
+  name?: string;
+  description?: string;
+  is_public?: boolean;
+  share_mode?: CollectionShareMode;
+}
+
+export interface CollectionItem {
+  id: number;
+  collection_id: number;
+  drawing_id: number;
+  drawing: Drawing;
+  order_index: number;
+  added_by_id: number;
+  added_by_name: string;
+  added_at: string;
+}
+
+export interface CollectionShare {
+  id: number;
+  collection_id: number;
+  shared_with_id: number | null;
+  shared_with_name: string | null;
+  shared_with_group_id: number | null;
+  shared_with_group_name: string | null;
+  permission: CollectionPermission;
+  created_by_id: number;
+  created_by_name: string;
+  created_at: string;
+}
+
+export interface CollectionAnalytics {
+  view_count: number;
+  unique_viewers: number;
+  last_accessed: string | null;
+  recent_accesses: Array<{
+    user_id: number | null;
+    user_name: string | null;
+    accessed_at: string;
+    ip_address: string | null;
+  }>;
+}

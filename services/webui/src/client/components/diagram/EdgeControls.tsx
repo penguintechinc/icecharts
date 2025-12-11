@@ -45,8 +45,9 @@ export default function EdgeControls({
   // Extract current edge data
   const edgeData = (selectedEdge.data || {}) as EdgeData;
   const currentStartMarker = edgeData.startMarker || 'none';
-  const currentEndMarker = edgeData.endMarker || 'none';
-  const isAnimated = edgeData.animated || false;
+  const currentEndMarker = edgeData.endMarker || 'arrow';
+  // animated is stored directly on the edge, not in edge.data
+  const isAnimated = selectedEdge.animated || false;
 
   // Calculate toolbar position (offset above the click point)
   const toolbarStyle: React.CSSProperties = {
@@ -97,14 +98,10 @@ export default function EdgeControls({
   // Direction button component
   const DirectionButton = ({
     label,
-    _startMarker,
-    _endMarker,
     onClick,
     isActive,
   }: {
     label: string;
-    _startMarker: 'none' | 'arrow' | 'circle' | 'diamond';
-    _endMarker: 'none' | 'arrow' | 'circle' | 'diamond';
     onClick: () => void;
     isActive: boolean;
   }) => {
@@ -247,22 +244,16 @@ export default function EdgeControls({
           <div className="flex gap-1">
             <DirectionButton
               label="→"
-              startMarker="none"
-              endMarker="arrow"
               onClick={handleDirectionRight}
               isActive={isRightActive}
             />
             <DirectionButton
               label="←"
-              startMarker="arrow"
-              endMarker="none"
               onClick={handleDirectionLeft}
               isActive={isLeftActive}
             />
             <DirectionButton
               label="↔"
-              startMarker="arrow"
-              endMarker="arrow"
               onClick={handleDirectionBidirectional}
               isActive={isBidirectionalActive}
             />

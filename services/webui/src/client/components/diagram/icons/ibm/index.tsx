@@ -3,7 +3,7 @@
  * Provides wrapper components for @carbon/icons-react icons normalized to IconProps interface
  */
 
-import { FC, createElement } from 'react';
+import { createElement } from 'react';
 import {
   Cloud,
   DataBase,

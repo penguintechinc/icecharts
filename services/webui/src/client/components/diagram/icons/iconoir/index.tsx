@@ -41,7 +41,7 @@ export const iconoirIconMap: IconMap = {
   'iconoir-design': createIconComponent(IconoirIcons.DesignNib),
   'iconoir-palette': createIconComponent(IconoirIcons.Palette),
   'iconoir-pen': createIconComponent(IconoirIcons.EditPencil),
-  'iconoir-draw': createIconComponent(IconoirIcons.Brush),
+  'iconoir-draw': createIconComponent(IconoirIcons.DesignPencil),
 
   // Navigation Icons
   'iconoir-navigation': createIconComponent(IconoirIcons.Navigator),
@@ -60,17 +60,16 @@ export const iconoirIconMap: IconMap = {
 
   // Actions Icons
   'iconoir-copy': createIconComponent(IconoirIcons.Copy),
-  'iconoir-paste': createIconComponent(IconoirIcons.Paste),
-  'iconoir-delete': createIconComponent(IconoirIcons.Delete),
+  'iconoir-paste': createIconComponent(IconoirIcons.ClipboardCheck),
   'iconoir-trash': createIconComponent(IconoirIcons.Trash),
   'iconoir-download': createIconComponent(IconoirIcons.Download),
   'iconoir-upload': createIconComponent(IconoirIcons.Upload),
-  'iconoir-save': createIconComponent(IconoirIcons.Save),
+  'iconoir-save': createIconComponent(IconoirIcons.FloppyDisk),
   'iconoir-refresh': createIconComponent(IconoirIcons.Refresh),
-  'iconoir-reload': createIconComponent(IconoirIcons.Reload),
+  'iconoir-reload': createIconComponent(IconoirIcons.RefreshDouble),
   'iconoir-undo': createIconComponent(IconoirIcons.Undo),
   'iconoir-redo': createIconComponent(IconoirIcons.Redo),
-  'iconoir-close': createIconComponent(IconoirIcons.Cancel),
+  'iconoir-close': createIconComponent(IconoirIcons.Xmark),
   'iconoir-check': createIconComponent(IconoirIcons.Check),
   'iconoir-plus': createIconComponent(IconoirIcons.Plus),
   'iconoir-minus': createIconComponent(IconoirIcons.Minus),
@@ -78,19 +77,18 @@ export const iconoirIconMap: IconMap = {
   // Communication Icons
   'iconoir-mail': createIconComponent(IconoirIcons.Mail),
   'iconoir-message': createIconComponent(IconoirIcons.Message),
-  'iconoir-chat': createIconComponent(IconoirIcons.Chat),
-  'iconoir-comment': createIconComponent(IconoirIcons.Comment),
+  'iconoir-chat': createIconComponent(IconoirIcons.ChatBubble),
+  'iconoir-comment': createIconComponent(IconoirIcons.MessageText),
   'iconoir-phone': createIconComponent(IconoirIcons.Phone),
   'iconoir-bell': createIconComponent(IconoirIcons.Bell),
-  'iconoir-notification': createIconComponent(IconoirIcons.Notification),
-  'iconoir-share': createIconComponent(IconoirIcons.Share),
+  'iconoir-notification': createIconComponent(IconoirIcons.BellNotification),
+  'iconoir-share': createIconComponent(IconoirIcons.ShareAndroid),
   'iconoir-link': createIconComponent(IconoirIcons.Link),
 
   // Finance Icons
-  'iconoir-money': createIconComponent(IconoirIcons.Money),
+  'iconoir-money': createIconComponent(IconoirIcons.Coins),
   'iconoir-wallet': createIconComponent(IconoirIcons.Wallet),
   'iconoir-credit-card': createIconComponent(IconoirIcons.CreditCard),
-  'iconoir-currency': createIconComponent(IconoirIcons.Currency),
   'iconoir-dollar': createIconComponent(IconoirIcons.Dollar),
 
   // System Icons
@@ -98,12 +96,10 @@ export const iconoirIconMap: IconMap = {
   'iconoir-database': createIconComponent(IconoirIcons.Database),
   'iconoir-cloud': createIconComponent(IconoirIcons.Cloud),
   'iconoir-settings': createIconComponent(IconoirIcons.Settings),
-  'iconoir-gear': createIconComponent(IconoirIcons.Gear),
-  'iconoir-tool': createIconComponent(IconoirIcons.Tool),
+  'iconoir-tool': createIconComponent(IconoirIcons.Tools),
   'iconoir-wrench': createIconComponent(IconoirIcons.Wrench),
-  'iconoir-config': createIconComponent(IconoirIcons.Cog),
-  'iconoir-power': createIconComponent(IconoirIcons.Power),
-  'iconoir-battery': createIconComponent(IconoirIcons.Battery),
+  'iconoir-power': createIconComponent(IconoirIcons.OnTag),
+  'iconoir-battery': createIconComponent(IconoirIcons.BatteryFull),
 
   // Development Icons
   'iconoir-code': createIconComponent(IconoirIcons.Code),
@@ -115,39 +111,37 @@ export const iconoirIconMap: IconMap = {
   'iconoir-test-tube': createIconComponent(IconoirIcons.TestTube),
 
   // File & Document Icons
-  'iconoir-file': createIconComponent(IconoirIcons.File),
+  'iconoir-file': createIconComponent(IconoirIcons.Page),
   'iconoir-folder': createIconComponent(IconoirIcons.Folder),
-  'iconoir-document': createIconComponent(IconoirIcons.Document),
-  'iconoir-pdf': createIconComponent(IconoirIcons.PdfFile),
+  'iconoir-document': createIconComponent(IconoirIcons.PageEdit),
 
   // User & Account Icons
   'iconoir-user': createIconComponent(IconoirIcons.User),
-  'iconoir-profile': createIconComponent(IconoirIcons.Profile),
-  'iconoir-people': createIconComponent(IconoirIcons.People),
-  'iconoir-team': createIconComponent(IconoirIcons.People),
+  'iconoir-profile': createIconComponent(IconoirIcons.ProfileCircle),
+  'iconoir-people': createIconComponent(IconoirIcons.Group),
+  'iconoir-team': createIconComponent(IconoirIcons.Group),
   'iconoir-lock': createIconComponent(IconoirIcons.Lock),
-  'iconoir-unlock': createIconComponent(IconoirIcons.Unlock),
+  'iconoir-unlock': createIconComponent(IconoirIcons.Lock),
 
   // Status & Feedback Icons
   'iconoir-success': createIconComponent(IconoirIcons.CheckCircle),
   'iconoir-error': createIconComponent(IconoirIcons.XmarkCircle),
   'iconoir-warning': createIconComponent(IconoirIcons.WarningTriangle),
-  'iconoir-info': createIconComponent(IconoirIcons.InfoEmpty),
+  'iconoir-info': createIconComponent(IconoirIcons.InfoCircle),
   'iconoir-question': createIconComponent(IconoirIcons.HelpCircle),
-  'iconoir-spinner': createIconComponent(IconoirIcons.Spinner),
 
   // Common UI Icons
   'iconoir-home': createIconComponent(IconoirIcons.Home),
   'iconoir-search': createIconComponent(IconoirIcons.Search),
   'iconoir-eye': createIconComponent(IconoirIcons.Eye),
-  'iconoir-eye-off': createIconComponent(IconoirIcons.EyeOff),
+  'iconoir-eye-off': createIconComponent(IconoirIcons.EyeClosed),
   'iconoir-star': createIconComponent(IconoirIcons.Star),
   'iconoir-heart': createIconComponent(IconoirIcons.Heart),
   'iconoir-bookmark': createIconComponent(IconoirIcons.Bookmark),
-  'iconoir-flag': createIconComponent(IconoirIcons.Flag),
+  'iconoir-flag': createIconComponent(IconoirIcons.Pin),
   'iconoir-filter': createIconComponent(IconoirIcons.Filter),
   'iconoir-list': createIconComponent(IconoirIcons.List),
-  'iconoir-grid': createIconComponent(IconoirIcons.Grid),
+  'iconoir-grid': createIconComponent(IconoirIcons.ViewGrid),
   'iconoir-table': createIconComponent(IconoirIcons.Table),
   'iconoir-menu': createIconComponent(IconoirIcons.Menu),
   'iconoir-more': createIconComponent(IconoirIcons.MoreVert),

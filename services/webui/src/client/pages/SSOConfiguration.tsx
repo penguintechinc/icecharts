@@ -203,7 +203,7 @@ export default function SSOConfiguration() {
         <h1 className="text-4xl font-bold text-gold-gradient mb-2">
           SSO Configuration
         </h1>
-        <p className="text-dark-400">
+        <p className="text-ice-navy-400">
           Configure enterprise SAML 2.0 and OpenID Connect authentication
         </p>
       </div>
@@ -245,7 +245,7 @@ export default function SSOConfiguration() {
 
           <form onSubmit={handleSAMLSubmit} className="space-y-6">
             <div>
-              <label className="block text-sm font-medium text-gold-400 mb-2">
+              <label className="block text-sm font-medium text-ice-gold-400 mb-2">
                 Metadata URL
               </label>
               <input
@@ -260,17 +260,17 @@ export default function SSOConfiguration() {
                 }
                 className="input"
               />
-              <p className="text-xs text-dark-500 mt-1">
+              <p className="text-xs text-ice-navy-500 mt-1">
                 Provide metadata URL for automatic configuration, or fill in manual fields below
               </p>
             </div>
 
-            <div className="border-t border-dark-700 pt-6">
-              <p className="text-sm text-dark-400 mb-4">Manual Configuration</p>
+            <div className="border-t border-ice-navy-700 pt-6">
+              <p className="text-sm text-ice-navy-400 mb-4">Manual Configuration</p>
 
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-medium text-gold-400 mb-2">
+                  <label className="block text-sm font-medium text-ice-gold-400 mb-2">
                     IdP Name
                   </label>
                   <input
@@ -288,7 +288,7 @@ export default function SSOConfiguration() {
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gold-400 mb-2">
+                  <label className="block text-sm font-medium text-ice-gold-400 mb-2">
                     Entity ID
                   </label>
                   <input
@@ -308,7 +308,7 @@ export default function SSOConfiguration() {
 
               <div className="mt-4 grid grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-medium text-gold-400 mb-2">
+                  <label className="block text-sm font-medium text-ice-gold-400 mb-2">
                     SSO URL
                   </label>
                   <input
@@ -326,7 +326,7 @@ export default function SSOConfiguration() {
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gold-400 mb-2">
+                  <label className="block text-sm font-medium text-ice-gold-400 mb-2">
                     SLO URL (Optional)
                   </label>
                   <input
@@ -345,7 +345,7 @@ export default function SSOConfiguration() {
               </div>
 
               <div className="mt-4">
-                <label className="block text-sm font-medium text-gold-400 mb-2">
+                <label className="block text-sm font-medium text-ice-gold-400 mb-2">
                   X.509 Certificate
                 </label>
                 <textarea
@@ -365,8 +365,8 @@ export default function SSOConfiguration() {
               </div>
             </div>
 
-            <div className="border-t border-dark-700 pt-6">
-              <p className="text-sm text-dark-400 mb-4">
+            <div className="border-t border-ice-navy-700 pt-6">
+              <p className="text-sm text-ice-navy-400 mb-4">
                 Just-In-Time Provisioning
               </p>
 
@@ -382,13 +382,13 @@ export default function SSOConfiguration() {
                   }
                   className="mr-3"
                 />
-                <span className="text-sm text-gold-400">
+                <span className="text-sm text-ice-gold-400">
                   Enable JIT user provisioning
                 </span>
               </label>
 
               <div>
-                <label className="block text-sm font-medium text-gold-400 mb-2">
+                <label className="block text-sm font-medium text-ice-gold-400 mb-2">
                   Default Role for New Users
                 </label>
                 <select
@@ -450,7 +450,7 @@ export default function SSOConfiguration() {
 
           <form onSubmit={handleOIDCSubmit} className="space-y-6">
             <div>
-              <label className="block text-sm font-medium text-gold-400 mb-2">
+              <label className="block text-sm font-medium text-ice-gold-400 mb-2">
                 Issuer URL
               </label>
               <input
@@ -466,14 +466,14 @@ export default function SSOConfiguration() {
                 className="input"
                 required
               />
-              <p className="text-xs text-dark-500 mt-1">
+              <p className="text-xs text-ice-navy-500 mt-1">
                 The OIDC provider's issuer URL
               </p>
             </div>
 
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <label className="block text-sm font-medium text-gold-400 mb-2">
+                <label className="block text-sm font-medium text-ice-gold-400 mb-2">
                   Client ID
                 </label>
                 <input
@@ -492,7 +492,7 @@ export default function SSOConfiguration() {
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gold-400 mb-2">
+                <label className="block text-sm font-medium text-ice-gold-400 mb-2">
                   Client Secret
                 </label>
                 <input
@@ -511,8 +511,8 @@ export default function SSOConfiguration() {
               </div>
             </div>
 
-            <div className="border-t border-dark-700 pt-6">
-              <p className="text-sm text-dark-400 mb-4">
+            <div className="border-t border-ice-navy-700 pt-6">
+              <p className="text-sm text-ice-navy-400 mb-4">
                 Just-In-Time Provisioning
               </p>
 
@@ -528,13 +528,13 @@ export default function SSOConfiguration() {
                   }
                   className="mr-3"
                 />
-                <span className="text-sm text-gold-400">
+                <span className="text-sm text-ice-gold-400">
                   Enable JIT user provisioning
                 </span>
               </label>
 
               <div>
-                <label className="block text-sm font-medium text-gold-400 mb-2">
+                <label className="block text-sm font-medium text-ice-gold-400 mb-2">
                   Default Role for New Users
                 </label>
                 <select
@@ -561,11 +561,11 @@ export default function SSOConfiguration() {
         </div>
       )}
 
-      <div className="card mt-8 bg-dark-900/50">
-        <h3 className="font-semibold text-gold-400 mb-3">
+      <div className="card mt-8 bg-ice-navy-900/50">
+        <h3 className="font-semibold text-ice-gold-400 mb-3">
           Security & Compliance
         </h3>
-        <ul className="space-y-2 text-sm text-dark-400">
+        <ul className="space-y-2 text-sm text-ice-navy-400">
           <li className="flex items-start">
             <span className="text-green-400 mr-2">✓</span>
             <span>All SSO communications are encrypted with TLS 1.2+</span>

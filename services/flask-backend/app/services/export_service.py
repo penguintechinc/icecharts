@@ -28,10 +28,10 @@ except ImportError:
 class ExportOptions:
     """Export options for drawings."""
 
-    format: str  # png, svg, pdf, json
+    format: str  # png, jpg, svg, pdf, json
     width: Optional[int] = None
     height: Optional[int] = None
-    quality: int = 95  # For PNG (1-100)
+    quality: int = 95  # For PNG and JPG (1-100)
     dpi: int = 300  # For PDF and high-res exports
     page_size: str = "A4"  # A4, Letter, A3, etc. for PDF
     include_background: bool = True
@@ -40,7 +40,7 @@ class ExportOptions:
 class ExportService:
     """Service for exporting drawing content to various formats."""
 
-    VALID_FORMATS = {"png", "svg", "pdf", "json"}
+    VALID_FORMATS = {"png", "jpg", "svg", "pdf", "json"}
     VALID_PAGE_SIZES = {
         "A0", "A1", "A2", "A3", "A4", "A5", "A6",
         "Letter", "Legal", "Tabloid", "Ledger"
@@ -91,7 +91,8 @@ class ExportService:
                     bg_color = drawing_data.get("background_color", (255, 255, 255))
                     image = Image.new("RGB", (width, height), bg_color)
                 else:
-                    image = Image.new("RGBA", (width, height), (255, 255, 255, 0))
+                    # Force RGBA with fully transparent background
+                    image = Image.new("RGBA", (width, height), (0, 0, 0, 0))
 
                 # Draw elements from drawing_data
                 draw = ImageDraw.Draw(image)
@@ -110,6 +111,76 @@ class ExportService:
 
         except Exception as e:
             raise Exception(f"Failed to export to PNG: {str(e)}") from e
+
+    @staticmethod
+    def export_to_jpg(
+        drawing_data: Union[dict, str],
+        width: int = 800,
+        height: int = 600,
+        quality: int = 85,
+    ) -> bytes:
+        """Export drawing to JPG format.
+
+        Args:
+            drawing_data: Drawing content (dict with structure or SVG string)
+            width: Image width in pixels
+            height: Image height in pixels
+            quality: JPG quality (1-100, default 85)
+
+        Returns:
+            JPG image bytes
+
+        Raises:
+            ValueError: If drawing_data format is invalid
+            Exception: If JPG generation fails
+        """
+        try:
+            # Handle different input formats
+            if isinstance(drawing_data, str):
+                # Assume it's SVG content - convert via CairoSVG
+                from cairosvg import svg2png
+
+                png_bytes = svg2png(
+                    bytestring=drawing_data.encode("utf-8"),
+                    write_to=io.BytesIO(),
+                    output_width=width,
+                    output_height=height,
+                )
+                # Convert PNG bytes to PIL Image, then to JPG
+                png_image = Image.open(io.BytesIO(png_bytes))
+                if png_image.mode in ("RGBA", "LA", "P"):
+                    # Convert RGBA to RGB with white background
+                    rgb_image = Image.new("RGB", png_image.size, (255, 255, 255))
+                    rgb_image.paste(png_image, mask=png_image.split()[-1] if png_image.mode in ("RGBA", "LA") else None)
+                    png_image = rgb_image
+                jpg_bytes = io.BytesIO()
+                png_image.save(jpg_bytes, format="JPEG", quality=quality)
+                jpg_bytes.seek(0)
+                return jpg_bytes.getvalue()
+
+            # Handle dict-based drawing data
+            if isinstance(drawing_data, dict):
+                # Create blank RGB image (JPG doesn't support transparency)
+                bg_color = drawing_data.get("background_color", (255, 255, 255))
+                image = Image.new("RGB", (width, height), bg_color)
+
+                # Draw elements from drawing_data
+                draw = ImageDraw.Draw(image)
+                elements = drawing_data.get("elements", [])
+
+                for element in elements:
+                    ExportService._draw_element(draw, element)
+
+                # Convert to JPG bytes
+                jpg_bytes = io.BytesIO()
+                image.save(jpg_bytes, format="JPEG", quality=quality)
+                jpg_bytes.seek(0)
+                return jpg_bytes.getvalue()
+
+            raise ValueError("Drawing data must be dict or SVG string")
+
+        except Exception as e:
+            raise Exception(f"Failed to export to JPG: {str(e)}") from e
 
     @staticmethod
     def export_to_svg(drawing_data: Union[dict, str]) -> str:
@@ -292,6 +363,14 @@ class ExportService:
                 height=options.height or 600,
                 quality=options.quality,
                 include_background=options.include_background,
+            )
+
+        if options.format == "jpg":
+            return ExportService.export_to_jpg(
+                drawing_data,
+                width=options.width or 800,
+                height=options.height or 600,
+                quality=options.quality,
             )
 
         if options.format == "svg":

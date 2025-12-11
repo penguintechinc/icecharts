@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="assets/logo.svg" alt="IceCharts Logo - Rockhopper Penguin with Charts" width="400">
+  <img src="assets/logo-transparent.png" alt="IceCharts Logo" width="300">
 </p>
 
 <p align="center">
@@ -36,6 +36,21 @@ IceCharts is a modern, web-based collaborative diagramming platform designed for
 <p align="center">
   <img src="assets/screenshots/groups.png" alt="Groups" width="800">
   <br><em>Groups - Collaborate with teams</em>
+</p>
+
+<p align="center">
+  <img src="assets/screenshots/templates.png" alt="Templates" width="800">
+  <br><em>Templates - Start from pre-built diagram templates</em>
+</p>
+
+<p align="center">
+  <img src="assets/screenshots/settings.png" alt="Settings" width="800">
+  <br><em>Settings - Configure your account and preferences</em>
+</p>
+
+<p align="center">
+  <img src="assets/screenshots/diagramming.png" alt="Settings" width="800">
+  <br><em>Dynamic and flow animated diagrams with thousands of icons - Make your diagrams accurate and alive!</em>
 </p>
 
 ## Key Features

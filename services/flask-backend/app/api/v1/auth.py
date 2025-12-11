@@ -23,6 +23,8 @@ from ...models import (
 )
 from ...oauth import GoogleOAuthHandler
 from ...schemas.auth_schemas import LoginRequest, RegisterRequest
+from ...services.email_verification_service import EmailVerificationService
+from ...services.system_settings_service import SystemSettingsService
 from ...utils.validation import validate_json
 
 auth_v1_bp = Blueprint("auth_v1", __name__, url_prefix="/auth")
@@ -111,33 +113,101 @@ def login(validated_data: LoginRequest):
 @auth_v1_bp.route("/register", methods=["POST"])
 @validate_json(RegisterRequest)
 def register(validated_data: RegisterRequest):
-    """Register new user (creates viewer role by default)."""
+    """Register new user with signup controls and email verification."""
     # Email is already validated and normalized by Pydantic
     email = validated_data.email.lower()
     password = validated_data.password
     full_name = validated_data.full_name
 
-    # Check if user exists
+    # 1. Get signup configuration
+    signup_config = SystemSettingsService.get_signup_config()
+
+    # 2. Check if signup is enabled
+    if not signup_config["enabled"] or signup_config["mode"] == "disabled":
+        return jsonify({"error": "User registration is currently disabled"}), 403
+
+    # 3. Check if IDP-only mode
+    if signup_config["mode"] == "idp_only" or signup_config["mode"] == "sso_only":
+        return jsonify({"error": "Only SSO/IDP login is allowed. Please use the SSO login option."}), 403
+
+    # 4. Validate email domain (if domain_restricted mode)
+    if signup_config["mode"] == "domain_restricted":
+        domain = email.split("@")[1] if "@" in email else ""
+        allowed_domains = signup_config.get("allowed_domains", [])
+
+        if not allowed_domains or domain not in allowed_domains:
+            return jsonify({
+                "error": f"Registration is restricted to specific email domains. '{domain}' is not allowed."
+            }), 403
+
+    # 5. Check if user exists
     existing = get_user_by_email(email)
     if existing:
         return jsonify({"error": "Email already registered"}), 409
 
-    # Create user
+    # 6. Create user with email_verified=False
     password_hash = hash_password(password)
     user = create_user(
         email=email,
         password_hash=password_hash,
         full_name=full_name or "",
         role="viewer",  # Default role for self-registration
+        email_verified=False,
     )
+
+    # 7. Handle email verification if required
+    if signup_config["email_verification_required"]:
+        # Create verification and send email
+        user_name = full_name or email.split("@")[0]
+        token = EmailVerificationService.create_verification(
+            user_id=user["id"],
+            email=email,
+            user_name=user_name,
+        )
+
+        if token:
+            return jsonify({
+                "message": "Registration successful. Please check your email to verify your account.",
+                "email_verification_required": True,
+                "user": {
+                    "id": user["id"],
+                    "email": user["email"],
+                    "full_name": user.get("full_name", ""),
+                    "role": user["role"],
+                    "email_verified": False,
+                },
+            }), 201
+        else:
+            # Verification email failed to send, but user is created
+            current_app.logger.warning(f"Failed to send verification email for user {user['id']}")
+            return jsonify({
+                "message": "Registration successful, but verification email failed to send. Please contact support.",
+                "email_verification_required": True,
+                "user": {
+                    "id": user["id"],
+                    "email": user["email"],
+                    "full_name": user.get("full_name", ""),
+                    "role": user["role"],
+                    "email_verified": False,
+                },
+            }), 201
+
+    # 8. If email verification not required, return success with tokens
+    access_token = create_access_token(user["id"], user["role"])
+    refresh_token, refresh_expires = create_refresh_token(user["id"])
 
     return jsonify({
         "message": "Registration successful",
+        "access_token": access_token,
+        "refresh_token": refresh_token,
+        "token_type": "Bearer",
+        "expires_in": int(current_app.config["JWT_ACCESS_TOKEN_EXPIRES"].total_seconds()),
         "user": {
             "id": user["id"],
             "email": user["email"],
             "full_name": user.get("full_name", ""),
             "role": user["role"],
+            "email_verified": user.get("email_verified", False),
         },
     }), 201
 

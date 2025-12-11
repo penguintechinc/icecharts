@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import {
   ReactFlow,
@@ -18,12 +18,17 @@ import {
   Panel,
   Handle,
   Position,
+  MarkerType,
 } from '@xyflow/react';
 import '@xyflow/react/dist/style.css';
 import api from '../lib/api';
 import Button from '../components/Button';
 import type { Drawing, UpdateDrawingData } from '../types';
 import { iconMap, iconCategories } from '../components/diagram/icons';
+import IconSearch from '../components/diagram/icons/search/IconSearch';
+import EdgeControls from '../components/diagram/EdgeControls';
+import StoragePickerDialog from '../components/storage/StoragePickerDialog';
+import type { IconDefinition } from '../components/diagram/icons/types';
 
 // Custom handle styles for bidirectional connections
 const handleStyle = "!w-3 !h-3 !bg-gold-500 !border-2 !border-gold-600";
@@ -179,9 +184,22 @@ export default function DrawingEditor() {
   const [nodes, setNodes] = useState<Node[]>([]);
   const [edges, setEdges] = useState<Edge[]>([]);
   const [selectedColor, setSelectedColor] = useState('#3B82F6');
+  const [selectedEdge, setSelectedEdge] = useState<Edge | null>(null);
+  const [edgeControlsPosition, setEdgeControlsPosition] = useState({ x: 0, y: 0 });
   const nodeIdCounter = useRef(1);
 
+  // Editor theme state (light/dark mode for canvas only)
+  const [editorTheme, setEditorTheme] = useState<'dark' | 'light'>('dark');
+
+  // Storage picker state
+  const [showStoragePicker, setShowStoragePicker] = useState(false);
+
   const isNewDrawing = !id || id === 'new';
+
+  // Create array of all available icons for search
+  const allIcons = useMemo<IconDefinition[]>(() => {
+    return Object.values(iconCategories).flatMap(cat => cat.icons) as IconDefinition[];
+  }, []);
 
   useEffect(() => {
     if (id && id !== 'new') {
@@ -248,7 +266,13 @@ export default function DrawingEditor() {
   );
 
   const onConnect: OnConnect = useCallback(
-    (connection) => setEdges((eds) => addEdge({ ...connection, animated: true, style: { stroke: '#D4AF37', strokeWidth: 2 } }, eds)),
+    (connection) => setEdges((eds) => addEdge({
+      ...connection,
+      animated: true,
+      style: { stroke: '#D4AF37', strokeWidth: 2 },
+      markerEnd: { type: MarkerType.ArrowClosed, color: '#D4AF37' },
+      data: { startMarker: 'none', endMarker: 'arrow' },
+    }, eds)),
     []
   );
 
@@ -286,6 +310,11 @@ export default function DrawingEditor() {
   }, []);
 
   const handleSave = useCallback(async () => {
+    // Show storage picker dialog to let user choose where to save
+    setShowStoragePicker(true);
+  }, []);
+
+  const handleStorageSelect = useCallback(async () => {
     setIsSaving(true);
     setError('');
 
@@ -320,7 +349,104 @@ export default function DrawingEditor() {
 
   const deleteSelectedNodes = useCallback(() => {
     setNodes((nds) => nds.filter((node) => !node.selected));
-    setEdges((eds) => eds.filter((edge) => !edge.selected));
+    setEdges((eds) => {
+      const remainingEdges = eds.filter((edge) => !edge.selected);
+      // Clear selectedEdge if it was deleted
+      if (selectedEdge && !remainingEdges.find(e => e.id === selectedEdge.id)) {
+        setSelectedEdge(null);
+      }
+      return remainingEdges;
+    });
+  }, [selectedEdge]);
+
+  // Handle icon selection from IconSearch
+  const handleIconSelect = useCallback((icon: IconDefinition) => {
+    const isCloudProvider = icon.source === 'aws';
+    addIconNode(icon.id, icon.label, icon.color || selectedColor, isCloudProvider);
+  }, [selectedColor]);
+
+  // Handle edge selection from canvas click
+  const handleEdgeClick = useCallback((event: React.MouseEvent, edge: Edge) => {
+    event.stopPropagation();
+    setSelectedEdge(edge);
+    setEdgeControlsPosition({
+      x: event.clientX,
+      y: event.clientY,
+    });
+  }, []);
+
+  // Handle pane (canvas background) click to deselect edge
+  const handlePaneClick = useCallback(() => {
+    setSelectedEdge(null);
+  }, []);
+
+  // Helper to convert marker type to React Flow marker config
+  const getMarkerConfig = (markerType: string) => {
+    switch (markerType) {
+      case 'arrow':
+        return { type: MarkerType.ArrowClosed, color: '#D4AF37' };
+      case 'circle':
+        return { type: MarkerType.Arrow, color: '#D4AF37', width: 10, height: 10 };
+      case 'diamond':
+        return { type: MarkerType.ArrowClosed, color: '#D4AF37', width: 15, height: 15 };
+      default:
+        return undefined;
+    }
+  };
+
+  // Handle edge update from EdgeControls
+  const handleUpdateEdge = useCallback((edgeId: string, updates: any) => {
+    setEdges((eds) => {
+      const newEdges = eds.map((edge) => {
+        if (edge.id !== edgeId) return edge;
+
+        // Extract animated from updates if present (it goes on edge, not data)
+        const { animated, startMarker, endMarker, ...otherUpdates } = updates;
+
+        // Merge data updates
+        const newData = {
+          ...edge.data,
+          ...otherUpdates,
+          ...(startMarker !== undefined && { startMarker }),
+          ...(endMarker !== undefined && { endMarker }),
+        };
+
+        const updatedEdge: Edge = {
+          ...edge,
+          data: newData,
+        };
+
+        // Handle animated property directly on edge
+        if (animated !== undefined) {
+          updatedEdge.animated = animated;
+        }
+
+        // Get current markers (from updates or existing data)
+        const currentStartMarker = startMarker ?? edge.data?.startMarker ?? 'none';
+        const currentEndMarker = endMarker ?? edge.data?.endMarker ?? 'arrow';
+
+        // Set markerStart and markerEnd based on marker selections
+        updatedEdge.markerStart = getMarkerConfig(currentStartMarker);
+        updatedEdge.markerEnd = getMarkerConfig(currentEndMarker);
+
+        // Handle animation direction - reverse if arrow points backward
+        if (currentStartMarker === 'arrow' && currentEndMarker === 'none') {
+          updatedEdge.className = 'animated-reverse';
+        } else {
+          updatedEdge.className = '';
+        }
+
+        return updatedEdge;
+      });
+
+      // Also update selectedEdge so EdgeControls UI stays in sync
+      const updatedSelected = newEdges.find(e => e.id === edgeId);
+      if (updatedSelected) {
+        setSelectedEdge(updatedSelected);
+      }
+
+      return newEdges;
+    });
   }, []);
 
   // Keyboard shortcuts
@@ -399,6 +525,24 @@ export default function DrawingEditor() {
 
         <div className="flex items-center gap-3">
           {error && <span className="text-sm text-red-400">{error}</span>}
+
+          {/* Theme Toggle */}
+          <button
+            onClick={() => setEditorTheme(editorTheme === 'dark' ? 'light' : 'dark')}
+            className="p-2 rounded-lg bg-dark-800 hover:bg-dark-700 transition-colors"
+            title={`Switch to ${editorTheme === 'dark' ? 'light' : 'dark'} mode`}
+          >
+            {editorTheme === 'dark' ? (
+              <svg className="w-5 h-5 text-gold-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z" />
+              </svg>
+            ) : (
+              <svg className="w-5 h-5 text-ice-navy-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z" />
+              </svg>
+            )}
+          </button>
+
           <span className="text-xs text-dark-500">Ctrl+S to save</span>
           <Button onClick={handleSave} isLoading={isSaving}>
             Save
@@ -410,6 +554,16 @@ export default function DrawingEditor() {
       <div className="flex-1 flex">
         {/* Left Toolbar - Scrollable category list */}
         <div className="w-56 bg-dark-900 border-r border-dark-700 flex flex-col">
+          {/* Icon Search */}
+          <div className="p-2 border-b border-dark-700">
+            <IconSearch
+              allIcons={allIcons}
+              iconMap={iconMap}
+              onSelect={handleIconSelect}
+              placeholder="Search icons..."
+            />
+          </div>
+
           {/* Category selector dropdown */}
           <div className="p-2 border-b border-dark-700">
             <select
@@ -519,19 +673,38 @@ export default function DrawingEditor() {
             snapGrid={[15, 15]}
             defaultEdgeOptions={{
               animated: true,
-              style: { stroke: '#D4AF37', strokeWidth: 2 },
+              style: {
+                stroke: editorTheme === 'dark' ? '#D4AF37' : '#1f2937',
+                strokeWidth: 2
+              },
             }}
-            style={{ background: '#0a0a0f' }}
+            style={{ background: editorTheme === 'dark' ? '#0a0a0f' : '#ffffff' }}
+            onEdgeClick={handleEdgeClick}
+            onPaneClick={handlePaneClick}
           >
-            <Background variant={BackgroundVariant.Dots} gap={20} size={1} color="#1f2937" />
-            <Controls className="bg-dark-900 border border-dark-700 rounded-lg" />
+            <Background
+              variant={BackgroundVariant.Dots}
+              gap={20}
+              size={1}
+              color={editorTheme === 'dark' ? '#1f2937' : '#d1d5db'}
+            />
+            <Controls className={editorTheme === 'dark'
+              ? "bg-dark-900 border border-dark-700 rounded-lg"
+              : "bg-white border border-gray-300 rounded-lg"
+            } />
             <MiniMap
               nodeColor={(node) => (node.data as any)?.color || '#374151'}
-              maskColor="rgba(0, 0, 0, 0.8)"
-              className="bg-dark-900 border border-dark-700 rounded-lg"
+              maskColor={editorTheme === 'dark' ? "rgba(0, 0, 0, 0.8)" : "rgba(255, 255, 255, 0.8)"}
+              className={editorTheme === 'dark'
+                ? "bg-dark-900 border border-dark-700 rounded-lg"
+                : "bg-white border border-gray-300 rounded-lg"
+              }
             />
-            <Panel position="bottom-center" className="bg-dark-900/80 px-4 py-2 rounded-t-lg border border-dark-700 border-b-0">
-              <div className="flex items-center gap-4 text-xs text-dark-400">
+            <Panel position="bottom-center" className={editorTheme === 'dark'
+              ? "bg-dark-900/80 px-4 py-2 rounded-t-lg border border-dark-700 border-b-0"
+              : "bg-white/90 px-4 py-2 rounded-t-lg border border-gray-300 border-b-0"
+            }>
+              <div className={`flex items-center gap-4 text-xs ${editorTheme === 'dark' ? 'text-dark-400' : 'text-gray-600'}`}>
                 <span>Drag to connect</span>
                 <span>|</span>
                 <span>Scroll to zoom</span>
@@ -542,8 +715,28 @@ export default function DrawingEditor() {
               </div>
             </Panel>
           </ReactFlow>
+
+          {/* Edge Controls - appears when edge is selected */}
+          {selectedEdge && (
+            <EdgeControls
+              selectedEdge={selectedEdge}
+              onUpdateEdge={handleUpdateEdge}
+              position={edgeControlsPosition}
+            />
+          )}
         </div>
       </div>
+
+      {/* Storage Picker Dialog */}
+      <StoragePickerDialog
+        isOpen={showStoragePicker}
+        onClose={() => setShowStoragePicker(false)}
+        onSelect={() => {
+          setShowStoragePicker(false);
+          handleStorageSelect();
+        }}
+        mode="save"
+      />
     </div>
   );
 }

@@ -1,0 +1,60 @@
+.collaboration-bar {
+  /* Base styling handled by Tailwind */
+}
+
+.collaboration-bar .status {
+  /* Status indicator styling */
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  white-space: nowrap;
+}
+
+.collaboration-bar .status.connected {
+  color: var(--color-foreground, #fff);
+}
+
+.collaboration-bar .status.disconnected {
+  color: var(--color-accent, #f59e0b);
+}
+
+.collaboration-bar .status-dot {
+  display: inline-block;
+  border-radius: 50%;
+}
+
+.collaboration-bar .collaborators {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex: 1;
+}
+
+.collaboration-bar .collaborator-avatar {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  box-shadow: 0 0 0 2px var(--color-background, #fff);
+  transition: all 0.2s ease;
+}
+
+.collaboration-bar .collaborator-avatar:hover {
+  transform: scale(1.1);
+}
+
+.collaboration-bar .instructions {
+  color: var(--color-muted, #999);
+  font-size: 0.75rem;
+  white-space: nowrap;
+}
+
+/* Dark mode adjustments */
+.dark .collaboration-bar {
+  background-color: rgba(15, 23, 42, 0.95);
+  border-color: rgba(148, 163, 184, 0.1);
+}
+
+.dark .collaboration-bar .collaborator-avatar {
+  box-shadow: 0 0 0 2px rgba(15, 23, 42, 0.95);
+}

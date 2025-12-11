@@ -3,7 +3,7 @@
 Provides CRUD operations for drawing templates.
 """
 
-from flask import Blueprint, jsonify, request
+from flask import Blueprint, current_app, jsonify, request
 
 from ...middleware import auth_required, get_current_user
 
@@ -207,6 +207,9 @@ def use_template(template_id: str):
         JSON created drawing object
     """
     try:
+        from ...models import get_db
+        from ...services.drawing_storage_service import DrawingStorageService
+
         user = get_current_user()
         data = request.get_json() or {}
 
@@ -214,16 +217,67 @@ def use_template(template_id: str):
         if not data.get("name"):
             return jsonify({"success": False, "error": "Drawing name is required"}), 400
 
-        # TODO: Load template, create new drawing from it, save to database
-        # For now, return placeholder
-        drawing = {
-            "id": "drawing_from_template_1",
-            "name": data.get("name"),
-            "template_id": template_id,
-            "created_at": "2024-01-01T00:00:00Z",
+        db = get_db()
+
+        # Get template content based on template_id
+        # For now, we'll use predefined template content based on the template ID
+        template_content = {
+            "nodes": [],
+            "edges": [],
+            "viewport": {"x": 0, "y": 0, "zoom": 1},
         }
 
-        return jsonify({"success": True, "drawing": drawing}), 201
+        # Add some starter content based on template type
+        if template_id == "template_1":
+            # Blank Canvas - no starter content
+            pass
+        elif template_id == "template_2":
+            # Grid Layout - add some example nodes
+            template_content = {
+                "nodes": [
+                    {
+                        "id": "1",
+                        "type": "icon",
+                        "position": {"x": 100, "y": 100},
+                        "data": {"label": "Start", "icon": "circle"},
+                    }
+                ],
+                "edges": [],
+                "viewport": {"x": 0, "y": 0, "zoom": 1},
+            }
+
+        # Create new drawing
+        drawing_id = db.drawings.insert(
+            name=data.get("name"),
+            description=data.get("description", ""),
+            owner_id=user["id"],
+            content=template_content,
+            version=1,
+        )
+        db.commit()
+
+        # Save content to object storage
+        try:
+            DrawingStorageService.save_content(
+                drawing_id=drawing_id,
+                content=template_content,
+                version=1,
+                user_id=user["id"],
+            )
+        except Exception as storage_err:
+            current_app.logger.warning(f"Failed to save to object storage: {storage_err}")
+
+        # Get the created drawing
+        drawing = db.drawings(drawing_id)
+        if not drawing:
+            return jsonify({"success": False, "error": "Failed to create drawing"}), 500
+
+        return jsonify({
+            "success": True,
+            "drawing": drawing.as_dict(),
+            "drawing_id": drawing_id,
+        }), 201
 
     except Exception as e:
+        current_app.logger.error(f"Error creating drawing from template: {e}", exc_info=True)
         return jsonify({"success": False, "error": str(e)}), 500

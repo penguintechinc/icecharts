@@ -47,7 +47,7 @@ export function useIconSearch(
   const [selectedIndex, setSelectedIndex] = useState(-1);
 
   // Refs for debouncing
-  const debounceTimerRef = useRef<NodeJS.Timeout | null>(null);
+  const debounceTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // Build search index once and memoize
   const searchIndex = useMemo(() => {

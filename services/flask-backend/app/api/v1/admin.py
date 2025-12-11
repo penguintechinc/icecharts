@@ -408,6 +408,220 @@ def admin_get_system_config():
     return jsonify({"config": config}), 200
 
 
+# ==========================================
+# Storage Provider Configuration (Admin)
+# ==========================================
+
+
+@admin_v1_bp.route("/storage", methods=["GET"])
+@auth_required
+@admin_required
+def admin_list_storage_configs():
+    """List all organization storage configurations (admin only)."""
+    db = get_db()
+
+    # Get organization-level storage configs (where user_id is null or is_system_default is true)
+    configs = db(
+        (db.storage_providers.is_system_default == True) |
+        (db.storage_providers.user_id == None)
+    ).select(orderby=~db.storage_providers.updated_at)
+
+    items = []
+    for config in configs:
+        item = config.as_dict()
+        # Mask sensitive config fields
+        if item.get("config_json"):
+            masked = item["config_json"].copy()
+            for key in ["client_secret", "secret_access_key", "account_key", "password"]:
+                if key in masked:
+                    masked[key] = "***"
+            item["config_json"] = masked
+        items.append(item)
+
+    return jsonify({"items": items, "total": len(items)}), 200
+
+
+@admin_v1_bp.route("/storage", methods=["POST"])
+@auth_required
+@admin_required
+def admin_create_storage_config():
+    """Create organization storage configuration (admin only)."""
+    data = request.get_json()
+    if not data:
+        return jsonify({"error": "Request body required"}), 400
+
+    provider = data.get("provider", "").strip()
+    name = data.get("name", "").strip()
+    enabled = data.get("enabled", True)
+
+    # Validate provider type
+    valid_providers = ["gdrive", "onedrive", "s3"]
+    if provider not in valid_providers:
+        return jsonify({"error": f"Invalid provider. Valid: {valid_providers}"}), 400
+
+    if not name:
+        name = {"gdrive": "Google Drive", "onedrive": "OneDrive", "s3": "External S3"}.get(provider, provider)
+
+    # Build config based on provider type
+    config_json = {}
+
+    if provider in ("gdrive", "onedrive"):
+        client_id = data.get("client_id", "").strip()
+        client_secret = data.get("client_secret", "").strip()
+
+        if not client_id:
+            return jsonify({"error": "client_id is required"}), 400
+
+        config_json = {
+            "client_id": client_id,
+            "client_secret": client_secret,
+        }
+
+        if provider == "onedrive":
+            config_json["tenant_id"] = data.get("tenant_id", "common").strip()
+
+    elif provider == "s3":
+        bucket = data.get("bucket", "").strip()
+        if not bucket:
+            return jsonify({"error": "bucket is required for S3"}), 400
+
+        config_json = {
+            "bucket": bucket,
+            "region": data.get("region", "us-east-1").strip(),
+            "endpoint": data.get("endpoint", "").strip() or None,
+        }
+
+    db = get_db()
+
+    # Check if provider already exists at org level
+    existing = db(
+        (db.storage_providers.provider_type == provider) &
+        (db.storage_providers.is_system_default == True)
+    ).select().first()
+
+    if existing:
+        return jsonify({"error": f"{name} is already configured. Edit it instead."}), 409
+
+    # Create storage config
+    config_id = db.storage_providers.insert(
+        tenant_id=1,
+        name=name,
+        provider_type=provider,
+        config_json=config_json,
+        user_id=None,  # Organization-level, not user-specific
+        is_active=enabled,
+        is_system_default=True,
+    )
+    db.commit()
+
+    config = db.storage_providers(config_id)
+
+    return jsonify({
+        "message": f"{name} configured successfully",
+        "id": config_id,
+    }), 201
+
+
+@admin_v1_bp.route("/storage/<int:config_id>", methods=["PUT"])
+@auth_required
+@admin_required
+def admin_update_storage_config(config_id: int):
+    """Update organization storage configuration (admin only)."""
+    db = get_db()
+    config = db.storage_providers(config_id)
+
+    if not config:
+        return jsonify({"error": "Storage configuration not found"}), 404
+
+    if not config.is_system_default:
+        return jsonify({"error": "Can only update organization-level configs"}), 403
+
+    data = request.get_json()
+    if not data:
+        return jsonify({"error": "Request body required"}), 400
+
+    update_data = {}
+
+    if "name" in data:
+        update_data["name"] = data["name"].strip()
+
+    if "enabled" in data:
+        update_data["is_active"] = data["enabled"]
+
+    # Update config_json fields
+    if config.config_json:
+        new_config = config.config_json.copy()
+    else:
+        new_config = {}
+
+    if "client_id" in data:
+        new_config["client_id"] = data["client_id"].strip()
+
+    if "client_secret" in data and data["client_secret"]:
+        new_config["client_secret"] = data["client_secret"]
+
+    if "tenant_id" in data:
+        new_config["tenant_id"] = data["tenant_id"].strip()
+
+    if "bucket" in data:
+        new_config["bucket"] = data["bucket"].strip()
+
+    if "region" in data:
+        new_config["region"] = data["region"].strip()
+
+    if "endpoint" in data:
+        new_config["endpoint"] = data["endpoint"].strip() or None
+
+    if new_config != config.config_json:
+        update_data["config_json"] = new_config
+
+    if update_data:
+        config.update_record(**update_data)
+        db.commit()
+
+    return jsonify({"message": "Storage configuration updated"}), 200
+
+
+@admin_v1_bp.route("/storage/<int:config_id>", methods=["PATCH"])
+@auth_required
+@admin_required
+def admin_patch_storage_config(config_id: int):
+    """Toggle storage configuration enabled status (admin only)."""
+    db = get_db()
+    config = db.storage_providers(config_id)
+
+    if not config:
+        return jsonify({"error": "Storage configuration not found"}), 404
+
+    data = request.get_json()
+    if "enabled" in data:
+        config.update_record(is_active=data["enabled"])
+        db.commit()
+
+    return jsonify({"message": "Storage configuration updated"}), 200
+
+
+@admin_v1_bp.route("/storage/<int:config_id>", methods=["DELETE"])
+@auth_required
+@admin_required
+def admin_delete_storage_config(config_id: int):
+    """Delete organization storage configuration (admin only)."""
+    db = get_db()
+    config = db.storage_providers(config_id)
+
+    if not config:
+        return jsonify({"error": "Storage configuration not found"}), 404
+
+    if not config.is_system_default:
+        return jsonify({"error": "Can only delete organization-level configs"}), 403
+
+    # Delete the configuration
+    db(db.storage_providers.id == config_id).delete()
+    db.commit()
+
+    return jsonify({"message": "Storage configuration deleted"}), 200
+
+
 @admin_v1_bp.route("/users/bulk-import", methods=["POST"])
 @auth_required
 @admin_required

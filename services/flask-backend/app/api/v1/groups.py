@@ -3,7 +3,7 @@
 from datetime import datetime
 from typing import Optional
 
-from flask import Blueprint, jsonify, request
+from flask import Blueprint, current_app, jsonify, request
 
 from ...middleware import auth_required, get_current_user, maintainer_or_admin_required
 from ...models import get_db, get_user_by_id
@@ -226,27 +226,26 @@ def list_group_members(group_id: int):
 
     db = get_db()
 
-    # Get members with user details
-    members = db(
-        (db.group_members.group_id == group_id) &
-        (db.group_members.user_id == db.users.id)
-    ).select(
-        db.group_members.ALL,
-        db.users.id,
-        db.users.email,
-        db.users.full_name,
+    # Get members with user details - using proper PyDAL join
+    members = db(db.group_members.group_id == group_id).select(
         orderby=db.group_members.joined_at,
     )
 
     member_list = []
     for m in members:
-        member_list.append({
-            "user_id": m.users.id,
-            "email": m.users.email,
-            "full_name": m.users.full_name,
-            "role": m.group_members.role,
-            "joined_at": m.group_members.joined_at.isoformat() if m.group_members.joined_at else None,
-        })
+        try:
+            user = db.identities(m.user_id)
+            if user:
+                member_list.append({
+                    "user_id": user.id,
+                    "email": user.email,
+                    "full_name": user.full_name,
+                    "role": m.role,
+                    "joined_at": m.joined_at.isoformat() if m.joined_at else None,
+                })
+        except Exception as e:
+            current_app.logger.warning(f"Error fetching user {m.user_id}: {e}")
+            continue
 
     return jsonify({
         "members": member_list,

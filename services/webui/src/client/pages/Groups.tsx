@@ -62,8 +62,8 @@ export default function Groups() {
       {/* Header */}
       <div className="flex items-center justify-between mb-6">
         <div>
-          <h1 className="text-2xl font-bold text-gold-400">Groups</h1>
-          <p className="text-dark-400 mt-1">
+          <h1 className="text-2xl font-bold text-ice-gold-400">Groups</h1>
+          <p className="text-ice-navy-400 mt-1">
             Collaborate with team members on drawings
           </p>
         </div>
@@ -88,9 +88,9 @@ export default function Groups() {
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           {[...Array(4)].map((_, i) => (
             <div key={i} className="card animate-pulse">
-              <div className="h-4 bg-dark-700 rounded w-3/4 mb-2"></div>
-              <div className="h-3 bg-dark-700 rounded w-full mb-2"></div>
-              <div className="h-3 bg-dark-700 rounded w-1/2"></div>
+              <div className="h-4 bg-ice-navy-700 rounded w-3/4 mb-2"></div>
+              <div className="h-3 bg-ice-navy-700 rounded w-full mb-2"></div>
+              <div className="h-3 bg-ice-navy-700 rounded w-1/2"></div>
             </div>
           ))}
         </div>
@@ -100,31 +100,31 @@ export default function Groups() {
             <Link
               key={group.id}
               to={`/groups/${group.id}`}
-              className="card hover:bg-dark-850 transition-colors"
+              className="card hover:bg-ice-navy-850 transition-colors"
             >
               <div className="flex items-start justify-between mb-3">
-                <h3 className="text-lg font-medium text-gold-400">
+                <h3 className="text-lg font-medium text-ice-gold-400">
                   {group.name}
                 </h3>
-                <span className="text-xs px-2 py-1 rounded bg-dark-800 text-dark-400">
+                <span className="text-xs px-2 py-1 rounded bg-ice-navy-800 text-ice-navy-400">
                   Owner: {group.owner_name}
                 </span>
               </div>
 
               {group.description && (
-                <p className="text-sm text-dark-400 mb-4 line-clamp-2">
+                <p className="text-sm text-ice-navy-400 mb-4 line-clamp-2">
                   {group.description}
                 </p>
               )}
 
               <div className="flex items-center gap-6 text-sm">
-                <div className="flex items-center gap-2 text-dark-500">
+                <div className="flex items-center gap-2 text-ice-navy-500">
                   <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
                     <path d="M9 6a3 3 0 11-6 0 3 3 0 016 0zM17 6a3 3 0 11-6 0 3 3 0 016 0zM12.93 17c.046-.327.07-.66.07-1a6.97 6.97 0 00-1.5-4.33A5 5 0 0119 16v1h-6.07zM6 11a5 5 0 015 5v1H1v-1a5 5 0 015-5z" />
                   </svg>
                   <span>{group.member_count} members</span>
                 </div>
-                <div className="flex items-center gap-2 text-dark-500">
+                <div className="flex items-center gap-2 text-ice-navy-500">
                   <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
                     <path d="M2 6a2 2 0 012-2h5l2 2h5a2 2 0 012 2v6a2 2 0 01-2 2H4a2 2 0 01-2-2V6z" />
                   </svg>
@@ -132,7 +132,7 @@ export default function Groups() {
                 </div>
               </div>
 
-              <div className="mt-3 text-xs text-dark-600">
+              <div className="mt-3 text-xs text-ice-navy-600">
                 Created {new Date(group.created_at).toLocaleDateString()}
               </div>
             </Link>
@@ -140,7 +140,7 @@ export default function Groups() {
         </div>
       ) : (
         <div className="card text-center py-12">
-          <p className="text-dark-400 mb-4">
+          <p className="text-ice-navy-400 mb-4">
             {searchQuery ? 'No groups found' : 'No groups yet'}
           </p>
           <Button onClick={() => setShowCreateModal(true)}>
@@ -153,13 +153,13 @@ export default function Groups() {
       {showCreateModal && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
           <div className="card max-w-md w-full">
-            <h2 className="text-xl font-bold text-gold-400 mb-4">
+            <h2 className="text-xl font-bold text-ice-gold-400 mb-4">
               Create New Group
             </h2>
 
             <form onSubmit={handleCreateGroup} className="space-y-4">
               <div>
-                <label className="block text-sm font-medium text-gold-400 mb-2">
+                <label className="block text-sm font-medium text-ice-gold-400 mb-2">
                   Group Name
                 </label>
                 <input
@@ -174,7 +174,7 @@ export default function Groups() {
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gold-400 mb-2">
+                <label className="block text-sm font-medium text-ice-gold-400 mb-2">
                   Description (optional)
                 </label>
                 <textarea
@@ -193,7 +193,7 @@ export default function Groups() {
                     setNewGroupName('');
                     setNewGroupDescription('');
                   }}
-                  className="flex-1 bg-dark-800 hover:bg-dark-700"
+                  className="flex-1 bg-ice-navy-800 hover:bg-ice-navy-700"
                 >
                   Cancel
                 </Button>

@@ -44,7 +44,7 @@ structlog==25.4.0
 python-json-logger==3.2.1
 
 # Validation & Serialization
-pydantic==2.7.4
+pydantic==2.10.5
 email-validator==2.2.0
 validators==0.34.0
 
@@ -74,7 +74,7 @@ google-cloud-storage==2.19.0  # GCS
 
 # Email Services
 sendgrid==6.10.0
-mailgun2==1.2.0
+mailgun2==2.0.1
 
 # Development Dependencies
 pytest==8.3.4

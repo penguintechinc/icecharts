@@ -1,65 +1,137 @@
 /**
- * useCollaboration Hook - WebSocket connection and collaboration logic
- * Manages real-time collaboration features using Socket.IO
+ * useCollaboration Hook - Real-time collaboration for DrawingEditor
+ * Manages WebSocket connection, cursor tracking, and attention gestures
  */
 
-import { useEffect, useRef, useCallback } from 'react';
+import { useEffect, useState, useCallback, useRef } from 'react';
 import { io, Socket } from 'socket.io-client';
-import { useCollaborationStore } from '../store/collaborationStore';
 
-interface UseCollaborationOptions {
-  roomId?: string;
-  enabled?: boolean;
-  onConnected?: () => void;
-  onDisconnected?: () => void;
-  onError?: (error: string) => void;
+interface Collaborator {
+  user_id: number;
+  username: string;
+  permission: 'viewer' | 'editor' | 'admin';
+  cursor?: { x: number; y: number };
+  color: string; // Assigned color for cursor
 }
 
-export const useCollaboration = (options: UseCollaborationOptions = {}) => {
-  const { roomId, enabled = true, onConnected, onDisconnected, onError } = options;
+interface AttentionClick {
+  x: number;
+  y: number;
+  timestamp: number;
+  user_id: number;
+  username: string;
+}
+
+interface UseCollaborationReturn {
+  collaborators: Collaborator[];
+  attentionClicks: AttentionClick[];
+  isConnected: boolean;
+  updateCursorPosition: (x: number, y: number) => void;
+  triggerAttentionClick: (x: number, y: number) => void;
+  broadcastChange: (changeType: string, changeData: any) => void;
+}
+
+const COLORS = ['#FF6B6B', '#4ECDC4', '#45B7D1', '#FFA07A', '#98D8C8', '#F7DC6F', '#BB8FCE'];
+
+/**
+ * Assign a random color to a collaborator
+ */
+function assignColor(): string {
+  return COLORS[Math.floor(Math.random() * COLORS.length)];
+}
+
+/**
+ * Throttle function to limit execution rate
+ * @param func Function to throttle
+ * @param limit Time limit in milliseconds
+ */
+function throttle<T extends (...args: any[]) => void>(func: T, limit: number): T {
+  let inThrottle = false;
+  return ((...args: any[]) => {
+    if (!inThrottle) {
+      func(...args);
+      inThrottle = true;
+      setTimeout(() => {
+        inThrottle = false;
+      }, limit);
+    }
+  }) as T;
+}
+
+/**
+ * Hook for managing real-time collaboration in DrawingEditor
+ * @param drawingId ID of the drawing to collaborate on
+ */
+export const useCollaboration = (drawingId: number | string | undefined): UseCollaborationReturn => {
+  const [socket, setSocket] = useState<Socket | null>(null);
+  const [collaborators, setCollaborators] = useState<Collaborator[]>([]);
+  const [attentionClicks, setAttentionClicks] = useState<AttentionClick[]>([]);
+  const [isConnected, setIsConnected] = useState(false);
 
   const socketRef = useRef<Socket | null>(null);
-  const reconnectTimeoutRef = useRef<ReturnType<typeof setTimeout>>();
-  const cursorThrottleRef = useRef<ReturnType<typeof setTimeout>>();
 
-  const {
-    setConnected,
-    setConnecting,
-    setError,
-    setSessionId,
-    setCurrentRoom,
-    setMyColor,
-    updateCollaborators,
-    updateCursor,
-    addLock,
-    removeLock,
-    clearCollaborators,
-    clearCursors,
-    clearLocks,
-    reset,
-  } = useCollaborationStore();
+  // Get auth token from localStorage
+  const getAuthToken = useCallback(() => {
+    return localStorage.getItem('authToken');
+  }, []);
 
-  /**
-   * Initialize WebSocket connection
-   */
-  const connect = useCallback(() => {
-    if (socketRef.current?.connected || !enabled) {
+  // Throttled cursor position update - 30 FPS (33ms)
+  const updateCursorPosition = useCallback(
+    throttle((x: number, y: number) => {
+      if (socketRef.current && isConnected && drawingId) {
+        socketRef.current.emit('cursor_move', {
+          drawing_id: drawingId,
+          x,
+          y,
+        });
+      }
+    }, 33),
+    [isConnected, drawingId]
+  );
+
+  // Trigger attention-grabbing click animation
+  const triggerAttentionClick = useCallback(
+    (x: number, y: number) => {
+      if (socketRef.current && isConnected && drawingId) {
+        socketRef.current.emit('attention_click', {
+          drawing_id: drawingId,
+          x,
+          y,
+        });
+      }
+    },
+    [isConnected, drawingId]
+  );
+
+  // Broadcast drawing change to other users
+  const broadcastChange = useCallback(
+    (changeType: string, changeData: any) => {
+      if (socketRef.current && isConnected && drawingId) {
+        socketRef.current.emit('drawing_change', {
+          drawing_id: drawingId,
+          change_type: changeType,
+          change_data: changeData,
+        });
+      }
+    },
+    [isConnected, drawingId]
+  );
+
+  useEffect(() => {
+    // Don't connect if no drawing ID
+    if (!drawingId) {
       return;
     }
 
-    setConnecting(true);
-    setError(null);
-
-    // Get auth token from localStorage
-    const token = localStorage.getItem('token');
+    const token = getAuthToken();
     if (!token) {
-      setError('Authentication required');
-      setConnecting(false);
+      console.warn('No auth token found, skipping collaboration connection');
       return;
     }
 
     // Connect to WebSocket server
-    const socket = io(import.meta.env.VITE_API_URL || 'http://localhost:5000', {
+    const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
+    const newSocket = io(API_URL, {
       auth: {
         token,
       },
@@ -70,339 +142,125 @@ export const useCollaboration = (options: UseCollaborationOptions = {}) => {
       reconnectionAttempts: 5,
     });
 
-    socketRef.current = socket;
+    socketRef.current = newSocket;
+    setSocket(newSocket);
 
-    // Connection events
-    socket.on('connect', () => {
-      console.log('WebSocket connected');
-      setConnected(true);
-      setConnecting(false);
-      setError(null);
-      onConnected?.();
+    // Connection established
+    newSocket.on('connect', () => {
+      console.log('WebSocket connected for collaboration');
+      setIsConnected(true);
+
+      // Join the drawing room
+      newSocket.emit('join_drawing', { drawing_id: drawingId });
     });
 
-    socket.on('connected', (data: { session_id: string }) => {
-      console.log('Session ID:', data.session_id);
-      setSessionId(data.session_id);
+    // Receive list of active collaborators
+    newSocket.on('collaborators_list', (data: { collaborators: any[] }) => {
+      console.log('Received collaborators list:', data.collaborators);
+      const collaboratorsWithColors = data.collaborators.map((collab) => ({
+        ...collab,
+        color: collab.color || assignColor(),
+      }));
+      setCollaborators(collaboratorsWithColors);
     });
 
-    socket.on('disconnect', (reason) => {
-      console.log('WebSocket disconnected:', reason);
-      setConnected(false);
-      clearCollaborators();
-      clearCursors();
-      onDisconnected?.();
-
-      // Attempt to reconnect
-      if (reason === 'io server disconnect') {
-        // Server disconnected, try to reconnect
-        reconnectTimeoutRef.current = setTimeout(() => {
-          socket.connect();
-        }, 2000);
-      }
-    });
-
-    socket.on('connect_error', (error) => {
-      console.error('WebSocket connection error:', error);
-      setError(error.message);
-      setConnecting(false);
-      onError?.(error.message);
-    });
-
-    // Room events
-    socket.on('room_joined', (data: { room_id: string; user_id: string; color: string }) => {
-      console.log('Joined room:', data);
-      setCurrentRoom(data.room_id);
-      setMyColor(data.color);
-    });
-
-    // Presence events
-    socket.on('presence_update', (data: { users: any[] }) => {
-      console.log('Presence update:', data.users);
-      updateCollaborators(data.users);
-    });
-
-    // Cursor events
-    socket.on(
-      'cursor_moved',
-      (data: { user_id: string; session_id: string; x: number; y: number }) => {
-        // Get collaborator info to get color and username
-        const collaborator = useCollaborationStore
-          .getState()
-          .getCollaboratorBySessionId(data.session_id);
-
-        if (collaborator) {
-          updateCursor(
-            data.session_id,
-            data.x,
-            data.y,
-            collaborator.color,
-            collaborator.username
-          );
+    // User joined the drawing
+    newSocket.on('user_joined', (data: { user_id: number; username: string; permission: string }) => {
+      console.log('User joined:', data);
+      const newCollaborator: Collaborator = {
+        user_id: data.user_id,
+        username: data.username,
+        permission: data.permission as 'viewer' | 'editor' | 'admin',
+        color: assignColor(),
+      };
+      setCollaborators((prev) => {
+        // Check if user already exists (avoid duplicates)
+        if (prev.some((c) => c.user_id === data.user_id)) {
+          return prev;
         }
-      }
-    );
-
-    // Lock events
-    socket.on('shape_locked', (data: { shape_id: string; user_id: string }) => {
-      console.log('Shape locked:', data);
-      addLock(data.shape_id, data.user_id);
+        return [...prev, newCollaborator];
+      });
     });
 
-    socket.on('shape_unlocked', (data: { shape_id: string }) => {
-      console.log('Shape unlocked:', data);
-      removeLock(data.shape_id);
+    // User left the drawing
+    newSocket.on('user_left', (data: { user_id: number }) => {
+      console.log('User left:', data);
+      setCollaborators((prev) => prev.filter((c) => c.user_id !== data.user_id));
     });
 
-    socket.on('shape_lock_failed', (data: { shape_id: string; locked_by: string }) => {
-      console.warn('Shape lock failed:', data);
-      // You might want to show a notification here
+    // Cursor position updated
+    newSocket.on('cursor_moved', (data: { user_id: number; username: string; x: number; y: number }) => {
+      setCollaborators((prev) =>
+        prev.map((c) =>
+          c.user_id === data.user_id
+            ? { ...c, cursor: { x: data.x, y: data.y } }
+            : c
+        )
+      );
     });
 
-    // Shape update events
-    socket.on(
-      'shape_updated',
-      (data: { shape_id: string; shape_data: any; user_id: string }) => {
-        console.log('Shape updated:', data);
-        // Emit custom event that can be listened to by canvas components
-        window.dispatchEvent(
-          new CustomEvent('collaboration:shape_updated', {
-            detail: data,
-          })
-        );
-      }
-    );
+    // Attention click received
+    newSocket.on('attention_click', (data: { user_id: number; username: string; x: number; y: number }) => {
+      console.log('Attention click:', data);
+      const clickEvent: AttentionClick = {
+        x: data.x,
+        y: data.y,
+        timestamp: Date.now(),
+        user_id: data.user_id,
+        username: data.username,
+      };
+      setAttentionClicks((prev) => [...prev, clickEvent]);
 
-    // Error events
-    socket.on('error', (data: { message: string }) => {
+      // Auto-remove after animation completes (2 seconds)
+      setTimeout(() => {
+        setAttentionClicks((prev) => prev.filter((c) => c.timestamp !== clickEvent.timestamp));
+      }, 2000);
+    });
+
+    // Drawing changed by another user
+    newSocket.on('drawing_changed', (data: { user_id: number; change_type: string; change_data: any }) => {
+      console.log('Drawing changed:', data);
+      // Emit custom event that DrawingEditor can listen to
+      window.dispatchEvent(
+        new CustomEvent('collaboration:drawing_changed', {
+          detail: data,
+        })
+      );
+    });
+
+    // Disconnection
+    newSocket.on('disconnect', (reason) => {
+      console.log('WebSocket disconnected:', reason);
+      setIsConnected(false);
+      setCollaborators([]);
+    });
+
+    // Error handling
+    newSocket.on('error', (data: { message: string }) => {
       console.error('WebSocket error:', data.message);
-      setError(data.message);
-      onError?.(data.message);
     });
 
-    return socket;
-  }, [
-    enabled,
-    setConnected,
-    setConnecting,
-    setError,
-    setSessionId,
-    setCurrentRoom,
-    setMyColor,
-    updateCollaborators,
-    updateCursor,
-    addLock,
-    removeLock,
-    clearCollaborators,
-    clearCursors,
-    onConnected,
-    onDisconnected,
-    onError,
-  ]);
-
-  /**
-   * Disconnect from WebSocket
-   */
-  const disconnect = useCallback(() => {
-    if (socketRef.current) {
-      socketRef.current.disconnect();
+    // Cleanup on unmount
+    return () => {
+      console.log('Cleaning up collaboration connection');
+      if (newSocket.connected) {
+        newSocket.emit('leave_drawing', { drawing_id: drawingId });
+        newSocket.disconnect();
+      }
       socketRef.current = null;
-    }
-    if (reconnectTimeoutRef.current) {
-      clearTimeout(reconnectTimeoutRef.current);
-    }
-    reset();
-  }, [reset]);
-
-  /**
-   * Join a collaboration room
-   */
-  const joinRoom = useCallback(
-    (targetRoomId: string) => {
-      if (!socketRef.current?.connected) {
-        console.warn('Cannot join room: not connected');
-        return;
-      }
-
-      console.log('Joining room:', targetRoomId);
-      socketRef.current.emit('join_room', { room_id: targetRoomId });
-    },
-    []
-  );
-
-  /**
-   * Leave current room
-   */
-  const leaveRoom = useCallback(() => {
-    const currentRoom = useCollaborationStore.getState().currentRoom;
-    if (!socketRef.current?.connected || !currentRoom) {
-      return;
-    }
-
-    console.log('Leaving room:', currentRoom);
-    socketRef.current.emit('leave_room', { room_id: currentRoom });
-    setCurrentRoom(null);
-    clearCollaborators();
-    clearCursors();
-    clearLocks();
-  }, [setCurrentRoom, clearCollaborators, clearCursors, clearLocks]);
-
-  /**
-   * Send cursor position (throttled)
-   */
-  const sendCursorPosition = useCallback(
-    (x: number, y: number) => {
-      const currentRoom = useCollaborationStore.getState().currentRoom;
-      if (!socketRef.current?.connected || !currentRoom) {
-        return;
-      }
-
-      // Throttle cursor updates to avoid overwhelming the server
-      if (cursorThrottleRef.current) {
-        clearTimeout(cursorThrottleRef.current);
-      }
-
-      cursorThrottleRef.current = setTimeout(() => {
-        socketRef.current?.emit('cursor_move', {
-          room_id: currentRoom,
-          x,
-          y,
-        });
-      }, 50); // 20 updates per second max
-    },
-    []
-  );
-
-  /**
-   * Request to lock a shape
-   */
-  const lockShape = useCallback(
-    (shapeId: string) => {
-      const currentRoom = useCollaborationStore.getState().currentRoom;
-      if (!socketRef.current?.connected || !currentRoom) {
-        return Promise.reject(new Error('Not connected'));
-      }
-
-      return new Promise<void>((resolve, reject) => {
-        const timeout = setTimeout(() => {
-          reject(new Error('Lock timeout'));
-        }, 5000);
-
-        const handleLocked = (data: { shape_id: string }) => {
-          if (data.shape_id === shapeId) {
-            clearTimeout(timeout);
-            socketRef.current?.off('shape_locked', handleLocked);
-            socketRef.current?.off('shape_lock_failed', handleFailed);
-            resolve();
-          }
-        };
-
-        const handleFailed = (data: { shape_id: string }) => {
-          if (data.shape_id === shapeId) {
-            clearTimeout(timeout);
-            socketRef.current?.off('shape_locked', handleLocked);
-            socketRef.current?.off('shape_lock_failed', handleFailed);
-            reject(new Error('Shape is locked by another user'));
-          }
-        };
-
-        socketRef.current?.on('shape_locked', handleLocked);
-        socketRef.current?.on('shape_lock_failed', handleFailed);
-
-        socketRef.current?.emit('shape_lock', {
-          room_id: currentRoom,
-          shape_id: shapeId,
-        });
-      });
-    },
-    []
-  );
-
-  /**
-   * Release shape lock
-   */
-  const unlockShape = useCallback(
-    (shapeId: string) => {
-      const currentRoom = useCollaborationStore.getState().currentRoom;
-      if (!socketRef.current?.connected || !currentRoom) {
-        return;
-      }
-
-      socketRef.current.emit('shape_unlock', {
-        room_id: currentRoom,
-        shape_id: shapeId,
-      });
-    },
-    []
-  );
-
-  /**
-   * Send shape update
-   */
-  const sendShapeUpdate = useCallback(
-    (shapeId: string, shapeData: any) => {
-      const currentRoom = useCollaborationStore.getState().currentRoom;
-      if (!socketRef.current?.connected || !currentRoom) {
-        return;
-      }
-
-      socketRef.current.emit('shape_update', {
-        room_id: currentRoom,
-        shape_id: shapeId,
-        shape_data: shapeData,
-      });
-    },
-    []
-  );
-
-  /**
-   * Request current presence
-   */
-  const requestPresence = useCallback(() => {
-    const currentRoom = useCollaborationStore.getState().currentRoom;
-    if (!socketRef.current?.connected || !currentRoom) {
-      return;
-    }
-
-    socketRef.current.emit('request_presence', {
-      room_id: currentRoom,
-    });
-  }, []);
-
-  // Auto-connect on mount if enabled
-  useEffect(() => {
-    if (enabled) {
-      connect();
-    }
-
-    return () => {
-      disconnect();
+      setSocket(null);
+      setIsConnected(false);
+      setCollaborators([]);
+      setAttentionClicks([]);
     };
-  }, [enabled, connect, disconnect]);
-
-  // Auto-join room if roomId changes
-  useEffect(() => {
-    if (roomId && socketRef.current?.connected) {
-      joinRoom(roomId);
-    }
-
-    return () => {
-      if (roomId) {
-        leaveRoom();
-      }
-    };
-  }, [roomId, joinRoom, leaveRoom]);
+  }, [drawingId, getAuthToken]);
 
   return {
-    connect,
-    disconnect,
-    joinRoom,
-    leaveRoom,
-    sendCursorPosition,
-    lockShape,
-    unlockShape,
-    sendShapeUpdate,
-    requestPresence,
-    socket: socketRef.current,
+    collaborators,
+    attentionClicks,
+    isConnected,
+    updateCursorPosition,
+    triggerAttentionClick,
+    broadcastChange,
   };
 };

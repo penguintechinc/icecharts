@@ -9,7 +9,7 @@ import type { IconCategory } from '../types';
  * Iconoir categories with icon definitions
  * Each icon has: id, label, color (purple), source, and tags for search
  */
-export const iconoirCategories: IconCategory[] = [
+const iconoirCategoriesArray: IconCategory[] = [
   {
     label: '3D & Design',
     source: 'iconoir',
@@ -743,40 +743,24 @@ export const iconoirCategories: IconCategory[] = [
   },
 ];
 
-/**
- * Export a flat map of all icons for quick lookup
- */
-export const iconoirIconMap = (() => {
-  const map: Record<string, any> = {};
-  iconoirCategories.forEach((category) => {
-    category.icons.forEach((icon) => {
-      map[icon.id] = icon;
-    });
-  });
-  return map;
-})();
+// Convert array to Record for compatibility with main index
+export const iconoirCategories: Record<string, IconCategory> = {
+  'iconoir-design': iconoirCategoriesArray[0],
+  'iconoir-navigation': iconoirCategoriesArray[1],
+  'iconoir-actions': iconoirCategoriesArray[2],
+  'iconoir-communication': iconoirCategoriesArray[3],
+  'iconoir-finance': iconoirCategoriesArray[4],
+  'iconoir-system': iconoirCategoriesArray[5],
+  'iconoir-development': iconoirCategoriesArray[6],
+  'iconoir-files': iconoirCategoriesArray[7],
+  'iconoir-user': iconoirCategoriesArray[8],
+  'iconoir-status': iconoirCategoriesArray[9],
+  'iconoir-ui': iconoirCategoriesArray[10],
+};
 
 /**
  * Get all icons from all categories
  */
 export const getAllIconoirIcons = () => {
-  return iconoirCategories.flatMap((category) => category.icons);
+  return iconoirCategoriesArray.flatMap((category) => category.icons);
 };
-
-/**
- * Get icons by category label
- */
-export const getIconoirCategory = (label: string) => {
-  return iconoirCategories.find((category) => category.label === label);
-};
-
-/**
- * Search icons by tag
- */
-export const searchIconoirByTag = (tag: string) => {
-  return getAllIconoirIcons().filter((icon) =>
-    icon.tags?.some((t) => t.toLowerCase().includes(tag.toLowerCase()))
-  );
-};
-
-export default iconoirCategories;

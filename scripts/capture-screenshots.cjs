@@ -34,8 +34,8 @@ async function captureScreenshots() {
 
   // Capture login page first (unauthenticated)
   console.log('Capturing login...');
-  await page.goto(`${BASE_URL}/login`, { waitUntil: 'networkidle0', timeout: 60000 });
-  await sleep(1000);
+  await page.goto(`${BASE_URL}/login`, { waitUntil: 'domcontentloaded', timeout: 30000 });
+  await sleep(3000);  // Wait for React to render
   await page.screenshot({ path: path.join(OUTPUT_DIR, 'login.png') });
   console.log('  Saved login.png');
 
@@ -71,8 +71,8 @@ async function captureScreenshots() {
 
     try {
       console.log(`Capturing ${pageInfo.name}...`);
-      await page.goto(`${BASE_URL}${pageInfo.path}`, { waitUntil: 'networkidle0', timeout: 60000 });
-      await sleep(2000); // Wait for data to load
+      await page.goto(`${BASE_URL}${pageInfo.path}`, { waitUntil: 'domcontentloaded', timeout: 30000 });
+      await sleep(3000); // Wait for React to render and data to load
 
       // Check if we got redirected to login
       const currentUrl = page.url();

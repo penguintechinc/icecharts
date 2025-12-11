@@ -5,6 +5,7 @@ Drawing content is stored in S3-compatible object storage (MinIO for dev, AWS S3
 """
 
 import datetime
+import io
 
 from flask import Blueprint, current_app, jsonify, request, send_file
 
@@ -13,6 +14,7 @@ from ...models import get_db
 from ...schemas.drawing_schemas import CreateDrawingRequest, UpdateDrawingRequest
 from ...services.drawing_storage_service import DrawingStorageService
 from ...services.export_service import ExportOptions, ExportService
+from ...tasks.export_tasks import export_drawing_task, get_export_status, get_export_result, get_export_metadata
 from ...utils.validation import validate_json
 
 drawings_v1_bp = Blueprint("drawings_v1", __name__, url_prefix="/drawings")
@@ -359,10 +361,160 @@ def delete_drawing(drawing_id: str):
         return jsonify({"error": str(e)}), 500
 
 
+@drawings_v1_bp.route("/<drawing_id>/export", methods=["POST"])
+@auth_required
+def export_drawing(drawing_id: str):
+    """Export drawing with automatic background job handling for large exports.
+
+    Request JSON body:
+        {
+            "format": "png",  # png, jpg, svg, pdf, json
+            "width": 800,
+            "height": 600,
+            "quality": 95,  # for PNG/JPG
+            "include_background": true,
+            "page_size": "A4"  # for PDF
+        }
+
+    Query parameters:
+        - async: Force async processing (default: false for small, true for large)
+
+    Returns:
+        - 200 with binary file: For small exports (<2000x2000px)
+        - 202 with job_id: For large exports (queued as background job)
+    """
+    try:
+        user = get_current_user()
+        user_id = user["id"]
+        db = get_db()
+
+        # Get drawing
+        drawing = db.drawings(drawing_id)
+        if not drawing:
+            return jsonify({"error": "Drawing not found"}), 404
+
+        # Check access
+        has_access = (
+            drawing.created_by_id == user_id or
+            drawing.owner_id == user_id or
+            drawing.user_id == user_id
+        )
+        if not has_access:
+            return jsonify({"error": "Access denied"}), 403
+
+        # Get latest version with content
+        version = db(db.drawing_versions.drawing_id == drawing.id).select(
+            orderby=~db.drawing_versions.version_number,
+            limitby=(0, 1)
+        ).first()
+
+        if not version:
+            return jsonify({"error": "No drawing content found"}), 404
+
+        # Get export parameters from request
+        data = request.get_json() or {}
+        export_format = data.get("format", "png").lower()
+        width = data.get("width", 800)
+        height = data.get("height", 600)
+        quality = data.get("quality", 95 if export_format == "png" else 85)
+        include_background = data.get("include_background", True)
+        page_size = data.get("page_size", "A4")
+        force_async = request.args.get("async", "false").lower() == "true"
+
+        # Validate format
+        if export_format not in ExportService.VALID_FORMATS:
+            return jsonify({
+                "error": f"Invalid format. Must be one of: {ExportService.VALID_FORMATS}"
+            }), 400
+
+        # Validate dimensions
+        if width <= 0 or height <= 0:
+            return jsonify({"error": "Width and height must be positive"}), 400
+        if not (1 <= quality <= 100):
+            return jsonify({"error": "Quality must be between 1 and 100"}), 400
+
+        # Determine if should use background job
+        use_background_job = force_async or width > 2000 or height > 2000 or export_format in ["png", "jpg"]
+
+        if use_background_job:
+            # Queue background job
+            drawing_data = version.content_json or {"elements": []}
+            options = {
+                "format": export_format,
+                "width": width,
+                "height": height,
+                "quality": quality,
+                "include_background": include_background,
+                "page_size": page_size,
+            }
+
+            task = export_drawing_task.delay(
+                drawing_id=int(drawing_id),
+                format=export_format,
+                options=options,
+                drawing_data=drawing_data,
+            )
+
+            current_app.logger.info(
+                f"Queued background export job {task.id} for drawing {drawing_id}"
+            )
+
+            return jsonify({
+                "job_id": task.id,
+                "status": "processing",
+                "message": "Export job queued for processing"
+            }), 202
+
+        else:
+            # Synchronous export for small files
+            drawing_data = version.content_json or {"elements": []}
+
+            export_options = ExportOptions(
+                format=export_format,
+                width=width,
+                height=height,
+                quality=quality,
+                page_size=page_size,
+                include_background=include_background,
+            )
+
+            exported_content = ExportService.export(export_options, drawing_data)
+
+            # Determine mimetype and filename
+            if export_format == "png":
+                mimetype = "image/png"
+                filename = f"{drawing.title or drawing_id}.png"
+            elif export_format == "jpg":
+                mimetype = "image/jpeg"
+                filename = f"{drawing.title or drawing_id}.jpg"
+            elif export_format == "svg":
+                mimetype = "image/svg+xml"
+                filename = f"{drawing.title or drawing_id}.svg"
+            elif export_format == "pdf":
+                mimetype = "application/pdf"
+                filename = f"{drawing.title or drawing_id}.pdf"
+            else:  # json
+                mimetype = "application/json"
+                filename = f"{drawing.title or drawing_id}.json"
+
+            return send_file(
+                io.BytesIO(exported_content) if isinstance(exported_content, bytes) else io.BytesIO(exported_content.encode("utf-8")),
+                mimetype=mimetype,
+                as_attachment=True,
+                download_name=filename,
+            )
+
+    except ValueError as e:
+        return jsonify({"error": str(e)}), 400
+    except Exception as e:
+        current_app.logger.error(f"Error exporting drawing {drawing_id}: {e}")
+        return jsonify({"error": str(e)}), 500
+
+
 @drawings_v1_bp.route("/<drawing_id>/export/png", methods=["GET"])
 @auth_required
 def export_drawing_png(drawing_id: str):
-    """Export drawing as PNG image.
+    """Export drawing as PNG image (legacy endpoint).
 
     Query parameters:
         - width: Image width (default: 800)
@@ -540,5 +692,87 @@ def export_drawing_json(drawing_id: str):
         return jsonify({"error": str(e)}), 500
 
 
-# Import io at module level
-import io
+@drawings_v1_bp.route("/exports/<job_id>/status", methods=["GET"])
+@auth_required
+def get_export_job_status(job_id: str):
+    """Get status of a background export job.
+
+    Args:
+        job_id: Celery task ID from export response
+
+    Returns:
+        JSON with job status and progress
+    """
+    try:
+        user = get_current_user()
+
+        # Get job status from Redis
+        status = get_export_status(job_id)
+
+        if not status:
+            return jsonify({"error": "Job not found or expired"}), 404
+
+        return jsonify({
+            "success": True,
+            "job_id": job_id,
+            "status": status.get("status", "unknown"),
+            "progress": status.get("progress", 0),
+            "error": status.get("error"),
+        }), 200
+
+    except Exception as e:
+        current_app.logger.error(f"Error getting export status {job_id}: {e}")
+        return jsonify({"error": str(e)}), 500
+
+
+@drawings_v1_bp.route("/exports/<job_id>/download", methods=["GET"])
+@auth_required
+def download_export_result(job_id: str):
+    """Download completed export result.
+
+    Args:
+        job_id: Celery task ID from export response
+
+    Returns:
+        Binary file with export content
+    """
+    try:
+        user = get_current_user()
+
+        # Get metadata and content from Redis
+        metadata = get_export_metadata(job_id)
+        content = get_export_result(job_id)
+
+        if not metadata or not content:
+            return jsonify({"error": "Export not found or expired"}), 404
+
+        # Determine mimetype and filename
+        export_format = metadata.get("format", "png")
+        drawing_id = metadata.get("drawing_id")
+
+        if export_format == "png":
+            mimetype = "image/png"
+            filename = f"drawing_{drawing_id}.png"
+        elif export_format == "jpg":
+            mimetype = "image/jpeg"
+            filename = f"drawing_{drawing_id}.jpg"
+        elif export_format == "svg":
+            mimetype = "image/svg+xml"
+            filename = f"drawing_{drawing_id}.svg"
+        elif export_format == "pdf":
+            mimetype = "application/pdf"
+            filename = f"drawing_{drawing_id}.pdf"
+        else:  # json
+            mimetype = "application/json"
+            filename = f"drawing_{drawing_id}.json"
+
+        return send_file(
+            io.BytesIO(content),
+            mimetype=mimetype,
+            as_attachment=True,
+            download_name=filename,
+        )
+
+    except Exception as e:
+        current_app.logger.error(f"Error downloading export {job_id}: {e}")
+        return jsonify({"error": str(e)}), 500

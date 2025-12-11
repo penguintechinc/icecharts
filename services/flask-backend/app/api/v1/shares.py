@@ -8,6 +8,7 @@ from flask import Blueprint, jsonify, request
 
 from ...middleware import auth_required, get_current_user
 from ...models import get_db, get_user_by_id
+from ...services.share_service import ShareService
 
 shares_v1_bp = Blueprint("shares_v1", __name__, url_prefix="/drawings")
 
@@ -355,4 +356,136 @@ def access_shared_drawing(token: str):
             "content": drawing.get("content"),
             "permission": share.permission,
         },
+    }), 200
+
+
+# New endpoint: Get shared drawing by token (enhanced public access)
+@shares_v1_bp.route("/shared/<string:token>", methods=["GET"])
+def get_shared_drawing(token: str):
+    """
+    Access drawing via public share token.
+
+    This endpoint allows public access to shared drawings without authentication
+    (for link_only mode) or requires authentication (for registered_users mode).
+    Access attempts are logged to share_analytics.
+
+    Args:
+        token: Public share token
+
+    Returns:
+        Drawing data with share permission info if access is granted
+        404 if token is invalid or expired
+        403 if access requires authentication but user is not authenticated
+    """
+    # Get current user if authenticated
+    user = get_current_user()
+    user_id = user.get("id") if user else None
+
+    # Get drawing by token using ShareService
+    drawing = ShareService.get_drawing_by_token(
+        token=token,
+        user_id=user_id,
+        log_access=True
+    )
+
+    if not drawing:
+        return jsonify({"error": "Invalid, expired, or access-restricted share link"}), 404
+
+    # Return drawing data
+    return jsonify({
+        "drawing": drawing,
+        "message": "Drawing accessed via share link"
+    }), 200
+
+
+# New endpoint: Get analytics for shared drawing (owner/admin only)
+@shares_v1_bp.route("/<int:drawing_id>/analytics", methods=["GET"])
+@auth_required
+def get_drawing_analytics(drawing_id: int):
+    """
+    Get access analytics for a shared drawing.
+
+    Returns view count, recent access logs (IP, user agent, timestamps)
+    for the specified drawing. Only the owner or admin users can access this.
+
+    Args:
+        drawing_id: ID of the drawing
+
+    Returns:
+        Analytics data including view count and recent accesses
+        403 if user is not the owner or admin
+        404 if drawing not found
+    """
+    user = get_current_user()
+    if not user:
+        return jsonify({"error": "Authentication required"}), 401
+
+    db = get_db()
+
+    # Get drawing
+    drawing = get_drawing_by_id(drawing_id)
+    if not drawing:
+        return jsonify({"error": "Drawing not found"}), 404
+
+    # Check if user is owner or admin
+    if drawing.get("owner_id") != user["id"] and user.get("role") != "admin":
+        return jsonify({"error": "Only owner or admin can view analytics"}), 403
+
+    # Get analytics from share_analytics table
+    analytics = db(
+        (db.share_analytics.share_type == "drawing") &
+        (db.share_analytics.share_id == drawing_id)
+    ).select(orderby=~db.share_analytics.accessed_at)
+
+    # Count total views
+    total_views = len(analytics)
+
+    # Get unique IPs
+    unique_ips = set()
+    recent_accesses = []
+
+    for entry in analytics:
+        if entry.access_ip:
+            unique_ips.add(entry.access_ip)
+
+        recent_accesses.append({
+            "accessed_at": entry.accessed_at.isoformat() if entry.accessed_at else None,
+            "access_ip": entry.access_ip,
+            "user_agent": entry.user_agent,
+            "accessed_by_id": entry.accessed_by_id,
+            "accessed_by_username": None  # Will be populated if user_id exists
+        })
+
+    # Get usernames for authenticated accesses
+    for access in recent_accesses:
+        if access["accessed_by_id"]:
+            user_record = db(
+                db.identities.id == access["accessed_by_id"]
+            ).select().first()
+            if user_record:
+                access["accessed_by_username"] = user_record.username
+
+    # Get list of public share tokens for this drawing
+    shares = db(
+        (db.drawing_shares.drawing_id == drawing_id) &
+        (db.drawing_shares.is_public == True)
+    ).select()
+
+    public_shares = []
+    for share in shares:
+        public_shares.append({
+            "id": share.id,
+            "token": share.share_token,
+            "permission": share.permission,
+            "expires_at": share.expires_at.isoformat() if share.expires_at else None,
+            "created_at": share.created_at.isoformat() if share.created_at else None,
+        })
+
+    return jsonify({
+        "drawing_id": drawing_id,
+        "total_views": total_views,
+        "unique_ips": len(unique_ips),
+        "public_shares": public_shares,
+        "recent_accesses": recent_accesses[:100],  # Return last 100 accesses
+        "message": "Analytics for shared drawing"
     }), 200
