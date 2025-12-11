@@ -63,7 +63,7 @@ function throttle<T extends (...args: any[]) => void>(func: T, limit: number): T
  * @param drawingId ID of the drawing to collaborate on
  */
 export const useCollaboration = (drawingId: number | string | undefined): UseCollaborationReturn => {
-  const [socket, setSocket] = useState<Socket | null>(null);
+  const [_socket, setSocket] = useState<Socket | null>(null);
   const [collaborators, setCollaborators] = useState<Collaborator[]>([]);
   const [attentionClicks, setAttentionClicks] = useState<AttentionClick[]>([]);
   const [isConnected, setIsConnected] = useState(false);

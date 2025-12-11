@@ -19,7 +19,7 @@ const AdminUsers = React.lazy(() => import('./client/pages/Users'));
 const AdminDashboard = React.lazy(() => import('./client/pages/AdminDashboard'));
 const SSOConfiguration = React.lazy(() => import('./client/pages/SSOConfiguration'));
 const StorageConfiguration = React.lazy(() => import('./client/pages/Admin/StorageConfiguration'));
-const VerifyEmail = React.lazy(() => import('./pages/VerifyEmail'));
+const VerifyEmail = React.lazy(() => import('./client/pages/VerifyEmail'));
 const SharedDrawing = React.lazy(() => import('./pages/SharedDrawing'));
 const SharedCollectionView = React.lazy(() => import('./pages/SharedCollectionView'));
 

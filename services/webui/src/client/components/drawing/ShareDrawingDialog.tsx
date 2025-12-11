@@ -195,7 +195,7 @@ export default function ShareDrawingDialog({
 
   const handleGeneratePublicLink = async () => {
     try {
-      const response = await api.post<{
+      await api.post<{
         token: string;
         share_url: string;
         expires_at: string | null;

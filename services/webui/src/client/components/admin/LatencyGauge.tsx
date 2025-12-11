@@ -1,4 +1,3 @@
-import React from 'react';
 import {
   PieChart as RechartsPieChart,
   Pie,
@@ -46,16 +45,13 @@ export default function LatencyGauge({
   }
 
   // Determine the status based on thresholds
-  let status = 'good';
   let statusColor = '#10b981'; // emerald
   let statusText = 'Excellent';
 
   if (value > thresholds.critical) {
-    status = 'critical';
     statusColor = '#ef4444'; // red
     statusText = 'Critical';
   } else if (value > thresholds.warning) {
-    status = 'warning';
     statusColor = '#f59e0b'; // amber
     statusText = 'Warning';
   }

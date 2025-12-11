@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import Modal from '../common/Modal';
 import Input from '../common/Input';
 import Textarea from '../common/Textarea';

@@ -17,7 +17,7 @@ class Config:
 
     # Application
     APP_NAME = "IceCharts"
-    APP_VERSION = config("APP_VERSION", default="0.1.0")
+    APP_VERSION = config("APP_VERSION", default="0.2.0")
 
     # Database (PyDAL - use individual components or DATABASE_URL)
     DATABASE_URL = config("DATABASE_URL", default=None)

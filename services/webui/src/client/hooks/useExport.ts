@@ -30,7 +30,7 @@ export const useExport = () => {
     success: false,
   });
   const [exportProgress, setExportProgress] = useState<ProgressState | null>(null);
-  const pollingIntervalRef = useRef<NodeJS.Timeout | null>(null);
+  const pollingIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   // Clean up polling on unmount
   useEffect(() => {
@@ -41,7 +41,7 @@ export const useExport = () => {
     };
   }, []);
 
-  const buildQueryParams = (drawingId: string, options: ExportOptions): URLSearchParams => {
+  const buildQueryParams = (_drawingId: string, options: ExportOptions): URLSearchParams => {
     const params = new URLSearchParams();
     params.append('format', options.format);
 

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import Modal from '../common/Modal';
 import Input from '../common/Input';
 import Select from '../common/Select';
@@ -119,7 +119,7 @@ export default function ShareCollectionDialog({
 
   const fetchAvailableUsers = async () => {
     try {
-      const response = await apiClient.get('/users', {
+      await apiClient.get('/users', {
         params: {
           per_page: 50,
         },

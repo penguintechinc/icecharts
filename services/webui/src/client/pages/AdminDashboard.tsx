@@ -91,7 +91,7 @@ interface TopDrawing {
 type TimeRange = '1h' | '24h' | '7d' | '30d' | '90d' | 'all';
 
 export default function AdminDashboard() {
-  const { user, isAdmin } = useAuth();
+  const { isAdmin } = useAuth();
   const [timeRange, setTimeRange] = useState<TimeRange>('7d');
   const [stats, setStats] = useState<DashboardStats | null>(null);
   const [drawingsTimeSeries, setDrawingsTimeSeries] = useState<TimeSeriesData[]>([]);
@@ -388,7 +388,7 @@ export default function AdminDashboard() {
                 fill="#8884d8"
                 dataKey="value"
               >
-                {[0, 1, 2].map((entry, index) => (
+                {[0, 1, 2].map((_, index) => (
                   <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
                 ))}
               </Pie>

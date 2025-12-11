@@ -4,7 +4,7 @@ import { useAuth } from '../hooks/useAuth';
 import api from '../lib/api';
 import Button from '../components/Button';
 import Card from '../components/Card';
-import type { Collection, CollectionItem, CollectionAnalytics, Drawing } from '../types';
+import type { Collection, CollectionItem, CollectionAnalytics } from '../types';
 
 export default function CollectionDetail() {
   const { id } = useParams<{ id: string }>();

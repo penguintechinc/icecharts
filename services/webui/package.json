@@ -1,6 +1,6 @@
 {
   "name": "icecharts-webui",
-  "version": "1.0.0",
+  "version": "0.2.0",
   "description": "IceCharts WebUI - Real-time collaborative diagramming",
   "private": true,
   "type": "module",

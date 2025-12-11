@@ -184,6 +184,24 @@ run_flask_tests() {
     return $flask_result
 }
 
+# Run v0.2.0 API tests
+run_v0_2_0_tests() {
+    log_section "Running v0.2.0 API Tests"
+
+    export API_HOST="http://localhost:5001"
+    export VERBOSE="$VERBOSE"
+
+    if [ -f "$(dirname "$0")/test_flask_api_v0.2.0.sh" ]; then
+        bash "$(dirname "$0")/test_flask_api_v0.2.0.sh"
+        v0_2_0_result=$?
+    else
+        log_error "v0.2.0 API test script not found"
+        return 1
+    fi
+
+    return $v0_2_0_result
+}
+
 # Run WebUI tests
 run_webui_tests() {
     log_section "Running WebUI Tests"
@@ -231,6 +249,7 @@ main() {
 
     # Track test results
     flask_tests_passed=0
+    v0_2_0_tests_passed=0
     webui_tests_passed=0
 
     # Check prerequisites
@@ -249,6 +268,13 @@ main() {
         log_error "Flask API tests failed"
     fi
 
+    # Run v0.2.0 API tests
+    if run_v0_2_0_tests; then
+        v0_2_0_tests_passed=1
+    else
+        log_error "v0.2.0 API tests failed"
+    fi
+
     # Run WebUI tests
     if run_webui_tests; then
         webui_tests_passed=1
@@ -257,7 +283,7 @@ main() {
     fi
 
     # Show logs if any tests failed
-    if [ $flask_tests_passed -eq 0 ] || [ $webui_tests_passed -eq 0 ]; then
+    if [ $flask_tests_passed -eq 0 ] || [ $v0_2_0_tests_passed -eq 0 ] || [ $webui_tests_passed -eq 0 ]; then
         show_logs_on_failure
     fi
 
@@ -270,6 +296,12 @@ main() {
         echo -e "${RED}✗${NC} Flask API Tests: FAILED"
     fi
 
+    if [ $v0_2_0_tests_passed -eq 1 ]; then
+        echo -e "${GREEN}✓${NC} v0.2.0 API Tests: PASSED"
+    else
+        echo -e "${RED}✗${NC} v0.2.0 API Tests: FAILED"
+    fi
+
     if [ $webui_tests_passed -eq 1 ]; then
         echo -e "${GREEN}✓${NC} WebUI Tests: PASSED"
     else
@@ -279,7 +311,7 @@ main() {
     echo ""
 
     # Exit with appropriate code
-    if [ $flask_tests_passed -eq 1 ] && [ $webui_tests_passed -eq 1 ]; then
+    if [ $flask_tests_passed -eq 1 ] && [ $v0_2_0_tests_passed -eq 1 ] && [ $webui_tests_passed -eq 1 ]; then
         log_info "All test suites passed!"
         exit 0
     else

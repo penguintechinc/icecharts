@@ -8,6 +8,7 @@ interface CardProps {
   actions?: React.ReactNode;
   variant?: 'default' | 'elevated';
   padding?: 'sm' | 'md' | 'lg';
+  onClick?: React.MouseEventHandler<HTMLDivElement>;
 }
 
 export default function Card({
@@ -18,6 +19,7 @@ export default function Card({
   actions,
   variant = 'default',
   padding = 'md',
+  onClick,
 }: CardProps) {
   const variantClasses = {
     default: 'bg-slate-800 border border-slate-700',
@@ -31,7 +33,7 @@ export default function Card({
   };
 
   return (
-    <div className={`rounded-lg ${variantClasses[variant]} ${paddingClasses[padding]} ${className}`}>
+    <div className={`rounded-lg ${variantClasses[variant]} ${paddingClasses[padding]} ${className}`} onClick={onClick}>
       {(title || subtitle || actions) && (
         <div className="mb-4">
           <div className="flex items-start justify-between">

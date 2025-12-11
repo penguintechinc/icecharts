@@ -1,4 +1,3 @@
-import React from 'react';
 import Card from '../common/Card';
 import Badge from '../common/Badge';
 import Dropdown from '../common/Dropdown';
@@ -30,9 +29,6 @@ export default function CollectionCard({
   drawingCount,
   shareMode,
   createdDate,
-  ownerName,
-  ownerInitials,
-  ownerAvatar,
   onView,
   onEdit,
   onShare,
