@@ -64,12 +64,11 @@ def list_templates():
 
         return jsonify({
             "success": True,
-            "count": len(templates),
             "templates": templates,
         }), 200
 
     except Exception as e:
-        return jsonify({"error": str(e)}), 500
+        return jsonify({"success": False, "error": str(e)}), 500
 
 
 @templates_v1_bp.route("/<template_id>", methods=["GET"])
@@ -88,10 +87,10 @@ def get_template(template_id: str):
 
         # TODO: Query template from database
         # For now, return error
-        return jsonify({"error": "Template not found"}), 404
+        return jsonify({"success": False, "error": "Template not found"}), 404
 
     except Exception as e:
-        return jsonify({"error": str(e)}), 500
+        return jsonify({"success": False, "error": str(e)}), 500
 
 
 @templates_v1_bp.route("", methods=["POST"])
@@ -117,11 +116,11 @@ def create_template():
 
         # Validate required fields
         if not data.get("name"):
-            return jsonify({"error": "Template name is required"}), 400
+            return jsonify({"success": False, "error": "Template name is required"}), 400
 
         drawing_id = data.get("drawing_id")
         if not drawing_id:
-            return jsonify({"error": "Drawing ID is required"}), 400
+            return jsonify({"success": False, "error": "Drawing ID is required"}), 400
 
         # TODO: Save template to database
         # For now, return placeholder response
@@ -138,7 +137,7 @@ def create_template():
         return jsonify({"success": True, "template": template}), 201
 
     except Exception as e:
-        return jsonify({"error": str(e)}), 500
+        return jsonify({"success": False, "error": str(e)}), 500
 
 
 @templates_v1_bp.route("/<template_id>", methods=["PUT"])
@@ -165,10 +164,10 @@ def update_template(template_id: str):
 
         # TODO: Load template from database, verify ownership, update and save
         # For now, return placeholder
-        return jsonify({"error": "Template not found"}), 404
+        return jsonify({"success": False, "error": "Template not found"}), 404
 
     except Exception as e:
-        return jsonify({"error": str(e)}), 500
+        return jsonify({"success": False, "error": str(e)}), 500
 
 
 @templates_v1_bp.route("/<template_id>", methods=["DELETE"])
@@ -187,10 +186,10 @@ def delete_template(template_id: str):
 
         # TODO: Load template from database, verify ownership, delete
         # For now, return placeholder
-        return jsonify({"error": "Template not found"}), 404
+        return jsonify({"success": False, "error": "Template not found"}), 404
 
     except Exception as e:
-        return jsonify({"error": str(e)}), 500
+        return jsonify({"success": False, "error": str(e)}), 500
 
 
 @templates_v1_bp.route("/<template_id>/use", methods=["POST"])
@@ -213,7 +212,7 @@ def use_template(template_id: str):
 
         # Validate required fields
         if not data.get("name"):
-            return jsonify({"error": "Drawing name is required"}), 400
+            return jsonify({"success": False, "error": "Drawing name is required"}), 400
 
         # TODO: Load template, create new drawing from it, save to database
         # For now, return placeholder
@@ -227,4 +226,4 @@ def use_template(template_id: str):
         return jsonify({"success": True, "drawing": drawing}), 201
 
     except Exception as e:
-        return jsonify({"error": str(e)}), 500
+        return jsonify({"success": False, "error": str(e)}), 500

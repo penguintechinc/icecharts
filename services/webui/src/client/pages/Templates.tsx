@@ -21,19 +21,21 @@ export default function Templates() {
         ...(selectedCategory !== 'all' && { category: selectedCategory }),
       });
 
-      const response = await api.get<{ items: Template[] }>(
+      const response = await api.get<{ success?: boolean; templates?: Template[]; items?: Template[] }>(
         `/templates?${params}`
       );
 
-      setTemplates(response.data.items);
+      const templatesList = response.data.templates || response.data.items || [];
+      setTemplates(templatesList);
 
       // Extract unique categories
       const uniqueCategories = [
-        ...new Set(response.data.items.map((t) => t.category)),
+        ...new Set(templatesList.map((t) => t.category).filter(Boolean)),
       ];
       setCategories(uniqueCategories);
     } catch (err) {
       console.error('Failed to fetch templates:', err);
+      setTemplates([]);
     } finally {
       setIsLoading(false);
     }

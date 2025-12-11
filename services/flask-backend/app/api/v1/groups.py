@@ -52,7 +52,7 @@ def list_groups():
 
     # Admin sees all groups, others see only their groups
     if user["role"] == "admin":
-        query = db.groups
+        query = db(db.groups)
     else:
         # Get groups where user is a member
         query = db(

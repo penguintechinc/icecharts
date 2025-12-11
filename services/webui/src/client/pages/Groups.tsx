@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import api from '../lib/api';
 import Button from '../components/Button';
-import type { Group, PaginatedResponse } from '../types';
+import type { Group } from '../types';
 
 export default function Groups() {
   const [groups, setGroups] = useState<Group[]>([]);
@@ -24,12 +24,13 @@ export default function Groups() {
         ...(searchQuery && { search: searchQuery }),
       });
 
-      const response = await api.get<PaginatedResponse<Group>>(
+      const response = await api.get<{ success?: boolean; groups?: Group[]; items?: Group[] }>(
         `/groups?${params}`
       );
-      setGroups(response.data.items);
+      setGroups(response.data.groups || response.data.items || []);
     } catch (err) {
       console.error('Failed to fetch groups:', err);
+      setGroups([]);
     } finally {
       setIsLoading(false);
     }

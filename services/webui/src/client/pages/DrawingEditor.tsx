@@ -15,7 +15,7 @@ export default function DrawingEditor() {
   const isNewDrawing = id === 'new';
 
   useEffect(() => {
-    if (!isNewDrawing) {
+    if (id && id !== 'new') {
       fetchDrawing();
     } else {
       setIsLoading(false);
