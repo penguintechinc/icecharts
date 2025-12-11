@@ -190,7 +190,7 @@ class ExportDrawingRequest(BaseModel):
     """Schema for exporting a drawing."""
 
     format: str = Field(
-        ..., description="Export format: 'png', 'jpg', 'svg', or 'pdf'"
+        ..., description="Export format: 'png', 'jpg', 'svg', 'pdf', or 'json'"
     )
     width: Optional[int] = Field(
         default=800, ge=100, le=8000, description="Export width in pixels"
@@ -210,14 +210,18 @@ class ExportDrawingRequest(BaseModel):
     scale: Optional[float] = Field(
         default=1.0, ge=0.1, le=5.0, description="Scale factor for export"
     )
+    page_size: Optional[str] = Field(
+        default="A4",
+        description="PDF page size (A0, A1, A2, A3, A4, A5, A6, Letter, Legal, Tabloid, Ledger)"
+    )
 
     @field_validator("format")
     @classmethod
     def validate_format(cls, v: str) -> str:
         """Validate export format."""
         v = v.lower()
-        if v not in ["png", "jpg", "jpeg", "svg", "pdf"]:
-            raise ValueError("format must be 'png', 'jpg', 'svg', or 'pdf'")
+        if v not in ["png", "jpg", "jpeg", "svg", "pdf", "json"]:
+            raise ValueError("format must be 'png', 'jpg', 'svg', 'pdf', or 'json'")
         # Normalize jpeg to jpg
         if v == "jpeg":
             v = "jpg"
@@ -244,6 +248,18 @@ class ExportDrawingRequest(BaseModel):
                 )
         return v
 
+    @field_validator("page_size")
+    @classmethod
+    def validate_page_size(cls, v: Optional[str]) -> str:
+        """Validate PDF page size."""
+        if v is None:
+            return "A4"
+        v = v.upper()
+        valid_sizes = ["A0", "A1", "A2", "A3", "A4", "A5", "A6", "LETTER", "LEGAL", "TABLOID", "LEDGER"]
+        if v not in valid_sizes:
+            raise ValueError(f"page_size must be one of: {', '.join(valid_sizes)}")
+        return v
+
     model_config = {
         "json_schema_extra": {
             "examples": [
@@ -261,6 +277,94 @@ class ExportDrawingRequest(BaseModel):
                     "height": 1080,
                     "quality": 90,
                 },
+                {
+                    "format": "pdf",
+                    "page_size": "A4",
+                    "include_background": True,
+                },
+            ]
+        }
+    }
+
+
+class ExportPngRequest(BaseModel):
+    """Schema for PNG export query parameters."""
+
+    width: Optional[int] = Field(
+        default=800, ge=100, le=8000, description="Export width in pixels"
+    )
+    height: Optional[int] = Field(
+        default=600, ge=100, le=8000, description="Export height in pixels"
+    )
+    quality: Optional[int] = Field(
+        default=95, ge=1, le=100, description="Quality for PNG export (1-100)"
+    )
+    include_background: Optional[bool] = Field(
+        default=True, description="Include background"
+    )
+
+    model_config = {
+        "json_schema_extra": {
+            "examples": [
+                {
+                    "width": 1920,
+                    "height": 1080,
+                    "quality": 95,
+                    "include_background": True,
+                }
+            ]
+        }
+    }
+
+
+class ExportPdfRequest(BaseModel):
+    """Schema for PDF export query parameters."""
+
+    page_size: Optional[str] = Field(
+        default="A4",
+        description="PDF page size (A0, A1, A2, A3, A4, A5, A6, Letter, Legal, Tabloid, Ledger)"
+    )
+    include_background: Optional[bool] = Field(
+        default=True, description="Include background"
+    )
+
+    @field_validator("page_size")
+    @classmethod
+    def validate_page_size(cls, v: Optional[str]) -> str:
+        """Validate PDF page size."""
+        if v is None:
+            return "A4"
+        v = v.upper()
+        valid_sizes = ["A0", "A1", "A2", "A3", "A4", "A5", "A6", "LETTER", "LEGAL", "TABLOID", "LEDGER"]
+        if v not in valid_sizes:
+            raise ValueError(f"page_size must be one of: {', '.join(valid_sizes)}")
+        return v
+
+    model_config = {
+        "json_schema_extra": {
+            "examples": [
+                {
+                    "page_size": "A4",
+                    "include_background": True,
+                }
+            ]
+        }
+    }
+
+
+class ExportJobIdRequest(BaseModel):
+    """Schema for export job ID validation."""
+
+    job_id: str = Field(
+        ..., min_length=1, max_length=255, description="Celery task ID"
+    )
+
+    model_config = {
+        "json_schema_extra": {
+            "examples": [
+                {
+                    "job_id": "abc123def456-789-xyz",
+                }
             ]
         }
     }

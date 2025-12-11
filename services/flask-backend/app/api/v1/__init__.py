@@ -18,6 +18,7 @@ from .comments import comments_v1_bp
 from .libraries import libraries_v1_bp
 from .storage import storage_v1_bp
 from .admin import admin_v1_bp
+from .admin_settings import admin_settings_v1_bp
 from .health import health_v1_bp
 from .dashboard import dashboard_v1_bp
 from .users import users_v1_bp
@@ -39,6 +40,7 @@ api_v1_bp.register_blueprint(comments_v1_bp)
 api_v1_bp.register_blueprint(libraries_v1_bp)
 api_v1_bp.register_blueprint(storage_v1_bp)
 api_v1_bp.register_blueprint(admin_v1_bp)
+api_v1_bp.register_blueprint(admin_settings_v1_bp)
 api_v1_bp.register_blueprint(health_v1_bp)
 api_v1_bp.register_blueprint(dashboard_v1_bp)
 api_v1_bp.register_blueprint(users_v1_bp)

@@ -391,6 +391,73 @@ def disable_mfa():
     }), 200
 
 
+@auth_v1_bp.route("/verify-email/<string:token>", methods=["GET", "POST"])
+def verify_email(token: str):
+    """Verify email address using verification token."""
+    # Verify the email
+    user = EmailVerificationService.verify_email(token)
+
+    if not user:
+        return jsonify({
+            "error": "Invalid or expired verification token",
+        }), 400
+
+    # Generate tokens for the user
+    access_token = create_access_token(user["id"], user["role"])
+    refresh_token, refresh_expires = create_refresh_token(user["id"])
+
+    return jsonify({
+        "message": "Email verified successfully",
+        "access_token": access_token,
+        "refresh_token": refresh_token,
+        "token_type": "Bearer",
+        "expires_in": int(current_app.config["JWT_ACCESS_TOKEN_EXPIRES"].total_seconds()),
+        "user": {
+            "id": user["id"],
+            "email": user["email"],
+            "full_name": user.get("full_name", ""),
+            "role": user["role"],
+            "email_verified": True,
+        },
+    }), 200
+
+
+@auth_v1_bp.route("/resend-verification", methods=["POST"])
+@auth_required
+def resend_verification():
+    """Resend email verification to current user."""
+    user = get_current_user()
+
+    # Check if already verified
+    if user.get("email_verified"):
+        return jsonify({
+            "message": "Email is already verified",
+        }), 400
+
+    # Resend verification
+    success = EmailVerificationService.resend_verification(user["id"])
+
+    if success:
+        return jsonify({
+            "message": "Verification email has been resent. Please check your inbox.",
+        }), 200
+    else:
+        return jsonify({
+            "error": "Failed to resend verification email. Please try again later.",
+        }), 500
+
+
+@auth_v1_bp.route("/verification-status", methods=["GET"])
+@auth_required
+def verification_status():
+    """Get email verification status for current user."""
+    user = get_current_user()
+
+    status = EmailVerificationService.get_verification_status(user["id"])
+
+    return jsonify(status), 200
+
+
 @auth_v1_bp.route("/google", methods=["GET"])
 def google_login():
     """Redirect to Google OAuth authorization endpoint."""

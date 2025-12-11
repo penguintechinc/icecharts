@@ -169,3 +169,76 @@ class PasswordResetConfirmRequest(BaseModel):
             ]
         }
     }
+
+
+class MFAVerifyRequest(BaseModel):
+    """Schema for MFA verification request."""
+
+    code: str = Field(
+        ..., min_length=6, max_length=6, description="6-digit MFA code"
+    )
+
+    @field_validator("code")
+    @classmethod
+    def validate_code(cls, v: str) -> str:
+        """Validate code is numeric and properly formatted."""
+        v = v.strip()
+        if not v.isdigit():
+            raise ValueError("MFA code must contain only digits")
+        return v
+
+    model_config = {
+        "json_schema_extra": {
+            "examples": [
+                {
+                    "code": "123456",
+                }
+            ]
+        }
+    }
+
+
+class MFADisableRequest(BaseModel):
+    """Schema for MFA disable request."""
+
+    password: str = Field(
+        ..., min_length=1, description="User password for verification"
+    )
+
+    model_config = {
+        "json_schema_extra": {
+            "examples": [
+                {
+                    "password": "SecurePass123",
+                }
+            ]
+        }
+    }
+
+
+class GoogleCallbackRequest(BaseModel):
+    """Schema for Google OAuth callback request."""
+
+    code: str = Field(
+        ..., min_length=1, description="Authorization code from Google OAuth"
+    )
+    state: Optional[str] = Field(
+        None, description="CSRF state parameter for security"
+    )
+
+    @field_validator("code")
+    @classmethod
+    def validate_code(cls, v: str) -> str:
+        """Validate and clean authorization code."""
+        return v.strip()
+
+    model_config = {
+        "json_schema_extra": {
+            "examples": [
+                {
+                    "code": "4/0AX4XfWh...",
+                    "state": "random_state_value",
+                }
+            ]
+        }
+    }

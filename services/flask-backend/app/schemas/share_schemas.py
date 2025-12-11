@@ -5,6 +5,139 @@ from typing import Optional
 from pydantic import BaseModel, Field, field_validator
 
 
+class UserShareRequest(BaseModel):
+    """Schema for creating a user share."""
+
+    user_id: int = Field(..., gt=0, description="ID of user to share with")
+    permission: Optional[str] = Field(
+        default="view", description="Permission level: 'view', 'edit', or 'admin'"
+    )
+
+    @field_validator("permission")
+    @classmethod
+    def validate_permission(cls, v: Optional[str]) -> str:
+        """Validate permission level."""
+        if v is None:
+            return "view"
+        v = v.lower()
+        if v not in ["view", "edit", "admin"]:
+            raise ValueError("permission must be 'view', 'edit', or 'admin'")
+        return v
+
+    model_config = {
+        "json_schema_extra": {
+            "examples": [
+                {
+                    "user_id": 123,
+                    "permission": "view",
+                },
+                {
+                    "user_id": 456,
+                    "permission": "edit",
+                },
+            ]
+        }
+    }
+
+
+class GroupShareRequest(BaseModel):
+    """Schema for creating a group share."""
+
+    group_id: int = Field(..., gt=0, description="ID of group to share with")
+    permission: Optional[str] = Field(
+        default="view", description="Permission level: 'view', 'edit', or 'admin'"
+    )
+
+    @field_validator("permission")
+    @classmethod
+    def validate_permission(cls, v: Optional[str]) -> str:
+        """Validate permission level."""
+        if v is None:
+            return "view"
+        v = v.lower()
+        if v not in ["view", "edit", "admin"]:
+            raise ValueError("permission must be 'view', 'edit', or 'admin'")
+        return v
+
+    model_config = {
+        "json_schema_extra": {
+            "examples": [
+                {
+                    "group_id": 123,
+                    "permission": "view",
+                },
+                {
+                    "group_id": 456,
+                    "permission": "edit",
+                },
+            ]
+        }
+    }
+
+
+class PublicShareRequest(BaseModel):
+    """Schema for creating a public share."""
+
+    permission: Optional[str] = Field(
+        default="view", description="Permission level: 'view', 'edit', or 'admin'"
+    )
+    expires_in_days: Optional[int] = Field(
+        None, gt=0, description="Number of days until share expires (optional)"
+    )
+
+    @field_validator("permission")
+    @classmethod
+    def validate_permission(cls, v: Optional[str]) -> str:
+        """Validate permission level."""
+        if v is None:
+            return "view"
+        v = v.lower()
+        if v not in ["view", "edit", "admin"]:
+            raise ValueError("permission must be 'view', 'edit', or 'admin'")
+        return v
+
+    model_config = {
+        "json_schema_extra": {
+            "examples": [
+                {
+                    "permission": "view",
+                    "expires_in_days": 30,
+                },
+                {
+                    "permission": "edit",
+                },
+            ]
+        }
+    }
+
+
+class UpdateShareRequest(BaseModel):
+    """Schema for updating a share."""
+
+    permission: str = Field(
+        ..., description="Permission level: 'view', 'edit', or 'admin'"
+    )
+
+    @field_validator("permission")
+    @classmethod
+    def validate_permission(cls, v: str) -> str:
+        """Validate permission level."""
+        v = v.lower()
+        if v not in ["view", "edit", "admin"]:
+            raise ValueError("permission must be 'view', 'edit', or 'admin'")
+        return v
+
+    model_config = {
+        "json_schema_extra": {
+            "examples": [
+                {
+                    "permission": "edit",
+                }
+            ]
+        }
+    }
+
+
 class CreateShareRequest(BaseModel):
     """Schema for creating a share (drawing or collection)."""
 
@@ -79,33 +212,6 @@ class CreateShareRequest(BaseModel):
     }
 
 
-class UpdateShareRequest(BaseModel):
-    """Schema for updating a share."""
-
-    permission: str = Field(
-        ..., description="Permission level: 'viewer', 'editor', or 'admin'"
-    )
-
-    @field_validator("permission")
-    @classmethod
-    def validate_permission(cls, v: str) -> str:
-        """Validate permission level."""
-        v = v.lower()
-        if v not in ["viewer", "editor", "admin"]:
-            raise ValueError("permission must be 'viewer', 'editor', or 'admin'")
-        return v
-
-    model_config = {
-        "json_schema_extra": {
-            "examples": [
-                {
-                    "permission": "editor",
-                }
-            ]
-        }
-    }
-
-
 class GenerateShareTokenRequest(BaseModel):
     """Schema for generating a public share token."""
 
@@ -150,3 +256,14 @@ class RevokeShareRequest(BaseModel):
             ]
         }
     }
+
+
+__all__ = [
+    "UserShareRequest",
+    "GroupShareRequest",
+    "PublicShareRequest",
+    "UpdateShareRequest",
+    "CreateShareRequest",
+    "GenerateShareTokenRequest",
+    "RevokeShareRequest",
+]
