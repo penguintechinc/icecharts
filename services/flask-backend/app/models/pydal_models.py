@@ -12,9 +12,10 @@ def define_all_tables(db):
 
     Tables are defined in dependency order to satisfy foreign key references.
 
-    IceCharts Tables (14 total):
+    IceCharts Tables (23 total):
+    Core Tables:
     1. tenants - Multi-tenant organizations
-    2. identities - User accounts
+    2. identities - User accounts (updated: email_verified fields)
     3. groups - User groups for access control
     4. group_memberships - Links users to groups
     5. drawings - Drawing documents
@@ -25,8 +26,22 @@ def define_all_tables(db):
     10. shape_metadata - Additional shape properties
     11. comments - Drawing annotations
     12. drawing_shares - Sharing permissions
-    13. collaboration_sessions - Real-time collaboration
+    13. collaboration_sessions - Real-time collaboration (updated: cursor tracking, permissions)
     14. idp_configurations - Identity provider (SSO) settings
+
+    Additional Tables:
+    15. group_members - Group membership with roles
+    16. comment_replies - Replies to comments
+    17. shape_libraries - Custom shape libraries
+    18. library_shapes - Shapes in libraries
+
+    v0.2.0 Tables (Collections, Email, Analytics):
+    19. collections - Drawing collections/albums
+    20. collection_items - Drawings in collections
+    21. collection_shares - Collection sharing permissions
+    22. email_verifications - Email verification tracking
+    23. system_settings - System-wide configuration
+    24. share_analytics - Access tracking for shares
     """
 
     # ==========================================
@@ -99,6 +114,8 @@ def define_all_tables(db):
         Field("is_superuser", "boolean", default=False, notnull=True),
         Field("mfa_enabled", "boolean", default=False, notnull=True),
         Field("mfa_secret", "string", length=255),
+        Field("email_verified", "boolean", default=False, notnull=True),
+        Field("email_verified_at", "datetime"),
         Field("last_login_at", "datetime"),
         Field(
             "created_at",
@@ -187,7 +204,7 @@ def define_all_tables(db):
             "string",
             length=50,
             notnull=True,
-            requires=IS_IN_SET(["local", "s3", "gcs", "azure_blob"]),
+            requires=IS_IN_SET(["local", "s3", "gcs", "azure_blob", "minio", "gdrive", "onedrive"]),
         ),
         Field("config_json", "json", notnull=True),
         Field("storage_config", "json"),  # Alias for API compatibility
@@ -428,6 +445,15 @@ def define_all_tables(db):
         Field("session_id", "string", length=255, notnull=True),
         Field("socket_id", "string", length=255),
         Field("cursor_position_json", "json"),
+        Field("last_cursor_x", "double"),
+        Field("last_cursor_y", "double"),
+        Field(
+            "permission",
+            "string",
+            length=50,
+            default="viewer",
+            requires=IS_IN_SET(["viewer", "editor", "admin"]),
+        ),
         Field("is_active", "boolean", default=True, notnull=True),
         Field(
             "joined_at",
@@ -518,6 +544,269 @@ def define_all_tables(db):
             update=lambda: datetime.datetime.now(datetime.timezone.utc),
         ),
         migrate=True,
+    )
+
+    # ==========================================
+    # v0.2.0: Collections, Email Verification, and Analytics
+    # ==========================================
+
+    # Collections table for organizing drawings
+    db.define_table(
+        "collections",
+        Field(
+            "tenant_id",
+            "reference tenants",
+            default=1,
+            notnull=True,
+            ondelete="CASCADE",
+        ),
+        Field("name", "string", length=255, notnull=True, requires=IS_NOT_EMPTY()),
+        Field("description", "text"),
+        Field("owner_id", "reference identities", notnull=True, ondelete="CASCADE"),
+        Field("thumbnail_url", "string", length=500),
+        Field("is_public", "boolean", default=False, notnull=True),
+        Field("share_token", "string", length=255, unique=True),
+        Field(
+            "share_mode",
+            "string",
+            length=50,
+            default="private",
+            requires=IS_IN_SET(["private", "link_only", "registered_users"]),
+        ),
+        Field(
+            "created_at",
+            "datetime",
+            default=lambda: datetime.datetime.now(datetime.timezone.utc),
+        ),
+        Field(
+            "updated_at",
+            "datetime",
+            update=lambda: datetime.datetime.now(datetime.timezone.utc),
+        ),
+        migrate=True,
+    )
+
+    # Collection items (drawings in a collection)
+    db.define_table(
+        "collection_items",
+        Field("collection_id", "reference collections", notnull=True, ondelete="CASCADE"),
+        Field("drawing_id", "reference drawings", notnull=True, ondelete="CASCADE"),
+        Field("added_by_id", "reference identities", notnull=True, ondelete="SET NULL"),
+        Field("order_index", "integer", default=0),
+        Field(
+            "added_at",
+            "datetime",
+            default=lambda: datetime.datetime.now(datetime.timezone.utc),
+        ),
+        migrate=True,
+    )
+
+    # Collection sharing (user/group level permissions)
+    db.define_table(
+        "collection_shares",
+        Field("collection_id", "reference collections", notnull=True, ondelete="CASCADE"),
+        Field("shared_with_id", "reference identities", ondelete="CASCADE"),
+        Field("shared_with_group_id", "reference groups", ondelete="CASCADE"),
+        Field(
+            "permission",
+            "string",
+            length=50,
+            default="viewer",
+            requires=IS_IN_SET(["viewer", "editor", "admin"]),
+        ),
+        Field("created_by_id", "reference identities", notnull=True, ondelete="SET NULL"),
+        Field(
+            "created_at",
+            "datetime",
+            default=lambda: datetime.datetime.now(datetime.timezone.utc),
+        ),
+        migrate=True,
+    )
+
+    # Email verification tracking
+    db.define_table(
+        "email_verifications",
+        Field("user_id", "reference identities", notnull=True, ondelete="CASCADE"),
+        Field("email", "string", length=255, notnull=True),
+        Field("verification_token", "string", length=255, unique=True, notnull=True),
+        Field("expires_at", "datetime", notnull=True),
+        Field("verified_at", "datetime"),
+        Field("is_verified", "boolean", default=False, notnull=True),
+        Field(
+            "created_at",
+            "datetime",
+            default=lambda: datetime.datetime.now(datetime.timezone.utc),
+        ),
+        migrate=True,
+    )
+
+    # System-wide settings (configurable by admin)
+    db.define_table(
+        "system_settings",
+        Field("setting_key", "string", length=255, unique=True, notnull=True),
+        Field("setting_value", "text"),
+        Field(
+            "setting_type",
+            "string",
+            length=50,
+            default="string",
+            requires=IS_IN_SET(["string", "boolean", "integer", "json"]),
+        ),
+        Field("description", "text"),
+        Field("updated_by_id", "reference identities", ondelete="SET NULL"),
+        Field(
+            "updated_at",
+            "datetime",
+            update=lambda: datetime.datetime.now(datetime.timezone.utc),
+        ),
+        migrate=True,
+    )
+
+    # Share analytics tracking
+    db.define_table(
+        "share_analytics",
+        Field(
+            "share_type",
+            "string",
+            length=50,
+            notnull=True,
+            requires=IS_IN_SET(["drawing", "collection"]),
+        ),
+        Field("share_id", "integer", notnull=True),  # drawing_id or collection_id
+        Field("share_token", "string", length=255),
+        Field("accessed_by_id", "reference identities", ondelete="SET NULL"),
+        Field("access_ip", "string", length=50),
+        Field("user_agent", "string", length=500),
+        Field(
+            "accessed_at",
+            "datetime",
+            default=lambda: datetime.datetime.now(datetime.timezone.utc),
+            notnull=True,
+        ),
+        migrate=True,
+    )
+
+    # ==========================================
+    # Create indexes for performance
+    # ==========================================
+
+    # Collections indexes
+    db.executesql(
+        "CREATE INDEX IF NOT EXISTS idx_collections_owner ON collections(owner_id)"
+    )
+    db.executesql(
+        "CREATE INDEX IF NOT EXISTS idx_collections_token ON collections(share_token)"
+    )
+
+    # Collection items indexes
+    db.executesql(
+        "CREATE UNIQUE INDEX IF NOT EXISTS idx_collection_items_unique "
+        "ON collection_items(collection_id, drawing_id)"
+    )
+    db.executesql(
+        "CREATE INDEX IF NOT EXISTS idx_collection_items_drawing "
+        "ON collection_items(drawing_id)"
+    )
+
+    # Collection shares indexes
+    db.executesql(
+        "CREATE INDEX IF NOT EXISTS idx_collection_shares_collection "
+        "ON collection_shares(collection_id)"
+    )
+
+    # Email verifications indexes
+    db.executesql(
+        "CREATE INDEX IF NOT EXISTS idx_email_verifications_token "
+        "ON email_verifications(verification_token)"
+    )
+
+    # Share analytics indexes
+    db.executesql(
+        "CREATE INDEX IF NOT EXISTS idx_share_analytics_type_id "
+        "ON share_analytics(share_type, share_id)"
+    )
+    db.executesql(
+        "CREATE INDEX IF NOT EXISTS idx_share_analytics_token "
+        "ON share_analytics(share_token)"
+    )
+
+    # ==========================================
+    # Initialize default system settings
+    # ==========================================
+
+    # Signup and registration settings
+    db.system_settings.update_or_insert(
+        db.system_settings.setting_key == "signup_enabled",
+        setting_key="signup_enabled",
+        setting_value="true",
+        setting_type="boolean",
+        description="Enable/disable user registration",
+    )
+
+    db.system_settings.update_or_insert(
+        db.system_settings.setting_key == "signup_mode",
+        setting_key="signup_mode",
+        setting_value="open",
+        setting_type="string",
+        description="Signup mode: open, domain_restricted, sso_only, disabled",
+    )
+
+    db.system_settings.update_or_insert(
+        db.system_settings.setting_key == "signup_allowed_domains",
+        setting_key="signup_allowed_domains",
+        setting_value="[]",
+        setting_type="json",
+        description="List of allowed email domains for signup (domain_restricted mode)",
+    )
+
+    db.system_settings.update_or_insert(
+        db.system_settings.setting_key == "email_verification_required",
+        setting_key="email_verification_required",
+        setting_value="false",
+        setting_type="boolean",
+        description="Require email verification for new accounts",
+    )
+
+    # Email provider settings
+    db.system_settings.update_or_insert(
+        db.system_settings.setting_key == "email_provider",
+        setting_key="email_provider",
+        setting_value="sendmail",
+        setting_type="string",
+        description="Email provider: sendmail, smtp, sendgrid, aws_ses, mailgun, gmail",
+    )
+
+    db.system_settings.update_or_insert(
+        db.system_settings.setting_key == "email_from",
+        setting_key="email_from",
+        setting_value="noreply@icecharts.com",
+        setting_type="string",
+        description="From email address for system emails",
+    )
+
+    db.system_settings.update_or_insert(
+        db.system_settings.setting_key == "email_from_name",
+        setting_key="email_from_name",
+        setting_value="IceCharts",
+        setting_type="string",
+        description="From name for system emails",
+    )
+
+    # Site settings
+    db.system_settings.update_or_insert(
+        db.system_settings.setting_key == "site_url",
+        setting_key="site_url",
+        setting_value="http://localhost:5173",
+        setting_type="string",
+        description="Base URL for the application",
+    )
+
+    db.system_settings.update_or_insert(
+        db.system_settings.setting_key == "site_name",
+        setting_key="site_name",
+        setting_value="IceCharts",
+        setting_type="string",
+        description="Application name",
     )
 
     # Create alias for identities table as users
