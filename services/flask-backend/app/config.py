@@ -135,6 +135,44 @@ class Config:
     GOOGLE_CLIENT_SECRET = config("GOOGLE_CLIENT_SECRET", default="")
     GOOGLE_REDIRECT_URI = config("GOOGLE_REDIRECT_URI", default="")
 
+    # Email Configuration
+    EMAIL_PROVIDER = config("EMAIL_PROVIDER", default="smtp")  # smtp, sendgrid, ses, mailgun, gmail
+    EMAIL_FROM = config("EMAIL_FROM", default="noreply@icecharts.local")
+    EMAIL_FROM_NAME = config("EMAIL_FROM_NAME", default="IceCharts")
+
+    # SMTP Settings
+    SMTP_HOST = config("SMTP_HOST", default="localhost")
+    SMTP_PORT = config("SMTP_PORT", default=587, cast=int)
+    SMTP_USER = config("SMTP_USER", default="")
+    SMTP_PASSWORD = config("SMTP_PASSWORD", default="")
+    SMTP_USE_TLS = config("SMTP_USE_TLS", default=True, cast=bool)
+
+    # SendGrid Settings
+    SENDGRID_API_KEY = config("SENDGRID_API_KEY", default="")
+
+    # AWS SES Settings
+    AWS_SES_REGION = config("AWS_SES_REGION", default="us-east-1")
+    AWS_ACCESS_KEY_ID = config("AWS_ACCESS_KEY_ID", default="")
+    AWS_SECRET_ACCESS_KEY = config("AWS_SECRET_ACCESS_KEY", default="")
+
+    # Mailgun Settings
+    MAILGUN_API_KEY = config("MAILGUN_API_KEY", default="")
+    MAILGUN_DOMAIN = config("MAILGUN_DOMAIN", default="")
+
+    # Gmail Settings
+    GMAIL_USER = config("GMAIL_USER", default="")
+    GMAIL_APP_PASSWORD = config("GMAIL_APP_PASSWORD", default="")
+
+    # Celery Settings
+    CELERY_BROKER_URL = config("CELERY_BROKER_URL", default=REDIS_URL)
+    CELERY_RESULT_BACKEND = config("CELERY_RESULT_BACKEND", default=REDIS_URL)
+    CELERY_TASK_SERIALIZER = "json"
+    CELERY_RESULT_SERIALIZER = "json"
+    CELERY_ACCEPT_CONTENT = ["json"]
+    CELERY_TIMEZONE = "UTC"
+    CELERY_TASK_TRACK_STARTED = True
+    CELERY_TASK_TIME_LIMIT = 30 * 60  # 30 minutes
+
     @staticmethod
     def init_app(app: Any) -> None:
         """Initialize application with configuration."""

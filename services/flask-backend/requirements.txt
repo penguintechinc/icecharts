@@ -15,6 +15,9 @@ psycopg2-binary==2.9.10
 redis==5.2.1
 flask-caching==2.3.0
 
+# Background Jobs & Celery
+celery==5.4.0
+
 # Authentication & Security
 PyJWT==2.10.1
 bcrypt==4.2.1
@@ -41,6 +44,7 @@ structlog==25.4.0
 python-json-logger==3.2.1
 
 # Validation & Serialization
+pydantic==2.7.4
 email-validator==2.2.0
 validators==0.34.0
 
@@ -67,6 +71,10 @@ Pillow==12.0.0
 # Cloud Storage (optional)
 boto3==1.35.90  # AWS S3
 google-cloud-storage==2.19.0  # GCS
+
+# Email Services
+sendgrid==6.10.0
+mailgun2==1.2.0
 
 # Development Dependencies
 pytest==8.3.4

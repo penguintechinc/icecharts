@@ -16,3 +16,9 @@ def health():
 def readiness():
     """Readiness check endpoint."""
     return jsonify({'status': 'ready'}), 200
+
+
+@health_v1_bp.route('/z', methods=['GET'], strict_slashes=False)
+def healthz():
+    """Health check endpoint alias (/healthz)."""
+    return health()
