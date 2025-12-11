@@ -15,45 +15,68 @@
 **Create. Collaborate. Export. Visualize Infrastructure and Diagrams.**
 
 IceCharts is a modern, web-based collaborative diagramming platform designed for creating, sharing, and exporting visual representations of infrastructure, system architectures, flowcharts, and organizational structures. Built with enterprise-grade features including real-time collaboration, version control, and seamless infrastructure integration.
-## ✨ Key Features
 
-### 🎨 Canvas & Drawing
+## Screenshots
+
+<p align="center">
+  <img src="assets/screenshots/login.png" alt="Login Page" width="800">
+  <br><em>Login Page</em>
+</p>
+
+<p align="center">
+  <img src="assets/screenshots/dashboard.png" alt="Dashboard" width="800">
+  <br><em>Dashboard - Overview of recent activity and drawings</em>
+</p>
+
+<p align="center">
+  <img src="assets/screenshots/drawings.png" alt="Drawings List" width="800">
+  <br><em>Drawings - Manage and organize your diagrams</em>
+</p>
+
+<p align="center">
+  <img src="assets/screenshots/groups.png" alt="Groups" width="800">
+  <br><em>Groups - Collaborate with teams</em>
+</p>
+
+## Key Features
+
+### Canvas & Drawing
 - **Intuitive canvas editor** for creating diagrams with shapes, connectors, and text
 - **Rich shape library** for system components, infrastructure, and flowchart elements
 - **Smart connectors** with automatic routing and customizable styling
 - **Grid & snap-to-grid** for precise alignment and professional layouts
 
-### 🤝 Real-Time Collaboration
+### Real-Time Collaboration
 - **Multi-user editing** with WebSocket-powered real-time synchronization
 - **Presence awareness** - see who's editing and where
 - **Comments & annotations** with threaded discussions on specific elements
 - **Resolution tracking** for design reviews and feedback cycles
 
-### 📊 Export & Sharing
+### Export & Sharing
 - **Multiple export formats** (SVG, PNG, PDF, JSON)
 - **Customizable export options** with scaling and resolution settings
 - **Public sharing links** for easy distribution and feedback
 - **Version history** with rollback capabilities
 
-### 🏗️ Infrastructure Integration
+### Infrastructure Integration
 - **Elder API integration** to import infrastructure entities as diagram shapes
 - **Automatic entity mapping** with color-coding by component type
 - **Dependency visualization** showing relationships between infrastructure elements
 - **Live sync** with infrastructure definitions
 
-### 🔐 Enterprise Security
+### Enterprise Security
 - **User authentication & authorization** with role-based access control (RBAC)
 - **OAuth/SSO integration** for enterprise identity management
 - **Team & group management** with granular permissions
 - **Audit logging** for compliance and accountability
 
-### ⚡ High Performance
+### High Performance
 - **PostgreSQL database** with optimized queries and indexing
 - **Redis caching** for instant response times
 - **MinIO object storage** for efficient file management
 - **Prometheus monitoring** with Grafana dashboards
 
-## 🚀 Getting Started
+## Getting Started
 
 ### Prerequisites
 - Docker and Docker Compose
@@ -77,7 +100,7 @@ docker-compose up -d
 # Access the application
 # Web UI: http://localhost:3000
 # API: http://localhost:5001
-# Default credentials: admin@icecharts.local / admin123
+# Default credentials: admin@localhost / admin123
 ```
 
 ### Local Development Setup
@@ -96,7 +119,7 @@ make test
 make build
 ```
 
-## 📚 Documentation
+## Documentation
 
 Comprehensive documentation is available in the [docs/](docs/) directory:
 
@@ -115,7 +138,7 @@ Comprehensive documentation is available in the [docs/](docs/) directory:
 - **[Testing](docs/TESTING.md)** - Testing strategies and test execution
 - **[Docker Setup](docs/DOCKER_SETUP.md)** - Docker-specific configuration
 
-## 🛠️ Technology Stack
+## Technology Stack
 
 | Component | Technology | Version |
 |-----------|-----------|---------|
@@ -127,7 +150,7 @@ Comprehensive documentation is available in the [docs/](docs/) directory:
 | **Monitoring** | Prometheus, Grafana | Latest, Latest |
 | **Containers** | Docker, Docker Compose | Latest |
 
-## 🤝 Contributing
+## Contributing
 
 We welcome contributions! Please see [CONTRIBUTING.md](docs/CONTRIBUTING.md) for guidelines, development workflow, and code standards.
 
@@ -136,7 +159,7 @@ We welcome contributions! Please see [CONTRIBUTING.md](docs/CONTRIBUTING.md) for
 - **Support**: info@penguintech.group
 - **Issues & Questions**: [GitHub Issues](https://github.com/PenguinCloud/IceCharts/issues)
 
-## 📞 Support & Resources
+## Support & Resources
 
 - **Full Documentation**: [docs/](docs/)
 - **API Documentation**: [docs/API_REFERENCE.md](docs/API_REFERENCE.md)
@@ -144,7 +167,7 @@ We welcome contributions! Please see [CONTRIBUTING.md](docs/CONTRIBUTING.md) for
 - **Issue Tracker**: [GitHub Issues](https://github.com/PenguinCloud/IceCharts/issues)
 - **License Server**: https://license.penguintech.io
 
-## 📄 License
+## License
 
 This project is licensed under the Limited AGPL3 with preamble for fair use - see [LICENSE.md](docs/LICENSE.md) for details.
 

@@ -7,7 +7,7 @@ import { Layout } from './components/layout';
 const Dashboard = React.lazy(() => import('./pages/Dashboard'));
 const Login = React.lazy(() => import('./pages/Login'));
 const Register = React.lazy(() => import('./pages/Register'));
-const DrawingEditor = React.lazy(() => import('./pages/DrawingEditor'));
+const DrawingEditor = React.lazy(() => import('./client/pages/DrawingEditor'));
 const NotFound = React.lazy(() => import('./pages/NotFound'));
 const Drawings = React.lazy(() => import('./client/pages/Drawings'));
 const Groups = React.lazy(() => import('./client/pages/Groups'));

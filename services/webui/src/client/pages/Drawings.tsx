@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import api from '../lib/api';
 import Button from '../components/Button';
-import type { Drawing, PaginatedResponse } from '../types';
+import type { Drawing } from '../types';
 
 type ViewMode = 'grid' | 'list';
 
@@ -32,18 +32,19 @@ export default function Drawings() {
         ...(filterVisibility !== 'all' && { visibility: filterVisibility }),
       });
 
-      const response = await api.get<PaginatedResponse<Drawing>>(
+      const response = await api.get<{ success: boolean; count: number; drawings: Drawing[] }>(
         `/drawings?${params}`
       );
 
-      setDrawings(response.data.items);
+      setDrawings(response.data.drawings || []);
       setPagination({
-        page: response.data.page,
-        total: response.data.total,
-        pages: response.data.pages,
+        page: pagination.page,
+        total: response.data.count || 0,
+        pages: Math.ceil((response.data.count || 0) / 12) || 1,
       });
     } catch (err) {
       console.error('Failed to fetch drawings:', err);
+      setDrawings([]);
     } finally {
       setIsLoading(false);
     }
