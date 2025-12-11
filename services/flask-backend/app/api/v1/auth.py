@@ -22,6 +22,8 @@ from ...models import (
     update_user,
 )
 from ...oauth import GoogleOAuthHandler
+from ...schemas.auth_schemas import LoginRequest, RegisterRequest
+from ...utils.validation import validate_json
 
 auth_v1_bp = Blueprint("auth_v1", __name__, url_prefix="/auth")
 
@@ -68,18 +70,12 @@ def create_refresh_token(user_id: int) -> tuple[str, datetime]:
 
 
 @auth_v1_bp.route("/login", methods=["POST"])
-def login():
+@validate_json(LoginRequest)
+def login(validated_data: LoginRequest):
     """Login endpoint - returns access and refresh tokens."""
-    data = request.get_json()
-
-    if not data:
-        return jsonify({"error": "Request body required"}), 400
-
-    email = data.get("email", "").strip().lower()
-    password = data.get("password", "")
-
-    if not email or not password:
-        return jsonify({"error": "Email and password required"}), 400
+    # Email is already validated by Pydantic
+    email = validated_data.email.lower()
+    password = validated_data.password
 
     # Find user
     user = get_user_by_email(email)
@@ -113,23 +109,13 @@ def login():
 
 
 @auth_v1_bp.route("/register", methods=["POST"])
-def register():
+@validate_json(RegisterRequest)
+def register(validated_data: RegisterRequest):
     """Register new user (creates viewer role by default)."""
-    data = request.get_json()
-
-    if not data:
-        return jsonify({"error": "Request body required"}), 400
-
-    email = data.get("email", "").strip().lower()
-    password = data.get("password", "")
-    full_name = data.get("full_name", "").strip()
-
-    # Validation
-    if not email:
-        return jsonify({"error": "Email is required"}), 400
-
-    if not password or len(password) < 8:
-        return jsonify({"error": "Password must be at least 8 characters"}), 400
+    # Email is already validated and normalized by Pydantic
+    email = validated_data.email.lower()
+    password = validated_data.password
+    full_name = validated_data.full_name
 
     # Check if user exists
     existing = get_user_by_email(email)
@@ -141,7 +127,7 @@ def register():
     user = create_user(
         email=email,
         password_hash=password_hash,
-        full_name=full_name,
+        full_name=full_name or "",
         role="viewer",  # Default role for self-registration
     )
 
