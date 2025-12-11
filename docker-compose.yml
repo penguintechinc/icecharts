@@ -135,25 +135,23 @@ services:
     networks:
       - icecharts-network
 
-  # React WebUI Frontend
+  # React WebUI Frontend (simple static file server)
   web:
     build:
       context: ./services/webui
-      dockerfile: Dockerfile
+      dockerfile: Dockerfile.static
     container_name: icecharts-web
     environment:
       - NODE_ENV=${NODE_ENV:-production}
       - VITE_API_URL=${VITE_API_URL:-http://localhost:5001}
       - VITE_API_BASE_PATH=${VITE_API_BASE_PATH:-/api/v1}
-      - VITE_MINIO_URL=${VITE_MINIO_URL:-http://minio:9000}
-      - PORT=80
     ports:
-      - "${WEB_PORT:-3000}:80"
+      - "${WEB_PORT:-3000}:3000"
     depends_on:
       api:
         condition: service_started
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:80/health"]
+      test: ["CMD", "wget", "--spider", "-q", "http://localhost:3000"]
       interval: 30s
       timeout: 10s
       retries: 3

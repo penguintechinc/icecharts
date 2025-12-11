@@ -91,7 +91,7 @@ interface TopDrawing {
 type TimeRange = '1h' | '24h' | '7d' | '30d' | '90d' | 'all';
 
 export default function AdminDashboard() {
-  const { isAdmin } = useAuth();
+  const { isAdmin, isLoading: isAuthLoading, user, checkAuth } = useAuth();
   const [timeRange, setTimeRange] = useState<TimeRange>('7d');
   const [stats, setStats] = useState<DashboardStats | null>(null);
   const [drawingsTimeSeries, setDrawingsTimeSeries] = useState<TimeSeriesData[]>([]);
@@ -159,26 +159,40 @@ export default function AdminDashboard() {
     setIsLoading(false);
   };
 
-  // Initial load
+  // Ensure user data is loaded on mount
   useEffect(() => {
-    if (isAdmin()) {
+    checkAuth();
+  }, []);
+
+  // Initial load - wait for user data before fetching
+  useEffect(() => {
+    if (user && isAdmin()) {
       fetchAllData();
     }
-  }, [timeRange]);
+  }, [timeRange, user]);
 
   // Auto-refresh every 60 seconds
   useEffect(() => {
-    if (!isAdmin()) return;
+    if (!user || !isAdmin()) return;
 
     const interval = setInterval(() => {
       fetchAllData();
     }, 60000);
 
     return () => clearInterval(interval);
-  }, [timeRange]);
+  }, [timeRange, user]);
 
-  // Check admin access
-  if (!isAdmin()) {
+  // Show loading while auth is being checked
+  if (isAuthLoading) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="text-ice-gold-400 text-xl">Checking permissions...</div>
+      </div>
+    );
+  }
+
+  // Check admin access after user is loaded
+  if (!user || !isAdmin()) {
     return (
       <div className="flex items-center justify-center min-h-screen">
         <div className="text-center">

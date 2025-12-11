@@ -687,6 +687,26 @@ def define_all_tables(db):
         migrate=True,
     )
 
+    # Login events tracking for time series analytics
+    db.define_table(
+        "login_events",
+        Field("user_id", "reference identities", notnull=True, ondelete="CASCADE"),
+        Field("login_type", "string", length=50, default="password"),  # password, google, sso
+        Field("ip_address", "string", length=50),
+        Field("user_agent", "string", length=500),
+        Field("country_code", "string", length=2),  # ISO 3166-1 alpha-2
+        Field("country_name", "string", length=100),
+        Field("city", "string", length=100),
+        Field("success", "boolean", default=True, notnull=True),
+        Field(
+            "created_at",
+            "datetime",
+            default=lambda: datetime.datetime.now(datetime.timezone.utc),
+            notnull=True,
+        ),
+        migrate=True,
+    )
+
     # ==========================================
     # Create indexes for performance
     # ==========================================

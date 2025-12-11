@@ -24,7 +24,7 @@ export default function Users() {
     setIsLoading(true);
     try {
       const response = await usersApi.list();
-      setUsers(response.items);
+      setUsers(response.users);
       setError(null);
     } catch (err) {
       setError('Failed to load users');

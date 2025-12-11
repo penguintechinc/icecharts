@@ -192,6 +192,9 @@ class StatisticsService:
         elif metric == "collaborations":
             table = db.collaboration_sessions
             date_field = table.joined_at
+        elif metric == "logins":
+            table = db.login_events
+            date_field = table.created_at
         else:
             # Unknown metric, return empty list
             return []
@@ -480,3 +483,45 @@ class StatisticsService:
             "1d": datetime.timedelta(days=1),
         }
         return mapping.get(interval, datetime.timedelta(hours=1))
+
+    @staticmethod
+    def get_logins_by_country(time_range: str = "7d", limit: int = 20) -> list[dict[str, Any]]:
+        """
+        Get login counts grouped by country.
+
+        Args:
+            time_range: Time range for filtering (1h, 24h, 7d, 30d, 90d, all)
+            limit: Maximum number of countries to return
+
+        Returns:
+            List of dicts with country_code, country_name, and login_count
+        """
+        time_delta = StatisticsService.parse_time_range(time_range)
+        start_time = datetime.datetime.now(datetime.timezone.utc) - time_delta
+
+        db = get_db()
+
+        # Query login events grouped by country
+        result = db(
+            (db.login_events.created_at > start_time) &
+            (db.login_events.country_code != None) &
+            (db.login_events.success == True)
+        ).select(
+            db.login_events.country_code,
+            db.login_events.country_name,
+            db.login_events.id.count(),
+            groupby=db.login_events.country_code | db.login_events.country_name,
+            orderby=~db.login_events.id.count(),
+            limitby=(0, limit)
+        )
+
+        # Convert to list of dicts
+        countries = []
+        for row in result:
+            countries.append({
+                "country_code": row.login_events.country_code,
+                "country_name": row.login_events.country_name or "Unknown",
+                "login_count": row._extra.get('COUNT(login_events.id)', 0)
+            })
+
+        return countries

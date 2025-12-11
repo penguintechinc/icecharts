@@ -1,6 +1,6 @@
 import { useState, useCallback } from 'react';
 import api from '../lib/api';
-import type { User, CreateUserData, UpdateUserData, PaginatedResponse } from '../types';
+import type { User, CreateUserData, UpdateUserData } from '../types';
 
 // Generic API hook for loading states
 export function useApiCall<T>() {
@@ -27,30 +27,38 @@ export function useApiCall<T>() {
   return { data, error, isLoading, execute, setData };
 }
 
-// Users API
+// Users API (admin endpoints)
 export const usersApi = {
-  list: async (page = 1, perPage = 20): Promise<PaginatedResponse<User>> => {
-    const response = await api.get('/users', { params: { page, per_page: perPage } });
+  list: async (page = 1, perPage = 20): Promise<{ users: User[]; total: number }> => {
+    const response = await api.get('/admin/users', { params: { page, per_page: perPage } });
     return response.data;
   },
 
   get: async (id: number): Promise<User> => {
-    const response = await api.get(`/users/${id}`);
-    return response.data;
+    const response = await api.get(`/admin/users/${id}`);
+    return response.data.user;
   },
 
   create: async (data: CreateUserData): Promise<User> => {
-    const response = await api.post('/users', data);
-    return response.data;
+    const response = await api.post('/admin/users', data);
+    return response.data.user;
   },
 
   update: async (id: number, data: UpdateUserData): Promise<User> => {
-    const response = await api.put(`/users/${id}`, data);
-    return response.data;
+    const response = await api.put(`/admin/users/${id}`, data);
+    return response.data.user;
   },
 
   delete: async (id: number): Promise<void> => {
-    await api.delete(`/users/${id}`);
+    await api.delete(`/admin/users/${id}`);
+  },
+
+  activate: async (id: number): Promise<void> => {
+    await api.post(`/admin/users/${id}/activate`);
+  },
+
+  deactivate: async (id: number): Promise<void> => {
+    await api.post(`/admin/users/${id}/deactivate`);
   },
 };
 

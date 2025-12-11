@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import api from '../../lib/api';
 import Button from '../../components/Button';
-import type { User, PaginatedResponse, CreateUserData } from '../../types';
+import type { User, CreateUserData } from '../../types';
 
 export default function AdminUsers() {
   const [users, setUsers] = useState<User[]>([]);
@@ -23,8 +23,8 @@ export default function AdminUsers() {
   const fetchUsers = async () => {
     setIsLoading(true);
     try {
-      const response = await api.get<PaginatedResponse<User>>('/users');
-      setUsers(response.data.items);
+      const response = await api.get<{ users: User[]; total: number }>('/admin/users');
+      setUsers(response.data.users);
     } catch (err) {
       console.error('Failed to fetch users:', err);
     } finally {
@@ -37,7 +37,7 @@ export default function AdminUsers() {
     setIsCreating(true);
 
     try {
-      await api.post('/users', newUser);
+      await api.post('/admin/users', newUser);
       setNewUser({ email: '', password: '', full_name: '', role: 'viewer' });
       setShowCreateModal(false);
       fetchUsers();
@@ -50,7 +50,9 @@ export default function AdminUsers() {
 
   const handleToggleActive = async (userId: number, isActive: boolean) => {
     try {
-      await api.patch(`/users/${userId}`, { is_active: !isActive });
+      // Use activate/deactivate endpoints
+      const action = isActive ? 'deactivate' : 'activate';
+      await api.post(`/admin/users/${userId}/${action}`);
       fetchUsers();
     } catch (err) {
       console.error('Failed to update user:', err);
@@ -83,25 +85,28 @@ export default function AdminUsers() {
       ) : (
         <div className="card overflow-hidden">
           <div className="overflow-x-auto">
-            <table className="w-full">
+            <table className="w-full table-fixed">
               <thead>
                 <tr className="border-b border-dark-700">
-                  <th className="text-left py-3 px-4 text-gold-400 font-medium">
+                  <th className="text-left py-4 px-6 text-gold-400 font-medium w-[15%]">
                     User
                   </th>
-                  <th className="text-left py-3 px-4 text-gold-400 font-medium">
+                  <th className="text-left py-4 px-6 text-gold-400 font-medium w-[20%]">
                     Email
                   </th>
-                  <th className="text-left py-3 px-4 text-gold-400 font-medium">
+                  <th className="text-left py-4 px-6 text-gold-400 font-medium w-[10%]">
                     Role
                   </th>
-                  <th className="text-left py-3 px-4 text-gold-400 font-medium">
+                  <th className="text-left py-4 px-6 text-gold-400 font-medium w-[18%]">
+                    Groups
+                  </th>
+                  <th className="text-left py-4 px-6 text-gold-400 font-medium w-[10%]">
                     Status
                   </th>
-                  <th className="text-left py-3 px-4 text-gold-400 font-medium">
+                  <th className="text-left py-4 px-6 text-gold-400 font-medium w-[12%]">
                     Created
                   </th>
-                  <th className="text-left py-3 px-4 text-gold-400 font-medium">
+                  <th className="text-left py-4 px-6 text-gold-400 font-medium w-[15%]">
                     Actions
                   </th>
                 </tr>
@@ -109,18 +114,36 @@ export default function AdminUsers() {
               <tbody>
                 {users.map((user) => (
                   <tr key={user.id} className="border-b border-dark-800 hover:bg-dark-850">
-                    <td className="py-3 px-4">
-                      <div className="text-gold-400">{user.full_name}</div>
+                    <td className="py-4 px-6">
+                      <div className="text-gold-400 font-medium truncate">{user.full_name || '—'}</div>
                     </td>
-                    <td className="py-3 px-4 text-dark-300">{user.email}</td>
-                    <td className="py-3 px-4">
+                    <td className="py-4 px-6 text-dark-300 truncate">{user.email}</td>
+                    <td className="py-4 px-6">
                       <span className={`badge badge-${user.role}`}>
                         {user.role}
                       </span>
                     </td>
-                    <td className="py-3 px-4">
+                    <td className="py-4 px-6">
+                      {user.groups && user.groups.length > 0 ? (
+                        <div className="flex flex-wrap gap-1">
+                          {user.groups.map((group: { id: number; name: string; role: string }) => (
+                            <Link
+                              key={group.id}
+                              to={`/admin/groups/${group.id}`}
+                              className="text-xs px-2 py-0.5 rounded bg-dark-700 text-dark-300 hover:bg-dark-600 hover:text-gold-400 transition-colors"
+                              title={`Role: ${group.role}`}
+                            >
+                              {group.name}
+                            </Link>
+                          ))}
+                        </div>
+                      ) : (
+                        <span className="text-dark-500 text-sm">—</span>
+                      )}
+                    </td>
+                    <td className="py-4 px-6">
                       <span
-                        className={`text-xs px-2 py-1 rounded ${
+                        className={`text-xs px-2 py-1 rounded whitespace-nowrap ${
                           user.is_active
                             ? 'bg-green-900/30 text-green-400'
                             : 'bg-red-900/30 text-red-400'
@@ -129,13 +152,13 @@ export default function AdminUsers() {
                         {user.is_active ? 'Active' : 'Inactive'}
                       </span>
                     </td>
-                    <td className="py-3 px-4 text-dark-400 text-sm">
+                    <td className="py-4 px-6 text-dark-400 text-sm whitespace-nowrap">
                       {new Date(user.created_at).toLocaleDateString()}
                     </td>
-                    <td className="py-3 px-4">
-                      <div className="flex items-center gap-2">
+                    <td className="py-4 px-6">
+                      <div className="flex items-center gap-4">
                         <Link
-                          to={`/users/${user.id}`}
+                          to={`/admin/users/${user.id}`}
                           className="text-sm text-gold-400 hover:text-gold-300"
                         >
                           Edit

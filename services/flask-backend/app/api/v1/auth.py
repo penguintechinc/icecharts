@@ -71,6 +71,55 @@ def create_refresh_token(user_id: int) -> tuple[str, datetime]:
     return token, expires
 
 
+def get_geoip_info(ip_address: str) -> dict:
+    """Get GeoIP information for an IP address using ip-api.com (free tier)."""
+    import requests
+
+    # Skip GeoIP lookup for localhost/private IPs
+    if ip_address in ("127.0.0.1", "::1", "localhost") or ip_address.startswith("192.168.") or ip_address.startswith("10.") or ip_address.startswith("172."):
+        return {"country_code": None, "country_name": None, "city": None}
+
+    try:
+        # ip-api.com free tier (no API key needed, 45 requests/minute limit)
+        response = requests.get(f"http://ip-api.com/json/{ip_address}?fields=status,country,countryCode,city", timeout=2)
+        if response.status_code == 200:
+            data = response.json()
+            if data.get("status") == "success":
+                return {
+                    "country_code": data.get("countryCode"),
+                    "country_name": data.get("country"),
+                    "city": data.get("city"),
+                }
+    except Exception as e:
+        current_app.logger.debug(f"GeoIP lookup failed for {ip_address}: {e}")
+
+    return {"country_code": None, "country_name": None, "city": None}
+
+
+def record_login_event(user_id: int, login_type: str = "password", success: bool = True):
+    """Record a login event for analytics tracking."""
+    try:
+        db = get_db()
+        ip_address = request.remote_addr
+
+        # Get GeoIP info (non-blocking, fails gracefully)
+        geo_info = get_geoip_info(ip_address)
+
+        db.login_events.insert(
+            user_id=user_id,
+            login_type=login_type,
+            ip_address=ip_address,
+            user_agent=request.headers.get("User-Agent", "")[:500],
+            country_code=geo_info.get("country_code"),
+            country_name=geo_info.get("country_name"),
+            city=geo_info.get("city"),
+            success=success,
+        )
+        db.commit()
+    except Exception as e:
+        current_app.logger.warning(f"Failed to record login event: {e}")
+
+
 @auth_v1_bp.route("/login", methods=["POST"])
 @validate_json(LoginRequest)
 def login(validated_data: LoginRequest):
@@ -91,6 +140,9 @@ def login(validated_data: LoginRequest):
     # Check if user is active
     if not user.get("is_active"):
         return jsonify({"error": "Account is deactivated"}), 401
+
+    # Record successful login event
+    record_login_event(user["id"], login_type="password", success=True)
 
     # Generate tokens
     access_token = create_access_token(user["id"], user["role"])
@@ -145,14 +197,13 @@ def register(validated_data: RegisterRequest):
     if existing:
         return jsonify({"error": "Email already registered"}), 409
 
-    # 6. Create user with email_verified=False
+    # 6. Create user
     password_hash = hash_password(password)
     user = create_user(
         email=email,
         password_hash=password_hash,
         full_name=full_name or "",
         role="viewer",  # Default role for self-registration
-        email_verified=False,
     )
 
     # 7. Handle email verification if required
@@ -511,6 +562,9 @@ def google_callback():
 
         if not user.get("is_active"):
             return jsonify({"error": "Account is deactivated"}), 401
+
+        # Record successful Google login event
+        record_login_event(user["id"], login_type="google", success=True)
 
         # Generate JWT tokens
         jwt_access_token = create_access_token(user["id"], user["role"])

@@ -248,11 +248,10 @@ def use_template(template_id: str):
 
         # Create new drawing
         drawing_id = db.drawings.insert(
-            name=data.get("name"),
+            title=data.get("name"),
             description=data.get("description", ""),
+            created_by_id=user["id"],
             owner_id=user["id"],
-            content=template_content,
-            version=1,
         )
         db.commit()
 

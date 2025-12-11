@@ -4,9 +4,12 @@ import os
 from threading import local
 from typing import Optional
 
+import structlog
 from pydal import DAL
 
 from app.config import get_config
+
+logger = structlog.get_logger()
 
 # Thread-local storage for PyDAL database connections
 _thread_local = local()
@@ -181,11 +184,18 @@ def get_db() -> DAL:
         instance_folder = os.path.join(os.path.dirname(__file__), "..", "..", "instance")
         os.makedirs(instance_folder, exist_ok=True)
 
+        # Initialize tables with SQLAlchemy first
+        from app.models.sqlalchemy_schema import initialize_database
+        try:
+            initialize_database(db_uri)
+        except Exception as e:
+            logger.warning(f"SQLAlchemy table initialization: {e}")
+
         _thread_local.db = DAL(
             db_uri,
             pool_size=config.DB_POOL_SIZE,
             migrate_enabled=True,
-            fake_migrate_all=False,  # Allow migrations so tables are actually created
+            fake_migrate_all=True,  # Tables created by SQLAlchemy, just sync metadata
             check_reserved=["common"],
             lazy_tables=True,
             folder=instance_folder,

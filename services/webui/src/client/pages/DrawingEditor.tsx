@@ -271,6 +271,7 @@ export default function DrawingEditor() {
       animated: true,
       style: { stroke: '#D4AF37', strokeWidth: 2 },
       markerEnd: { type: MarkerType.ArrowClosed, color: '#D4AF37' },
+      interactionWidth: 20,
       data: { startMarker: 'none', endMarker: 'arrow' },
     }, eds)),
     []
@@ -284,10 +285,10 @@ export default function DrawingEditor() {
       position: { x: Math.random() * 400 + 100, y: Math.random() * 300 + 50 },
       data: isCloudProvider
         ? { label, provider: iconId, color }
-        : { label, type: iconId, color: selectedColor },
+        : { label, type: iconId, color },
     };
     setNodes((nds) => [...nds, newNode]);
-  }, [selectedColor]);
+  }, []);
 
   const addShapeNode = useCallback((shape: string) => {
     const newNode: Node = {
@@ -414,6 +415,11 @@ export default function DrawingEditor() {
         const updatedEdge: Edge = {
           ...edge,
           data: newData,
+          style: {
+            ...edge.style,
+            strokeWidth: 2,
+          },
+          interactionWidth: 20, // Wider click area for easier selection
         };
 
         // Handle animated property directly on edge
@@ -677,6 +683,7 @@ export default function DrawingEditor() {
                 stroke: editorTheme === 'dark' ? '#D4AF37' : '#1f2937',
                 strokeWidth: 2
               },
+              interactionWidth: 20,
             }}
             style={{ background: editorTheme === 'dark' ? '#0a0a0f' : '#ffffff' }}
             onEdgeClick={handleEdgeClick}

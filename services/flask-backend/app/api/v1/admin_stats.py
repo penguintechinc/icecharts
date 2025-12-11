@@ -77,7 +77,7 @@ def get_time_series(metric: str):
     interval = request.args.get("interval", "1h")
 
     # Validate metric
-    valid_metrics = ["users", "drawings", "collections", "shares", "collaborations"]
+    valid_metrics = ["users", "drawings", "collections", "shares", "collaborations", "logins"]
     if metric not in valid_metrics:
         return jsonify({
             "error": "Invalid metric",
@@ -220,5 +220,59 @@ def get_top_drawings():
     except Exception as e:
         return jsonify({
             "error": "Failed to retrieve top drawings",
+            "message": str(e)
+        }), 500
+
+
+@admin_stats_v1_bp.route("/logins-by-country", methods=["GET"], strict_slashes=False)
+@auth_required
+@admin_required
+def get_logins_by_country():
+    """
+    Get login counts grouped by country.
+
+    Query params:
+        time_range: Time range for statistics (1h, 24h, 7d, 30d, 90d, all)
+                   Default: 7d
+        limit: Maximum number of countries to return (1-100)
+              Default: 20
+
+    Returns:
+        200: List of countries with login counts
+        400: Invalid parameters
+        401: Unauthorized (not authenticated)
+        403: Forbidden (not admin)
+
+    Example:
+        GET /api/v1/admin/statistics/logins-by-country?time_range=7d&limit=20
+    """
+    time_range = request.args.get("time_range", "7d")
+    limit = request.args.get("limit", 20, type=int)
+
+    # Validate time_range
+    valid_ranges = ["1h", "24h", "7d", "30d", "90d", "all"]
+    if time_range not in valid_ranges:
+        return jsonify({
+            "error": "Invalid time_range",
+            "valid_values": valid_ranges
+        }), 400
+
+    # Validate limit
+    if limit < 1 or limit > 100:
+        return jsonify({
+            "error": "Invalid limit",
+            "message": "Limit must be between 1 and 100"
+        }), 400
+
+    try:
+        data = StatisticsService.get_logins_by_country(time_range, limit)
+        return jsonify({
+            "countries": data,
+            "count": len(data),
+            "time_range": time_range
+        }), 200
+    except Exception as e:
+        return jsonify({
+            "error": "Failed to retrieve logins by country",
             "message": str(e)
         }), 500

@@ -32,22 +32,30 @@ def admin_list_users():
 
     db = get_db()
 
-    # Build query
-    query = db.users
+    # Build query conditions
+    conditions = []
 
-    # Apply filters
     if search:
-        query = db(
+        conditions.append(
             (db.users.email.contains(search)) |
             (db.users.full_name.contains(search))
         )
 
     if role:
-        query = db(db.users.role == role)
+        conditions.append(db.users.role == role)
 
     if active:
         is_active = active.lower() == "true"
-        query = db(db.users.is_active == is_active)
+        conditions.append(db.users.is_active == is_active)
+
+    # Combine conditions or use all users
+    if conditions:
+        combined = conditions[0]
+        for cond in conditions[1:]:
+            combined = combined & cond
+        query = db(combined)
+    else:
+        query = db(db.users.id > 0)
 
     offset = (page - 1) * per_page
 
@@ -57,12 +65,29 @@ def admin_list_users():
     )
     total = query.count()
 
-    # Remove sensitive fields
+    # Remove sensitive fields and add group info
     user_list = []
     for u in users:
         user_dict = u.as_dict()
         user_dict.pop("password_hash", None)
         user_dict.pop("mfa_secret", None)
+
+        # Get groups the user belongs to
+        memberships = db(db.group_members.user_id == u.id).select(
+            db.group_members.group_id,
+            db.group_members.role,
+        )
+        groups = []
+        for m in memberships:
+            group = db.groups(m.group_id)
+            if group:
+                groups.append({
+                    "id": group.id,
+                    "name": group.name,
+                    "role": m.role,
+                })
+        user_dict["groups"] = groups
+
         user_list.append(user_dict)
 
     return jsonify({

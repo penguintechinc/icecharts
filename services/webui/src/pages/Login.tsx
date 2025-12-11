@@ -29,7 +29,7 @@ const Login: React.FC = () => {
             <img
               src="/logo-transparent.png"
               alt="IceCharts"
-              className="h-40 w-auto"
+              className="h-80 w-auto"
             />
           </div>
           <h2 className="text-xl text-ice-gold-400 mb-6 text-center">

@@ -1,14 +1,15 @@
 """Authentication schemas for API validation."""
 
+import re
 from typing import Optional
 
-from pydantic import BaseModel, EmailStr, Field, field_validator
+from pydantic import BaseModel, Field, field_validator
 
 
 class RegisterRequest(BaseModel):
     """Schema for user registration request."""
 
-    email: EmailStr = Field(..., description="User email address")
+    email: str = Field(..., description="User email address")
     password: str = Field(
         ...,
         min_length=8,
@@ -18,6 +19,17 @@ class RegisterRequest(BaseModel):
     full_name: Optional[str] = Field(
         None, max_length=255, description="User's full name"
     )
+
+    @field_validator("email")
+    @classmethod
+    def validate_email(cls, v: str) -> str:
+        """Validate email format (allows localhost for development)."""
+        v = v.strip().lower()
+        # Basic email regex that allows localhost
+        email_pattern = r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+(?:\.[a-zA-Z]{2,})?$'
+        if not re.match(email_pattern, v):
+            raise ValueError("Invalid email format")
+        return v
 
     @field_validator("password")
     @classmethod
@@ -63,8 +75,19 @@ class RegisterRequest(BaseModel):
 class LoginRequest(BaseModel):
     """Schema for user login request."""
 
-    email: EmailStr = Field(..., description="User email address")
+    email: str = Field(..., description="User email address")
     password: str = Field(..., min_length=1, description="User password")
+
+    @field_validator("email")
+    @classmethod
+    def validate_email(cls, v: str) -> str:
+        """Validate email format (allows localhost for development)."""
+        v = v.strip().lower()
+        # Basic email regex that allows localhost
+        email_pattern = r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+(?:\.[a-zA-Z]{2,})?$'
+        if not re.match(email_pattern, v):
+            raise ValueError("Invalid email format")
+        return v
 
     model_config = {
         "json_schema_extra": {
@@ -121,7 +144,18 @@ class RefreshTokenRequest(BaseModel):
 class PasswordResetRequest(BaseModel):
     """Schema for password reset request."""
 
-    email: EmailStr = Field(..., description="User email address")
+    email: str = Field(..., description="User email address")
+
+    @field_validator("email")
+    @classmethod
+    def validate_email(cls, v: str) -> str:
+        """Validate email format (allows localhost for development)."""
+        v = v.strip().lower()
+        # Basic email regex that allows localhost
+        email_pattern = r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+(?:\.[a-zA-Z]{2,})?$'
+        if not re.match(email_pattern, v):
+            raise ValueError("Invalid email format")
+        return v
 
     model_config = {
         "json_schema_extra": {
