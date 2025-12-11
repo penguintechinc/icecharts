@@ -1,5 +1,7 @@
 """Authentication and SSO handlers."""
 
+import bcrypt
+
 # Lazy import SAML handlers to avoid xmlsec dependency issues during development
 # SAML/OIDC are enterprise features gated by license server
 try:
@@ -21,6 +23,17 @@ except (ImportError, Exception):
     JITConfig = None
     JITProvisioner = None
 
+
+def hash_password(password: str) -> str:
+    """Hash password using bcrypt."""
+    return bcrypt.hashpw(password.encode("utf-8"), bcrypt.gensalt()).decode("utf-8")
+
+
+def verify_password(password: str, password_hash: str) -> bool:
+    """Verify password against hash."""
+    return bcrypt.checkpw(password.encode("utf-8"), password_hash.encode("utf-8"))
+
+
 __all__ = [
     'SAMLConfig',
     'SAMLHandler',
@@ -29,4 +42,6 @@ __all__ = [
     'AttributeMapping',
     'JITConfig',
     'JITProvisioner',
+    'hash_password',
+    'verify_password',
 ]

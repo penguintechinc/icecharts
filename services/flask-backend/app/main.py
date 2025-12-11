@@ -69,6 +69,9 @@ def create_app(config_name: str = None) -> Flask:
     # Initialize database
     init_db(app)
 
+    # Create default admin user if needed
+    _create_default_admin(app)
+
     # Initialize SocketIO
     if app.config.get("SOCKETIO_ENABLED"):
         _init_socketio(app)
@@ -197,6 +200,55 @@ def _register_error_handlers(app: Flask) -> None:
         )
 
     logger.info("error_handlers_registered")
+
+
+def _create_default_admin(app: Flask) -> None:
+    """Create default admin user if no users exist."""
+    from app.models import create_user, get_db, get_user_by_email
+    from app.auth import hash_password
+
+    with app.app_context():
+        try:
+            db = get_db()
+
+            # Ensure default tenant exists (required for foreign key constraint)
+            tenant_count = db(db.tenants).count()
+            if tenant_count == 0:
+                logger.info("creating_default_tenant")
+                db.tenants.insert(
+                    name="Default Organization",
+                    slug="default",
+                    subscription_tier="community",
+                    is_active=True,
+                )
+                db.commit()
+                logger.info("default_tenant_created")
+
+            user_count = db(db.identities).count()
+
+            if user_count == 0:
+                admin_email = os.getenv("DEFAULT_ADMIN_EMAIL", "admin@localhost")
+                admin_password = os.getenv("DEFAULT_ADMIN_PASSWORD", "admin123")
+
+                # Check if admin already exists
+                existing = get_user_by_email(admin_email)
+                if not existing:
+                    logger.info("creating_default_admin", email=admin_email)
+                    create_user(
+                        email=admin_email,
+                        password_hash=hash_password(admin_password),
+                        full_name="System Administrator",
+                        role="admin",
+                    )
+                    logger.warning("default_admin_created",
+                                 email=admin_email,
+                                 message="Change the default password immediately!")
+                else:
+                    logger.info("admin_already_exists")
+            else:
+                logger.info("users_exist_skip_default_admin", user_count=user_count)
+        except Exception as e:
+            logger.error("failed_to_create_default_admin", error=str(e))
 
 
 def create_asgi_app() -> "ASGIApplication":

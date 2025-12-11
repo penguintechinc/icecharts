@@ -171,6 +171,19 @@ def logout():
     }), 200
 
 
+@auth_v1_bp.route("/me", methods=["GET"])
+@auth_required
+def get_me():
+    """Get current user info - used to verify token is still valid."""
+    user = get_current_user()
+    return jsonify({
+        "id": user["id"],
+        "email": user["email"],
+        "full_name": user.get("full_name", ""),
+        "role": user["role"],
+    }), 200
+
+
 @auth_v1_bp.route("/refresh", methods=["POST"])
 def refresh():
     """Refresh access token using refresh token."""

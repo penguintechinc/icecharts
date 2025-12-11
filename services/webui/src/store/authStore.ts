@@ -31,23 +31,23 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       set({ isLoading: true, error: null });
 
       const response = await api.auth.login(email, password);
-      const { token, user } = response.data;
+      const { access_token, user } = response.data;
 
       // Store in localStorage
-      localStorage.setItem('authToken', token);
+      localStorage.setItem('authToken', access_token);
       localStorage.setItem('user', JSON.stringify(user));
 
       // Update state
       set({
         user,
-        token,
+        token: access_token,
         isAuthenticated: true,
         isLoading: false,
         error: null,
       });
 
       // Connect WebSocket
-      wsClient.connect(token);
+      wsClient.connect(access_token);
     } catch (error: unknown) {
       const errorMessage = error instanceof Error ? error.message : 'Login failed';
       set({
@@ -64,23 +64,23 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       set({ isLoading: true, error: null });
 
       const response = await api.auth.register(email, password, username);
-      const { token, user } = response.data;
+      const { access_token, user } = response.data;
 
       // Store in localStorage
-      localStorage.setItem('authToken', token);
+      localStorage.setItem('authToken', access_token);
       localStorage.setItem('user', JSON.stringify(user));
 
       // Update state
       set({
         user,
-        token,
+        token: access_token,
         isAuthenticated: true,
         isLoading: false,
         error: null,
       });
 
       // Connect WebSocket
-      wsClient.connect(token);
+      wsClient.connect(access_token);
     } catch (error: unknown) {
       const errorMessage = error instanceof Error ? error.message : 'Registration failed';
       set({

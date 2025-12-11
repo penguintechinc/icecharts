@@ -1,19 +1,16 @@
-[![CI](https://github.com/PenguinCloud/IceCharts/actions/workflows/ci.yml/badge.svg)](https://github.com/PenguinCloud/IceCharts/actions/workflows/ci.yml)
-[![Docker Build](https://github.com/PenguinCloud/IceCharts/actions/workflows/docker-build.yml/badge.svg)](https://github.com/PenguinCloud/IceCharts/actions/workflows/docker-build.yml)
-[![codecov](https://codecov.io/gh/PenguinCloud/IceCharts/branch/main/graph/badge.svg)](https://codecov.io/gh/PenguinCloud/IceCharts)
-[![version](https://img.shields.io/badge/version-0.1.0-blue.svg)](https://semver.org)
-[![License](https://img.shields.io/badge/License-Limited%20AGPL3-blue.svg)](LICENSE.md)
+<p align="center">
+  <img src="assets/logo.svg" alt="IceCharts Logo - Rockhopper Penguin with Charts" width="400">
+</p>
 
-```
-  ___          ___    _              _      _
- |_ _|        / __| _| |_  __ _ _ _| |_ __| |
-  | |        | (__ |_   _|/ _' | '_|  _(_-< |
-  |_|         \___| |_| \__,_|_|  \__/__/_|
+<p align="center">
+  <a href="https://github.com/PenguinCloud/IceCharts/actions/workflows/ci.yml"><img src="https://github.com/PenguinCloud/IceCharts/actions/workflows/ci.yml/badge.svg" alt="CI"></a>
+  <a href="https://github.com/PenguinCloud/IceCharts/actions/workflows/docker-build.yml"><img src="https://github.com/PenguinCloud/IceCharts/actions/workflows/docker-build.yml/badge.svg" alt="Docker Build"></a>
+  <a href="https://codecov.io/gh/PenguinCloud/IceCharts"><img src="https://codecov.io/gh/PenguinCloud/IceCharts/branch/main/graph/badge.svg" alt="codecov"></a>
+  <a href="https://semver.org"><img src="https://img.shields.io/badge/version-0.1.0-blue.svg" alt="version"></a>
+  <a href="LICENSE.md"><img src="https://img.shields.io/badge/License-Limited%20AGPL3-blue.svg" alt="License"></a>
+</p>
 
-    Collaborative Diagram & Chart Creation Platform
-```
-
-# ❄️ IceCharts
+# IceCharts
 
 **Create. Collaborate. Export. Visualize Infrastructure and Diagrams.**
 

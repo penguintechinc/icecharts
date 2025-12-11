@@ -84,7 +84,7 @@ services:
       - DB_PORT=5432
       - DB_NAME=${POSTGRES_DB:-icecharts}
       - DB_USER=${POSTGRES_USER:-icecharts_user}
-      - DB_PASS=${POSTGRES_PASSWORD:-changeme}
+      - DB_PASSWORD=${POSTGRES_PASSWORD:-changeme}
       - DB_POOL_SIZE=${DB_POOL_SIZE:-10}
 
       # Redis Configuration
@@ -101,7 +101,7 @@ services:
       - MINIO_SECURE=${MINIO_SECURE:-false}
 
       # Application Configuration
-      - DEFAULT_ADMIN_EMAIL=${DEFAULT_ADMIN_EMAIL:-admin@icecharts.local}
+      - DEFAULT_ADMIN_EMAIL=${DEFAULT_ADMIN_EMAIL:-admin@localhost}
       - DEFAULT_ADMIN_PASSWORD=${DEFAULT_ADMIN_PASSWORD:-admin123}
       - CORS_ORIGINS=${CORS_ORIGINS:-http://localhost:3000}
 
@@ -142,9 +142,9 @@ services:
     container_name: icecharts-web
     environment:
       - NODE_ENV=${NODE_ENV:-production}
-      - REACT_APP_API_URL=${REACT_APP_API_URL:-http://localhost:5001}
-      - REACT_APP_API_BASE_PATH=${REACT_APP_API_BASE_PATH:-/api/v1}
-      - REACT_APP_MINIO_URL=${REACT_APP_MINIO_URL:-http://minio:9000}
+      - VITE_API_URL=${VITE_API_URL:-http://localhost:5001}
+      - VITE_API_BASE_PATH=${VITE_API_BASE_PATH:-/api/v1}
+      - VITE_MINIO_URL=${VITE_MINIO_URL:-http://minio:9000}
       - PORT=80
     ports:
       - "${WEB_PORT:-3000}:80"
@@ -152,7 +152,7 @@ services:
       api:
         condition: service_started
     healthcheck:
-      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:80/"]
+      test: ["CMD", "curl", "-f", "http://localhost:80/health"]
       interval: 30s
       timeout: 10s
       retries: 3

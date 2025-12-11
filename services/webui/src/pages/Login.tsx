@@ -22,13 +22,13 @@ const Login: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gray-900 flex items-center justify-center px-4">
+    <div className="min-h-screen bg-ice-navy-900 flex items-center justify-center px-4">
       <div className="max-w-md w-full">
-        <div className="card p-8">
-          <h1 className="text-3xl font-bold text-amber-400 mb-6 text-center">
+        <div className="bg-gray-800 border border-ice-navy-700 rounded-lg p-8 shadow-lg">
+          <h1 className="text-3xl font-bold text-ice-gold-400 mb-6 text-center">
             IceCharts
           </h1>
-          <h2 className="text-xl text-gray-300 mb-6 text-center">
+          <h2 className="text-xl text-ice-gold-400 mb-6 text-center">
             Sign in to your account
           </h2>
 
@@ -40,13 +40,13 @@ const Login: React.FC = () => {
 
           <form onSubmit={handleSubmit}>
             <div className="mb-4">
-              <label htmlFor="email" className="block text-gray-300 mb-2">
+              <label htmlFor="email" className="block text-ice-gold-400 mb-2">
                 Email
               </label>
               <input
                 type="email"
                 id="email"
-                className="input"
+                className="w-full px-3 py-2 bg-ice-navy-800 border border-ice-navy-600 rounded-lg text-ice-gold-400 placeholder-gray-500 focus:outline-none focus:border-ice-gold-500 focus:ring-1 focus:ring-ice-gold-500"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 required
@@ -55,13 +55,13 @@ const Login: React.FC = () => {
             </div>
 
             <div className="mb-6">
-              <label htmlFor="password" className="block text-gray-300 mb-2">
+              <label htmlFor="password" className="block text-ice-gold-400 mb-2">
                 Password
               </label>
               <input
                 type="password"
                 id="password"
-                className="input"
+                className="w-full px-3 py-2 bg-ice-navy-800 border border-ice-navy-600 rounded-lg text-ice-gold-400 placeholder-gray-500 focus:outline-none focus:border-ice-gold-500 focus:ring-1 focus:ring-ice-gold-500"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 required
@@ -71,7 +71,7 @@ const Login: React.FC = () => {
 
             <button
               type="submit"
-              className="btn btn-primary w-full"
+              className="w-full px-4 py-2 rounded-lg font-medium transition-colors duration-200 bg-ice-gold-500 text-ice-navy-900 hover:bg-ice-gold-400"
               disabled={isLoading}
             >
               {isLoading ? 'Signing in...' : 'Sign in'}
@@ -80,7 +80,7 @@ const Login: React.FC = () => {
 
           <p className="text-gray-400 text-center mt-4">
             Don't have an account?{' '}
-            <a href="/register" className="text-amber-400 hover:text-amber-500">
+            <a href="/register" className="text-ice-gold-400 hover:text-ice-gold-500">
               Sign up
             </a>
           </p>

@@ -37,7 +37,7 @@ def define_all_tables(db):
         "tenants",
         Field("name", "string", length=255, notnull=True, requires=IS_NOT_EMPTY()),
         Field("slug", "string", length=100, notnull=True, unique=True),
-        Field("domain", "string", length=255),
+        Field("tenant_domain", "string", length=255),
         Field(
             "subscription_tier",
             "string",
@@ -124,6 +124,7 @@ def define_all_tables(db):
         ),
         Field("name", "string", length=255, notnull=True, requires=IS_NOT_EMPTY()),
         Field("description", "text"),
+        Field("owner_id", "reference identities", ondelete="CASCADE"),
         Field("is_active", "boolean", default=True, notnull=True),
         Field(
             "created_at",
@@ -189,7 +190,10 @@ def define_all_tables(db):
             requires=IS_IN_SET(["local", "s3", "gcs", "azure_blob"]),
         ),
         Field("config_json", "json", notnull=True),
+        Field("storage_config", "json"),  # Alias for API compatibility
+        Field("user_id", "reference identities", ondelete="CASCADE"),
         Field("is_active", "boolean", default=True, notnull=True),
+        Field("is_system_default", "boolean", default=False, notnull=True),
         Field(
             "created_at",
             "datetime",
@@ -233,6 +237,8 @@ def define_all_tables(db):
         Field("description", "text"),
         Field("created_by_id", "reference identities", notnull=True, ondelete="CASCADE"),
         Field("updated_by_id", "reference identities", ondelete="SET NULL"),
+        Field("owner_id", "reference identities", ondelete="CASCADE"),
+        Field("user_id", "reference identities", ondelete="CASCADE"),
         Field("is_public", "boolean", default=False, notnull=True),
         Field("is_template", "boolean", default=False, notnull=True),
         Field(
@@ -352,8 +358,8 @@ def define_all_tables(db):
         "shape_metadata",
         Field("shape_id", "string", length=100, notnull=True),
         Field("drawing_id", "reference drawings", notnull=True, ondelete="CASCADE"),
-        Field("key", "string", length=255, notnull=True),
-        Field("value", "text"),
+        Field("meta_key", "string", length=255, notnull=True),
+        Field("meta_value", "text"),
         Field(
             "created_at",
             "datetime",
@@ -366,11 +372,16 @@ def define_all_tables(db):
         "comments",
         Field("drawing_id", "reference drawings", notnull=True, ondelete="CASCADE"),
         Field("author_id", "reference identities", notnull=True, ondelete="CASCADE"),
-        Field("content", "text", notnull=True, requires=IS_NOT_EMPTY()),
+        Field("user_id", "reference identities", ondelete="CASCADE"),
+        Field("comment_text", "text", notnull=True, requires=IS_NOT_EMPTY()),
         Field("x", "double"),  # Position on canvas
         Field("y", "double"),
+        Field("x_position", "double"),  # Alias for API compatibility
+        Field("y_position", "double"),  # Alias for API compatibility
         Field("shape_id", "string", length=100),  # Associated shape (optional)
         Field("is_resolved", "boolean", default=False, notnull=True),
+        Field("resolved_by", "reference identities", ondelete="SET NULL"),
+        Field("resolved_at", "datetime"),
         Field(
             "created_at",
             "datetime",
@@ -389,6 +400,9 @@ def define_all_tables(db):
         Field("drawing_id", "reference drawings", notnull=True, ondelete="CASCADE"),
         Field("shared_with_id", "reference identities", ondelete="CASCADE"),
         Field("shared_with_group_id", "reference groups", ondelete="CASCADE"),
+        Field("user_id", "reference identities", ondelete="CASCADE"),
+        Field("group_id", "reference groups", ondelete="CASCADE"),
+        Field("shared_by", "reference identities", ondelete="SET NULL"),
         Field(
             "permission",
             "string",
@@ -398,6 +412,7 @@ def define_all_tables(db):
         ),
         Field("expires_at", "datetime"),
         Field("share_token", "string", length=255, unique=True),
+        Field("is_public", "boolean", default=False, notnull=True),
         Field(
             "created_at",
             "datetime",
@@ -443,26 +458,12 @@ def define_all_tables(db):
         migrate=True,
     )
 
-    # Add owner_id field to groups table
-    db.groups._extra_fields.append(Field("owner_id", "reference identities", ondelete="CASCADE"))
-
-    # Add owner_id and user_id fields to drawings table for API compatibility
-    db.drawings._extra_fields.append(Field("owner_id", "reference identities", ondelete="CASCADE"))
-    db.drawings._extra_fields.append(Field("user_id", "reference identities", ondelete="CASCADE"))
-
-    # Update comments table to add user_id, x_position, y_position fields and other missing fields
-    db.comments._extra_fields.append(Field("user_id", "reference identities", ondelete="CASCADE"))
-    db.comments._extra_fields.append(Field("x_position", "double"))
-    db.comments._extra_fields.append(Field("y_position", "double"))
-    db.comments._extra_fields.append(Field("resolved_by", "reference identities", ondelete="SET NULL"))
-    db.comments._extra_fields.append(Field("resolved_at", "datetime"))
-
-    # Add comment_replies table
+    # Comment replies table
     db.define_table(
         "comment_replies",
         Field("comment_id", "reference comments", notnull=True, ondelete="CASCADE"),
         Field("user_id", "reference identities", notnull=True, ondelete="CASCADE"),
-        Field("content", "text", notnull=True, requires=IS_NOT_EMPTY()),
+        Field("reply_text", "text", notnull=True, requires=IS_NOT_EMPTY()),
         Field(
             "created_at",
             "datetime",
@@ -470,17 +471,6 @@ def define_all_tables(db):
         ),
         migrate=True,
     )
-
-    # Update drawing_shares table for API compatibility
-    db.drawing_shares._extra_fields.append(Field("user_id", "reference identities", ondelete="CASCADE"))
-    db.drawing_shares._extra_fields.append(Field("group_id", "reference groups", ondelete="CASCADE"))
-    db.drawing_shares._extra_fields.append(Field("is_public", "boolean", default=False, notnull=True))
-    db.drawing_shares._extra_fields.append(Field("shared_by", "reference identities", ondelete="SET NULL"))
-
-    # Update storage_providers table for API compatibility
-    db.storage_providers._extra_fields.append(Field("user_id", "reference identities", ondelete="CASCADE"))
-    db.storage_providers._extra_fields.append(Field("config", "json"))
-    db.storage_providers._extra_fields.append(Field("is_system_default", "boolean", default=False, notnull=True))
 
     # Shape libraries table
     db.define_table(

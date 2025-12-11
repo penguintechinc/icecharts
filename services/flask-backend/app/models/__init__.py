@@ -82,13 +82,21 @@ def get_db() -> DAL:
         db_uri = get_db_uri(config)
 
         # Create PyDAL connection
+        # Note: check_reserved=['common'] avoids overly strict keyword checks
+        # that would block common column names like 'content', 'domain', etc.
+        # fake_migrate=True ensures PyDAL doesn't try to create tables that exist
+        # migrate_enabled=True allows PyDAL to track schema changes
+        instance_folder = os.path.join(os.path.dirname(__file__), "..", "..", "instance")
+        os.makedirs(instance_folder, exist_ok=True)
+
         _thread_local.db = DAL(
             db_uri,
             pool_size=config.DB_POOL_SIZE,
             migrate_enabled=True,
-            check_reserved=["all"],
+            fake_migrate_all=True,  # Don't try to create existing tables
+            check_reserved=["common"],
             lazy_tables=True,
-            folder=os.path.join(os.path.dirname(__file__), "..", "..", "instance"),
+            folder=instance_folder,
         )
 
         # Define all tables
@@ -110,9 +118,58 @@ def init_db(app):
     """
     Initialize database for Flask application.
 
+    This function:
+    1. Creates all database tables defined in pydal_models.py (idempotent)
+    2. Stores a database getter in the app context
+    3. Registers teardown handlers to close connections
+
     Args:
         app: Flask application instance
     """
+    import structlog
+
+    logger = structlog.get_logger()
+
+    # Initialize database schema on startup
+    # This ensures all tables exist before any requests are handled
+    try:
+        logger.info("database_init_starting", message="Initializing database schema...")
+
+        # Get a database connection (this triggers table definition)
+        db = get_db()
+
+        # Force PyDAL to create/migrate all tables by accessing each table
+        # With lazy_tables=True, tables are not created until accessed
+        table_names = list(db.tables)
+        for table_name in table_names:
+            # Access the table to trigger lazy creation/migration
+            _ = db[table_name]
+
+        # Commit any pending migrations
+        db.commit()
+
+        logger.info(
+            "database_tables_defined",
+            message="Database tables initialized successfully",
+            tables=table_names,
+            table_count=len(table_names),
+        )
+
+        # Close this connection - it was just for initialization
+        close_db()
+
+        logger.info("database_init_complete", message="Database initialization complete")
+
+    except Exception as e:
+        logger.error(
+            "database_init_failed",
+            message="Failed to initialize database schema",
+            error=str(e),
+            error_type=type(e).__name__,
+        )
+        # Re-raise to prevent app startup with broken database
+        raise
+
     # Store db getter in app context
     app.db = property(lambda self: get_db())
 
