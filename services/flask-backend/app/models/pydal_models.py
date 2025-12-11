@@ -160,7 +160,7 @@ def define_all_tables(db):
         "idp_configurations",
         Field("tenant_id", "reference tenants", ondelete="CASCADE"),
         Field(
-            "idp_type",
+            "provider_type",
             "string",
             length=50,
             notnull=True,

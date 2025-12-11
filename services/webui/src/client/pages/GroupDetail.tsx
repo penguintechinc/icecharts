@@ -18,7 +18,7 @@ export default function GroupDetail() {
   const [searchQuery, setSearchQuery] = useState('');
   const [searchResults, setSearchResults] = useState<User[]>([]);
   const [selectedUser, setSelectedUser] = useState<User | null>(null);
-  const [selectedRole, setSelectedRole] = useState<'member' | 'admin'>('member');
+  const [selectedRole, setSelectedRole] = useState<'viewer' | 'editor' | 'admin'>('viewer');
   const [isSearching, setIsSearching] = useState(false);
   const [isAddingMember, setIsAddingMember] = useState(false);
   const [showDropdown, setShowDropdown] = useState(false);
@@ -33,12 +33,14 @@ export default function GroupDetail() {
     setIsLoading(true);
     try {
       const [groupRes, membersRes, drawingsRes] = await Promise.all([
-        api.get<Group>(`/groups/${id}`),
+        api.get<{ group: Group } | Group>(`/groups/${id}`),
         api.get<{ items?: GroupMember[]; members?: GroupMember[] }>(`/groups/${id}/members`),
         api.get<{ items?: Drawing[]; drawings?: Drawing[] }>(`/drawings?group_id=${id}`),
       ]);
 
-      setGroup(groupRes.data);
+      // Handle both wrapped and unwrapped responses
+      const groupData = 'group' in groupRes.data ? groupRes.data.group : groupRes.data;
+      setGroup(groupData);
       setMembers(membersRes.data.items || membersRes.data.members || []);
       setDrawings(drawingsRes.data.items || drawingsRes.data.drawings || []);
     } catch (err) {
@@ -150,7 +152,9 @@ export default function GroupDetail() {
     }
   };
 
-  const isOwner = group?.owner_id === user?.id;
+  // Compare as numbers to handle potential type mismatches
+  // Admins can also manage all groups
+  const isOwner = user?.role === 'admin' || group?.owner_id === user?.id || Number(group?.owner_id) === Number(user?.id);
 
   if (isLoading) {
     return (

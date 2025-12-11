@@ -1,12 +1,15 @@
 // User types
+export type UserRole = 'admin' | 'maintainer' | 'viewer';
+
 export interface User {
-  id: string;
+  id: number;
   email: string;
-  username: string;
-  role: 'admin' | 'maintainer' | 'viewer';
+  full_name: string;
+  role: UserRole;
+  is_active: boolean;
   created_at: string;
-  updated_at: string;
-  avatar_url?: string;
+  updated_at: string | null;
+  groups?: Array<{ id: number; name: string; role: string }>;
 }
 
 // Drawing types

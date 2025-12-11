@@ -9,6 +9,7 @@ export interface User {
   is_active: boolean;
   created_at: string;
   updated_at: string | null;
+  groups?: Array<{ id: number; name: string; role: string }>;
 }
 
 export interface CreateUserData {

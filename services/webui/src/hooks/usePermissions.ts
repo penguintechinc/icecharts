@@ -39,7 +39,7 @@ export function usePermissions(): UsePermissionsReturn {
     if (drawing.is_public) return true;
     if (!isAuthenticated) return false;
     if (isGlobalAdmin) return true;
-    if (drawing.owner_id === userId) return true;
+    if (drawing.owner_id === String(userId)) return true;
     // Additional share-based checks would happen server-side
     return true;
   };
@@ -47,14 +47,14 @@ export function usePermissions(): UsePermissionsReturn {
   const canEditDrawing = (drawing: { owner_id: string }): boolean => {
     if (!isAuthenticated) return false;
     if (isGlobalAdmin) return true;
-    if (drawing.owner_id === userId) return true;
+    if (drawing.owner_id === String(userId)) return true;
     return hasRole('editor');
   };
 
   const canDeleteDrawing = (drawing: { owner_id: string }): boolean => {
     if (!isAuthenticated) return false;
     if (isGlobalAdmin) return true;
-    if (drawing.owner_id === userId) return true;
+    if (drawing.owner_id === String(userId)) return true;
     return false;
   };
 
@@ -68,7 +68,7 @@ export function usePermissions(): UsePermissionsReturn {
   const canShareDrawing = (drawing: { owner_id: string }): boolean => {
     if (!isAuthenticated) return false;
     if (isGlobalAdmin) return true;
-    if (drawing.owner_id === userId) return true;
+    if (drawing.owner_id === String(userId)) return true;
     return hasRole('editor');
   };
 

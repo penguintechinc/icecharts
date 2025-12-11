@@ -158,7 +158,7 @@ export const CommentsPanel: React.FC<CommentsPanelProps> = ({
                 onDelete={handleDeleteComment}
                 onReply={handleReplyComment}
                 onResolve={handleResolveComment}
-                isAuthor={comment.author.id === user?.id}
+                isAuthor={comment.author.id === String(user?.id)}
                 isLoading={isSubmitting}
               />
             ))}

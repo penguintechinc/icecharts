@@ -31,8 +31,8 @@ export const Header: React.FC = () => {
     navigate('/login');
   };
 
-  const userInitials = user?.username
-    ? user.username.split(' ').map((n: string) => n[0]).join('').toUpperCase().slice(0, 2)
+  const userInitials = user?.full_name
+    ? user.full_name.split(' ').map((n: string) => n[0]).join('').toUpperCase().slice(0, 2)
     : user?.email?.[0]?.toUpperCase() || 'U';
 
   return (
@@ -74,11 +74,7 @@ export const Header: React.FC = () => {
             className="flex items-center gap-3 hover:opacity-80 transition-opacity"
           >
             <div className="w-9 h-9 rounded-full bg-ice-gold-500 flex items-center justify-center text-ice-navy-900 font-semibold text-sm">
-              {user?.avatar_url ? (
-                <img src={user.avatar_url} alt="" className="w-full h-full rounded-full object-cover" />
-              ) : (
-                userInitials
-              )}
+              {userInitials}
             </div>
             <svg className={`w-4 h-4 text-ice-navy-400 transition-transform ${dropdownOpen ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
@@ -88,7 +84,7 @@ export const Header: React.FC = () => {
           {dropdownOpen && (
             <div className="absolute right-0 mt-2 w-56 bg-ice-navy-800 rounded-lg shadow-xl border border-ice-navy-700 py-1 z-50">
               <div className="px-4 py-3 border-b border-ice-navy-700">
-                <p className="text-sm font-medium text-white truncate">{user?.username || 'User'}</p>
+                <p className="text-sm font-medium text-white truncate">{user?.full_name || 'User'}</p>
                 <p className="text-sm text-ice-navy-400 truncate">{user?.email}</p>
               </div>
               <Link

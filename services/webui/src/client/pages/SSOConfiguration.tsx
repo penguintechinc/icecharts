@@ -1,70 +1,90 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../hooks/useAuth';
 import Button from '../components/Button';
-import TabNavigation from '../components/TabNavigation';
+import apiClient from '../../lib/api';
 
-interface SAMLConfig {
-  idp_name: string;
-  idp_entity_id: string;
-  sso_url: string;
-  slo_url?: string;
-  name_id_format?: string;
-  metadata_url?: string;
+interface SSOProvider {
+  id: string;
+  name: string;
+  description: string;
+  available: boolean;
+  premium: boolean;
 }
 
-interface OIDCConfig {
-  issuer: string;
+interface SSOConfig {
+  id: number;
+  provider: string;
+  name: string;
+  enabled: boolean;
   client_id: string;
-  authorization_endpoint: string;
-  token_endpoint: string;
-  userinfo_endpoint: string;
+  metadata_url: string;
+}
+
+interface GoogleFormData {
+  client_id: string;
+  client_secret: string;
+  enabled: boolean;
 }
 
 interface SAMLFormData {
-  metadata_url?: string;
-  idp_name?: string;
-  idp_entity_id?: string;
-  sso_url?: string;
-  slo_url?: string;
-  x509_cert?: string;
-  jit_enabled: boolean;
-  auto_assign_role: string;
+  name: string;
+  metadata_url: string;
+  entity_id: string;
+  sso_url: string;
+  slo_url: string;
+  x509_cert: string;
+  enabled: boolean;
 }
 
 interface OIDCFormData {
+  name: string;
   issuer: string;
   client_id: string;
   client_secret: string;
-  jit_enabled: boolean;
-  auto_assign_role: string;
+  enabled: boolean;
 }
 
 export default function SSOConfiguration() {
   const { user } = useAuth();
-  const [activeTab, setActiveTab] = useState<'saml' | 'oidc'>('saml');
 
-  // SAML state
-  const [samlConfig, setSAMLConfig] = useState<SAMLConfig | null>(null);
-  const [samlFormData, setSAMLFormData] = useState<SAMLFormData>({
-    jit_enabled: true,
-    auto_assign_role: 'viewer',
+  // Provider selection state
+  const [providers, setProviders] = useState<SSOProvider[]>([]);
+  const [selectedProvider, setSelectedProvider] = useState<string>('google');
+  const [hasPremium, setHasPremium] = useState(false);
+  const [providersLoading, setProvidersLoading] = useState(true);
+
+  // Existing configs
+  const [existingConfigs, setExistingConfigs] = useState<SSOConfig[]>([]);
+
+  // Form states
+  const [googleForm, setGoogleForm] = useState<GoogleFormData>({
+    client_id: '',
+    client_secret: '',
+    enabled: true,
   });
-  const [samlLoading, setSAMLLoading] = useState(false);
-  const [samlError, setSAMLError] = useState<string | null>(null);
-  const [samlSuccess, setSAMLSuccess] = useState(false);
 
-  // OIDC state
-  const [oidcConfig, setOIDCConfig] = useState<OIDCConfig | null>(null);
-  const [oidcFormData, setOIDCFormData] = useState<OIDCFormData>({
+  const [samlForm, setSamlForm] = useState<SAMLFormData>({
+    name: '',
+    metadata_url: '',
+    entity_id: '',
+    sso_url: '',
+    slo_url: '',
+    x509_cert: '',
+    enabled: true,
+  });
+
+  const [oidcForm, setOidcForm] = useState<OIDCFormData>({
+    name: '',
     issuer: '',
     client_id: '',
     client_secret: '',
-    jit_enabled: true,
-    auto_assign_role: 'viewer',
+    enabled: true,
   });
-  const [oidcLoading, setOIDCLoading] = useState(false);
-  const [oidcError, setOIDCError] = useState<string | null>(null);
-  const [oidcSuccess, setOIDCSuccess] = useState(false);
+
+  // UI states
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [success, setSuccess] = useState(false);
 
   // Check authorization
   if (user?.role !== 'admin') {
@@ -77,125 +97,124 @@ export default function SSOConfiguration() {
     );
   }
 
+  // Fetch available providers on mount
   useEffect(() => {
-    if (activeTab === 'saml') {
-      fetchSAMLConfig();
-    } else {
-      fetchOIDCConfig();
-    }
-  }, [activeTab]);
+    fetchProviders();
+    fetchExistingConfigs();
+  }, []);
 
-  // SAML Functions
-  const fetchSAMLConfig = async () => {
+  const fetchProviders = async () => {
     try {
-      setSAMLLoading(true);
-      const response = await fetch('/api/v1/sso/saml/config', {
-        headers: {
-          Authorization: `Bearer ${localStorage.getItem('accessToken')}`,
-        },
-      });
-
-      if (!response.ok) {
-        throw new Error('Failed to fetch SAML configuration');
-      }
-
-      const data = await response.json();
-      setSAMLConfig(data.config);
-      setSAMLError(null);
+      setProvidersLoading(true);
+      const response = await apiClient.get('/admin/sso/providers');
+      setProviders(response.data.providers);
+      setHasPremium(response.data.has_premium);
     } catch (err) {
-      setSAMLError(err instanceof Error ? err.message : 'Unknown error');
+      console.error('Failed to fetch providers:', err);
+      // Default to Google only if fetch fails
+      setProviders([{
+        id: 'google',
+        name: 'Google OAuth 2.0',
+        description: 'Sign in with Google accounts',
+        available: true,
+        premium: false,
+      }]);
     } finally {
-      setSAMLLoading(false);
+      setProvidersLoading(false);
     }
   };
 
-  const handleSAMLSubmit = async (e: React.FormEvent) => {
+  const fetchExistingConfigs = async () => {
+    try {
+      const response = await apiClient.get('/admin/sso');
+      setExistingConfigs(response.data.items || []);
+    } catch (err) {
+      console.error('Failed to fetch existing configs:', err);
+    }
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setSAMLLoading(true);
-    setSAMLError(null);
-    setSAMLSuccess(false);
+    setLoading(true);
+    setError(null);
+    setSuccess(false);
 
     try {
-      const response = await fetch('/api/v1/sso/saml/config', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${localStorage.getItem('accessToken')}`,
-        },
-        body: JSON.stringify(samlFormData),
-      });
+      let payload: Record<string, unknown>;
 
-      if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.message || 'Failed to save SAML configuration');
+      if (selectedProvider === 'google') {
+        payload = {
+          provider: 'google',
+          client_id: googleForm.client_id,
+          client_secret: googleForm.client_secret,
+          enabled: googleForm.enabled,
+        };
+      } else if (selectedProvider === 'saml') {
+        payload = {
+          provider: 'saml',
+          name: samlForm.name,
+          metadata_url: samlForm.metadata_url,
+          client_id: samlForm.entity_id,
+          sso_url: samlForm.sso_url,
+          enabled: samlForm.enabled,
+        };
+      } else {
+        payload = {
+          provider: 'oauth2',
+          name: oidcForm.name,
+          metadata_url: oidcForm.issuer,
+          client_id: oidcForm.client_id,
+          client_secret: oidcForm.client_secret,
+          enabled: oidcForm.enabled,
+        };
       }
 
-      const data = await response.json();
-      setSAMLConfig(data.config);
-      setSAMLSuccess(true);
-      setTimeout(() => setSAMLSuccess(false), 3000);
+      await apiClient.post('/admin/sso', payload);
+      setSuccess(true);
+      setTimeout(() => setSuccess(false), 3000);
+      fetchExistingConfigs();
+
+      // Reset form
+      if (selectedProvider === 'google') {
+        setGoogleForm({ client_id: '', client_secret: '', enabled: true });
+      } else if (selectedProvider === 'saml') {
+        setSamlForm({ name: '', metadata_url: '', entity_id: '', sso_url: '', slo_url: '', x509_cert: '', enabled: true });
+      } else {
+        setOidcForm({ name: '', issuer: '', client_id: '', client_secret: '', enabled: true });
+      }
     } catch (err) {
-      setSAMLError(err instanceof Error ? err.message : 'Unknown error');
+      const error = err as { response?: { data?: { error?: string; message?: string } } };
+      setError(error.response?.data?.error || error.response?.data?.message || 'Failed to save configuration');
     } finally {
-      setSAMLLoading(false);
+      setLoading(false);
     }
   };
 
-  // OIDC Functions
-  const fetchOIDCConfig = async () => {
+  const handleDelete = async (configId: number) => {
+    if (!confirm('Are you sure you want to delete this SSO configuration?')) {
+      return;
+    }
+
     try {
-      setOIDCLoading(true);
-      const response = await fetch('/api/v1/sso/oidc/config', {
-        headers: {
-          Authorization: `Bearer ${localStorage.getItem('accessToken')}`,
-        },
-      });
-
-      if (!response.ok) {
-        throw new Error('Failed to fetch OIDC configuration');
-      }
-
-      const data = await response.json();
-      setOIDCConfig(data.config);
-      setOIDCError(null);
+      await apiClient.delete(`/admin/sso/${configId}`);
+      fetchExistingConfigs();
     } catch (err) {
-      setOIDCError(err instanceof Error ? err.message : 'Unknown error');
-    } finally {
-      setOIDCLoading(false);
+      const error = err as { response?: { data?: { error?: string } } };
+      setError(error.response?.data?.error || 'Failed to delete configuration');
     }
   };
 
-  const handleOIDCSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setOIDCLoading(true);
-    setOIDCError(null);
-    setOIDCSuccess(false);
-
+  const handleToggle = async (configId: number, currentEnabled: boolean) => {
     try {
-      const response = await fetch('/api/v1/sso/oidc/config', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${localStorage.getItem('accessToken')}`,
-        },
-        body: JSON.stringify(oidcFormData),
-      });
-
-      if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.message || 'Failed to save OIDC configuration');
-      }
-
-      const data = await response.json();
-      setOIDCConfig(data.config);
-      setOIDCSuccess(true);
-      setTimeout(() => setOIDCSuccess(false), 3000);
+      await apiClient.patch(`/admin/sso/${configId}`, { enabled: !currentEnabled });
+      fetchExistingConfigs();
     } catch (err) {
-      setOIDCError(err instanceof Error ? err.message : 'Unknown error');
-    } finally {
-      setOIDCLoading(false);
+      const error = err as { response?: { data?: { error?: string } } };
+      setError(error.response?.data?.error || 'Failed to update configuration');
     }
   };
+
+  const selectedProviderInfo = providers.find(p => p.id === selectedProvider);
 
   return (
     <div className="container mx-auto px-4 py-8">
@@ -204,363 +223,352 @@ export default function SSOConfiguration() {
           SSO Configuration
         </h1>
         <p className="text-ice-navy-400">
-          Configure enterprise SAML 2.0 and OpenID Connect authentication
+          Configure single sign-on authentication for your organization
         </p>
       </div>
 
-      <TabNavigation
-        tabs={[
-          { id: 'saml', label: 'SAML 2.0' },
-          { id: 'oidc', label: 'OpenID Connect' },
-        ]}
-        activeTab={activeTab}
-        onChange={(tab) => setActiveTab(tab as 'saml' | 'oidc')}
-      />
+      {/* Existing Configurations */}
+      {existingConfigs.length > 0 && (
+        <div className="card mb-8">
+          <h2 className="text-xl font-semibold text-ice-gold-400 mb-4">
+            Configured Providers
+          </h2>
+          <div className="space-y-3">
+            {existingConfigs.map((config) => (
+              <div
+                key={config.id}
+                className="flex items-center justify-between p-4 bg-ice-navy-800/50 rounded-lg border border-ice-navy-700"
+              >
+                <div className="flex items-center gap-4">
+                  <div className={`w-3 h-3 rounded-full ${config.enabled ? 'bg-green-500' : 'bg-gray-500'}`} />
+                  <div>
+                    <p className="font-medium text-white">{config.name}</p>
+                    <p className="text-sm text-ice-navy-400">
+                      {config.provider === 'oidc' && config.name === 'Google OAuth' ? 'Google' : config.provider.toUpperCase()}
+                    </p>
+                  </div>
+                </div>
+                <div className="flex items-center gap-2">
+                  <button
+                    onClick={() => handleToggle(config.id, config.enabled)}
+                    className={`px-3 py-1 text-sm rounded ${
+                      config.enabled
+                        ? 'bg-yellow-600/20 text-yellow-400 hover:bg-yellow-600/30'
+                        : 'bg-green-600/20 text-green-400 hover:bg-green-600/30'
+                    }`}
+                  >
+                    {config.enabled ? 'Disable' : 'Enable'}
+                  </button>
+                  <button
+                    onClick={() => handleDelete(config.id)}
+                    className="px-3 py-1 text-sm rounded bg-red-600/20 text-red-400 hover:bg-red-600/30"
+                  >
+                    Delete
+                  </button>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
 
-      {/* SAML Configuration */}
-      {activeTab === 'saml' && (
-        <div className="card mt-6">
-          {samlConfig && (
-            <div className="mb-6 p-4 bg-green-900/20 border border-green-700 rounded-lg">
-              <h3 className="font-semibold text-green-400 mb-2">
-                SAML is configured
-              </h3>
-              <p className="text-sm text-green-300">
-                IdP: {samlConfig.idp_name}
-              </p>
-            </div>
+      {/* Add New Configuration */}
+      <div className="card">
+        <h2 className="text-xl font-semibold text-ice-gold-400 mb-6">
+          Add SSO Provider
+        </h2>
+
+        {success && (
+          <div className="mb-6 p-4 bg-green-900/20 border border-green-700 rounded-lg text-green-400">
+            SSO configuration saved successfully!
+          </div>
+        )}
+
+        {error && (
+          <div className="mb-6 p-4 bg-red-900/20 border border-red-700 rounded-lg text-red-400">
+            {error}
+          </div>
+        )}
+
+        {/* Provider Dropdown */}
+        <div className="mb-6">
+          <label className="block text-sm font-medium text-ice-gold-400 mb-2">
+            SSO Provider
+          </label>
+          <select
+            value={selectedProvider}
+            onChange={(e) => setSelectedProvider(e.target.value)}
+            className="input"
+            disabled={providersLoading}
+          >
+            {providers.map((provider) => (
+              <option
+                key={provider.id}
+                value={provider.id}
+                disabled={!provider.available}
+              >
+                {provider.name}
+                {provider.premium && !provider.available && ' (Premium License Required)'}
+                {provider.premium && provider.available && ' (Premium)'}
+              </option>
+            ))}
+          </select>
+          {selectedProviderInfo && (
+            <p className="text-xs text-ice-navy-500 mt-1">
+              {selectedProviderInfo.description}
+            </p>
           )}
+        </div>
 
-          {samlSuccess && (
-            <div className="mb-6 p-4 bg-blue-900/20 border border-blue-700 rounded-lg text-blue-400">
-              SAML configuration saved successfully
-            </div>
-          )}
-
-          {samlError && (
-            <div className="mb-6 p-4 bg-red-900/20 border border-red-700 rounded-lg text-red-400">
-              {samlError}
-            </div>
-          )}
-
-          <form onSubmit={handleSAMLSubmit} className="space-y-6">
-            <div>
-              <label className="block text-sm font-medium text-ice-gold-400 mb-2">
-                Metadata URL
-              </label>
-              <input
-                type="url"
-                placeholder="https://idp.example.com/metadata"
-                value={samlFormData.metadata_url || ''}
-                onChange={(e) =>
-                  setSAMLFormData({
-                    ...samlFormData,
-                    metadata_url: e.target.value,
-                  })
-                }
-                className="input"
-              />
-              <p className="text-xs text-ice-navy-500 mt-1">
-                Provide metadata URL for automatic configuration, or fill in manual fields below
-              </p>
-            </div>
-
-            <div className="border-t border-ice-navy-700 pt-6">
-              <p className="text-sm text-ice-navy-400 mb-4">Manual Configuration</p>
+        {/* Provider-specific forms */}
+        <form onSubmit={handleSubmit} className="space-y-6">
+          {/* Google OAuth Form */}
+          {selectedProvider === 'google' && (
+            <>
+              <div className="p-4 bg-blue-900/20 border border-blue-700 rounded-lg mb-4">
+                <p className="text-sm text-blue-300">
+                  To set up Google OAuth, create credentials in the{' '}
+                  <a
+                    href="https://console.cloud.google.com/apis/credentials"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="underline hover:text-blue-200"
+                  >
+                    Google Cloud Console
+                  </a>
+                  . Add your callback URL:{' '}
+                  <code className="bg-blue-900/50 px-1 rounded">
+                    {window.location.origin}/api/v1/auth/google/callback
+                  </code>
+                </p>
+              </div>
 
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <label className="block text-sm font-medium text-ice-gold-400 mb-2">
-                    IdP Name
+                    Client ID
                   </label>
                   <input
                     type="text"
-                    placeholder="e.g., Okta, AzureAD"
-                    value={samlFormData.idp_name || ''}
-                    onChange={(e) =>
-                      setSAMLFormData({
-                        ...samlFormData,
-                        idp_name: e.target.value,
-                      })
-                    }
+                    placeholder="your-client-id.apps.googleusercontent.com"
+                    value={googleForm.client_id}
+                    onChange={(e) => setGoogleForm({ ...googleForm, client_id: e.target.value })}
                     className="input"
+                    required
                   />
                 </div>
-
                 <div>
                   <label className="block text-sm font-medium text-ice-gold-400 mb-2">
-                    Entity ID
+                    Client Secret
                   </label>
                   <input
-                    type="text"
-                    placeholder="https://idp.example.com"
-                    value={samlFormData.idp_entity_id || ''}
-                    onChange={(e) =>
-                      setSAMLFormData({
-                        ...samlFormData,
-                        idp_entity_id: e.target.value,
-                      })
-                    }
+                    type="password"
+                    placeholder="GOCSPX-..."
+                    value={googleForm.client_secret}
+                    onChange={(e) => setGoogleForm({ ...googleForm, client_secret: e.target.value })}
                     className="input"
+                    required
                   />
                 </div>
               </div>
 
-              <div className="mt-4 grid grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-sm font-medium text-ice-gold-400 mb-2">
-                    SSO URL
-                  </label>
-                  <input
-                    type="url"
-                    placeholder="https://idp.example.com/sso"
-                    value={samlFormData.sso_url || ''}
-                    onChange={(e) =>
-                      setSAMLFormData({
-                        ...samlFormData,
-                        sso_url: e.target.value,
-                      })
-                    }
-                    className="input"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-ice-gold-400 mb-2">
-                    SLO URL (Optional)
-                  </label>
-                  <input
-                    type="url"
-                    placeholder="https://idp.example.com/slo"
-                    value={samlFormData.slo_url || ''}
-                    onChange={(e) =>
-                      setSAMLFormData({
-                        ...samlFormData,
-                        slo_url: e.target.value,
-                      })
-                    }
-                    className="input"
-                  />
-                </div>
-              </div>
-
-              <div className="mt-4">
-                <label className="block text-sm font-medium text-ice-gold-400 mb-2">
-                  X.509 Certificate
-                </label>
-                <textarea
-                  placeholder="-----BEGIN CERTIFICATE-----
-...
------END CERTIFICATE-----"
-                  value={samlFormData.x509_cert || ''}
-                  onChange={(e) =>
-                    setSAMLFormData({
-                      ...samlFormData,
-                      x509_cert: e.target.value,
-                    })
-                  }
-                  rows={6}
-                  className="input font-mono text-xs"
-                />
-              </div>
-            </div>
-
-            <div className="border-t border-ice-navy-700 pt-6">
-              <p className="text-sm text-ice-navy-400 mb-4">
-                Just-In-Time Provisioning
-              </p>
-
-              <label className="flex items-center mb-4">
+              <label className="flex items-center">
                 <input
                   type="checkbox"
-                  checked={samlFormData.jit_enabled}
-                  onChange={(e) =>
-                    setSAMLFormData({
-                      ...samlFormData,
-                      jit_enabled: e.target.checked,
-                    })
-                  }
+                  checked={googleForm.enabled}
+                  onChange={(e) => setGoogleForm({ ...googleForm, enabled: e.target.checked })}
                   className="mr-3"
                 />
-                <span className="text-sm text-ice-gold-400">
-                  Enable JIT user provisioning
-                </span>
+                <span className="text-sm text-ice-gold-400">Enable immediately after saving</span>
               </label>
+            </>
+          )}
 
-              <div>
-                <label className="block text-sm font-medium text-ice-gold-400 mb-2">
-                  Default Role for New Users
-                </label>
-                <select
-                  value={samlFormData.auto_assign_role}
-                  onChange={(e) =>
-                    setSAMLFormData({
-                      ...samlFormData,
-                      auto_assign_role: e.target.value,
-                    })
-                  }
-                  className="input"
-                >
-                  <option value="viewer">Viewer (read-only)</option>
-                  <option value="maintainer">Maintainer (read/write)</option>
-                  <option value="admin">Admin (full access)</option>
-                </select>
-              </div>
-            </div>
+          {/* SAML Form */}
+          {selectedProvider === 'saml' && (
+            <>
+              {!hasPremium ? (
+                <div className="p-6 bg-yellow-900/20 border border-yellow-700 rounded-lg text-center">
+                  <svg className="w-12 h-12 mx-auto text-yellow-500 mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+                  </svg>
+                  <h3 className="text-lg font-semibold text-yellow-400 mb-2">Premium Feature</h3>
+                  <p className="text-yellow-300/80">
+                    SAML 2.0 SSO requires a premium license. Contact sales to upgrade.
+                  </p>
+                </div>
+              ) : (
+                <>
+                  <div>
+                    <label className="block text-sm font-medium text-ice-gold-400 mb-2">
+                      Provider Name
+                    </label>
+                    <input
+                      type="text"
+                      placeholder="e.g., Okta, Azure AD, OneLogin"
+                      value={samlForm.name}
+                      onChange={(e) => setSamlForm({ ...samlForm, name: e.target.value })}
+                      className="input"
+                      required
+                    />
+                  </div>
 
-            <div className="flex gap-4">
-              <Button type="submit" isLoading={samlLoading}>
-                Save SAML Configuration
-              </Button>
-              {samlConfig && (
-                <Button type="button" variant="secondary">
-                  View SP Metadata
-                </Button>
+                  <div>
+                    <label className="block text-sm font-medium text-ice-gold-400 mb-2">
+                      Metadata URL
+                    </label>
+                    <input
+                      type="url"
+                      placeholder="https://idp.example.com/metadata.xml"
+                      value={samlForm.metadata_url}
+                      onChange={(e) => setSamlForm({ ...samlForm, metadata_url: e.target.value })}
+                      className="input"
+                    />
+                    <p className="text-xs text-ice-navy-500 mt-1">
+                      Provide metadata URL for auto-configuration, or fill in manual fields below
+                    </p>
+                  </div>
+
+                  <div className="border-t border-ice-navy-700 pt-4">
+                    <p className="text-sm text-ice-navy-400 mb-4">Manual Configuration</p>
+                    <div className="grid grid-cols-2 gap-4">
+                      <div>
+                        <label className="block text-sm font-medium text-ice-gold-400 mb-2">
+                          Entity ID
+                        </label>
+                        <input
+                          type="text"
+                          placeholder="https://idp.example.com"
+                          value={samlForm.entity_id}
+                          onChange={(e) => setSamlForm({ ...samlForm, entity_id: e.target.value })}
+                          className="input"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-ice-gold-400 mb-2">
+                          SSO URL
+                        </label>
+                        <input
+                          type="url"
+                          placeholder="https://idp.example.com/sso"
+                          value={samlForm.sso_url}
+                          onChange={(e) => setSamlForm({ ...samlForm, sso_url: e.target.value })}
+                          className="input"
+                        />
+                      </div>
+                    </div>
+                  </div>
+
+                  <label className="flex items-center">
+                    <input
+                      type="checkbox"
+                      checked={samlForm.enabled}
+                      onChange={(e) => setSamlForm({ ...samlForm, enabled: e.target.checked })}
+                      className="mr-3"
+                    />
+                    <span className="text-sm text-ice-gold-400">Enable immediately after saving</span>
+                  </label>
+                </>
               )}
-            </div>
-          </form>
-        </div>
-      )}
-
-      {/* OIDC Configuration */}
-      {activeTab === 'oidc' && (
-        <div className="card mt-6">
-          {oidcConfig && (
-            <div className="mb-6 p-4 bg-green-900/20 border border-green-700 rounded-lg">
-              <h3 className="font-semibold text-green-400 mb-2">
-                OIDC is configured
-              </h3>
-              <p className="text-sm text-green-300">
-                Provider: {oidcConfig.issuer}
-              </p>
-            </div>
+            </>
           )}
 
-          {oidcSuccess && (
-            <div className="mb-6 p-4 bg-blue-900/20 border border-blue-700 rounded-lg text-blue-400">
-              OIDC configuration saved successfully
-            </div>
+          {/* OIDC Form */}
+          {selectedProvider === 'oidc' && (
+            <>
+              {!hasPremium ? (
+                <div className="p-6 bg-yellow-900/20 border border-yellow-700 rounded-lg text-center">
+                  <svg className="w-12 h-12 mx-auto text-yellow-500 mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+                  </svg>
+                  <h3 className="text-lg font-semibold text-yellow-400 mb-2">Premium Feature</h3>
+                  <p className="text-yellow-300/80">
+                    OpenID Connect SSO requires a premium license. Contact sales to upgrade.
+                  </p>
+                </div>
+              ) : (
+                <>
+                  <div>
+                    <label className="block text-sm font-medium text-ice-gold-400 mb-2">
+                      Provider Name
+                    </label>
+                    <input
+                      type="text"
+                      placeholder="e.g., Auth0, Keycloak"
+                      value={oidcForm.name}
+                      onChange={(e) => setOidcForm({ ...oidcForm, name: e.target.value })}
+                      className="input"
+                      required
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-ice-gold-400 mb-2">
+                      Issuer URL
+                    </label>
+                    <input
+                      type="url"
+                      placeholder="https://your-domain.auth0.com"
+                      value={oidcForm.issuer}
+                      onChange={(e) => setOidcForm({ ...oidcForm, issuer: e.target.value })}
+                      className="input"
+                      required
+                    />
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-sm font-medium text-ice-gold-400 mb-2">
+                        Client ID
+                      </label>
+                      <input
+                        type="text"
+                        placeholder="your-client-id"
+                        value={oidcForm.client_id}
+                        onChange={(e) => setOidcForm({ ...oidcForm, client_id: e.target.value })}
+                        className="input"
+                        required
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-ice-gold-400 mb-2">
+                        Client Secret
+                      </label>
+                      <input
+                        type="password"
+                        placeholder="your-client-secret"
+                        value={oidcForm.client_secret}
+                        onChange={(e) => setOidcForm({ ...oidcForm, client_secret: e.target.value })}
+                        className="input"
+                        required
+                      />
+                    </div>
+                  </div>
+
+                  <label className="flex items-center">
+                    <input
+                      type="checkbox"
+                      checked={oidcForm.enabled}
+                      onChange={(e) => setOidcForm({ ...oidcForm, enabled: e.target.checked })}
+                      className="mr-3"
+                    />
+                    <span className="text-sm text-ice-gold-400">Enable immediately after saving</span>
+                  </label>
+                </>
+              )}
+            </>
           )}
 
-          {oidcError && (
-            <div className="mb-6 p-4 bg-red-900/20 border border-red-700 rounded-lg text-red-400">
-              {oidcError}
-            </div>
-          )}
-
-          <form onSubmit={handleOIDCSubmit} className="space-y-6">
-            <div>
-              <label className="block text-sm font-medium text-ice-gold-400 mb-2">
-                Issuer URL
-              </label>
-              <input
-                type="url"
-                placeholder="https://accounts.google.com or https://your-oidc-provider.com"
-                value={oidcFormData.issuer}
-                onChange={(e) =>
-                  setOIDCFormData({
-                    ...oidcFormData,
-                    issuer: e.target.value,
-                  })
-                }
-                className="input"
-                required
-              />
-              <p className="text-xs text-ice-navy-500 mt-1">
-                The OIDC provider's issuer URL
-              </p>
-            </div>
-
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <label className="block text-sm font-medium text-ice-gold-400 mb-2">
-                  Client ID
-                </label>
-                <input
-                  type="text"
-                  placeholder="your-client-id"
-                  value={oidcFormData.client_id}
-                  onChange={(e) =>
-                    setOIDCFormData({
-                      ...oidcFormData,
-                      client_id: e.target.value,
-                    })
-                  }
-                  className="input"
-                  required
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-ice-gold-400 mb-2">
-                  Client Secret
-                </label>
-                <input
-                  type="password"
-                  placeholder="your-client-secret"
-                  value={oidcFormData.client_secret}
-                  onChange={(e) =>
-                    setOIDCFormData({
-                      ...oidcFormData,
-                      client_secret: e.target.value,
-                    })
-                  }
-                  className="input"
-                  required
-                />
-              </div>
-            </div>
-
-            <div className="border-t border-ice-navy-700 pt-6">
-              <p className="text-sm text-ice-navy-400 mb-4">
-                Just-In-Time Provisioning
-              </p>
-
-              <label className="flex items-center mb-4">
-                <input
-                  type="checkbox"
-                  checked={oidcFormData.jit_enabled}
-                  onChange={(e) =>
-                    setOIDCFormData({
-                      ...oidcFormData,
-                      jit_enabled: e.target.checked,
-                    })
-                  }
-                  className="mr-3"
-                />
-                <span className="text-sm text-ice-gold-400">
-                  Enable JIT user provisioning
-                </span>
-              </label>
-
-              <div>
-                <label className="block text-sm font-medium text-ice-gold-400 mb-2">
-                  Default Role for New Users
-                </label>
-                <select
-                  value={oidcFormData.auto_assign_role}
-                  onChange={(e) =>
-                    setOIDCFormData({
-                      ...oidcFormData,
-                      auto_assign_role: e.target.value,
-                    })
-                  }
-                  className="input"
-                >
-                  <option value="viewer">Viewer (read-only)</option>
-                  <option value="maintainer">Maintainer (read/write)</option>
-                  <option value="admin">Admin (full access)</option>
-                </select>
-              </div>
-            </div>
-
-            <Button type="submit" isLoading={oidcLoading}>
-              Save OIDC Configuration
+          {/* Submit Button */}
+          {(selectedProvider === 'google' || hasPremium) && (
+            <Button type="submit" isLoading={loading}>
+              Save Configuration
             </Button>
-          </form>
-        </div>
-      )}
+          )}
+        </form>
+      </div>
 
+      {/* Security Info */}
       <div className="card mt-8 bg-ice-navy-900/50">
         <h3 className="font-semibold text-ice-gold-400 mb-3">
           Security & Compliance
@@ -572,16 +580,24 @@ export default function SSOConfiguration() {
           </li>
           <li className="flex items-start">
             <span className="text-green-400 mr-2">✓</span>
-            <span>SAML responses are cryptographically validated</span>
-          </li>
-          <li className="flex items-start">
-            <span className="text-green-400 mr-2">✓</span>
-            <span>OIDC uses PKCE for maximum security</span>
+            <span>OAuth 2.0 uses secure state parameters to prevent CSRF</span>
           </li>
           <li className="flex items-start">
             <span className="text-green-400 mr-2">✓</span>
             <span>JWT tokens include role-based access control</span>
           </li>
+          {hasPremium && (
+            <>
+              <li className="flex items-start">
+                <span className="text-green-400 mr-2">✓</span>
+                <span>SAML responses are cryptographically validated</span>
+              </li>
+              <li className="flex items-start">
+                <span className="text-green-400 mr-2">✓</span>
+                <span>OIDC uses PKCE for enhanced security</span>
+              </li>
+            </>
+          )}
         </ul>
       </div>
     </div>
