@@ -37,11 +37,11 @@ def create_default_admin():
     from app.models import create_user, get_db, get_user_by_email
 
     db = get_db()
-    user_count = db(db.users).count()
+    user_count = db(db.identities).count()
 
     if user_count == 0:
-        admin_email = os.getenv("DEFAULT_ADMIN_EMAIL", "admin@example.com")
-        admin_password = os.getenv("DEFAULT_ADMIN_PASSWORD", "changeme123")
+        admin_email = os.getenv("DEFAULT_ADMIN_EMAIL", "admin@localhost")
+        admin_password = os.getenv("DEFAULT_ADMIN_PASSWORD", "admin123")
 
         # Check if admin already exists (shouldn't, but safety check)
         existing = get_user_by_email(admin_email)

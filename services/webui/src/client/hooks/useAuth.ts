@@ -1,121 +1,9 @@
-import { create } from 'zustand';
-import { persist } from 'zustand/middleware';
-import api, { setTokens, clearTokens, getAccessToken } from '../lib/api';
-import type { User, LoginCredentials, AuthState } from '../types';
+// Re-export the main auth store and provide convenience helpers
+import { useAuthStore } from '../../store/authStore';
+import { api } from '../../lib/api';
+import apiClient from '../../lib/api';
 
-interface AuthStore extends AuthState {
-  login: (credentials: LoginCredentials) => Promise<void>;
-  logout: () => Promise<void>;
-  fetchUser: () => Promise<void>;
-  checkAuth: () => Promise<boolean>;
-  setUser: (user: User | null) => void;
-}
-
-export const useAuthStore = create<AuthStore>()(
-  persist(
-    (set, get) => ({
-      user: null,
-      accessToken: null,
-      refreshToken: null,
-      isAuthenticated: false,
-      isLoading: true,
-
-      login: async (credentials: LoginCredentials) => {
-        try {
-          const response = await api.post('/auth/login', credentials);
-          const { access_token, refresh_token, user } = response.data;
-
-          setTokens(access_token, refresh_token);
-
-          set({
-            user,
-            accessToken: access_token,
-            refreshToken: refresh_token,
-            isAuthenticated: true,
-            isLoading: false,
-          });
-        } catch (error) {
-          clearTokens();
-          set({
-            user: null,
-            accessToken: null,
-            refreshToken: null,
-            isAuthenticated: false,
-            isLoading: false,
-          });
-          throw error;
-        }
-      },
-
-      logout: async () => {
-        try {
-          await api.post('/auth/logout');
-        } catch {
-          // Ignore logout errors
-        } finally {
-          clearTokens();
-          set({
-            user: null,
-            accessToken: null,
-            refreshToken: null,
-            isAuthenticated: false,
-            isLoading: false,
-          });
-        }
-      },
-
-      fetchUser: async () => {
-        try {
-          const response = await api.get('/auth/me');
-          set({ user: response.data, isLoading: false });
-        } catch {
-          set({ user: null, isLoading: false });
-        }
-      },
-
-      checkAuth: async () => {
-        const token = getAccessToken();
-        if (!token) {
-          set({ isAuthenticated: false, isLoading: false });
-          return false;
-        }
-
-        try {
-          const response = await api.get('/auth/me');
-          set({
-            user: response.data,
-            isAuthenticated: true,
-            isLoading: false,
-          });
-          return true;
-        } catch {
-          clearTokens();
-          set({
-            user: null,
-            accessToken: null,
-            refreshToken: null,
-            isAuthenticated: false,
-            isLoading: false,
-          });
-          return false;
-        }
-      },
-
-      setUser: (user: User | null) => {
-        set({ user });
-      },
-    }),
-    {
-      name: 'auth-storage',
-      partialize: (state) => ({
-        accessToken: state.accessToken,
-        refreshToken: state.refreshToken,
-      }),
-    }
-  )
-);
-
-// Hook for components
+// Hook for components - wraps the main auth store with additional helpers
 export const useAuth = () => {
   const store = useAuthStore();
 
@@ -123,9 +11,32 @@ export const useAuth = () => {
     user: store.user,
     isAuthenticated: store.isAuthenticated,
     isLoading: store.isLoading,
-    login: store.login,
+    login: async (credentials: { email: string; password: string }) => {
+      await store.login(credentials.email, credentials.password);
+    },
     logout: store.logout,
-    checkAuth: store.checkAuth,
+    setUser: store.updateUser,
+    checkAuth: async () => {
+      // Re-verify auth by calling /auth/me
+      try {
+        const response = await api.auth.me();
+        store.updateUser(response.data);
+        return true;
+      } catch {
+        await store.logout();
+        return false;
+      }
+    },
+    verifyEmail: async (token: string) => {
+      const response = await apiClient.get(`/auth/verify-email/${token}`);
+      const { access_token, user } = response.data;
+      localStorage.setItem('authToken', access_token);
+      localStorage.setItem('user', JSON.stringify(user));
+      store.updateUser(user);
+    },
+    resendVerification: async () => {
+      await apiClient.post('/auth/resend-verification');
+    },
     hasRole: (roles: string[]) => {
       if (!store.user) return false;
       return roles.includes(store.user.role);
@@ -135,3 +46,6 @@ export const useAuth = () => {
     isViewer: () => store.user?.role === 'viewer',
   };
 };
+
+// Re-export the store for direct access if needed
+export { useAuthStore };

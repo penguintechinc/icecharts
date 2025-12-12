@@ -1,118 +1,188 @@
-[![CI](https://github.com/PenguinCloud/project-template/actions/workflows/ci.yml/badge.svg)](https://github.com/PenguinCloud/project-template/actions/workflows/ci.yml)
-[![Docker Build](https://github.com/PenguinCloud/project-template/actions/workflows/docker-build.yml/badge.svg)](https://github.com/PenguinCloud/project-template/actions/workflows/docker-build.yml)
-[![codecov](https://codecov.io/gh/PenguinCloud/project-template/branch/main/graph/badge.svg)](https://codecov.io/gh/PenguinCloud/project-template)
-[![Go Report Card](https://goreportcard.com/badge/github.com/PenguinCloud/project-template)](https://goreportcard.com/report/github.com/PenguinCloud/project-template)
-[![version](https://img.shields.io/badge/version-5.1.1-blue.svg)](https://semver.org)
-[![License](https://img.shields.io/badge/License-Limited%20AGPL3-blue.svg)](LICENSE.md)
+<p align="center">
+  <img src="assets/logo-transparent.png" alt="IceCharts Logo" width="300">
+</p>
 
-```
- ____            _           _     _____                    _       _
-|  _ \ _ __ ___ (_) ___  ___| |_  |_   _|__ _ __ ___  _ __ | | __ _| |_ ___
-| |_) | '__/ _ \| |/ _ \/ __| __|   | |/ _ \ '_ ` _ \| '_ \| |/ _` | __/ _ \
-|  __/| | | (_) | |  __/ (__| |_    | |  __/ | | | | | |_) | | (_| | ||  __/
-|_|   |_|  \___/| |\___|\___|\__|   |_|\___|_| |_| |_| .__/|_|\__,_|\__\___|
-               _/ |                                  |_|
-              |__/
-```
+<p align="center">
+  <a href="https://github.com/PenguinCloud/IceCharts/actions/workflows/ci.yml"><img src="https://github.com/PenguinCloud/IceCharts/actions/workflows/ci.yml/badge.svg" alt="CI"></a>
+  <a href="https://github.com/PenguinCloud/IceCharts/actions/workflows/docker-build.yml"><img src="https://github.com/PenguinCloud/IceCharts/actions/workflows/docker-build.yml/badge.svg" alt="Docker Build"></a>
+  <a href="https://codecov.io/gh/PenguinCloud/IceCharts"><img src="https://codecov.io/gh/PenguinCloud/IceCharts/branch/main/graph/badge.svg" alt="codecov"></a>
+  <a href="https://semver.org"><img src="https://img.shields.io/badge/version-0.2.0-blue.svg" alt="version"></a>
+  <a href="LICENSE.md"><img src="https://img.shields.io/badge/License-Limited%20AGPL3-blue.svg" alt="License"></a>
+</p>
 
-# 🏗️ Enterprise Project Template
+# IceCharts
 
-**The Ultimate Multi-Language Development Foundation**
+**Create. Collaborate. Export. Visualize Infrastructure and Diagrams.**
 
-This comprehensive project template provides a production-ready foundation for enterprise software development, incorporating best practices from Penguin Tech Inc projects. Built with security, scalability, and developer experience at its core, it offers standardized tooling for Go, Python, and Node.js applications with integrated licensing, monitoring, and enterprise-grade infrastructure.
-## ✨ Why Choose This Template?
+IceCharts is a modern, web-based collaborative diagramming platform designed for creating, sharing, and exporting visual representations of infrastructure, system architectures, flowcharts, and organizational structures. Built with enterprise-grade features including real-time collaboration, version control, and seamless infrastructure integration.
 
-### 🏭 Enterprise-Ready Architecture
-Built for production from day one with multi-language support (Go 1.23+, Python 3.12/3.13, Node.js 18+), comprehensive CI/CD pipelines, and enterprise-grade security scanning.
+## Screenshots
 
-### 🔒 Security First
-- **8-stage security validation** including Trivy, CodeQL, and Semgrep scanning
-- **TLS 1.2 minimum enforcement**, preferring TLS 1.3
-- **Automated vulnerability detection** with Dependabot and Socket.dev integration
-- **Secrets management** with environment-based configuration
+<p align="center">
+  <img src="assets/screenshots/login.png" alt="Login Page" width="800">
+  <br><em>Login Page</em>
+</p>
 
-### 🚀 Performance Optimized
-- **Multi-architecture Docker builds** (amd64/arm64) with Debian-slim base images
-- **Parallel CI/CD workflows** for optimized build times
-- **eBPF/XDP networking** support for high-performance applications
-- **Connection pooling** and caching strategies built-in
+<p align="center">
+  <img src="assets/screenshots/dashboard.png" alt="Dashboard" width="800">
+  <br><em>Dashboard - Overview of recent activity and drawings</em>
+</p>
 
-### 🏢 PenguinTech License Server Integration
-- **Centralized feature gating** with `https://license.penguintech.io`
-- **Universal JSON response format** across all products
-- **Multi-tier licensing** (community/professional/enterprise)
-- **Usage tracking and compliance** reporting
+<p align="center">
+  <img src="assets/screenshots/drawings.png" alt="Drawings List" width="800">
+  <br><em>Drawings - Manage and organize your diagrams</em>
+</p>
 
-### 🔄 Self-Healing & Monitoring
-- **Built-in health checks** and self-healing capabilities
-- **Prometheus metrics** and Grafana dashboard integration
-- **Structured logging** with configurable verbosity levels
-- **Real-time monitoring** and alerting
+<p align="center">
+  <img src="assets/screenshots/groups.png" alt="Groups" width="800">
+  <br><em>Groups - Collaborate with teams</em>
+</p>
 
-### 🌐 Multi-Environment Support
-- **Air-gapped deployment** ready with local caching
-- **Container orchestration** with Kubernetes and Helm
-- **Environment-specific configurations** for dev/staging/production
-- **Blue-green deployment** support with automated rollbacks
+<p align="center">
+  <img src="assets/screenshots/templates.png" alt="Templates" width="800">
+  <br><em>Templates - Start from pre-built diagram templates</em>
+</p>
 
-## 🛠️ Quick Start
+<p align="center">
+  <img src="assets/screenshots/settings.png" alt="Settings" width="800">
+  <br><em>Settings - Configure your account and preferences</em>
+</p>
+
+<p align="center">
+  <img src="assets/screenshots/diagramming.png" alt="Settings" width="800">
+  <br><em>Dynamic and flow animated diagrams with thousands of icons - Make your diagrams accurate and alive!</em>
+</p>
+
+## Key Features
+
+### Canvas & Drawing
+- **Intuitive canvas editor** for creating diagrams with shapes, connectors, and text
+- **Rich shape library** for system components, infrastructure, and flowchart elements
+- **Smart connectors** with automatic routing and customizable styling
+- **Grid & snap-to-grid** for precise alignment and professional layouts
+
+### Real-Time Collaboration
+- **Multi-user editing** with WebSocket-powered real-time synchronization
+- **Presence awareness** - see who's editing and where
+- **Comments & annotations** with threaded discussions on specific elements
+- **Resolution tracking** for design reviews and feedback cycles
+
+### Export & Sharing
+- **Multiple export formats** (SVG, PNG, PDF, JSON)
+- **Customizable export options** with scaling and resolution settings
+- **Public sharing links** for easy distribution and feedback
+- **Version history** with rollback capabilities
+
+### Infrastructure Integration
+- **Elder API integration** to import infrastructure entities as diagram shapes
+- **Automatic entity mapping** with color-coding by component type
+- **Dependency visualization** showing relationships between infrastructure elements
+- **Live sync** with infrastructure definitions
+
+### Enterprise Security
+- **User authentication & authorization** with role-based access control (RBAC)
+- **OAuth/SSO integration** for enterprise identity management
+- **Team & group management** with granular permissions
+- **Audit logging** for compliance and accountability
+
+### High Performance
+- **PostgreSQL database** with optimized queries and indexing
+- **Redis caching** for instant response times
+- **MinIO object storage** for efficient file management
+- **Prometheus monitoring** with Grafana dashboards
+
+## Getting Started
+
+### Prerequisites
+- Docker and Docker Compose
+- Node.js 18+ (for local frontend development)
+- Python 3.12+ (for local backend development)
+- Git
+
+### Quick Start with Docker Compose
 
 ```bash
-# Clone and setup
-git clone <your-repository-url>
-cd your-project
-make setup                    # Install dependencies and setup environment
-make dev                      # Start development environment
+# Clone the repository
+git clone https://github.com/PenguinCloud/IceCharts.git
+cd IceCharts
+
+# Copy environment template and configure if needed
+cp .env.example .env
+
+# Start all services
+docker-compose up -d
+
+# Access the application
+# Web UI: http://localhost:3000
+# API: http://localhost:5001
+# Default credentials: admin@localhost / admin123
 ```
 
-## 📚 Key Components
+### Local Development Setup
 
-### Core Technologies
-- **Languages**: Go 1.23+, Python 3.12/3.13, Node.js 18+
-- **Databases**: PostgreSQL with PyDAL/GORM, Redis/Valkey caching
-- **Containers**: Docker with multi-stage builds, Kubernetes deployment
-- **Monitoring**: Prometheus, Grafana, structured logging
+```bash
+# Install dependencies and setup environment
+make setup
 
-### Security Features
-- Multi-factor authentication (MFA) and JWT tokens
-- Role-based access control (RBAC)
-- Automated security scanning and vulnerability management
-- Compliance audit logging (SOC2, ISO27001 ready)
+# Start development services
+make dev
 
-### Development Workflow
-- Comprehensive test coverage (unit, integration, e2e)
-- Automated code quality checks (linting, formatting, type checking)
-- Version management with semantic versioning
-- Feature branch workflow with required reviews
+# Run tests
+make test
 
-## 📖 Documentation
+# Build for production
+make build
+```
 
-- **Getting Started**: [docs/development/](docs/development/)
-- **API Reference**: [docs/api/](docs/api/)
-- **Deployment Guide**: [docs/deployment/](docs/deployment/)
-- **Architecture Overview**: [docs/architecture/](docs/architecture/)
-- **License Integration**: [docs/licensing/](docs/licensing/)
+## Documentation
 
-## 🤝 Contributing
+Comprehensive documentation is available in the [docs/](docs/) directory:
 
-We welcome contributions! Please see [CONTRIBUTING.md](CONTRIBUTING.md) for guidelines.
+- **[Getting Started](docs/GETTING_STARTED.md)** - Setup, configuration, and first steps
+- **[Architecture](docs/ARCHITECTURE.md)** - System design and component overview
+- **[API Reference](docs/API_REFERENCE.md)** - Complete API documentation
+- **[Features Guide](docs/FEATURES.md)** - Detailed feature documentation
+  - [Canvas & Drawing](docs/FEATURES.md#canvas--drawing)
+  - [Collaboration](docs/FEATURES.md#real-time-collaboration)
+  - [Comments System](docs/COMMENTS_SYSTEM.md)
+  - [Export Functionality](docs/EXPORT_FUNCTIONALITY.md)
+  - [Elder Integration](docs/ELDER_INTEGRATION.md)
+- **[Deployment](docs/DEPLOYMENT.md)** - Deployment guides and best practices
+- **[Contributing](docs/CONTRIBUTING.md)** - Development guidelines and workflow
+- **[License Integration](docs/licensing/license-server-integration.md)** - License management
+- **[Testing](docs/TESTING.md)** - Testing strategies and test execution
+- **[Docker Setup](docs/DOCKER_SETUP.md)** - Docker-specific configuration
 
-### Maintainers
-- **Primary**: creatorsemailhere@penguintech.group
-- **General**: info@penguintech.group
-- **Company**: [www.penguintech.io](https://www.penguintech.io)
+## Technology Stack
 
-### Community Contributors
-- *Your name could be here! Submit a PR to get started.*
+| Component | Technology | Version |
+|-----------|-----------|---------|
+| **Frontend** | React, TypeScript, Tailwind CSS | 18+, Latest, 3.x |
+| **Backend** | Flask, Python, PyDAL | Latest, 3.12+, Latest |
+| **Database** | PostgreSQL | 17+ |
+| **Cache** | Redis | 7+ |
+| **Storage** | MinIO (S3-compatible) | Latest |
+| **Monitoring** | Prometheus, Grafana | Latest, Latest |
+| **Containers** | Docker, Docker Compose | Latest |
 
-## 📞 Support & Resources
+## Contributing
 
-- **Documentation**: [./docs/](docs/)
-- **Premium Support**: https://support.penguintech.group
-- **Community Issues**: [GitHub Issues](../../issues)
-- **License Server Status**: https://status.penguintech.io
+We welcome contributions! Please see [CONTRIBUTING.md](docs/CONTRIBUTING.md) for guidelines, development workflow, and code standards.
 
-## 📄 License
+### Development Team
+- **Company**: [Penguin Tech Inc](https://www.penguintech.io)
+- **Support**: info@penguintech.group
+- **Issues & Questions**: [GitHub Issues](https://github.com/PenguinCloud/IceCharts/issues)
+
+## Support & Resources
+
+- **Full Documentation**: [docs/](docs/)
+- **API Documentation**: [docs/API_REFERENCE.md](docs/API_REFERENCE.md)
+- **Support Email**: support@penguintech.group
+- **Issue Tracker**: [GitHub Issues](https://github.com/PenguinCloud/IceCharts/issues)
+- **License Server**: https://license.penguintech.io
+
+## License
 
 This project is licensed under the Limited AGPL3 with preamble for fair use - see [LICENSE.md](docs/LICENSE.md) for details.
 

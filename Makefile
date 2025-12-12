@@ -141,10 +141,31 @@ test-python: ## Testing - Run Python tests
 	@echo "$(BLUE)Running Python tests...$(RESET)"
 	@pytest --cov=shared --cov=apps --cov-report=xml:coverage-python.xml --cov-report=html:htmlcov-python
 
+test-flask: ## Testing - Run Flask backend tests
+	@echo "$(BLUE)Running Flask backend tests...$(RESET)"
+	@cd services/flask-backend && pytest tests/ --cov=app --cov-report=html --cov-report=term-summary -v
+
+test-flask-cov: ## Testing - Run Flask tests with coverage report
+	@echo "$(BLUE)Running Flask backend tests with coverage...$(RESET)"
+	@cd services/flask-backend && pytest tests/ --cov=app --cov-report=html --cov-report=xml -v
+	@echo "$(GREEN)Coverage report: services/flask-backend/htmlcov/index.html$(RESET)"
+
 test-node: ## Testing - Run Node.js tests
 	@echo "$(BLUE)Running Node.js tests...$(RESET)"
 	@npm test
 	@cd web && npm test
+
+test-webui: ## Testing - Run WebUI tests
+	@echo "$(BLUE)Running WebUI tests...$(RESET)"
+	@cd services/webui && npm test -- --run
+
+test-webui-watch: ## Testing - Run WebUI tests in watch mode
+	@echo "$(BLUE)Running WebUI tests in watch mode...$(RESET)"
+	@cd services/webui && npm test
+
+test-webui-cov: ## Testing - Run WebUI tests with coverage
+	@echo "$(BLUE)Running WebUI tests with coverage...$(RESET)"
+	@cd services/webui && npm test -- --run --coverage
 
 test-integration: ## Testing - Run integration tests
 	@echo "$(BLUE)Running integration tests...$(RESET)"
@@ -222,10 +243,31 @@ lint-python: ## Code Quality - Run Python linting
 	@flake8 .
 	@mypy . --ignore-missing-imports
 
+lint-flask: ## Code Quality - Lint Flask backend
+	@echo "$(BLUE)Linting Flask backend...$(RESET)"
+	@cd services/flask-backend && flake8 app tests --count --select=E9,F63,F7,F82 --show-source --statistics
+	@cd services/flask-backend && black --check app tests
+	@cd services/flask-backend && isort --check-only app tests
+	@cd services/flask-backend && mypy app --ignore-missing-imports
+
+lint-flask-fix: ## Code Quality - Auto-fix Flask linting issues
+	@echo "$(BLUE)Auto-fixing Flask backend linting issues...$(RESET)"
+	@cd services/flask-backend && black app tests
+	@cd services/flask-backend && isort app tests
+
 lint-node: ## Code Quality - Run Node.js linting
 	@echo "$(BLUE)Linting Node.js code...$(RESET)"
 	@npm run lint
 	@cd web && npm run lint
+
+lint-webui: ## Code Quality - Lint WebUI
+	@echo "$(BLUE)Linting WebUI...$(RESET)"
+	@cd services/webui && npm run lint
+	@cd services/webui && npm run typecheck
+
+lint-webui-fix: ## Code Quality - Auto-fix WebUI linting issues
+	@echo "$(BLUE)Auto-fixing WebUI linting issues...$(RESET)"
+	@cd services/webui && npm run lint:fix
 
 format: ## Code Quality - Format code for all languages
 	@echo "$(BLUE)Formatting code...$(RESET)"

@@ -1,0 +1,19 @@
+[0;34m[SECTION][0m Starting Flask Backend API Tests - v0.2.0 Features
+[0;32m[INFO][0m API Host: http://localhost:5001
+[0;32m[INFO][0m Verbose: 0
+
+[0;32m[INFO][0m Waiting for API to be ready...
+[0;32m[INFO][0m API is ready!
+
+[0;34m[SECTION][0m Health Check Tests
+=== Health Check Tests ===
+[0;32m✓[0m GET /api/v1/health - Basic health check (HTTP 200)
+{"status":"healthy"}
+[0;32m✓[0m GET /api/v1/health/ready - Readiness check (HTTP 200)
+{"status":"ready"}
+[0;32m✓[0m GET /api/v1/health/z - Healthz alias (HTTP 200)
+{"status":"healthy"}
+
+[0;34m[SECTION][0m Authentication Setup
+=== Authentication Setup ===
+[0;32m[INFO][0m Registering test user: test-v0.2.0-1765486311@example.com
