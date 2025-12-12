@@ -147,7 +147,7 @@ export interface GroupMember {
   user_id: number;
   user_name: string;
   user_email: string;
-  role: 'owner' | 'member';
+  role: 'owner' | 'admin' | 'editor' | 'viewer';
   added_at: string;
 }
 

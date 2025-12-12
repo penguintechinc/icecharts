@@ -41,7 +41,19 @@ export default function GroupDetail() {
       // Handle both wrapped and unwrapped responses
       const groupData = 'group' in groupRes.data ? groupRes.data.group : groupRes.data;
       setGroup(groupData);
-      setMembers(membersRes.data.items || membersRes.data.members || []);
+      // Normalize member data - API may return different field names
+      const rawMembers = membersRes.data.items || membersRes.data.members || [];
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const normalizedMembers = (rawMembers as any[]).map((m, index: number) => ({
+        id: m.id || m.user_id || index,
+        group_id: Number(id),
+        user_id: m.user_id,
+        user_name: m.user_name || m.full_name || '',
+        user_email: m.user_email || m.email || '',
+        role: m.role || 'viewer',
+        added_at: m.added_at || m.joined_at || '',
+      }));
+      setMembers(normalizedMembers as GroupMember[]);
       setDrawings(drawingsRes.data.items || drawingsRes.data.drawings || []);
     } catch (err) {
       console.error('Failed to fetch group data:', err);
@@ -113,7 +125,7 @@ export default function GroupDetail() {
       await api.post(`/groups/${id}/members`, { user_id: selectedUser.id, role: selectedRole });
       setSearchQuery('');
       setSelectedUser(null);
-      setSelectedRole('member');
+      setSelectedRole('viewer');
       setSearchResults([]);
       setShowAddMemberModal(false);
       fetchGroupData();
@@ -130,11 +142,11 @@ export default function GroupDetail() {
     setShowDropdown(false);
   };
 
-  const handleRemoveMember = async (memberId: number) => {
+  const handleRemoveMember = async (userId: number) => {
     if (!confirm('Remove this member from the group?')) return;
 
     try {
-      await api.delete(`/groups/${id}/members/${memberId}`);
+      await api.delete(`/groups/${id}/members/${userId}`);
       fetchGroupData();
     } catch (err) {
       console.error('Failed to remove member:', err);
@@ -226,6 +238,10 @@ export default function GroupDetail() {
                       className={`text-xs px-2 py-0.5 rounded ${
                         member.role === 'owner'
                           ? 'bg-ice-gold-900/30 text-ice-gold-400'
+                          : member.role === 'admin'
+                          ? 'bg-red-900/30 text-red-400'
+                          : member.role === 'editor'
+                          ? 'bg-blue-900/30 text-blue-400'
                           : 'bg-ice-navy-800 text-ice-navy-400'
                       }`}
                     >
@@ -233,7 +249,7 @@ export default function GroupDetail() {
                     </span>
                     {isOwner && member.role !== 'owner' && (
                       <button
-                        onClick={() => handleRemoveMember(member.id)}
+                        onClick={() => handleRemoveMember(member.user_id)}
                         className="text-red-400 hover:text-red-300"
                         title="Remove member"
                       >
@@ -407,18 +423,30 @@ export default function GroupDetail() {
                 <label className="block text-sm font-medium text-ice-gold-400 mb-2">
                   Role
                 </label>
-                <div className="grid grid-cols-2 gap-3">
+                <div className="grid grid-cols-3 gap-3">
                   <button
                     type="button"
-                    onClick={() => setSelectedRole('member')}
+                    onClick={() => setSelectedRole('viewer')}
                     className={`p-3 rounded-lg border-2 transition-all text-left ${
-                      selectedRole === 'member'
+                      selectedRole === 'viewer'
                         ? 'border-ice-gold-500 bg-ice-gold-500/10'
                         : 'border-ice-navy-600 bg-ice-navy-800 hover:border-ice-navy-500'
                     }`}
                   >
-                    <div className="font-medium text-ice-gold-400 mb-1">Member</div>
-                    <div className="text-xs text-ice-navy-400">Can view and comment</div>
+                    <div className="font-medium text-ice-gold-400 mb-1">Viewer</div>
+                    <div className="text-xs text-ice-navy-400">Can view drawings</div>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setSelectedRole('editor')}
+                    className={`p-3 rounded-lg border-2 transition-all text-left ${
+                      selectedRole === 'editor'
+                        ? 'border-ice-gold-500 bg-ice-gold-500/10'
+                        : 'border-ice-navy-600 bg-ice-navy-800 hover:border-ice-navy-500'
+                    }`}
+                  >
+                    <div className="font-medium text-ice-gold-400 mb-1">Editor</div>
+                    <div className="text-xs text-ice-navy-400">Can create & edit drawings</div>
                   </button>
                   <button
                     type="button"
@@ -442,7 +470,7 @@ export default function GroupDetail() {
                     setShowAddMemberModal(false);
                     setSearchQuery('');
                     setSelectedUser(null);
-                    setSelectedRole('member');
+                    setSelectedRole('viewer');
                     setSearchResults([]);
                   }}
                   className="flex-1 bg-ice-navy-800 hover:bg-ice-navy-700"
