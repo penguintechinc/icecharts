@@ -12,6 +12,8 @@ import { awsIconMap } from './aws/index';
 import { awsCategories } from './aws/categories';
 import { azureIconMap } from './azure/index';
 import { azureCategories } from './azure/categories';
+import { gcpIconMap } from './gcp/index';
+import { gcpCategories } from './gcp/categories';
 import { ibmIconMap } from './ibm/index';
 import { ibmCategories } from './ibm/categories';
 import { iconoirIconMap } from './iconoir/index';
@@ -25,6 +27,7 @@ export const iconMap: Record<string, IconComponent> = {
   ...internalIconMap,
   ...awsIconMap,
   ...azureIconMap,
+  ...gcpIconMap,
   ...ibmIconMap,
   ...iconoirIconMap,
 };
@@ -34,6 +37,7 @@ export const iconCategories: Record<string, IconCategory> = {
   ...internalCategories,
   ...awsCategories,
   ...azureCategories,
+  ...gcpCategories,
   ...ibmCategories,
   ...iconoirCategories,
 };
