@@ -1,7 +1,8 @@
 """JWT token handling for IceCharts authentication."""
 
 import datetime
-from typing import Dict, Optional
+import uuid
+from typing import Dict, Optional, Tuple
 
 import jwt
 from flask import current_app, g, request
@@ -162,3 +163,141 @@ def refresh_access_token(refresh_token: str) -> Optional[str]:
         return None
 
     return generate_access_token(user)
+
+
+def generate_service_token(
+    service_account: dict, expires_days: int = 365
+) -> Tuple[str, str]:
+    """
+    Generate long-lived JWT token for service account.
+
+    Args:
+        service_account: Dictionary containing service account data
+            (id, client_id, tenant_id, scopes)
+        expires_days: Number of days until token expires (default: 365)
+
+    Returns:
+        Tuple of (token_string, jti) where jti is the unique token ID
+    """
+    jti = str(uuid.uuid4())
+
+    payload = {
+        "sub": service_account["client_id"],
+        "type": "service",  # Distinguishes from "access" (user tokens)
+        "tenant_id": service_account["tenant_id"],
+        "scopes": service_account.get("scopes", []),
+        "jti": jti,
+        "service_account_id": service_account["id"],
+        "iat": datetime.datetime.now(datetime.timezone.utc),
+        "exp": datetime.datetime.now(datetime.timezone.utc)
+        + datetime.timedelta(days=expires_days),
+    }
+
+    token = jwt.encode(
+        payload,
+        current_app.config["JWT_SECRET_KEY"],
+        algorithm=current_app.config["JWT_ALGORITHM"],
+    )
+
+    return token, jti
+
+
+def decode_service_token(token: str) -> Optional[Dict]:
+    """
+    Decode and verify a service account JWT token.
+
+    Args:
+        token: JWT token string
+
+    Returns:
+        Token payload if valid service token, None otherwise
+    """
+    payload = decode_token(token)
+    if not payload:
+        return None
+
+    # Verify it's a service token
+    if payload.get("type") != "service":
+        return None
+
+    return payload
+
+
+def verify_service_token(token: str) -> Optional[Dict]:
+    """
+    Verify a service token is valid and not revoked.
+
+    Args:
+        token: JWT token string
+
+    Returns:
+        Token payload if valid and not revoked, None otherwise
+    """
+    payload = decode_service_token(token)
+    if not payload:
+        return None
+
+    # Check if token is revoked
+    from app.models import get_db
+
+    db = get_db()
+    token_record = db(
+        db.service_account_tokens.token_jti == payload.get("jti")
+    ).select().first()
+
+    if not token_record:
+        return None
+
+    if token_record.revoked_at is not None:
+        return None
+
+    # Check if service account is active
+    service_account = db(
+        db.service_accounts.id == payload.get("service_account_id")
+    ).select().first()
+
+    if not service_account or not service_account.is_active:
+        return None
+
+    return payload
+
+
+def get_service_account_from_token() -> Optional[dict]:
+    """
+    Get service account from the current request's token.
+
+    Returns:
+        Service account dictionary if valid service token, None otherwise
+    """
+    # Check if already loaded in request context
+    if hasattr(g, "service_account") and g.service_account is not None:
+        return g.service_account
+
+    token = get_token_from_header()
+    if not token:
+        return None
+
+    payload = verify_service_token(token)
+    if not payload:
+        return None
+
+    # Load service account from database
+    from app.models import get_db
+
+    db = get_db()
+    service_account = db(
+        db.service_accounts.id == payload["service_account_id"]
+    ).select().first()
+
+    if not service_account:
+        return None
+
+    # Store in request context
+    sa_dict = service_account.as_dict()
+    sa_dict["token_scopes"] = payload.get("scopes", [])
+    sa_dict["token_jti"] = payload.get("jti")
+    g.service_account = sa_dict
+    g.is_service_account = True
+    g.token_scopes = payload.get("scopes", [])
+
+    return sa_dict

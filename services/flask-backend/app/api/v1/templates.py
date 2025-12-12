@@ -5,13 +5,14 @@ Provides CRUD operations for drawing templates.
 
 from flask import Blueprint, current_app, jsonify, request
 
-from ...middleware import auth_required, get_current_user
+from ...middleware import auth_required, get_current_user, scopes_required
 
 templates_v1_bp = Blueprint("templates_v1", __name__, url_prefix="/templates")
 
 
 @templates_v1_bp.route("", methods=["GET"])
 @auth_required
+@scopes_required("templates:read")
 def list_templates():
     """List all available templates.
 
@@ -73,6 +74,7 @@ def list_templates():
 
 @templates_v1_bp.route("/<template_id>", methods=["GET"])
 @auth_required
+@scopes_required("templates:read")
 def get_template(template_id: str):
     """Get a specific template by ID.
 
@@ -95,6 +97,7 @@ def get_template(template_id: str):
 
 @templates_v1_bp.route("", methods=["POST"])
 @auth_required
+@scopes_required("templates:write")
 def create_template():
     """Create a new template from a drawing.
 
@@ -142,6 +145,7 @@ def create_template():
 
 @templates_v1_bp.route("/<template_id>", methods=["PUT"])
 @auth_required
+@scopes_required("templates:write")
 def update_template(template_id: str):
     """Update a template.
 
@@ -172,6 +176,7 @@ def update_template(template_id: str):
 
 @templates_v1_bp.route("/<template_id>", methods=["DELETE"])
 @auth_required
+@scopes_required("templates:write")
 def delete_template(template_id: str):
     """Delete a template.
 
@@ -194,6 +199,7 @@ def delete_template(template_id: str):
 
 @templates_v1_bp.route("/<template_id>/use", methods=["POST"])
 @auth_required
+@scopes_required("templates:read", "drawings:write")
 def use_template(template_id: str):
     """Create a new drawing from a template.
 

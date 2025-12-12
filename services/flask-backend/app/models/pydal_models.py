@@ -708,6 +708,77 @@ def define_all_tables(db):
     )
 
     # ==========================================
+    # Service Account Tables for External App Integration
+    # ==========================================
+
+    # Service accounts for machine-to-machine authentication
+    db.define_table(
+        "service_accounts",
+        Field(
+            "tenant_id",
+            "reference tenants",
+            default=1,
+            notnull=True,
+            ondelete="CASCADE",
+        ),
+        Field("name", "string", length=255, notnull=True, requires=IS_NOT_EMPTY()),
+        Field("description", "text"),
+        Field(
+            "client_id",
+            "string",
+            length=50,
+            notnull=True,
+            unique=True,
+        ),  # Format: sa_xxxxxxxxxxxx
+        Field("scopes", "json"),  # Array of scope strings e.g., ["drawings:read", "exports:create"]
+        Field("rate_limit", "integer", default=1000),  # Requests per hour
+        Field("is_active", "boolean", default=True, notnull=True),
+        Field("created_by_id", "reference identities", notnull=True, ondelete="CASCADE"),
+        Field("last_used_at", "datetime"),
+        Field(
+            "created_at",
+            "datetime",
+            default=lambda: datetime.datetime.now(datetime.timezone.utc),
+        ),
+        Field(
+            "updated_at",
+            "datetime",
+            update=lambda: datetime.datetime.now(datetime.timezone.utc),
+        ),
+        migrate=True,
+    )
+
+    # Service account tokens (long-lived JWT tokens)
+    db.define_table(
+        "service_account_tokens",
+        Field(
+            "service_account_id",
+            "reference service_accounts",
+            notnull=True,
+            ondelete="CASCADE",
+        ),
+        Field(
+            "token_jti",
+            "string",
+            length=100,
+            notnull=True,
+            unique=True,
+        ),  # JWT ID for revocation
+        Field("name", "string", length=255),  # Optional label for the token
+        Field("expires_at", "datetime", notnull=True),
+        Field("last_used_at", "datetime"),
+        Field("last_used_ip", "string", length=50),
+        Field("revoked_at", "datetime"),
+        Field("revoked_by_id", "reference identities", ondelete="SET NULL"),
+        Field(
+            "created_at",
+            "datetime",
+            default=lambda: datetime.datetime.now(datetime.timezone.utc),
+        ),
+        migrate=True,
+    )
+
+    # ==========================================
     # Create indexes for performance
     # ==========================================
     # Note: PyDAL will create these indexes automatically after tables are created

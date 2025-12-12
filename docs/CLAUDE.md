@@ -441,6 +441,25 @@ Comprehensive development standards are documented separately to keep this file 
 
 📚 **Detailed Architecture Patterns**: See [Development Standards - Microservices Architecture](docs/STANDARDS.md#microservices-architecture)
 
+## External App Integration (Service Accounts)
+
+IceCharts supports service account authentication for external application integration (e.g., Elder).
+
+**Documentation**: [Integration Guide](INTEGRATION.md)
+
+Key Features:
+- Long-lived JWT tokens (up to 1 year)
+- Fine-grained scoped permissions (drawings:read, exports:create, etc.)
+- Configurable rate limits (default: 1000/hour)
+- Admin management via API
+
+Quick Example:
+```bash
+# Using a service account token
+curl -X GET "https://your-icecharts.com/api/v1/drawings" \
+  -H "Authorization: Bearer <service-account-token>"
+```
+
 ## Common Integration Patterns
 
 ### Flask + Flask-Security-Too + PyDAL

@@ -3,10 +3,10 @@
 </p>
 
 <p align="center">
-  <a href="https://github.com/PenguinCloud/IceCharts/actions/workflows/ci.yml"><img src="https://github.com/PenguinCloud/IceCharts/actions/workflows/ci.yml/badge.svg" alt="CI"></a>
-  <a href="https://github.com/PenguinCloud/IceCharts/actions/workflows/docker-build.yml"><img src="https://github.com/PenguinCloud/IceCharts/actions/workflows/docker-build.yml/badge.svg" alt="Docker Build"></a>
-  <a href="https://codecov.io/gh/PenguinCloud/IceCharts"><img src="https://codecov.io/gh/PenguinCloud/IceCharts/branch/main/graph/badge.svg" alt="codecov"></a>
-  <a href="https://semver.org"><img src="https://img.shields.io/badge/version-0.2.0-blue.svg" alt="version"></a>
+  <a href="https://github.com/penguintechinc/IceCharts/actions/workflows/ci.yml"><img src="https://github.com/penguintechinc/IceCharts/actions/workflows/ci.yml/badge.svg" alt="CI"></a>
+  <a href="https://github.com/penguintechinc/IceCharts/actions/workflows/docker-multiarch.yml"><img src="https://github.com/penguintechinc/IceCharts/actions/workflows/docker-multiarch.yml/badge.svg" alt="Docker Build"></a>
+  <a href="https://github.com/penguintechinc/IceCharts/actions/workflows/test-and-lint.yml"><img src="https://github.com/penguintechinc/IceCharts/actions/workflows/test-and-lint.yml/badge.svg" alt="Tests"></a>
+  <a href="https://semver.org"><img src="https://img.shields.io/badge/version-1.0.2-blue.svg" alt="version"></a>
   <a href="LICENSE.md"><img src="https://img.shields.io/badge/License-Limited%20AGPL3-blue.svg" alt="License"></a>
 </p>
 
@@ -44,13 +44,40 @@ IceCharts is a modern, web-based collaborative diagramming platform designed for
 </p>
 
 <p align="center">
+  <img src="assets/screenshots/collections.png" alt="Collections" width="800">
+  <br><em>Collections - Organize diagrams into collections</em>
+</p>
+
+<p align="center">
   <img src="assets/screenshots/settings.png" alt="Settings" width="800">
   <br><em>Settings - Configure your account and preferences</em>
 </p>
 
 <p align="center">
-  <img src="assets/screenshots/diagramming.png" alt="Settings" width="800">
+  <img src="assets/screenshots/diagramming.png" alt="Diagramming" width="800">
   <br><em>Dynamic and flow animated diagrams with thousands of icons - Make your diagrams accurate and alive!</em>
+</p>
+
+### Administration
+
+<p align="center">
+  <img src="assets/screenshots/admin-users.png" alt="Admin Users" width="800">
+  <br><em>User Management - Administer users and roles</em>
+</p>
+
+<p align="center">
+  <img src="assets/screenshots/admin-sso.png" alt="Admin SSO" width="800">
+  <br><em>SSO Configuration - Configure Google OAuth, SAML, and OIDC authentication</em>
+</p>
+
+<p align="center">
+  <img src="assets/screenshots/admin-storage.png" alt="Admin Storage" width="800">
+  <br><em>Storage Management - Monitor and manage storage usage</em>
+</p>
+
+<p align="center">
+  <img src="assets/screenshots/admin-dashboard.png" alt="Admin Dashboard" width="800">
+  <br><em>Admin Dashboard - System statistics and monitoring</em>
 </p>
 
 ## Key Features
@@ -103,7 +130,7 @@ IceCharts is a modern, web-based collaborative diagramming platform designed for
 
 ```bash
 # Clone the repository
-git clone https://github.com/PenguinCloud/IceCharts.git
+git clone https://github.com/penguintechinc/IceCharts.git
 cd IceCharts
 
 # Copy environment template and configure if needed
@@ -172,14 +199,14 @@ We welcome contributions! Please see [CONTRIBUTING.md](docs/CONTRIBUTING.md) for
 ### Development Team
 - **Company**: [Penguin Tech Inc](https://www.penguintech.io)
 - **Support**: info@penguintech.group
-- **Issues & Questions**: [GitHub Issues](https://github.com/PenguinCloud/IceCharts/issues)
+- **Issues & Questions**: [GitHub Issues](https://github.com/penguintechinc/IceCharts/issues)
 
 ## Support & Resources
 
 - **Full Documentation**: [docs/](docs/)
 - **API Documentation**: [docs/API_REFERENCE.md](docs/API_REFERENCE.md)
 - **Support Email**: support@penguintech.group
-- **Issue Tracker**: [GitHub Issues](https://github.com/PenguinCloud/IceCharts/issues)
+- **Issue Tracker**: [GitHub Issues](https://github.com/penguintechinc/IceCharts/issues)
 - **License Server**: https://license.penguintech.io
 
 ## License
