@@ -264,15 +264,18 @@ class ServiceAccountService:
     def generate_token(
         account_id: int,
         name: Optional[str] = None,
-        expires_days: int = 365,
+        expires_days: Optional[int] = None,
     ) -> dict:
         """
         Generate a new token for a service account.
 
+        The maximum allowed lifetime is controlled by the
+        SERVICE_ACCOUNT_TOKEN_MAX_DAYS config setting (default 365).
+
         Args:
             account_id: ID of the service account
             name: Optional name/label for the token
-            expires_days: Days until token expires (default: 365)
+            expires_days: Days until token expires (defaults to max configured value)
 
         Returns:
             Dictionary with 'token' (the JWT) and 'token_info' (token metadata)
@@ -280,7 +283,19 @@ class ServiceAccountService:
         Raises:
             ValueError: If account not found or token generation fails
         """
+        from flask import current_app
         from app.auth.jwt_handler import generate_service_token
+
+        # Get max days from config
+        max_days = current_app.config.get("SERVICE_ACCOUNT_TOKEN_MAX_DAYS", 365)
+
+        if expires_days is None:
+            expires_days = max_days
+
+        if expires_days < 1 or expires_days > max_days:
+            raise ValueError(
+                f"expires_days must be between 1 and {max_days} days (got {expires_days})"
+            )
 
         db = get_db()
 
@@ -416,6 +431,8 @@ class ServiceAccountService:
         """
         Record token usage (called by middleware).
 
+        Updates both the token and service account last_used_at timestamps.
+
         Args:
             token_jti: JTI of the token
             ip_address: IP address of the request
@@ -423,10 +440,24 @@ class ServiceAccountService:
         db = get_db()
 
         try:
+            now = datetime.datetime.now(datetime.timezone.utc)
+
+            # Get the token to find the service account
+            token = db(db.service_account_tokens.token_jti == token_jti).select().first()
+            if not token:
+                return
+
+            # Update token last used timestamp
             db(db.service_account_tokens.token_jti == token_jti).update(
-                last_used_at=datetime.datetime.now(datetime.timezone.utc),
+                last_used_at=now,
                 last_used_ip=ip_address,
             )
+
+            # Update service account last used timestamp
+            db(db.service_accounts.id == token.service_account_id).update(
+                last_used_at=now,
+            )
+
             db.commit()
         except Exception:
             db.rollback()

@@ -173,11 +173,10 @@ class GenerateTokenRequest(BaseModel):
         max_length=255,
         description="Optional name/label for this token",
     )
-    expires_days: int = Field(
-        default=365,
+    expires_days: Optional[int] = Field(
+        default=None,
         ge=1,
-        le=365,
-        description="Number of days until token expires (1-365)",
+        description="Number of days until token expires (defaults to max configured value)",
     )
 
     @field_validator("name")
@@ -188,6 +187,17 @@ class GenerateTokenRequest(BaseModel):
             v = v.strip()
             if len(v) == 0:
                 return None
+        return v
+
+    @field_validator("expires_days")
+    @classmethod
+    def validate_expires_days(cls, v: Optional[int]) -> Optional[int]:
+        """Validate expires_days doesn't exceed configured maximum."""
+        # Note: The actual max validation happens in the service layer
+        # where it has access to current_app.config
+        # This validator just ensures it's a positive integer
+        if v is not None and v < 1:
+            raise ValueError("expires_days must be at least 1")
         return v
 
     model_config = {

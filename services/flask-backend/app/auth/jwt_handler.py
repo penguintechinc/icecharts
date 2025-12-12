@@ -237,29 +237,99 @@ def verify_service_token(token: str) -> Optional[Dict]:
     if not payload:
         return None
 
-    # Check if token is revoked
+    result = verify_service_token_with_db_check(payload)
+    return payload if result["valid"] else None
+
+
+def verify_service_token_with_db_check(payload: dict) -> dict:
+    """
+    Consolidated service token validation logic.
+
+    Validates token against database records (revocation, service account status).
+    This is the single source of truth for service token validation.
+
+    Args:
+        payload: Decoded JWT payload
+
+    Returns:
+        Dictionary with:
+            - valid (bool): Whether token is valid
+            - error (str): Error message if invalid
+            - service_account (Row): Service account object if valid
+            - token_record (Row): Token record object if valid
+    """
     from app.models import get_db
 
     db = get_db()
+
+    # Validate payload structure
+    service_account_id = payload.get("service_account_id")
+    if not service_account_id:
+        return {
+            "valid": False,
+            "error": "Invalid service token payload",
+            "service_account": None,
+            "token_record": None,
+        }
+
+    token_jti = payload.get("jti")
+    if not token_jti:
+        return {
+            "valid": False,
+            "error": "Invalid service token: missing jti",
+            "service_account": None,
+            "token_record": None,
+        }
+
+    # Check if token exists in database
     token_record = db(
-        db.service_account_tokens.token_jti == payload.get("jti")
+        db.service_account_tokens.token_jti == token_jti
     ).select().first()
 
     if not token_record:
-        return None
+        return {
+            "valid": False,
+            "error": "Service token not found",
+            "service_account": None,
+            "token_record": None,
+        }
 
+    # Check if token is revoked
     if token_record.revoked_at is not None:
-        return None
+        return {
+            "valid": False,
+            "error": "Service token has been revoked",
+            "service_account": None,
+            "token_record": token_record,
+        }
 
-    # Check if service account is active
+    # Check if service account exists and is active
     service_account = db(
-        db.service_accounts.id == payload.get("service_account_id")
+        db.service_accounts.id == service_account_id
     ).select().first()
 
-    if not service_account or not service_account.is_active:
-        return None
+    if not service_account:
+        return {
+            "valid": False,
+            "error": "Service account not found",
+            "service_account": None,
+            "token_record": token_record,
+        }
 
-    return payload
+    if not service_account.is_active:
+        return {
+            "valid": False,
+            "error": "Service account is deactivated",
+            "service_account": service_account,
+            "token_record": token_record,
+        }
+
+    return {
+        "valid": True,
+        "error": None,
+        "service_account": service_account,
+        "token_record": token_record,
+    }
 
 
 def get_service_account_from_token() -> Optional[dict]:

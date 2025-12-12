@@ -26,7 +26,7 @@ bcrypt==4.2.1
 cryptography==44.0.1
 pyotp==2.9.0
 # python3-saml==1.16.0  # Commented out: xmlsec dependency issues, can be installed when needed for enterprise SAML
-authlib==1.6.0
+authlib==1.6.5
 # lxml==5.3.0  # Commented out: only needed for python3-saml
 
 # HTTP & API Clients

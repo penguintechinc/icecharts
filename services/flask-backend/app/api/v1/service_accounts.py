@@ -5,9 +5,15 @@ for external application integration.
 """
 
 from flask import Blueprint, current_app, jsonify, request
+from pydantic import ValidationError
 
 from ...auth.scopes import AVAILABLE_SCOPES, SCOPE_GROUPS
 from ...middleware import auth_required, get_current_user, admin_required
+from ...schemas.service_account_schemas import (
+    CreateServiceAccountRequest,
+    UpdateServiceAccountRequest,
+    GenerateTokenRequest,
+)
 from ...services.service_account_service import ServiceAccountService
 
 service_accounts_v1_bp = Blueprint(
@@ -15,6 +21,38 @@ service_accounts_v1_bp = Blueprint(
     __name__,
     url_prefix="/admin/service-accounts",
 )
+
+
+def validate_json(schema_class):
+    """
+    Helper to validate JSON request body using Pydantic schema.
+
+    Returns:
+        Tuple of (validated_data, error_response)
+        If validation succeeds, error_response is None
+        If validation fails, validated_data is None
+    """
+    data = request.get_json()
+    if not data:
+        return None, (jsonify({"error": "Request body required"}), 400)
+
+    try:
+        validated = schema_class(**data)
+        return validated, None
+    except ValidationError as e:
+        errors = []
+        for error in e.errors():
+            field = ".".join(str(x) for x in error["loc"])
+            errors.append(f"{field}: {error['msg']}")
+
+        return None, (
+            jsonify({
+                "error": "Validation failed",
+                "details": errors,
+                "available_scopes": list(AVAILABLE_SCOPES.keys()) if "scopes" in str(e) else None,
+            }),
+            400,
+        )
 
 
 @service_accounts_v1_bp.route("", methods=["GET"])
@@ -69,36 +107,18 @@ def create_service_account():
     """
     try:
         user = get_current_user()
-        data = request.get_json()
 
-        if not data:
-            return jsonify({"error": "Request body required"}), 400
-
-        name = data.get("name", "").strip()
-        if not name:
-            return jsonify({"error": "Name is required"}), 400
-
-        scopes = data.get("scopes", [])
-        if not scopes:
-            return jsonify({"error": "At least one scope is required"}), 400
-
-        # Validate scopes
-        invalid_scopes = [s for s in scopes if s not in AVAILABLE_SCOPES]
-        if invalid_scopes:
-            return jsonify({
-                "error": f"Invalid scopes: {', '.join(invalid_scopes)}",
-                "available_scopes": list(AVAILABLE_SCOPES.keys()),
-            }), 400
-
-        description = data.get("description")
-        rate_limit = data.get("rate_limit", 1000)
+        # Validate request body with Pydantic schema
+        validated_data, error = validate_json(CreateServiceAccountRequest)
+        if error:
+            return error
 
         account = ServiceAccountService.create_service_account(
-            name=name,
-            scopes=scopes,
+            name=validated_data.name,
+            scopes=validated_data.scopes,
             created_by_id=user["id"],
-            description=description,
-            rate_limit=rate_limit,
+            description=validated_data.description,
+            rate_limit=validated_data.rate_limit,
             tenant_id=user.get("tenant_id", 1),
         )
 
@@ -121,9 +141,16 @@ def create_service_account():
 def get_service_account(account_id: int):
     """Get a service account by ID."""
     try:
+        user = get_current_user()
+        tenant_id = user.get("tenant_id", 1)
+
         account = ServiceAccountService.get_service_account_by_id(account_id)
 
         if not account:
+            return jsonify({"error": "Service account not found"}), 404
+
+        # Verify tenant ownership
+        if account.get("tenant_id") != tenant_id:
             return jsonify({"error": "Service account not found"}), 404
 
         return jsonify({
@@ -151,29 +178,29 @@ def update_service_account(account_id: int):
         - is_active: Active status
     """
     try:
-        data = request.get_json()
-        if not data:
-            return jsonify({"error": "Request body required"}), 400
+        user = get_current_user()
+        tenant_id = user.get("tenant_id", 1)
 
-        # Validate scopes if provided
-        scopes = data.get("scopes")
-        if scopes is not None:
-            if not scopes:
-                return jsonify({"error": "At least one scope is required"}), 400
-            invalid_scopes = [s for s in scopes if s not in AVAILABLE_SCOPES]
-            if invalid_scopes:
-                return jsonify({
-                    "error": f"Invalid scopes: {', '.join(invalid_scopes)}",
-                    "available_scopes": list(AVAILABLE_SCOPES.keys()),
-                }), 400
+        # Verify the service account exists and belongs to the current tenant
+        existing_account = ServiceAccountService.get_service_account_by_id(account_id)
+        if not existing_account:
+            return jsonify({"error": "Service account not found"}), 404
+
+        if existing_account.get("tenant_id") != tenant_id:
+            return jsonify({"error": "Service account not found"}), 404
+
+        # Validate request body with Pydantic schema
+        validated_data, error = validate_json(UpdateServiceAccountRequest)
+        if error:
+            return error
 
         account = ServiceAccountService.update_service_account(
             account_id=account_id,
-            name=data.get("name"),
-            description=data.get("description"),
-            scopes=scopes,
-            rate_limit=data.get("rate_limit"),
-            is_active=data.get("is_active"),
+            name=validated_data.name,
+            description=validated_data.description,
+            scopes=validated_data.scopes,
+            rate_limit=validated_data.rate_limit,
+            is_active=validated_data.is_active,
         )
 
         if not account:
@@ -197,6 +224,17 @@ def update_service_account(account_id: int):
 def delete_service_account(account_id: int):
     """Delete a service account and all its tokens."""
     try:
+        user = get_current_user()
+        tenant_id = user.get("tenant_id", 1)
+
+        # Verify the service account exists and belongs to the current tenant
+        account = ServiceAccountService.get_service_account_by_id(account_id)
+        if not account:
+            return jsonify({"error": "Service account not found"}), 404
+
+        if account.get("tenant_id") != tenant_id:
+            return jsonify({"error": "Service account not found"}), 404
+
         deleted = ServiceAccountService.delete_service_account(account_id)
 
         if not deleted:
@@ -227,9 +265,15 @@ def list_tokens(account_id: int):
         - include_revoked: Include revoked tokens (default: false)
     """
     try:
-        # Verify account exists
+        user = get_current_user()
+        tenant_id = user.get("tenant_id", 1)
+
+        # Verify account exists and belongs to current tenant
         account = ServiceAccountService.get_service_account_by_id(account_id)
         if not account:
+            return jsonify({"error": "Service account not found"}), 404
+
+        if account.get("tenant_id") != tenant_id:
             return jsonify({"error": "Service account not found"}), 404
 
         include_revoked = request.args.get("include_revoked", "false").lower() == "true"
@@ -264,21 +308,38 @@ def generate_token(account_id: int):
     Returns the token string - store it securely as it cannot be retrieved again.
     """
     try:
+        user = get_current_user()
+        tenant_id = user.get("tenant_id", 1)
+
+        # Verify the service account exists and belongs to the current tenant
+        account = ServiceAccountService.get_service_account_by_id(account_id)
+        if not account:
+            return jsonify({"error": "Service account not found"}), 404
+
+        if account.get("tenant_id") != tenant_id:
+            return jsonify({"error": "Service account not found"}), 404
+
+        # Validate request body with Pydantic schema (allow empty body for defaults)
         data = request.get_json() or {}
+        try:
+            validated_data = GenerateTokenRequest(**data)
+        except ValidationError as e:
+            errors = []
+            for error in e.errors():
+                field = ".".join(str(x) for x in error["loc"])
+                errors.append(f"{field}: {error['msg']}")
 
-        name = data.get("name")
-        expires_days = data.get("expires_days", 365)
-
-        # Validate expires_days
-        if not isinstance(expires_days, int) or expires_days < 1 or expires_days > 365:
+            max_days = current_app.config.get("SERVICE_ACCOUNT_TOKEN_MAX_DAYS", 365)
             return jsonify({
-                "error": "expires_days must be an integer between 1 and 365"
+                "error": "Validation failed",
+                "details": errors,
+                "max_expires_days": max_days,
             }), 400
 
         result = ServiceAccountService.generate_token(
             account_id=account_id,
-            name=name,
-            expires_days=expires_days,
+            name=validated_data.name,
+            expires_days=validated_data.expires_days,
         )
 
         return jsonify({
@@ -302,6 +363,26 @@ def revoke_token(account_id: int, token_jti: str):
     """Revoke a specific token."""
     try:
         user = get_current_user()
+        tenant_id = user.get("tenant_id", 1)
+
+        # Verify the service account exists and belongs to the current tenant
+        account = ServiceAccountService.get_service_account_by_id(account_id)
+        if not account:
+            return jsonify({"error": "Service account not found"}), 404
+
+        if account.get("tenant_id") != tenant_id:
+            return jsonify({"error": "Service account not found"}), 404
+
+        # Get the token to verify it belongs to this service account
+        from app.models import get_db
+        db = get_db()
+        token = db(db.service_account_tokens.token_jti == token_jti).select().first()
+
+        if not token:
+            return jsonify({"error": "Token not found"}), 404
+
+        if token.service_account_id != account_id:
+            return jsonify({"error": "Token not found"}), 404
 
         revoked = ServiceAccountService.revoke_token(
             token_jti=token_jti,
@@ -330,10 +411,14 @@ def revoke_all_tokens(account_id: int):
     """Revoke all tokens for a service account."""
     try:
         user = get_current_user()
+        tenant_id = user.get("tenant_id", 1)
 
-        # Verify account exists
+        # Verify account exists and belongs to current tenant
         account = ServiceAccountService.get_service_account_by_id(account_id)
         if not account:
+            return jsonify({"error": "Service account not found"}), 404
+
+        if account.get("tenant_id") != tenant_id:
             return jsonify({"error": "Service account not found"}), 404
 
         revoked_count = ServiceAccountService.revoke_all_tokens(
