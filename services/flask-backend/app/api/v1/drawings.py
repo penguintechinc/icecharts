@@ -9,7 +9,7 @@ import io
 
 from flask import Blueprint, current_app, jsonify, request, send_file
 
-from ...middleware import auth_required, get_current_user
+from ...middleware import auth_required, get_current_user, scopes_required
 from ...models import get_db
 from ...schemas.drawing_schemas import CreateDrawingRequest, UpdateDrawingRequest
 from ...services.drawing_storage_service import DrawingStorageService
@@ -44,6 +44,7 @@ def serialize_drawing(drawing, version=None):
 
 @drawings_v1_bp.route("", methods=["GET"])
 @auth_required
+@scopes_required("drawings:read")
 def list_drawings():
     """List all drawings for current user.
 
@@ -78,6 +79,7 @@ def list_drawings():
 
 @drawings_v1_bp.route("/<drawing_id>", methods=["GET"])
 @auth_required
+@scopes_required("drawings:read")
 def get_drawing(drawing_id: str):
     """Get a specific drawing by ID.
 
@@ -125,6 +127,7 @@ def get_drawing(drawing_id: str):
 
 @drawings_v1_bp.route("", methods=["POST"])
 @auth_required
+@scopes_required("drawings:write")
 @validate_json(CreateDrawingRequest)
 def create_drawing(validated_data: CreateDrawingRequest):
     """Create a new drawing.
@@ -207,6 +210,7 @@ def create_drawing(validated_data: CreateDrawingRequest):
 
 @drawings_v1_bp.route("/<drawing_id>", methods=["PUT"])
 @auth_required
+@scopes_required("drawings:write")
 @validate_json(UpdateDrawingRequest)
 def update_drawing(drawing_id: str, validated_data: UpdateDrawingRequest):
     """Update a drawing.
@@ -312,6 +316,7 @@ def update_drawing(drawing_id: str, validated_data: UpdateDrawingRequest):
 
 @drawings_v1_bp.route("/<drawing_id>", methods=["DELETE"])
 @auth_required
+@scopes_required("drawings:delete")
 def delete_drawing(drawing_id: str):
     """Delete a drawing.
 
@@ -363,6 +368,7 @@ def delete_drawing(drawing_id: str):
 
 @drawings_v1_bp.route("/<drawing_id>/export", methods=["POST"])
 @auth_required
+@scopes_required("exports:create")
 def export_drawing(drawing_id: str):
     """Export drawing with automatic background job handling for large exports.
 

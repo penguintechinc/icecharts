@@ -99,6 +99,19 @@ class Config:
     RATELIMIT_DEFAULT = config("RATELIMIT_DEFAULT", default="100/hour")
     RATELIMIT_STORAGE_URL = REDIS_URL
 
+    # Service Account Rate Limiting
+    RATELIMIT_SERVICE_ACCOUNT_DEFAULT = config(
+        "RATELIMIT_SERVICE_ACCOUNT_DEFAULT", default="1000/hour"
+    )
+    RATELIMIT_SERVICE_ACCOUNT_ENABLED = config(
+        "RATELIMIT_SERVICE_ACCOUNT_ENABLED", default=True, cast=bool
+    )
+
+    # Service Account Token Settings
+    SERVICE_ACCOUNT_TOKEN_MAX_DAYS = config(
+        "SERVICE_ACCOUNT_TOKEN_MAX_DAYS", default=365, cast=int
+    )  # Maximum token lifetime in days
+
     # License Server
     LICENSE_KEY = config("LICENSE_KEY", default=None)
     LICENSE_SERVER_URL = config(
