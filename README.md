@@ -6,7 +6,7 @@
   <a href="https://github.com/penguintechinc/IceCharts/actions/workflows/ci.yml"><img src="https://github.com/penguintechinc/IceCharts/actions/workflows/ci.yml/badge.svg" alt="CI"></a>
   <a href="https://github.com/penguintechinc/IceCharts/actions/workflows/docker-multiarch.yml"><img src="https://github.com/penguintechinc/IceCharts/actions/workflows/docker-multiarch.yml/badge.svg" alt="Docker Build"></a>
   <a href="https://github.com/penguintechinc/IceCharts/actions/workflows/test-and-lint.yml"><img src="https://github.com/penguintechinc/IceCharts/actions/workflows/test-and-lint.yml/badge.svg" alt="Tests"></a>
-  <a href="https://semver.org"><img src="https://img.shields.io/badge/version-1.0.2-blue.svg" alt="version"></a>
+  <a href="https://semver.org"><img src="https://img.shields.io/badge/version-1.0.3-blue.svg" alt="version"></a>
   <a href="LICENSE.md"><img src="https://img.shields.io/badge/License-Limited%20AGPL3-blue.svg" alt="License"></a>
 </p>
 
@@ -174,6 +174,7 @@ Comprehensive documentation is available in the [docs/](docs/) directory:
   - [Comments System](docs/COMMENTS_SYSTEM.md)
   - [Export Functionality](docs/EXPORT_FUNCTIONALITY.md)
   - [Elder Integration](docs/ELDER_INTEGRATION.md)
+- **[Kubernetes Deployment](docs/KUBERNETES.md)** - Helm charts, Kustomize manifests, and cloud deployments (AWS/GCP/Azure)
 - **[Deployment](docs/DEPLOYMENT.md)** - Deployment guides and best practices
 - **[Contributing](docs/CONTRIBUTING.md)** - Development guidelines and workflow
 - **[License Integration](docs/licensing/license-server-integration.md)** - License management
