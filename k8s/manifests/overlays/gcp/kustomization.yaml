@@ -1,0 +1,28 @@
+# GCP Production Overlay for Kustomize
+# Optimized for Google Cloud GKE (Google Kubernetes Engine)
+# Features: GCE Ingress, PD-SSD storage, production resource allocation, 3 replicas
+# Usage: kubectl apply -k overlays/gcp/
+
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+# Reference the base kustomization
+resources:
+  - ../../base
+  - ingress-patch.yaml
+  - storage-class-patch.yaml
+
+# Apply patches for GCP production environment
+patchesStrategicMerge:
+  - replica-patch.yaml
+  - resources-patch.yaml
+
+# Common labels and annotations
+commonLabels:
+  environment: gcp-production
+  managed-by: kustomize
+  cloud-provider: gcp
+
+commonAnnotations:
+  description: "GCP GKE production environment"
+  backup: "enabled"

@@ -1,0 +1,125 @@
+{{- /* Validation */ -}}
+{{- include "icecharts.validateSecrets" . -}}
+{{- include "icecharts.validateIngress" . -}}
+
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "icecharts.fullname" . }}-config
+  namespace: {{ include "icecharts.namespace" . }}
+  labels:
+    {{- include "icecharts.labels" . | nindent 4 }}
+data:
+  # ============================================================================
+  # Database Configuration
+  # ============================================================================
+  DB_TYPE: {{ .Values.api.env.dbType | quote }}
+  DB_HOST: {{ include "icecharts.postgres.host" . | quote }}
+  DB_PORT: {{ include "icecharts.postgres.port" . | quote }}
+  DB_POOL_SIZE: {{ .Values.api.env.dbPoolSize | quote }}
+  POSTGRES_PORT: {{ include "icecharts.postgres.port" . | quote }}
+
+  # ============================================================================
+  # Redis Configuration
+  # ============================================================================
+  REDIS_HOST: {{ include "icecharts.redis.host" . | quote }}
+  REDIS_PORT: {{ include "icecharts.redis.port" . | quote }}
+
+  # ============================================================================
+  # MinIO Configuration
+  # ============================================================================
+  MINIO_ENDPOINT: {{ include "icecharts.minio.endpoint" . | quote }}
+  MINIO_API_PORT: {{ .Values.minio.service.apiPort | quote }}
+  MINIO_CONSOLE_PORT: {{ .Values.minio.service.consolePort | quote }}
+  MINIO_BUCKET: {{ .Values.minio.bucket | quote }}
+  MINIO_SECURE: {{ .Values.minio.secure | quote }}
+
+  # ============================================================================
+  # Flask Application Configuration
+  # ============================================================================
+  FLASK_ENV: {{ .Values.api.env.flaskEnv | quote }}
+  FLASK_APP: {{ .Values.api.env.flaskApp | quote }}
+
+  # ============================================================================
+  # JWT Configuration
+  # ============================================================================
+  JWT_ACCESS_TOKEN_EXPIRES: {{ .Values.api.env.jwtAccessTokenExpires | quote }}
+  JWT_REFRESH_TOKEN_EXPIRES: {{ .Values.api.env.jwtRefreshTokenExpires | quote }}
+
+  # ============================================================================
+  # CORS Configuration
+  # ============================================================================
+  CORS_ORIGINS: {{ .Values.api.env.corsOrigins | quote }}
+
+  # ============================================================================
+  # Logging Configuration
+  # ============================================================================
+  LOG_LEVEL: {{ .Values.api.env.logLevel | quote }}
+  LOG_FORMAT: {{ .Values.api.env.logFormat | quote }}
+
+  # ============================================================================
+  # License Configuration
+  # ============================================================================
+  PRODUCT_NAME: {{ .Values.api.env.productName | quote }}
+  LICENSE_SERVER_URL: {{ .Values.api.env.licenseServerUrl | quote }}
+  RELEASE_MODE: {{ .Values.api.env.releaseMode | quote }}
+
+  # ============================================================================
+  # Security Configuration
+  # ============================================================================
+  BCRYPT_ROUNDS: {{ .Values.api.env.bcryptRounds | quote }}
+  TLS_ENABLED: {{ .Values.api.env.tlsEnabled | quote }}
+
+  # ============================================================================
+  # Performance Configuration
+  # ============================================================================
+  MAX_CONNECTIONS: {{ .Values.api.env.maxConnections | quote }}
+  CONNECTION_TIMEOUT: {{ .Values.api.env.connectionTimeout | quote }}
+  IDLE_TIMEOUT: {{ .Values.api.env.idleTimeout | quote }}
+  READ_TIMEOUT: {{ .Values.api.env.readTimeout | quote }}
+  WRITE_TIMEOUT: {{ .Values.api.env.writeTimeout | quote }}
+
+  # ============================================================================
+  # Cache Configuration
+  # ============================================================================
+  CACHE_TTL: {{ .Values.api.env.cacheTtl | quote }}
+  CACHE_MAX_SIZE: {{ .Values.api.env.cacheMaxSize | quote }}
+  CACHE_CLEANUP_INTERVAL: {{ .Values.api.env.cacheCleanupInterval | quote }}
+
+  # ============================================================================
+  # Rate Limiting
+  # ============================================================================
+  RATE_LIMIT_ENABLED: {{ .Values.api.env.rateLimitEnabled | quote }}
+  RATE_LIMIT_MAX_REQUESTS: {{ .Values.api.env.rateLimitMaxRequests | quote }}
+  RATE_LIMIT_WINDOW_MINUTES: {{ .Values.api.env.rateLimitWindowMinutes | quote }}
+
+  # ============================================================================
+  # Feature Flags
+  # ============================================================================
+  FEATURE_ADVANCED_ANALYTICS: {{ .Values.api.env.featureAdvancedAnalytics | quote }}
+  FEATURE_ENTERPRISE_REPORTS: {{ .Values.api.env.featureEnterpriseReports | quote }}
+  FEATURE_USER_MANAGEMENT: {{ .Values.api.env.featureUserManagement | quote }}
+
+  # ============================================================================
+  # Development Tools
+  # ============================================================================
+  DEBUG: {{ .Values.api.env.debug | quote }}
+  ENABLE_PROFILING: {{ .Values.api.env.enableProfiling | quote }}
+  METRICS_ENABLED: {{ .Values.api.env.metricsEnabled | quote }}
+
+  # ============================================================================
+  # Frontend Configuration (React/Vite)
+  # ============================================================================
+  NODE_ENV: {{ .Values.web.env.nodeEnv | quote }}
+  VITE_API_URL: {{ include "icecharts.api.url" . | quote }}
+  REACT_APP_API_URL: {{ include "icecharts.api.url" . | quote }}
+  REACT_APP_API_BASE_PATH: "/api/v1"
+  {{- if .Values.ingress.enabled }}
+  {{- if .Values.ingress.tls.enabled }}
+  REACT_APP_MINIO_URL: {{ printf "https://%s" .Values.ingress.host | quote }}
+  {{- else }}
+  REACT_APP_MINIO_URL: {{ printf "http://%s" .Values.ingress.host | quote }}
+  {{- end }}
+  {{- else }}
+  REACT_APP_MINIO_URL: {{ printf "http://%s:%d" (include "icecharts.minio.host" .) (int .Values.minio.service.apiPort) | quote }}
+  {{- end }}

@@ -1,0 +1,17 @@
+# Replica patch for AWS production
+# Sets production replicas (3 replicas per stateless service for HA)
+
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: api
+spec:
+  replicas: 3
+
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: web
+spec:
+  replicas: 3

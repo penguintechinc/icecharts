@@ -1,0 +1,182 @@
+{{- /*
+Flask Backend API Deployment Template
+- Manages the IceCharts Flask backend application
+- Scales based on replicaCount
+- Includes init containers for service readiness
+- Configured with health checks, security context, and affinity
+- Supports WebSocket connections with session affinity
+*/ -}}
+{{- if .Values.api.enabled }}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "icecharts.api.fullname" . }}
+  namespace: {{ include "icecharts.namespace" . }}
+  labels:
+    {{- include "icecharts.api.labels" . | nindent 4 }}
+  annotations:
+    description: "Flask Backend API for IceCharts"
+spec:
+  replicas: {{ .Values.api.replicaCount }}
+  selector:
+    matchLabels:
+      {{- include "icecharts.api.selectorLabels" . | nindent 6 }}
+  template:
+    metadata:
+      labels:
+        {{- include "icecharts.api.labels" . | nindent 8 }}
+      annotations:
+        prometheus.io/scrape: "false"
+    spec:
+      {{- with .Values.global.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      serviceAccountName: {{ include "icecharts.serviceAccountName" . }}
+      securityContext:
+        runAsUser: {{ .Values.api.securityContext.runAsUser }}
+        runAsGroup: {{ .Values.api.securityContext.runAsGroup }}
+        fsGroup: {{ .Values.api.securityContext.fsGroup }}
+        runAsNonRoot: {{ .Values.api.securityContext.runAsNonRoot }}
+      initContainers:
+        - name: wait-for-postgres
+          image: busybox:1.35
+          command:
+            - sh
+            - -c
+            - |
+              until nc -z {{ include "icecharts.postgres.host" . }} {{ include "icecharts.postgres.port" . }}; do
+                echo "Waiting for PostgreSQL..."
+                sleep 2
+              done
+              echo "PostgreSQL is ready"
+        - name: wait-for-redis
+          image: busybox:1.35
+          command:
+            - sh
+            - -c
+            - |
+              until nc -z {{ include "icecharts.redis.host" . }} {{ include "icecharts.redis.port" . }}; do
+                echo "Waiting for Redis..."
+                sleep 2
+              done
+              echo "Redis is ready"
+        - name: wait-for-minio
+          image: busybox:1.35
+          command:
+            - sh
+            - -c
+            - |
+              until nc -z {{ include "icecharts.minio.host" . }} {{ include "icecharts.minio.apiPort" . }}; do
+                echo "Waiting for MinIO..."
+                sleep 2
+              done
+              echo "MinIO is ready"
+      containers:
+        - name: api
+          image: {{ include "icecharts.api.image" . }}
+          imagePullPolicy: {{ .Values.api.image.pullPolicy }}
+          ports:
+            - name: http
+              containerPort: 5000
+              protocol: TCP
+          env:
+            # Database configuration
+            - name: POSTGRES_DB
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "icecharts.secretName" . }}
+                  key: postgres-db
+            - name: POSTGRES_USER
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "icecharts.secretName" . }}
+                  key: postgres-user
+            - name: POSTGRES_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "icecharts.secretName" . }}
+                  key: postgres-password
+            # Redis configuration
+            - name: REDIS_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "icecharts.secretName" . }}
+                  key: redis-password
+            # MinIO configuration
+            - name: MINIO_ROOT_USER
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "icecharts.secretName" . }}
+                  key: minio-root-user
+            - name: MINIO_ROOT_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "icecharts.secretName" . }}
+                  key: minio-root-password
+            # API secrets
+            - name: SECRET_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "icecharts.secretName" . }}
+                  key: flask-secret-key
+            - name: SECURITY_PASSWORD_SALT
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "icecharts.secretName" . }}
+                  key: security-password-salt
+            - name: JWT_SECRET_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "icecharts.secretName" . }}
+                  key: jwt-secret-key
+          envFrom:
+            - configMapRef:
+                name: {{ include "icecharts.fullname" . }}-config
+          volumeMounts:
+            - name: instance
+              mountPath: /app/instance
+          readinessProbe:
+            httpGet:
+              path: {{ .Values.api.healthCheck.readiness.path }}
+              port: http
+              scheme: HTTP
+            initialDelaySeconds: {{ .Values.api.healthCheck.readiness.initialDelaySeconds }}
+            periodSeconds: {{ .Values.api.healthCheck.readiness.periodSeconds }}
+            timeoutSeconds: {{ .Values.api.healthCheck.readiness.timeoutSeconds }}
+            successThreshold: 1
+            failureThreshold: 3
+          livenessProbe:
+            httpGet:
+              path: {{ .Values.api.healthCheck.liveness.path }}
+              port: http
+              scheme: HTTP
+            initialDelaySeconds: {{ .Values.api.healthCheck.liveness.initialDelaySeconds }}
+            periodSeconds: {{ .Values.api.healthCheck.liveness.periodSeconds }}
+            timeoutSeconds: {{ .Values.api.healthCheck.liveness.timeoutSeconds }}
+            failureThreshold: 3
+          startupProbe:
+            httpGet:
+              path: {{ .Values.api.healthCheck.startup.path }}
+              port: http
+              scheme: HTTP
+            initialDelaySeconds: {{ .Values.api.healthCheck.startup.initialDelaySeconds }}
+            periodSeconds: {{ .Values.api.healthCheck.startup.periodSeconds }}
+            failureThreshold: {{ .Values.api.healthCheck.startup.failureThreshold }}
+          resources:
+            {{- toYaml .Values.api.resources | nindent 12 }}
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: {{ .Values.api.securityContext.readOnlyRootFilesystem }}
+            capabilities:
+              drop:
+                - ALL
+      volumes:
+        - name: instance
+          emptyDir: {}
+      {{- with .Values.api.affinity }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      terminationGracePeriodSeconds: 30
+{{- end }}

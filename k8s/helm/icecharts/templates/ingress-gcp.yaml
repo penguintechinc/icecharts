@@ -1,0 +1,104 @@
+{{- /*
+GCP GCE (Google Cloud Load Balancer) Ingress Template
+- Standard Kubernetes Ingress with GCP GCE controller annotations
+- Creates ManagedCertificate resource for HTTPS
+- Configures BackendConfig for health checks and session affinity
+- Supports static IP allocation for consistent external IP
+*/ -}}
+{{- if and .Values.ingress.enabled (eq .Values.ingress.className "gce") }}
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: {{ include "icecharts.fullname" . }}-gce
+  namespace: {{ include "icecharts.namespace" . }}
+  labels:
+    {{- include "icecharts.labels" . | nindent 4 }}
+  annotations:
+    kubernetes.io/ingress.class: gce
+    {{- if .Values.ingress.staticIpName }}
+    kubernetes.io/ingress.global-static-ip-name: {{ .Values.ingress.staticIpName | quote }}
+    {{- end }}
+    {{- if .Values.ingress.tls.enabled }}
+    networking.gke.io/managed-certificates: {{ include "icecharts.fullname" . }}-gce-cert
+    {{- end }}
+    {{- with .Values.ingress.annotations }}
+    {{- toYaml . | nindent 4 }}
+    {{- end }}
+spec:
+  rules:
+    - host: {{ .Values.ingress.host }}
+      http:
+        paths:
+          # Root path - serves the web frontend
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: {{ include "icecharts.web.fullname" . }}-service
+                port:
+                  number: 80
+
+          # API routes
+          - path: /api
+            pathType: Prefix
+            backend:
+              service:
+                name: {{ include "icecharts.api.fullname" . }}-service
+                port:
+                  number: 80
+
+          # WebSocket routes
+          - path: /socket.io
+            pathType: Prefix
+            backend:
+              service:
+                name: {{ include "icecharts.api.fullname" . }}-service
+                port:
+                  number: 80
+
+  {{- if .Values.ingress.tls.enabled }}
+  tls:
+    - hosts:
+        - {{ .Values.ingress.host }}
+      secretName: {{ .Values.ingress.tls.secretName }}
+  {{- end }}
+
+{{- if .Values.ingress.tls.enabled }}
+---
+# GCP Managed Certificate for HTTPS
+apiVersion: networking.gke.io/v1
+kind: ManagedCertificate
+metadata:
+  name: {{ include "icecharts.fullname" . }}-gce-cert
+  namespace: {{ include "icecharts.namespace" . }}
+  labels:
+    {{- include "icecharts.labels" . | nindent 4 }}
+spec:
+  domains:
+    - {{ .Values.ingress.host }}
+{{- end }}
+
+---
+# BackendConfig for health checks and session affinity
+apiVersion: cloud.google.com/v1
+kind: BackendConfig
+metadata:
+  name: {{ include "icecharts.fullname" . }}-backendconfig
+  namespace: {{ include "icecharts.namespace" . }}
+  labels:
+    {{- include "icecharts.labels" . | nindent 4 }}
+spec:
+  healthChecks:
+    - checkIntervalSec: 30
+      timeoutSec: 5
+      type: HTTP
+      requestPath: /health
+      port: 80
+  sessionAffinity:
+    affinityType: "CLIENT_IP"
+    affinityCookieTtlSec: 10800
+  customRequestHeaders:
+    headers:
+      - "X-Forwarded-Proto:http{{ if .Values.ingress.tls.enabled }}s{{ end }}"
+
+{{- end }}

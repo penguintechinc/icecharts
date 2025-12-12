@@ -1,0 +1,14 @@
+# Kustomization for React Frontend Deployment
+# Manages the static file serving and web application layer for IceCharts
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+namespace: icecharts
+
+resources:
+  - deployment.yaml
+  - service.yaml
+
+commonLabels:
+  app.kubernetes.io/name: icecharts
+  app.kubernetes.io/component: web

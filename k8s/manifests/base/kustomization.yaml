@@ -1,0 +1,31 @@
+# Kustomization base manifest for IceCharts application
+# This file defines the common configuration for all IceCharts components
+# Usage: kubectl apply -k base/
+
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+# Define the target namespace for all resources
+namespace: icecharts
+
+# Common labels applied to all resources
+commonLabels:
+  app.kubernetes.io/name: icecharts
+  app.kubernetes.io/version: v1.0.3
+  app.kubernetes.io/managed-by: kustomize
+
+# List of base resources to include
+resources:
+  - namespace.yaml
+  - configmap.yaml
+  - secret.yaml
+  - postgres
+  - redis
+  - minio
+  - api
+  - web
+
+# Common annotations for all resources
+commonAnnotations:
+  app.kubernetes.io/part-of: icecharts
+  kustomize.config.k8s.io/needs-hash: "false"

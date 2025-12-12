@@ -1,0 +1,115 @@
+{{- /*
+MinIO StatefulSet Template
+- Manages MinIO object storage with persistent storage
+- Single replica for production
+- Configured with S3-compatible API and web console
+- Includes health checks and security context
+*/ -}}
+{{- if .Values.minio.enabled }}
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: {{ include "icecharts.minio.fullname" . }}
+  namespace: {{ include "icecharts.namespace" . }}
+  labels:
+    {{- include "icecharts.minio.labels" . | nindent 4 }}
+  annotations:
+    description: "MinIO object storage for IceCharts"
+spec:
+  serviceName: {{ include "icecharts.minio.fullname" . }}-service
+  replicas: {{ .Values.minio.replicaCount }}
+  selector:
+    matchLabels:
+      {{- include "icecharts.minio.selectorLabels" . | nindent 6 }}
+  template:
+    metadata:
+      labels:
+        {{- include "icecharts.minio.labels" . | nindent 8 }}
+      annotations:
+        prometheus.io/scrape: "false"
+    spec:
+      {{- with .Values.global.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      serviceAccountName: {{ include "icecharts.serviceAccountName" . }}
+      securityContext:
+        runAsUser: {{ .Values.minio.securityContext.runAsUser }}
+        runAsGroup: {{ .Values.minio.securityContext.runAsGroup }}
+        fsGroup: {{ .Values.minio.securityContext.fsGroup }}
+        runAsNonRoot: {{ .Values.minio.securityContext.runAsNonRoot }}
+      containers:
+        - name: minio
+          image: {{ include "icecharts.minio.image" . }}
+          imagePullPolicy: {{ .Values.minio.image.pullPolicy }}
+          command:
+            - minio
+            - server
+            - /data
+            - --console-address
+            - ":9001"
+          ports:
+            - name: api
+              containerPort: 9000
+              protocol: TCP
+            - name: console
+              containerPort: 9001
+              protocol: TCP
+          env:
+            - name: MINIO_ROOT_USER
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "icecharts.secretName" . }}
+                  key: minio-root-user
+            - name: MINIO_ROOT_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "icecharts.secretName" . }}
+                  key: minio-root-password
+          volumeMounts:
+            - name: data
+              mountPath: /data
+          readinessProbe:
+            httpGet:
+              path: /minio/health/ready
+              port: api
+              scheme: HTTP
+            initialDelaySeconds: {{ .Values.minio.healthCheck.readiness.initialDelaySeconds }}
+            periodSeconds: {{ .Values.minio.healthCheck.readiness.periodSeconds }}
+            timeoutSeconds: {{ .Values.minio.healthCheck.readiness.timeoutSeconds }}
+            successThreshold: 1
+            failureThreshold: 3
+          livenessProbe:
+            httpGet:
+              path: /minio/health/live
+              port: api
+              scheme: HTTP
+            initialDelaySeconds: {{ .Values.minio.healthCheck.liveness.initialDelaySeconds }}
+            periodSeconds: {{ .Values.minio.healthCheck.liveness.periodSeconds }}
+            timeoutSeconds: {{ .Values.minio.healthCheck.liveness.timeoutSeconds }}
+            failureThreshold: 3
+          resources:
+            {{- toYaml .Values.minio.resources | nindent 12 }}
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: false
+            capabilities:
+              drop:
+                - ALL
+  volumeClaimTemplates:
+    - metadata:
+        name: data
+        labels:
+          {{- include "icecharts.minio.selectorLabels" . | nindent 10 }}
+      spec:
+        accessModes:
+          - {{ .Values.minio.persistence.accessMode }}
+        {{- if .Values.minio.persistence.storageClass }}
+        storageClassName: {{ .Values.minio.persistence.storageClass }}
+        {{- else if .Values.global.storageClass }}
+        storageClassName: {{ .Values.global.storageClass }}
+        {{- end }}
+        resources:
+          requests:
+            storage: {{ .Values.minio.persistence.size }}
+{{- end }}

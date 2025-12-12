@@ -1,0 +1,36 @@
+{{- /*
+API (Flask Backend) ClusterIP Service
+- Exposes Flask backend application
+- Port 80 (external) maps to 5000 (container Flask port)
+- Supports session affinity for WebSocket connections
+- Used by Ingress and Web frontend for API communication
+*/ -}}
+{{- if .Values.api.enabled }}
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "icecharts.api.fullname" . }}-service
+  namespace: {{ include "icecharts.namespace" . }}
+  labels:
+    {{- include "icecharts.api.labels" . | nindent 4 }}
+  annotations:
+    description: "IceCharts Flask Backend API Service"
+spec:
+  type: {{ .Values.api.service.type }}
+  {{- if .Values.api.service.sessionAffinity }}
+  sessionAffinity: {{ .Values.api.service.sessionAffinity }}
+    {{- if .Values.api.service.sessionAffinityConfig }}
+    {{- with .Values.api.service.sessionAffinityConfig }}
+  sessionAffinityConfig:
+    {{- toYaml . | nindent 4 }}
+    {{- end }}
+    {{- end }}
+  {{- end }}
+  ports:
+    - port: {{ .Values.api.service.port }}
+      targetPort: {{ .Values.api.service.targetPort }}
+      protocol: TCP
+      name: http
+  selector:
+    {{- include "icecharts.api.selectorLabels" . | nindent 4 }}
+{{- end }}

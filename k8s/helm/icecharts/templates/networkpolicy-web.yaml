@@ -1,0 +1,67 @@
+{{- /*
+NetworkPolicy for Web (React Frontend)
+- Allows ingress from ingress controller
+- Allows egress to API service
+- Allows DNS egress for external resolution
+*/ -}}
+{{- if .Values.networkPolicies.enabled }}
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: icecharts-web-policy
+  namespace: {{ include "icecharts.namespace" . }}
+  labels:
+    {{- include "icecharts.labels" . | nindent 4 }}
+    app.kubernetes.io/component: frontend
+  annotations:
+    description: "NetworkPolicy for Web frontend - allows ingress from ingress controller and egress to API"
+spec:
+  podSelector:
+    matchLabels:
+      {{- include "icecharts.web.selectorLabels" . | nindent 6 }}
+  policyTypes:
+    {{- toYaml .Values.networkPolicies.policyTypes | nindent 4 }}
+  ingress:
+    # Allow ingress from ingress controller (check for standard ingress labels)
+    - from:
+        - namespaceSelector:
+            matchLabels:
+              name: ingress-nginx
+          podSelector:
+            matchLabels:
+              app.kubernetes.io/name: ingress-nginx
+      ports:
+        - protocol: TCP
+          port: 80
+    # Allow ingress from ingress controller (Traefik)
+    - from:
+        - namespaceSelector:
+            matchLabels:
+              name: traefik
+          podSelector:
+            matchLabels:
+              app.kubernetes.io/name: traefik
+      ports:
+        - protocol: TCP
+          port: 80
+  egress:
+    # Allow egress to API service
+    - to:
+        - podSelector:
+            matchLabels:
+              app.kubernetes.io/component: backend
+      ports:
+        - protocol: TCP
+          port: 5000
+    # Allow DNS egress for external resolution
+    - to:
+        - namespaceSelector: {}
+          podSelector:
+            matchLabels:
+              k8s-app: kube-dns
+      ports:
+        - protocol: UDP
+          port: 53
+        - protocol: TCP
+          port: 53
+{{- end }}

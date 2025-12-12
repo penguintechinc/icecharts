@@ -1,0 +1,26 @@
+{{- /*
+Web (React Frontend) ClusterIP Service
+- Exposes React frontend application
+- Port 80 (external) maps to 80 (container port)
+- Used by Ingress for external access to frontend
+*/ -}}
+{{- if .Values.web.enabled }}
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "icecharts.web.fullname" . }}-service
+  namespace: {{ include "icecharts.namespace" . }}
+  labels:
+    {{- include "icecharts.web.labels" . | nindent 4 }}
+  annotations:
+    description: "IceCharts React Frontend Service"
+spec:
+  type: {{ .Values.web.service.type }}
+  ports:
+    - port: {{ .Values.web.service.port }}
+      targetPort: {{ .Values.web.service.targetPort }}
+      protocol: TCP
+      name: http
+  selector:
+    {{- include "icecharts.web.selectorLabels" . | nindent 4 }}
+{{- end }}

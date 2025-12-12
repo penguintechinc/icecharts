@@ -1,0 +1,143 @@
+{{- /*
+Traefik IngressRoute Template
+- Traefik-specific routing using IngressRoute CRD
+- Supports web and websecure entrypoints
+- Configures route matching for /, /api, and /socket.io paths
+- Sticky sessions for WebSocket connections
+- TLS termination with Traefik default certificates
+*/ -}}
+{{- if and .Values.ingress.enabled (eq .Values.ingress.className "traefik") }}
+apiVersion: traefik.io/v1alpha1
+kind: IngressRoute
+metadata:
+  name: {{ include "icecharts.fullname" . }}-traefik
+  namespace: {{ include "icecharts.namespace" . }}
+  labels:
+    {{- include "icecharts.labels" . | nindent 4 }}
+  annotations:
+    {{- with .Values.ingress.annotations }}
+    {{- toYaml . | nindent 4 }}
+    {{- end }}
+spec:
+  entryPoints:
+    - web
+    {{- if .Values.ingress.tls.enabled }}
+    - websecure
+    {{- end }}
+  routes:
+    # Root path - serves the web frontend
+    - match: Host(`{{ .Values.ingress.host }}`) && Path(`/`)
+      kind: Rule
+      services:
+        - name: {{ include "icecharts.web.fullname" . }}-service
+          port: 80
+      middlewares:
+        - name: {{ include "icecharts.fullname" . }}-web-headers
+
+    # API routes
+    - match: Host(`{{ .Values.ingress.host }}`) && PathPrefix(`/api`)
+      kind: Rule
+      services:
+        - name: {{ include "icecharts.api.fullname" . }}-service
+          port: 80
+      middlewares:
+        - name: {{ include "icecharts.fullname" . }}-api-strip-prefix
+        - name: {{ include "icecharts.fullname" . }}-api-headers
+
+    # WebSocket routes with sticky sessions
+    - match: Host(`{{ .Values.ingress.host }}`) && PathPrefix(`/socket.io`)
+      kind: Rule
+      services:
+        - name: {{ include "icecharts.api.fullname" . }}-service
+          port: 80
+      middlewares:
+        - name: {{ include "icecharts.fullname" . }}-socket-strip-prefix
+        - name: {{ include "icecharts.fullname" . }}-socket-affinity
+
+  {{- if .Values.ingress.tls.enabled }}
+  tls:
+    secretName: {{ .Values.ingress.tls.secretName }}
+  {{- end }}
+
+---
+# Web headers middleware
+apiVersion: traefik.io/v1alpha1
+kind: Middleware
+metadata:
+  name: {{ include "icecharts.fullname" . }}-web-headers
+  namespace: {{ include "icecharts.namespace" . }}
+  labels:
+    {{- include "icecharts.labels" . | nindent 4 }}
+spec:
+  headers:
+    customRequestHeaders:
+      X-Forwarded-Proto: "http{{ if .Values.ingress.tls.enabled }}s{{ end }}"
+    customResponseHeaders:
+      X-Content-Type-Options: "nosniff"
+      X-Frame-Options: "SAMEORIGIN"
+      X-XSS-Protection: "1; mode=block"
+
+---
+# API strip prefix middleware
+apiVersion: traefik.io/v1alpha1
+kind: Middleware
+metadata:
+  name: {{ include "icecharts.fullname" . }}-api-strip-prefix
+  namespace: {{ include "icecharts.namespace" . }}
+  labels:
+    {{- include "icecharts.labels" . | nindent 4 }}
+spec:
+  stripPrefix:
+    prefixes:
+      - /api
+    forceSlash: false
+
+---
+# API headers middleware
+apiVersion: traefik.io/v1alpha1
+kind: Middleware
+metadata:
+  name: {{ include "icecharts.fullname" . }}-api-headers
+  namespace: {{ include "icecharts.namespace" . }}
+  labels:
+    {{- include "icecharts.labels" . | nindent 4 }}
+spec:
+  headers:
+    customRequestHeaders:
+      X-Forwarded-Proto: "http{{ if .Values.ingress.tls.enabled }}s{{ end }}"
+    customResponseHeaders:
+      X-Content-Type-Options: "nosniff"
+      Access-Control-Allow-Origin: "*"
+
+---
+# WebSocket strip prefix middleware
+apiVersion: traefik.io/v1alpha1
+kind: Middleware
+metadata:
+  name: {{ include "icecharts.fullname" . }}-socket-strip-prefix
+  namespace: {{ include "icecharts.namespace" . }}
+  labels:
+    {{- include "icecharts.labels" . | nindent 4 }}
+spec:
+  stripPrefix:
+    prefixes:
+      - /socket.io
+    forceSlash: false
+
+---
+# WebSocket affinity middleware for sticky sessions
+apiVersion: traefik.io/v1alpha1
+kind: Middleware
+metadata:
+  name: {{ include "icecharts.fullname" . }}-socket-affinity
+  namespace: {{ include "icecharts.namespace" . }}
+  labels:
+    {{- include "icecharts.labels" . | nindent 4 }}
+spec:
+  headers:
+    customRequestHeaders:
+      X-Forwarded-Proto: "http{{ if .Values.ingress.tls.enabled }}s{{ end }}"
+    customResponseHeaders:
+      X-Content-Type-Options: "nosniff"
+
+{{- end }}

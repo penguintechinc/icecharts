@@ -1,0 +1,59 @@
+{{- /*
+Web Frontend Horizontal Pod Autoscaler Template
+- Scales the web deployment based on CPU utilization
+- Simpler scaling configuration compared to API (CPU-only)
+- Maintains a minimum of 3 replicas for high availability
+- Scales up to 10 replicas during peak load
+*/ -}}
+{{- if and .Values.web.autoscaling.enabled (gt (int .Values.web.replicaCount) 0) }}
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: {{ include "icecharts.web.fullname" . }}-hpa
+  namespace: {{ include "icecharts.namespace" . }}
+  labels:
+    {{- include "icecharts.web.labels" . | nindent 4 }}
+  annotations:
+    description: "Autoscaler for IceCharts Web frontend deployment"
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: {{ include "icecharts.web.fullname" . }}
+
+  minReplicas: {{ .Values.web.autoscaling.minReplicas | default 3 }}
+  maxReplicas: {{ .Values.web.autoscaling.maxReplicas | default 10 }}
+
+  metrics:
+    # CPU-based scaling
+    - type: Resource
+      resource:
+        name: cpu
+        target:
+          type: Utilization
+          averageUtilization: {{ .Values.web.autoscaling.targetCPUUtilizationPercentage | default 70 }}
+
+  behavior:
+    scaleDown:
+      stabilizationWindowSeconds: 300
+      policies:
+        - type: Percent
+          value: 50
+          periodSeconds: 60
+        - type: Pods
+          value: 1
+          periodSeconds: 60
+      selectPolicy: Min
+
+    scaleUp:
+      stabilizationWindowSeconds: 60
+      policies:
+        - type: Percent
+          value: 100
+          periodSeconds: 30
+        - type: Pods
+          value: 2
+          periodSeconds: 30
+      selectPolicy: Max
+
+{{- end }}

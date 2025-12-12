@@ -1,0 +1,39 @@
+# Ingress patch for local development (optional)
+# For local development, ingress is typically not needed
+# Access services via kubectl port-forward or service DNS
+#
+# Example usage:
+#   kubectl port-forward -n icecharts svc/web 3000:3000
+#   kubectl port-forward -n icecharts svc/api 5000:5000
+#
+# If ingress is desired for local development with tools like Traefik or Minikube ingress:
+
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: icecharts-local
+  namespace: icecharts
+  annotations:
+    # Use with minikube ingress addon
+    ingress.class: "nginx"
+    # Or use traefik if available
+    # traefik.ingress.kubernetes.io/router.entrypoints: "web"
+spec:
+  rules:
+  - host: icecharts.local
+    http:
+      paths:
+      - path: /api
+        pathType: Prefix
+        backend:
+          service:
+            name: api
+            port:
+              number: 5000
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: web
+            port:
+              number: 3000

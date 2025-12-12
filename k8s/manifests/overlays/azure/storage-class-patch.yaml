@@ -1,0 +1,70 @@
+# Azure Storage Class Patch
+# Configures Azure Managed Disks for persistent volumes
+# Uses managed-premium (SSD) for high-performance storage
+
+apiVersion: storage.k8s.io/v1
+kind: StorageClass
+metadata:
+  name: azure-managed-premium
+provisioner: disk.csi.azure.com
+parameters:
+  skuName: Premium_LRS  # Locally Redundant Storage (Premium)
+  kind: Managed
+reclaimPolicy: Retain
+allowVolumeExpansion: true
+
+---
+# Alternative: Standard managed disk storage class
+apiVersion: storage.k8s.io/v1
+kind: StorageClass
+metadata:
+  name: azure-managed-standard
+provisioner: disk.csi.azure.com
+parameters:
+  skuName: Standard_LRS  # Locally Redundant Storage (Standard)
+  kind: Managed
+reclaimPolicy: Retain
+allowVolumeExpansion: true
+
+---
+# Patch PVCs to use managed-premium storage
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: postgres-storage-postgres-0
+  namespace: icecharts
+spec:
+  storageClassName: azure-managed-premium
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 50Gi
+
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: redis-storage-redis-0
+  namespace: icecharts
+spec:
+  storageClassName: azure-managed-premium
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 20Gi
+
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: minio-storage-minio-0
+  namespace: icecharts
+spec:
+  storageClassName: azure-managed-premium
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 100Gi

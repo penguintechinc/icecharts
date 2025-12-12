@@ -1,0 +1,58 @@
+# AWS Storage Class Patch
+# Configures AWS EBS (Elastic Block Storage) for persistent volumes
+# Uses GP3 (General Purpose) volumes for balanced price/performance
+
+apiVersion: storage.k8s.io/v1
+kind: StorageClass
+metadata:
+  name: aws-ebs-gp3
+provisioner: ebs.csi.aws.com
+parameters:
+  type: gp3
+  iops: "3000"
+  throughput: "125"
+reclaimPolicy: Retain
+allowVolumeExpansion: true
+
+---
+# Patch PVCs to use GP3 storage
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: postgres-storage-postgres-0
+  namespace: icecharts
+spec:
+  storageClassName: aws-ebs-gp3
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 50Gi
+
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: redis-storage-redis-0
+  namespace: icecharts
+spec:
+  storageClassName: aws-ebs-gp3
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 20Gi
+
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: minio-storage-minio-0
+  namespace: icecharts
+spec:
+  storageClassName: aws-ebs-gp3
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 100Gi
