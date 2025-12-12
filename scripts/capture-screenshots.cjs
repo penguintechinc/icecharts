@@ -12,7 +12,13 @@ const pages = [
   { name: 'drawings', path: '/drawings' },
   { name: 'groups', path: '/groups' },
   { name: 'templates', path: '/templates' },
+  { name: 'collections', path: '/collections' },
   { name: 'settings', path: '/settings' },
+  // Admin pages
+  { name: 'admin-users', path: '/admin/users' },
+  { name: 'admin-sso', path: '/admin/sso' },
+  { name: 'admin-storage', path: '/admin/storage' },
+  { name: 'admin-dashboard', path: '/admin/dashboard' },
 ];
 
 async function sleep(ms) {
