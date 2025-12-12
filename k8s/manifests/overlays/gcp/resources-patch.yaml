@@ -5,6 +5,7 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
+  namespace: icecharts
   name: api
 spec:
   template:
@@ -23,6 +24,7 @@ spec:
 apiVersion: apps/v1
 kind: Deployment
 metadata:
+  namespace: icecharts
   name: web
 spec:
   template:
@@ -41,6 +43,7 @@ spec:
 apiVersion: apps/v1
 kind: StatefulSet
 metadata:
+  namespace: icecharts
   name: postgres
 spec:
   template:
@@ -59,6 +62,7 @@ spec:
 apiVersion: apps/v1
 kind: StatefulSet
 metadata:
+  namespace: icecharts
   name: redis
 spec:
   template:
@@ -77,6 +81,7 @@ spec:
 apiVersion: apps/v1
 kind: StatefulSet
 metadata:
+  namespace: icecharts
   name: minio
 spec:
   template:

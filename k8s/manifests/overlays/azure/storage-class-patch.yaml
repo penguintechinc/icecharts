@@ -1,6 +1,7 @@
 # Azure Storage Class Patch
 # Configures Azure Managed Disks for persistent volumes
 # Uses managed-premium (SSD) for high-performance storage
+# Note: PVCs are managed by StatefulSet volumeClaimTemplates, not defined here
 
 apiVersion: storage.k8s.io/v1
 kind: StorageClass
@@ -25,46 +26,3 @@ parameters:
   kind: Managed
 reclaimPolicy: Retain
 allowVolumeExpansion: true
-
----
-# Patch PVCs to use managed-premium storage
-apiVersion: v1
-kind: PersistentVolumeClaim
-metadata:
-  name: postgres-storage-postgres-0
-  namespace: icecharts
-spec:
-  storageClassName: azure-managed-premium
-  accessModes:
-    - ReadWriteOnce
-  resources:
-    requests:
-      storage: 50Gi
-
----
-apiVersion: v1
-kind: PersistentVolumeClaim
-metadata:
-  name: redis-storage-redis-0
-  namespace: icecharts
-spec:
-  storageClassName: azure-managed-premium
-  accessModes:
-    - ReadWriteOnce
-  resources:
-    requests:
-      storage: 20Gi
-
----
-apiVersion: v1
-kind: PersistentVolumeClaim
-metadata:
-  name: minio-storage-minio-0
-  namespace: icecharts
-spec:
-  storageClassName: azure-managed-premium
-  accessModes:
-    - ReadWriteOnce
-  resources:
-    requests:
-      storage: 100Gi

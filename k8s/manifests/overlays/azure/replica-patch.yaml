@@ -5,6 +5,7 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: api
+  namespace: icecharts
 spec:
   replicas: 3
 
@@ -13,5 +14,6 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: web
+  namespace: icecharts
 spec:
   replicas: 3

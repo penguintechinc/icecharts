@@ -1,6 +1,7 @@
 # GCP Storage Class Patch
 # Configures Google Cloud Persistent Disks for persistent volumes
 # Uses PD-SSD (Solid State Disk) for high-performance storage
+# Note: PVCs are managed by StatefulSet volumeClaimTemplates, not defined here
 
 apiVersion: storage.k8s.io/v1
 kind: StorageClass
@@ -12,46 +13,3 @@ parameters:
   replication-type: regional-pd
 reclaimPolicy: Retain
 allowVolumeExpansion: true
-
----
-# Patch PVCs to use PD-SSD storage
-apiVersion: v1
-kind: PersistentVolumeClaim
-metadata:
-  name: postgres-storage-postgres-0
-  namespace: icecharts
-spec:
-  storageClassName: gcp-pd-ssd
-  accessModes:
-    - ReadWriteOnce
-  resources:
-    requests:
-      storage: 50Gi
-
----
-apiVersion: v1
-kind: PersistentVolumeClaim
-metadata:
-  name: redis-storage-redis-0
-  namespace: icecharts
-spec:
-  storageClassName: gcp-pd-ssd
-  accessModes:
-    - ReadWriteOnce
-  resources:
-    requests:
-      storage: 20Gi
-
----
-apiVersion: v1
-kind: PersistentVolumeClaim
-metadata:
-  name: minio-storage-minio-0
-  namespace: icecharts
-spec:
-  storageClassName: gcp-pd-ssd
-  accessModes:
-    - ReadWriteOnce
-  resources:
-    requests:
-      storage: 100Gi
