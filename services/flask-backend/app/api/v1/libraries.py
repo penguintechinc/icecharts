@@ -29,8 +29,8 @@ def user_can_access_library(user_id: int, library_id: int) -> bool:
     if library.get("is_public"):
         return True
 
-    # Owner can always access
-    if library["owner_id"] == user_id:
+    # Creator can always access
+    if library["created_by_id"] == user_id:
         return True
 
     return False
@@ -53,11 +53,11 @@ def list_libraries():
     # Build query: user's libraries or public libraries
     if show_public:
         query = db(
-            (db.shape_libraries.owner_id == user["id"]) |
+            (db.shape_libraries.created_by_id == user["id"]) |
             (db.shape_libraries.is_public == True)
         )
     else:
-        query = db(db.shape_libraries.owner_id == user["id"])
+        query = db(db.shape_libraries.created_by_id == user["id"])
 
     # Apply search filter
     if search:
@@ -105,7 +105,7 @@ def create_library():
     library_id = db.shape_libraries.insert(
         name=name,
         description=description,
-        owner_id=user["id"],
+        created_by_id=user["id"],
         is_public=is_public,
     )
     db.commit()
@@ -157,7 +157,7 @@ def update_library(library_id: int):
         return jsonify({"error": "Library not found"}), 404
 
     # Only owner can update
-    if library["owner_id"] != user["id"]:
+    if library["created_by_id"] != user["id"]:
         return jsonify({"error": "Only the owner can update this library"}), 403
 
     db = get_db()
@@ -193,7 +193,7 @@ def delete_library(library_id: int):
         return jsonify({"error": "Library not found"}), 404
 
     # Only owner can delete
-    if library["owner_id"] != user["id"]:
+    if library["created_by_id"] != user["id"]:
         return jsonify({"error": "Only the owner can delete this library"}), 403
 
     db = get_db()
@@ -247,7 +247,7 @@ def add_library_shape(library_id: int):
         return jsonify({"error": "Library not found"}), 404
 
     # Only owner can add shapes
-    if library["owner_id"] != user["id"]:
+    if library["created_by_id"] != user["id"]:
         return jsonify({"error": "Only the owner can add shapes to this library"}), 403
 
     name = data.get("name", "").strip()
@@ -318,7 +318,7 @@ def update_library_shape(library_id: int, shape_id: int):
         return jsonify({"error": "Library not found"}), 404
 
     # Only owner can update
-    if library["owner_id"] != user["id"]:
+    if library["created_by_id"] != user["id"]:
         return jsonify({"error": "Only the owner can update shapes in this library"}), 403
 
     db = get_db()
@@ -363,7 +363,7 @@ def delete_library_shape(library_id: int, shape_id: int):
         return jsonify({"error": "Library not found"}), 404
 
     # Only owner can delete
-    if library["owner_id"] != user["id"]:
+    if library["created_by_id"] != user["id"]:
         return jsonify({"error": "Only the owner can delete shapes from this library"}), 403
 
     db = get_db()
@@ -400,7 +400,7 @@ def duplicate_library(library_id: int):
     new_library_id = db.shape_libraries.insert(
         name=f"{source_library['name']} (Copy)",
         description=source_library.get("description", ""),
-        owner_id=user["id"],
+        created_by_id=user["id"],
         is_public=False,  # Copies are private by default
     )
 
