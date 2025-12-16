@@ -249,3 +249,53 @@ export interface CollectionAnalytics {
     ip_address: string | null;
   }>;
 }
+
+// Service Account types
+export interface ServiceAccount {
+  id: number;
+  name: string;
+  description: string | null;
+  scopes: string[];
+  is_active: boolean;
+  created_by_id: number;
+  created_by_name: string;
+  created_at: string;
+  updated_at: string;
+  last_used_at: string | null;
+}
+
+export interface ServiceAccountToken {
+  jti: string;
+  name: string;
+  scopes: string[];
+  created_at: string;
+  expires_at: string | null;
+  last_used_at: string | null;
+}
+
+export interface CreateServiceAccountData {
+  name: string;
+  description?: string;
+  scopes: string[];
+}
+
+export interface UpdateServiceAccountData {
+  name?: string;
+  description?: string;
+  scopes?: string[];
+  is_active?: boolean;
+}
+
+export interface CreateTokenData {
+  name: string;
+  scopes?: string[];
+  expires_in_days?: number;
+}
+
+export interface GeneratedToken {
+  token: string;
+  jti: string;
+  name: string;
+  scopes: string[];
+  expires_at: string | null;
+}

@@ -708,6 +708,40 @@ def define_all_tables(db):
     )
 
     # ==========================================
+    # Templates Table
+    # ==========================================
+
+    # Templates for creating drawings from predefined layouts
+    db.define_table(
+        "templates",
+        Field(
+            "tenant_id",
+            "reference tenants",
+            default=1,
+            notnull=True,
+            ondelete="CASCADE",
+        ),
+        Field("name", "string", length=255, notnull=True, requires=IS_NOT_EMPTY()),
+        Field("description", "text"),
+        Field("content", "json", notnull=True),  # Template drawing content (nodes, edges, viewport)
+        Field("category", "string", length=100, default="custom"),
+        Field("thumbnail_url", "string", length=1024),
+        Field("is_public", "boolean", default=False, notnull=True),
+        Field("created_by_id", "reference identities", notnull=True, ondelete="CASCADE"),
+        Field(
+            "created_at",
+            "datetime",
+            default=lambda: datetime.datetime.now(datetime.timezone.utc),
+        ),
+        Field(
+            "updated_at",
+            "datetime",
+            update=lambda: datetime.datetime.now(datetime.timezone.utc),
+        ),
+        migrate=True,
+    )
+
+    # ==========================================
     # Service Account Tables for External App Integration
     # ==========================================
 

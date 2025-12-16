@@ -28,6 +28,8 @@ const navigation: NavCategory[] = [
     roles: ['admin'],
     items: [
       { label: 'Users', path: '/users', icon: '👥', roles: ['admin'] },
+      { label: 'Service Accounts', path: '/admin/service-accounts', icon: '🔑', roles: ['admin'] },
+      { label: 'Settings', path: '/admin/settings', icon: '⚙️', roles: ['admin'] },
     ],
   },
 ];

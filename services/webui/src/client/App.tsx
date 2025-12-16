@@ -9,6 +9,8 @@ import Users from './pages/Users';
 import UserDetail from './pages/UserDetail';
 import Profile from './pages/Profile';
 import Settings from './pages/Settings';
+import ServiceAccounts from './pages/Admin/ServiceAccounts';
+import AdminSettings from './pages/Admin/AdminSettings';
 
 function App() {
   const { isAuthenticated, isLoading } = useAuth();
@@ -68,6 +70,24 @@ function App() {
           element={
             <RoleGuard allowedRoles={['admin']}>
               <UserDetail />
+            </RoleGuard>
+          }
+        />
+
+        {/* Admin pages - Admin only */}
+        <Route
+          path="/admin/service-accounts"
+          element={
+            <RoleGuard allowedRoles={['admin']}>
+              <ServiceAccounts />
+            </RoleGuard>
+          }
+        />
+        <Route
+          path="/admin/settings"
+          element={
+            <RoleGuard allowedRoles={['admin']}>
+              <AdminSettings />
             </RoleGuard>
           }
         />

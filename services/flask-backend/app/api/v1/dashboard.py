@@ -3,9 +3,10 @@
 Provides dashboard statistics and activity feed for IceCharts users.
 """
 
-from flask import Blueprint, jsonify
+from flask import Blueprint, current_app, jsonify, request
 
 from ...middleware import auth_required, get_current_user
+from ...models import get_db
 
 dashboard_v1_bp = Blueprint("dashboard_v1", __name__, url_prefix="/dashboard")
 
@@ -18,24 +19,43 @@ def get_dashboard_stats():
     Returns:
         JSON object with user statistics:
         - totalDrawings: Number of drawings owned by user
+        - totalTemplates: Number of templates owned by user
+        - totalCollections: Number of collections owned by user
         - totalGroups: Number of groups user belongs to
-        - sharedDrawings: Number of drawings shared with user
     """
     try:
         user = get_current_user()
         user_id = user["id"]
+        db = get_db()
 
-        # TODO: Query actual counts from database when models are implemented
-        # For now, return placeholder stats
+        # Count drawings owned or created by user
+        total_drawings = db(
+            (db.drawings.owner_id == user_id) | (db.drawings.created_by_id == user_id)
+        ).count()
+
+        # Count templates owned or created by user
+        total_templates = db(
+            (db.drawings.is_template == True) &
+            ((db.drawings.owner_id == user_id) | (db.drawings.created_by_id == user_id))
+        ).count()
+
+        # Count collections owned by user
+        total_collections = db(db.collections.owner_id == user_id).count()
+
+        # Count groups user belongs to (as a member)
+        total_groups = db(db.group_members.user_id == user_id).count()
+
         stats = {
-            "totalDrawings": 0,
-            "totalGroups": 0,
-            "sharedDrawings": 0,
+            "totalDrawings": total_drawings,
+            "totalTemplates": total_templates,
+            "totalCollections": total_collections,
+            "totalGroups": total_groups,
         }
 
         return jsonify(stats), 200
 
     except Exception as e:
+        current_app.logger.error(f"Error getting dashboard stats: {e}")
         return jsonify({"error": str(e)}), 500
 
 
@@ -44,29 +64,49 @@ def get_dashboard_stats():
 def get_activity_feed():
     """Get recent activity feed for current user.
 
-    Returns activity from:
+    Returns recent items from:
     - User's own drawings (created, updated)
-    - Groups user belongs to (new drawings, comments)
-    - Drawings shared with user
 
     Query params:
         limit: Maximum items to return (default 20, max 50)
         offset: Pagination offset (default 0)
 
     Returns:
-        JSON array of activity items
+        JSON array of activity items with type, title, and timestamp
     """
     try:
         user = get_current_user()
         user_id = user["id"]
+        db = get_db()
 
         limit = min(int(request.args.get("limit", 20)), 50)
         offset = int(request.args.get("offset", 0))
 
-        # TODO: Query activity from database when models are implemented
-        # Activity types: drawing_created, drawing_updated, comment_added,
-        #                 group_joined, drawing_shared
+        # Query recent drawings updated by or created by user, ordered by updated_at desc
+        drawings = db(
+            (db.drawings.owner_id == user_id) | (db.drawings.created_by_id == user_id)
+        ).select(
+            orderby=~db.drawings.updated_at,
+            limitby=(offset, offset + limit)
+        )
+
+        # Format as activity items
         activity = []
+        for drawing in drawings:
+            activity_item = {
+                "id": str(drawing.id),
+                "type": "drawing_updated" if drawing.updated_by_id else "drawing_created",
+                "title": drawing.title or "Untitled Drawing",
+                "timestamp": drawing.updated_at.isoformat() if drawing.updated_at else drawing.created_at.isoformat() if drawing.created_at else None,
+                "resource_id": str(drawing.id),
+                "resource_type": "drawing",
+            }
+            activity.append(activity_item)
+
+        # Get total count for pagination
+        total_count = db(
+            (db.drawings.owner_id == user_id) | (db.drawings.created_by_id == user_id)
+        ).count()
 
         return jsonify({
             "success": True,
@@ -74,11 +114,9 @@ def get_activity_feed():
             "items": activity,
             "limit": limit,
             "offset": offset,
+            "total": total_count,
         }), 200
 
     except Exception as e:
+        current_app.logger.error(f"Error getting activity feed: {e}")
         return jsonify({"error": str(e)}), 500
-
-
-# Import request for query params
-from flask import request
