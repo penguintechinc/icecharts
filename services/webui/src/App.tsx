@@ -8,6 +8,7 @@ const Dashboard = React.lazy(() => import('./pages/Dashboard'));
 const Login = React.lazy(() => import('./pages/Login'));
 const Register = React.lazy(() => import('./pages/Register'));
 const DrawingEditor = React.lazy(() => import('./client/pages/DrawingEditor'));
+const DrawingDetail = React.lazy(() => import('./client/pages/DrawingDetail'));
 const NotFound = React.lazy(() => import('./pages/NotFound'));
 const Drawings = React.lazy(() => import('./client/pages/Drawings'));
 const Collections = React.lazy(() => import('./client/pages/Collections'));
@@ -89,7 +90,8 @@ const App: React.FC = () => {
             <Route path="/dashboard" element={<Dashboard />} />
             <Route path="/drawings" element={<Drawings />} />
             <Route path="/drawings/new" element={<DrawingEditor />} />
-            <Route path="/drawings/:id" element={<DrawingEditor />} />
+            <Route path="/drawings/:id/edit" element={<DrawingEditor />} />
+            <Route path="/drawings/:id" element={<DrawingDetail />} />
             <Route path="/collections" element={<Collections />} />
             <Route path="/collections/:id" element={<Collections />} />
             <Route path="/groups" element={<Groups />} />

@@ -196,6 +196,15 @@ export default function DrawingEditor() {
 
   const isNewDrawing = !id || id === 'new';
 
+  // Add back button handler that directs to DrawingDetail after saving
+  const handleBackToDetail = () => {
+    if (id && id !== 'new') {
+      navigate(`/drawings/${id}`);
+    } else {
+      navigate('/drawings');
+    }
+  };
+
   // Create array of all available icons for search
   const allIcons = useMemo<IconDefinition[]>(() => {
     return Object.values(iconCategories).flatMap(cat => cat.icons) as IconDefinition[];
@@ -498,15 +507,15 @@ export default function DrawingEditor() {
       {/* Editor Header */}
       <div className="bg-dark-900 border-b border-dark-700 px-4 py-2 flex items-center justify-between z-10">
         <div className="flex items-center gap-4">
-          <Link
-            to="/drawings"
+          <button
+            onClick={handleBackToDetail}
             className="text-gold-400 hover:text-gold-300 transition-colors p-2"
-            title="Back to Drawings"
+            title={isNewDrawing ? "Back to Drawings" : "Back to Drawing Details"}
           >
             <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
             </svg>
-          </Link>
+          </button>
 
           {isEditingName ? (
             <input

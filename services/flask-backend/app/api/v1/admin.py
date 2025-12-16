@@ -121,6 +121,8 @@ def admin_get_user(user_id: int):
 @admin_required
 def admin_create_user():
     """Create a new user (admin only)."""
+    from ...services.logging_service import LoggingService
+
     data = request.get_json()
 
     if not data:
@@ -166,6 +168,21 @@ def admin_create_user():
     user.pop("password_hash", None)
     user.pop("mfa_secret", None)
 
+    # Log audit
+    current_user = get_current_user()
+    LoggingService.log_audit(
+        action="user_created",
+        resource_type="user",
+        resource_id=user.get("id"),
+        resource_name=email,
+        user_id=current_user.get("id") if current_user else None,
+        changes={
+            "email": email,
+            "full_name": full_name,
+            "role": role,
+        },
+    )
+
     return jsonify({
         "message": "User created successfully",
         "user": user,
@@ -177,6 +194,8 @@ def admin_create_user():
 @admin_required
 def admin_update_user(user_id: int):
     """Update user details (admin only)."""
+    from ...services.logging_service import LoggingService
+
     data = request.get_json()
 
     if not data:
@@ -188,6 +207,7 @@ def admin_update_user(user_id: int):
 
     # Prepare update data
     update_data = {}
+    changes = {}
 
     if "email" in data:
         new_email = data["email"].strip().lower()
@@ -196,9 +216,17 @@ def admin_update_user(user_id: int):
         if existing and existing["id"] != user_id:
             return jsonify({"error": "Email already in use"}), 409
         update_data["email"] = new_email
+        changes["email"] = {
+            "old_value": user.get("email"),
+            "new_value": new_email,
+        }
 
     if "full_name" in data:
         update_data["full_name"] = data["full_name"].strip()
+        changes["full_name"] = {
+            "old_value": user.get("full_name"),
+            "new_value": data["full_name"].strip(),
+        }
 
     if "role" in data:
         role = data["role"].strip()
@@ -209,9 +237,17 @@ def admin_update_user(user_id: int):
                 "valid_roles": valid_roles,
             }), 400
         update_data["role"] = role
+        changes["role"] = {
+            "old_value": user.get("role"),
+            "new_value": role,
+        }
 
     if "is_active" in data:
         update_data["is_active"] = data["is_active"]
+        changes["is_active"] = {
+            "old_value": user.get("is_active"),
+            "new_value": data["is_active"],
+        }
 
     if "password" in data:
         password = data["password"]
@@ -221,6 +257,10 @@ def admin_update_user(user_id: int):
         from .auth import hash_password
 
         update_data["password_hash"] = hash_password(password)
+        changes["password"] = {
+            "old_value": "***",
+            "new_value": "***",
+        }
 
     if not update_data:
         return jsonify({"error": "No valid fields to update"}), 400
@@ -231,6 +271,17 @@ def admin_update_user(user_id: int):
     # Remove sensitive fields
     updated_user.pop("password_hash", None)
     updated_user.pop("mfa_secret", None)
+
+    # Log audit
+    current_user = get_current_user()
+    LoggingService.log_audit(
+        action="user_updated",
+        resource_type="user",
+        resource_id=user_id,
+        resource_name=user.get("email"),
+        user_id=current_user.get("id") if current_user else None,
+        changes=changes if changes else None,
+    )
 
     return jsonify({
         "message": "User updated successfully",
@@ -243,6 +294,8 @@ def admin_update_user(user_id: int):
 @admin_required
 def admin_delete_user(user_id: int):
     """Delete user (admin only)."""
+    from ...services.logging_service import LoggingService
+
     current_user = get_current_user()
 
     # Prevent self-deletion
@@ -259,6 +312,15 @@ def admin_delete_user(user_id: int):
     if not success:
         return jsonify({"error": "Failed to delete user"}), 500
 
+    # Log audit
+    LoggingService.log_audit(
+        action="user_deleted",
+        resource_type="user",
+        resource_id=user_id,
+        resource_name=user.get("email"),
+        user_id=current_user.get("id"),
+    )
+
     return jsonify({
         "message": "User deleted successfully",
     }), 200
@@ -269,12 +331,30 @@ def admin_delete_user(user_id: int):
 @admin_required
 def admin_activate_user(user_id: int):
     """Activate user account (admin only)."""
+    from ...services.logging_service import LoggingService
+
+    current_user = get_current_user()
     user = get_user_by_id(user_id)
     if not user:
         return jsonify({"error": "User not found"}), 404
 
     # Activate user
     update_user(user_id, is_active=True)
+
+    # Log audit
+    LoggingService.log_audit(
+        action="user_activated",
+        resource_type="user",
+        resource_id=user_id,
+        resource_name=user.get("email"),
+        user_id=current_user.get("id"),
+        changes={
+            "is_active": {
+                "old_value": user.get("is_active"),
+                "new_value": True,
+            }
+        },
+    )
 
     return jsonify({
         "message": "User activated successfully",
@@ -286,6 +366,8 @@ def admin_activate_user(user_id: int):
 @admin_required
 def admin_deactivate_user(user_id: int):
     """Deactivate user account (admin only)."""
+    from ...services.logging_service import LoggingService
+
     current_user = get_current_user()
 
     # Prevent self-deactivation
@@ -298,6 +380,21 @@ def admin_deactivate_user(user_id: int):
 
     # Deactivate user
     update_user(user_id, is_active=False)
+
+    # Log audit
+    LoggingService.log_audit(
+        action="user_deactivated",
+        resource_type="user",
+        resource_id=user_id,
+        resource_name=user.get("email"),
+        user_id=current_user.get("id"),
+        changes={
+            "is_active": {
+                "old_value": user.get("is_active"),
+                "new_value": False,
+            }
+        },
+    )
 
     return jsonify({
         "message": "User deactivated successfully",
@@ -340,22 +437,61 @@ def admin_get_stats():
 @auth_required
 @admin_required
 def admin_get_activity():
-    """Get recent system activity (admin only)."""
-    db = get_db()
+    """Get recent system activity (admin only).
+
+    Query parameters:
+    - page: Page number (default: 1)
+    - per_page: Records per page (default: 50)
+    - user_id: Filter by user ID
+    - action: Filter by action type
+    - resource_type: Filter by resource type
+    - start_date: Filter by start date (ISO 8601)
+    - end_date: Filter by end date (ISO 8601)
+    """
+    from ...services.logging_service import LoggingService
 
     page = request.args.get("page", 1, type=int)
     per_page = request.args.get("per_page", 50, type=int)
+    user_id = request.args.get("user_id", type=int)
+    action = request.args.get("action", "").strip()
+    resource_type = request.args.get("resource_type", "").strip()
+    start_date_str = request.args.get("start_date", "").strip()
+    end_date_str = request.args.get("end_date", "").strip()
 
-    # TODO: Implement activity logging and retrieval
-    # For now, return placeholder
+    # Parse dates if provided
+    start_date = None
+    end_date = None
+    try:
+        if start_date_str:
+            start_date = datetime.fromisoformat(start_date_str.replace("Z", "+00:00"))
+        if end_date_str:
+            end_date = datetime.fromisoformat(end_date_str.replace("Z", "+00:00"))
+    except ValueError:
+        return jsonify({"error": "Invalid date format. Use ISO 8601"}), 400
 
-    activities = []
+    # Validate pagination
+    if page < 1 or per_page < 1 or per_page > 1000:
+        return jsonify({"error": "Invalid pagination parameters"}), 400
+
+    offset = (page - 1) * per_page
+
+    # Retrieve activity logs
+    activities, total = LoggingService.get_activity_logs(
+        user_id=user_id,
+        action=action if action else None,
+        resource_type=resource_type if resource_type else None,
+        start_date=start_date,
+        end_date=end_date,
+        limit=per_page,
+        offset=offset,
+    )
 
     return jsonify({
         "activities": activities,
-        "total": len(activities),
+        "total": total,
         "page": page,
         "per_page": per_page,
+        "pages": (total + per_page - 1) // per_page,
     }), 200
 
 
@@ -363,24 +499,61 @@ def admin_get_activity():
 @auth_required
 @admin_required
 def admin_get_audit_log():
-    """Get audit log entries (admin only)."""
-    db = get_db()
+    """Get audit log entries (admin only).
+
+    Query parameters:
+    - page: Page number (default: 1)
+    - per_page: Records per page (default: 50)
+    - user_id: Filter by user ID
+    - action: Filter by action type
+    - resource_type: Filter by resource type
+    - start_date: Filter by start date (ISO 8601)
+    - end_date: Filter by end date (ISO 8601)
+    """
+    from ...services.logging_service import LoggingService
 
     page = request.args.get("page", 1, type=int)
     per_page = request.args.get("per_page", 50, type=int)
     user_id = request.args.get("user_id", type=int)
     action = request.args.get("action", "").strip()
+    resource_type = request.args.get("resource_type", "").strip()
+    start_date_str = request.args.get("start_date", "").strip()
+    end_date_str = request.args.get("end_date", "").strip()
 
-    # TODO: Implement audit logging and retrieval
-    # For now, return placeholder
+    # Parse dates if provided
+    start_date = None
+    end_date = None
+    try:
+        if start_date_str:
+            start_date = datetime.fromisoformat(start_date_str.replace("Z", "+00:00"))
+        if end_date_str:
+            end_date = datetime.fromisoformat(end_date_str.replace("Z", "+00:00"))
+    except ValueError:
+        return jsonify({"error": "Invalid date format. Use ISO 8601"}), 400
 
-    audit_logs = []
+    # Validate pagination
+    if page < 1 or per_page < 1 or per_page > 1000:
+        return jsonify({"error": "Invalid pagination parameters"}), 400
+
+    offset = (page - 1) * per_page
+
+    # Retrieve audit logs
+    audit_logs, total = LoggingService.get_audit_logs(
+        user_id=user_id,
+        action=action if action else None,
+        resource_type=resource_type if resource_type else None,
+        start_date=start_date,
+        end_date=end_date,
+        limit=per_page,
+        offset=offset,
+    )
 
     return jsonify({
         "audit_logs": audit_logs,
-        "total": len(audit_logs),
+        "total": total,
         "page": page,
         "per_page": per_page,
+        "pages": (total + per_page - 1) // per_page,
     }), 200
 
 
@@ -388,31 +561,33 @@ def admin_get_audit_log():
 @auth_required
 @admin_required
 def admin_get_system_health():
-    """Get system health status (admin only)."""
-    # Check various system components
+    """Get detailed system health status for all components (admin only)."""
+    from ...services.health_check_service import HealthCheckService
 
-    health = {
-        "status": "healthy",
-        "timestamp": datetime.utcnow().isoformat(),
-        "components": {
-            "database": {
-                "status": "healthy",
-                "message": "Database connection OK",
-            },
-            "storage": {
-                "status": "healthy",
-                "message": "Storage accessible",
-            },
-            "cache": {
-                "status": "healthy",
-                "message": "Cache operational",
-            },
-        },
-    }
+    try:
+        health_service = HealthCheckService()
+        health = health_service.check_all()
 
-    # TODO: Implement actual health checks for each component
+        # Determine HTTP status code based on overall health
+        status_code = 200
+        if health["status"] == "unhealthy":
+            status_code = 503  # Service Unavailable
+        elif health["status"] == "degraded":
+            status_code = 200  # Still OK, but degraded
 
-    return jsonify({"health": health}), 200
+        return jsonify({"health": health}), status_code
+    except Exception as e:
+        import logging
+        logger = logging.getLogger(__name__)
+        logger.error(f"Failed to perform health check: {str(e)}")
+        return jsonify({
+            "health": {
+                "status": "unhealthy",
+                "timestamp": datetime.utcnow().isoformat(),
+                "error": str(e),
+                "components": {}
+            }
+        }), 503
 
 
 @admin_v1_bp.route("/system/config", methods=["GET"])

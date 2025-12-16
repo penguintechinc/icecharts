@@ -708,6 +708,76 @@ def define_all_tables(db):
     )
 
     # ==========================================
+    # Activity and Audit Logging (v1.0+)
+    # ==========================================
+
+    # Activity logs for tracking user actions (logins, drawing edits, sharing, etc.)
+    db.define_table(
+        "activity_logs",
+        Field("user_id", "reference identities", notnull=True, ondelete="CASCADE"),
+        Field("tenant_id", "reference tenants", notnull=True, ondelete="CASCADE"),
+        Field(
+            "action",
+            "string",
+            length=100,
+            notnull=True,
+            requires=IS_NOT_EMPTY(),
+        ),  # e.g., "login", "drawing_created", "drawing_shared", "comment_added"
+        Field(
+            "resource_type",
+            "string",
+            length=100,
+        ),  # e.g., "drawing", "comment", "user", "group", "share"
+        Field("resource_id", "integer"),  # ID of the resource being acted upon
+        Field("resource_name", "string", length=255),  # Human-readable name of resource
+        Field("details", "json"),  # Additional context-specific data
+        Field("ip_address", "string", length=50),
+        Field("user_agent", "string", length=500),
+        Field(
+            "timestamp",
+            "datetime",
+            default=lambda: datetime.datetime.now(datetime.timezone.utc),
+            notnull=True,
+        ),
+        migrate=True,
+    )
+
+    # Audit logs for tracking admin/sensitive actions with change history
+    db.define_table(
+        "audit_logs",
+        Field("user_id", "reference identities", ondelete="SET NULL"),  # User who made the change
+        Field("tenant_id", "reference tenants", notnull=True, ondelete="CASCADE"),
+        Field(
+            "action",
+            "string",
+            length=100,
+            notnull=True,
+            requires=IS_NOT_EMPTY(),
+        ),  # e.g., "user_created", "user_updated", "user_deleted", "settings_changed"
+        Field(
+            "resource_type",
+            "string",
+            length=100,
+            notnull=True,
+        ),  # e.g., "user", "group", "settings", "system"
+        Field("resource_id", "integer"),  # ID of the resource being modified
+        Field("resource_name", "string", length=255),  # Human-readable name
+        Field("changes", "json"),  # Detailed change data (old_value, new_value for each field)
+        Field("reason", "text"),  # Why the action was taken
+        Field("ip_address", "string", length=50),
+        Field("user_agent", "string", length=500),
+        Field("status", "string", length=50, default="success"),  # success, failed
+        Field("error_message", "text"),  # If status is failed
+        Field(
+            "timestamp",
+            "datetime",
+            default=lambda: datetime.datetime.now(datetime.timezone.utc),
+            notnull=True,
+        ),
+        migrate=True,
+    )
+
+    # ==========================================
     # Templates Table
     # ==========================================
 
@@ -808,6 +878,64 @@ def define_all_tables(db):
             "created_at",
             "datetime",
             default=lambda: datetime.datetime.now(datetime.timezone.utc),
+        ),
+        migrate=True,
+    )
+
+    # ==========================================
+    # Storage Migration Jobs (for async migration tracking)
+    # ==========================================
+
+    db.define_table(
+        "migration_jobs",
+        Field("user_id", "reference identities", notnull=True, ondelete="CASCADE"),
+        Field(
+            "source_provider_id",
+            "reference storage_providers",
+            notnull=True,
+            ondelete="CASCADE",
+        ),
+        Field(
+            "target_provider_id",
+            "reference storage_providers",
+            notnull=True,
+            ondelete="CASCADE",
+        ),
+        Field(
+            "status",
+            "string",
+            length=50,
+            default="pending",
+            requires=IS_IN_SET(
+                ["pending", "in_progress", "completed", "completed_with_errors", "failed", "rolled_back", "rollback_failed"]
+            ),
+        ),
+        Field("progress", "integer", default=0),  # 0-100
+        Field("total_count", "integer", default=0),  # Total drawings to migrate
+        Field("migrated_count", "integer", default=0),  # Successfully migrated
+        Field("failed_count", "integer", default=0),  # Failed migrations
+        Field("skipped_count", "integer", default=0),  # Skipped (no versions, etc.)
+        Field("error_message", "text"),  # Error message if status is failed
+        Field("celery_task_id", "string", length=255),  # Celery task ID for monitoring
+        Field("result_json", "json"),  # Detailed results including failed drawings
+        Field("status_json", "json"),  # Current status metadata
+        Field(
+            "started_at",
+            "datetime",
+        ),
+        Field(
+            "completed_at",
+            "datetime",
+        ),
+        Field(
+            "created_at",
+            "datetime",
+            default=lambda: datetime.datetime.now(datetime.timezone.utc),
+        ),
+        Field(
+            "updated_at",
+            "datetime",
+            update=lambda: datetime.datetime.now(datetime.timezone.utc),
         ),
         migrate=True,
     )

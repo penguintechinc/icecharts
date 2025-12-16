@@ -250,6 +250,20 @@ export interface CollectionAnalytics {
   }>;
 }
 
+// Drawing analytics types
+export interface DrawingAnalytics {
+  view_count?: number;
+  total_views?: number;
+  unique_viewers?: number;
+  last_accessed?: string | null;
+  recent_accesses?: Array<{
+    accessed_at: string | null;
+    access_ip?: string | null;
+    ip_address?: string | null;
+    user_agent?: string | null;
+  }>;
+}
+
 // Service Account types
 export interface ServiceAccount {
   id: number;
@@ -298,4 +312,91 @@ export interface GeneratedToken {
   name: string;
   scopes: string[];
   expires_at: string | null;
+}
+
+// Activity Log types
+export interface ActivityLog {
+  id: number;
+  user_id: number;
+  user_name: string;
+  user_email: string;
+  action: string;
+  resource_type: string;
+  resource_id: number | null;
+  resource_name: string | null;
+  timestamp: string;
+  ip_address: string | null;
+  user_agent: string | null;
+  details: Record<string, any>;
+}
+
+// Audit Log types
+export interface AuditLog {
+  id: number;
+  user_id: number;
+  user_name: string;
+  user_email: string;
+  action: string;
+  resource_type: string;
+  resource_id: number | null;
+  resource_name: string | null;
+  timestamp: string;
+  ip_address: string | null;
+  user_agent: string | null;
+  old_values: Record<string, any>;
+  new_values: Record<string, any>;
+  status: 'success' | 'failed';
+  error_message: string | null;
+}
+
+// Shape Library types
+export interface ShapeLibrary {
+  id: number;
+  tenant_id?: number;
+  name: string;
+  description: string | null;
+  owner_id: number;
+  owner_name?: string;
+  is_public: boolean;
+  created_at: string;
+  updated_at: string;
+  shape_count?: number;
+  shapes?: LibraryShape[];
+}
+
+export interface LibraryShape {
+  id: number;
+  library_id: number;
+  name: string;
+  description: string | null;
+  shape_data: object;
+  category: string;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface CreateLibraryData {
+  name: string;
+  description?: string;
+  is_public?: boolean;
+}
+
+export interface UpdateLibraryData {
+  name?: string;
+  description?: string;
+  is_public?: boolean;
+}
+
+export interface CreateShapeData {
+  name: string;
+  description?: string;
+  shape_data: object;
+  category?: string;
+}
+
+export interface UpdateShapeData {
+  name?: string;
+  description?: string;
+  shape_data?: object;
+  category?: string;
 }

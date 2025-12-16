@@ -7,6 +7,7 @@ from flask import Blueprint, current_app, jsonify, request
 
 from ...middleware import auth_required, get_current_user
 from ...models import get_db
+from ...services.storage_usage_service import StorageUsageService
 
 dashboard_v1_bp = Blueprint("dashboard_v1", __name__, url_prefix="/dashboard")
 
@@ -119,4 +120,35 @@ def get_activity_feed():
 
     except Exception as e:
         current_app.logger.error(f"Error getting activity feed: {e}")
+        return jsonify({"error": str(e)}), 500
+
+
+@dashboard_v1_bp.route("/storage", methods=["GET"])
+@auth_required
+def get_storage_widget():
+    """Get storage usage statistics for dashboard widget.
+
+    Returns:
+        JSON object with storage stats for display in dashboard:
+        {
+            "storage": {
+                "used_mb": float,
+                "quota_mb": float,
+                "usage_percentage": float,
+                "usage_status": str ("ok", "warning", or "critical"),
+                "total_drawings": int
+            }
+        }
+    """
+    try:
+        user = get_current_user()
+        user_id = user["id"]
+
+        # Get storage statistics
+        stats = StorageUsageService.get_storage_stats_summary(user_id)
+
+        return jsonify({"storage": stats}), 200
+
+    except Exception as e:
+        current_app.logger.error(f"Error getting storage widget: {e}")
         return jsonify({"error": str(e)}), 500

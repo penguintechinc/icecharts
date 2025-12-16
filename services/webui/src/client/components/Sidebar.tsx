@@ -21,6 +21,7 @@ const navigation: NavCategory[] = [
     roles: ['admin', 'maintainer'],
     items: [
       { label: 'Settings', path: '/settings', icon: '⚙️', roles: ['admin', 'maintainer'] },
+      { label: 'Libraries', path: '/libraries', icon: '📚', roles: ['admin', 'maintainer'] },
     ],
   },
   {
@@ -29,6 +30,8 @@ const navigation: NavCategory[] = [
     items: [
       { label: 'Users', path: '/users', icon: '👥', roles: ['admin'] },
       { label: 'Service Accounts', path: '/admin/service-accounts', icon: '🔑', roles: ['admin'] },
+      { label: 'Activity Logs', path: '/admin/activity', icon: '📋', roles: ['admin'] },
+      { label: 'Audit Logs', path: '/admin/audit-log', icon: '🔍', roles: ['admin'] },
       { label: 'Settings', path: '/admin/settings', icon: '⚙️', roles: ['admin'] },
     ],
   },
