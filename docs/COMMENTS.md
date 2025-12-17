@@ -4,6 +4,94 @@
 
 A comprehensive comments system for IceCharts that enables collaborative feedback on drawings with threaded replies, shape-specific comments, and resolution tracking.
 
+## Quick Reference
+
+### Backend Quick Start
+
+```python
+from app.services.comment_service import CommentService
+
+# Create comment
+CommentService.create_comment(
+    drawing_id=123,
+    author_id=456,
+    content="Your comment",
+    shape_id="node-1",           # Optional
+    parent_comment_id=None       # Optional
+)
+
+# Get comments
+CommentService.get_comments_for_drawing(
+    drawing_id=123,
+    shape_id="node-1",          # Optional
+    filter_type="all"           # "all", "open", "resolved"
+)
+
+# Get threaded tree structure
+CommentService.get_comments_tree(drawing_id=123)
+
+# Update comment
+CommentService.update_comment(comment_id=123, content="New text")
+
+# Delete comment (cascades to replies)
+CommentService.delete_comment(comment_id=123)
+
+# Resolve/Unresolve
+CommentService.resolve_comment(comment_id=123, resolved_by_id=456)
+CommentService.unresolve_comment(comment_id=123)
+
+# Statistics
+CommentService.get_comment_summary(drawing_id=123)
+```
+
+### Frontend Quick Start
+
+```typescript
+import { useCommentsStore } from './store/commentsStore';
+import { CommentsPanel } from './components/canvas/CommentsPanel';
+import { CommentMarker } from './components/canvas/CommentMarker';
+
+// Zustand Store
+const { comments, createComment, updateComment } = useCommentsStore();
+
+// Fetch comments
+await useCommentsStore.getState().fetchComments(drawingId);
+
+// Create comment
+const comment = await createComment(
+  drawingId,
+  "Comment text",
+  "node-1",  // shape_id
+  null       // parent_comment_id
+);
+
+// UI Components
+<CommentsPanel
+  drawingId={drawingId}
+  selectedShapeId={nodeId}
+  isOpen={true}
+  onClose={() => setOpen(false)}
+/>
+
+<CommentMarker
+  shapeId={node.id}
+  drawingId={drawingId}
+  onClickMarker={(shapeId) => selectShape(shapeId)}
+/>
+```
+
+### API Endpoints
+
+| Method | Endpoint | Purpose |
+|--------|----------|---------|
+| GET | `/api/v1/drawings/<id>/comments` | List comments |
+| POST | `/api/v1/drawings/<id>/comments` | Create comment |
+| PUT | `/api/v1/drawings/<id>/comments/<id>` | Update comment |
+| DELETE | `/api/v1/drawings/<id>/comments/<id>` | Delete comment |
+| POST | `/api/v1/drawings/<id>/comments/<id>/resolve` | Mark resolved |
+| POST | `/api/v1/drawings/<id>/comments/<id>/unresolve` | Mark unresolved |
+| GET | `/api/v1/drawings/<id>/comments/summary` | Get stats |
+
 ## Backend Architecture
 
 ### Database Schema
@@ -19,6 +107,8 @@ Stores all comments with threading and resolution support:
 - `is_resolved` - Resolution status
 - `resolved_by_id` - User who marked resolved
 - `resolved_at` - When marked resolved
+- `created_at` - Timestamp
+- `updated_at` - Timestamp
 
 #### Drawings Table
 Canvas drawings with ownership and metadata:
@@ -29,25 +119,28 @@ Canvas drawings with ownership and metadata:
 - `data` - JSON containing nodes, edges, viewport
 - `thumbnail_url` - Cached thumbnail
 - `is_public` - Public access flag
+- `created_at` - Timestamp
+- `updated_at` - Timestamp
 
 #### Drawing Metadata Table
 Version and configuration tracking:
+- `id` - Primary key
 - `drawing_id` - Reference to drawing (unique)
 - `version` - Version string (e.g., "1.0.0")
 - `tags` - JSON array of tags
 - `grid_size` - Grid size setting
 - `snap_to_grid` - Snap to grid enabled
 - `last_modified_by_id` - Last editor
+- `created_at` - Timestamp
+- `updated_at` - Timestamp
 
-### API Endpoints
-
-All endpoints require authentication and support access control.
+### API Endpoints (Detailed)
 
 #### List Comments
 ```
 GET /api/v1/drawings/<drawing_id>/comments?shape_id=node-1&filter=all&thread=false
 ```
-Filters:
+Query Parameters:
 - `shape_id` - Filter by specific shape (optional)
 - `filter` - "all" (default), "open", "resolved"
 - `thread` - "true" for tree structure, "false" for flat
@@ -110,18 +203,27 @@ Returns statistics on comment counts and breakdown by shape.
 
 ## Frontend Architecture
 
-### TypeScript Types (`src/types/index.ts`)
+### TypeScript Types
 
 ```typescript
 interface Comment {
   id: string;
   drawing_id: string;
-  author: CommentAuthor;
+  author: {
+    id: string;
+    email: string;
+    full_name: string;
+    profile_picture_url?: string;
+  };
   content: string;
   shape_id?: string;
   parent_comment_id?: string;
   is_resolved: boolean;
-  resolved_by?: User;
+  resolved_by?: {
+    id: string;
+    email: string;
+    full_name: string;
+  };
   resolved_at?: string;
   created_at: string;
   updated_at: string;
@@ -192,20 +294,9 @@ api.comments.getSummary(drawingId)
 
 ## Usage Examples
 
-### Backend - Create Comment
-```python
-from app.services.comment_service import CommentService
+### Backend Examples
 
-comment = CommentService.create_comment(
-    drawing_id=123,
-    author_id=456,
-    content="This shape needs adjustment",
-    shape_id="node-1"
-)
-# Returns comment dict with author info
-```
-
-### Backend - Get Threaded Comments
+#### Get Threaded Comments
 ```python
 comments_tree = CommentService.get_comments_tree(drawing_id=123)
 
@@ -215,7 +306,7 @@ for root_comment in comments_tree:
         print(f"  {reply['author']['full_name']}: {reply['content']}")
 ```
 
-### Backend - Get Statistics
+#### Get Statistics
 ```python
 summary = CommentService.get_comment_summary(drawing_id=123)
 # {
@@ -226,7 +317,9 @@ summary = CommentService.get_comment_summary(drawing_id=123)
 # }
 ```
 
-### Frontend - Using Zustand Store
+### Frontend Examples
+
+#### Using Zustand Store
 ```typescript
 import { useCommentsStore } from './store/commentsStore';
 
@@ -241,7 +334,7 @@ function MyComponent() {
 }
 ```
 
-### Frontend - Using Hook
+#### Using Hook
 ```typescript
 import { useComments } from './hooks/useComments';
 
@@ -254,7 +347,7 @@ function MyComponent() {
 }
 ```
 
-### Frontend - Component Integration
+#### Component Integration
 ```tsx
 import { CommentsPanel } from './components/canvas/CommentsPanel';
 import { CommentMarker } from './components/canvas/CommentMarker';
@@ -285,6 +378,46 @@ export function Canvas() {
       />
     </>
   );
+}
+```
+
+## Common Patterns
+
+### Show Comments for Shape
+```typescript
+const shapeComments = comments.filter(c => c.shape_id === shapeId);
+const unresolvedCount = shapeComments.filter(c => !c.is_resolved).length;
+```
+
+### Create Nested Reply
+```typescript
+await createComment(
+  drawingId,
+  "Reply text",
+  shapeId,
+  parentCommentId  // Makes it a reply
+);
+```
+
+### Filter by Status
+```typescript
+// Unresolved only
+const open = comments.filter(c => !c.is_resolved);
+
+// Resolved only
+const resolved = comments.filter(c => c.is_resolved);
+
+// By shape
+const forShape = comments.filter(c => c.shape_id === shapeId);
+```
+
+### Handle Errors
+```typescript
+const { error, clearError } = useCommentsStore();
+
+if (error) {
+  console.error('Comment error:', error);
+  clearError();
 }
 ```
 
@@ -330,6 +463,62 @@ db = init_db(app)
 init_drawing_tables(db)
 ```
 
+## File Structure
+
+### Backend
+```
+services/flask-backend/app/
+     models.py                      # Database models
+     services/comment_service.py    # Comment business logic
+     api/v1/comments.py             # API endpoints
+```
+
+### Frontend
+```
+services/webui/src/
+     types/index.ts                 # TypeScript interfaces
+     lib/api.ts                     # API client
+     store/commentsStore.ts         # Zustand store
+     hooks/useComments.ts           # Custom hook
+     components/
+       canvas/
+          CommentsPanel.tsx         # Comments sidebar
+          CommentMarker.tsx         # Shape indicators
+       common/
+         CommentThread.tsx          # Comment display
+```
+
+## Integration Checklist
+
+- [x] Database models (comments, drawings, metadata)
+- [x] Backend API endpoints
+- [x] Comment service with business logic
+- [x] Frontend types and interfaces
+- [x] Zustand store for state
+- [x] Custom hook for components
+- [x] CommentsPanel sidebar UI
+- [x] CommentThread display
+- [x] CommentMarker badges
+- [ ] WebSocket real-time updates
+- [ ] Rich text editor
+- [ ] User mentions
+- [ ] Email notifications
+- [ ] Comment search
+- [ ] Comment analytics
+
+## Testing
+
+Recommended test cases:
+- Create/read/update/delete comments
+- Thread operations (nested replies)
+- Resolution status changes
+- Filter operations (by shape, by status)
+- Access control (unauthorized users)
+- Cascade deletes (parent comment with replies)
+- Comment statistics accuracy
+- Concurrent updates
+- Large comment trees (performance)
+
 ## Future Enhancements
 
 1. **Rich Text** - Markdown/HTML support
@@ -344,41 +533,3 @@ init_drawing_tables(db)
 10. **Approval** - Comment moderation workflow
 11. **Email** - Notification emails
 12. **Audit Log** - Change history
-
-## File Structure
-
-Backend:
-```
-services/flask-backend/app/
-     models.py          # Database models
-     api/v1/comments.py # API endpoints
-     services/comment_service.py
-```
-
-Frontend:
-```
-services/webui/src/
-     types/index.ts
-     lib/api.ts
-     store/commentsStore.ts
-     hooks/useComments.ts
-     components/
-       canvas/
-          CommentsPanel.tsx
-          CommentMarker.tsx
-       common/
-         CommentThread.tsx
-```
-
-## Testing
-
-Recommended test cases:
-- Create/read/update/delete comments
-- Thread operations (nested replies)
-- Resolution status changes
-- Filter operations (by shape, by status)
-- Access control (unauthorized users)
-- Cascade deletes (parent comment with replies)
-- Comment statistics accuracy
-- Concurrent updates
-- Large comment trees (performance)

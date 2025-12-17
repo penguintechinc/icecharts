@@ -2,6 +2,205 @@
 
 Comprehensive documentation for exporting IceCharts drawings to various formats.
 
+## Quick Start
+
+Fast reference guide for using IceCharts export features.
+
+### Installation
+
+1. **Backend Dependencies**
+```bash
+# Already added to requirements.txt:
+# - Pillow==10.4.0
+# - cairosvg==2.7.2
+# - WeasyPrint==62.0
+
+pip install -r requirements.txt
+```
+
+2. **Frontend Dependencies**
+```bash
+# Already added to package.json:
+# - html2canvas==^1.4.1
+
+cd services/webui
+npm install
+```
+
+### Using Export Features
+
+#### Option 1: React Component (Recommended for UI)
+
+```typescript
+import { ExportDialog } from './components/drawing/ExportDialog';
+import { useState } from 'react';
+
+function MyDrawing() {
+  const [showExport, setShowExport] = useState(false);
+
+  return (
+    <>
+      <button onClick={() => setShowExport(true)}>
+        Export Drawing
+      </button>
+
+      <ExportDialog
+        drawingId="my_drawing_123"
+        drawingName="My Diagram"
+        isOpen={showExport}
+        onClose={() => setShowExport(false)}
+      />
+    </>
+  );
+}
+```
+
+#### Option 2: Custom Hook (Programmatic Control)
+
+```typescript
+import { useExport } from './hooks/useExport';
+
+function MyDrawing() {
+  const { loading, error, exportDrawing } = useExport();
+
+  const handleExportPNG = async () => {
+    try {
+      await exportDrawing('drawing_id', {
+        format: 'png',
+        width: 1024,
+        height: 768,
+        quality: 95
+      });
+    } catch (err) {
+      console.error('Export failed:', err);
+    }
+  };
+
+  return (
+    <button onClick={handleExportPNG} disabled={loading}>
+      {loading ? 'Exporting...' : 'Export as PNG'}
+    </button>
+  );
+}
+```
+
+#### Option 3: Export Utilities (Low-level Control)
+
+```typescript
+import { downloadSvg, drawingToSvg, validateExportOptions } from './lib/export';
+
+// Validate options
+const validation = validateExportOptions({
+  format: 'png',
+  width: 800
+});
+
+if (!validation.valid) {
+  console.error(validation.error);
+}
+
+// Convert and download
+const svgString = drawingToSvg(drawingData, 800, 600);
+downloadSvg(svgString, 'my_drawing.svg');
+```
+
+### Export Options
+
+#### PNG
+- **width**: 100-4000 (default 800)
+- **height**: 100-4000 (default 600)
+- **quality**: 1-100 (default 95)
+- **includeBackground**: true/false (default true)
+
+#### SVG
+- Format: vector image
+- No additional options needed
+- Editable in design tools
+
+#### PDF
+- **pageSize**: A0, A1, A2, A3, A4, A5, A6, Letter, Legal, Tabloid, Ledger
+- **includeBackground**: true/false (default true)
+
+#### JSON
+- Preserves all drawing data
+- No additional options needed
+
+### API Quick Reference
+
+```bash
+# PNG Export
+GET /api/v1/drawings/{id}/export/png?width=1024&height=768&quality=95&include_background=true
+
+# SVG Export
+GET /api/v1/drawings/{id}/export/svg
+
+# PDF Export
+GET /api/v1/drawings/{id}/export/pdf?page_size=A4&include_background=true
+
+# JSON Export
+GET /api/v1/drawings/{id}/export/json
+```
+
+### Common Patterns
+
+#### Save and Export
+
+```typescript
+import { SaveAsTemplateDialog } from './components/drawing/SaveAsTemplateDialog';
+import { ExportDialog } from './components/drawing/ExportDialog';
+import { useState } from 'react';
+
+function DrawingToolbar({ drawingId, drawingName }) {
+  const [showSave, setShowSave] = useState(false);
+  const [showExport, setShowExport] = useState(false);
+
+  return (
+    <>
+      <button onClick={() => setShowSave(true)}>Save as Template</button>
+      <button onClick={() => setShowExport(true)}>Export</button>
+
+      <SaveAsTemplateDialog
+        drawingId={drawingId}
+        drawingName={drawingName}
+        isOpen={showSave}
+        onClose={() => setShowSave(false)}
+      />
+
+      <ExportDialog
+        drawingId={drawingId}
+        drawingName={drawingName}
+        isOpen={showExport}
+        onClose={() => setShowExport(false)}
+      />
+    </>
+  );
+}
+```
+
+#### Export Multiple Formats
+
+```typescript
+import { useExport } from './hooks/useExport';
+
+function ExportMultiple({ drawingId }) {
+  const { exportDrawing } = useExport();
+
+  const handleExportAll = async () => {
+    const formats = ['png', 'svg', 'pdf', 'json'];
+
+    for (const format of formats) {
+      try {
+        await exportDrawing(drawingId, { format });
+      } catch (err) {
+        console.error(`Export to ${format} failed:`, err);
+      }
+    }
+  };
+
+  return <button onClick={handleExportAll}>Export All Formats</button>;
+}
+```
+
 ## Overview
 
 The IceCharts export system provides multiple export formats for drawings:
@@ -233,6 +432,17 @@ function DrawingEditor() {
 }
 ```
 
+#### Component Props
+
+```typescript
+interface ExportDialogProps {
+  drawingId: string;
+  drawingName: string;
+  isOpen: boolean;
+  onClose: () => void;
+}
+```
+
 ### Export Utilities
 
 Location: `/services/webui/src/lib/export.ts`
@@ -346,6 +556,16 @@ function DrawingSelector() {
 }
 ```
 
+#### Component Props
+
+```typescript
+interface TemplateGalleryProps {
+  isOpen: boolean;
+  onClose: () => void;
+  onSelectTemplate: (template: Template) => void;
+}
+```
+
 ### Save as Template Dialog
 
 Location: `/services/webui/src/client/components/drawing/SaveAsTemplateDialog.tsx`
@@ -375,6 +595,41 @@ function DrawingEditor() {
       />
     </>
   );
+}
+```
+
+#### Component Props
+
+```typescript
+interface SaveAsTemplateDialogProps {
+  drawingId: string;
+  drawingName: string;
+  isOpen: boolean;
+  onClose: () => void;
+  onSuccess?: () => void;
+}
+```
+
+#### Template Management Quick Reference
+
+```bash
+# List templates
+GET /api/v1/templates?category=custom&search=diagram
+
+# Create template
+POST /api/v1/templates
+{
+  "name": "My Template",
+  "description": "Description",
+  "category": "custom",
+  "drawing_id": "drawing_123",
+  "is_public": false
+}
+
+# Use template
+POST /api/v1/templates/{id}/use
+{
+  "name": "My Drawing from Template"
 }
 ```
 
@@ -539,6 +794,11 @@ try {
 - **PDF Export**: WeasyPrint rendering can be CPU-intensive for large drawings
 - **SVG Export**: Lightweight, recommended for further editing
 - **Large drawings**: Consider splitting into multiple exports
+- **Client-side Preview**: Use html2canvas for quick previews
+- **Lazy Loading**: Load templates only when needed
+- **Batch Operations**: Group multiple exports
+- **Caching**: Cache template list responses
+- **Async Processing**: Use async/await for UI responsiveness
 
 ## Security Considerations
 
@@ -547,19 +807,31 @@ try {
 - Restrict export to authorized users only
 - Sanitize SVG content to prevent XSS
 - Rate-limit export API endpoints
+- All inputs validated before export
+- User authorization verified
+- SVG content sanitized
+- File size limits enforced
+- Credentials not exposed in responses
 
-## Future Enhancements
+### API Authentication
 
-- Batch export multiple drawings
-- Custom export presets/profiles
-- Cloud storage integration (Google Drive, Dropbox)
-- Export history and versioning
-- Email export functionality
-- Advanced PDF options (bookmarks, metadata)
-- Watermark support
-- Export scheduling/automation
+All endpoints require Bearer token:
+
+```typescript
+headers: {
+  Authorization: `Bearer ${token}`
+}
+```
+
+Token automatically added by apiClient interceptor.
 
 ## Troubleshooting
+
+### Export Button Not Working
+- Check authentication (JWT token)
+- Verify drawing ID exists
+- Check browser console for errors
+- Ensure API is accessible
 
 ### PNG Export Fails
 
@@ -568,11 +840,17 @@ Check:
 - Cairo/cairosvg is properly installed
 - System has sufficient memory
 
+### PNG Quality Issues
+- Increase quality parameter (up to 95-100)
+- Increase resolution (width/height)
+- Check background color
+
 ### PDF Export Slow
 
 - Reduce drawing complexity
 - Use smaller dimensions
 - Check server CPU/memory
+- Consider async processing
 
 ### SVG Export Issues
 
@@ -585,3 +863,24 @@ Check:
 - Verify template IDs exist in database
 - Check user permissions
 - Ensure API endpoint is accessible
+- Check network in browser DevTools
+
+## File Locations
+
+- **Export Service**: `/services/flask-backend/app/services/export_service.py`
+- **Export Hook**: `/services/webui/src/client/hooks/useExport.ts`
+- **Export Dialog**: `/services/webui/src/client/components/drawing/ExportDialog.tsx`
+- **Template Gallery**: `/services/webui/src/client/components/drawing/TemplateGallery.tsx`
+- **Save Template Dialog**: `/services/webui/src/client/components/drawing/SaveAsTemplateDialog.tsx`
+- **Export Utils**: `/services/webui/src/lib/export.ts`
+
+## Future Enhancements
+
+- Batch export multiple drawings
+- Custom export presets/profiles
+- Cloud storage integration (Google Drive, Dropbox)
+- Export history and versioning
+- Email export functionality
+- Advanced PDF options (bookmarks, metadata)
+- Watermark support
+- Export scheduling/automation

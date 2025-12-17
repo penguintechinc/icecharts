@@ -1,8 +1,221 @@
-# Enterprise SSO Implementation Guide
+# Enterprise SSO (Single Sign-On) Documentation
 
 ## Overview
 
 IceCharts includes comprehensive SAML 2.0 and OpenID Connect (OIDC) support for enterprise single sign-on. Both protocols are license-gated features requiring `saml_sso` and `oidc_sso` license features respectively.
+
+## Quick Start
+
+### For Developers
+
+#### Installation
+
+1. Install SSO dependencies:
+```bash
+pip install -r services/flask-backend/requirements.txt
+```
+
+Required packages:
+- `python3-saml==1.16.0` - SAML 2.0
+- `authlib==1.3.1` - OIDC/OAuth2
+- `lxml==5.3.0` - XML processing
+
+2. Verify installation:
+```bash
+python3 -c "from onelogin.saml2.auth import OneLogin_Saml2_Auth; print('SAML OK')"
+python3 -c "from authlib.integrations.flask_client import OAuth; print('OIDC OK')"
+```
+
+#### Basic Testing
+
+##### Test SAML with Metadata URL
+```python
+from app.auth import SAMLConfig, SAMLHandler
+
+# Load from metadata
+url = "https://your-idp.example.com/metadata"
+config = SAMLConfig.from_metadata_url(url)
+handler = SAMLHandler(config)
+
+# Verify
+print(f"IdP Entity ID: {config.idp_entity_id}")
+print(f"SSO URL: {config.sso_url}")
+
+# Get login URL
+login_url = handler.create_saml_request()
+print(f"Login URL: {login_url}")
+```
+
+##### Test OIDC with Auto-Discovery
+```python
+from app.auth import OIDCConfig, OIDCHandler
+
+# Discover configuration
+config = OIDCConfig.from_discovery(
+    issuer="https://accounts.google.com",
+    client_id="your-client-id",
+    client_secret="your-client-secret"
+)
+
+handler = OIDCHandler(config)
+
+# Verify
+print(f"Issuer: {config.issuer}")
+print(f"Token Endpoint: {config.token_endpoint}")
+
+# Generate authorization URL
+auth_url = handler.build_authorization_url()
+print(f"Auth URL: {auth_url}")
+```
+
+### For System Administrators
+
+#### Okta Configuration
+
+1. Go to Okta Admin Dashboard
+2. Applications → Applications
+3. Create New App → SAML 2.0
+4. Configure:
+   - Single sign on URL: `https://your-domain.com/api/v1/sso/saml/acs`
+   - Audience URI: `https://your-domain.com/api/v1/sso/saml/metadata`
+5. Download metadata URL
+6. In IceCharts Admin Panel:
+   - Go to Settings → SSO Configuration
+   - Paste metadata URL
+   - Enable JIT Provisioning
+   - Save
+
+#### Azure AD Configuration
+
+1. Go to Azure Portal → App registrations
+2. Create new app registration
+3. Configure Redirect URI: `https://your-domain.com/api/v1/sso/oidc/callback`
+4. In IceCharts Admin Panel:
+   - Go to Settings → SSO Configuration → OpenID Connect
+   - Issuer: `https://login.microsoftonline.com/{tenant-id}/v2.0`
+   - Client ID: From App registration
+   - Client Secret: Generate in Certificates & secrets
+   - Save
+
+#### Google Workspace Configuration
+
+1. Go to Google Cloud Console
+2. APIs & Services → Credentials
+3. Create OAuth 2.0 Client ID (Web application)
+4. Authorized redirect URIs: `https://your-domain.com/api/v1/sso/oidc/callback`
+5. In IceCharts Admin Panel:
+   - Go to Settings → SSO Configuration → OpenID Connect
+   - Issuer: `https://accounts.google.com`
+   - Client ID: From Google Cloud Console
+   - Client Secret: From Google Cloud Console
+   - Save
+
+### API Testing
+
+#### Using cURL
+
+##### Get SAML Metadata
+```bash
+curl -s https://your-domain.com/api/v1/sso/saml/metadata \
+  -H "Accept: application/xml" | head -20
+```
+
+##### Configure SAML
+```bash
+curl -X POST https://your-domain.com/api/v1/sso/saml/config \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer {access_token}" \
+  -d '{
+    "metadata_url": "https://idp.example.com/metadata",
+    "jit_enabled": true,
+    "auto_assign_role": "viewer"
+  }'
+```
+
+##### Check SAML Status
+```bash
+curl -s https://your-domain.com/api/v1/sso/saml/config \
+  -H "Authorization: Bearer {access_token}" | jq
+```
+
+##### Configure OIDC
+```bash
+curl -X POST https://your-domain.com/api/v1/sso/oidc/config \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer {access_token}" \
+  -d '{
+    "issuer": "https://accounts.google.com",
+    "client_id": "your-client-id",
+    "client_secret": "your-client-secret",
+    "jit_enabled": true,
+    "auto_assign_role": "viewer"
+  }'
+```
+
+#### Using Python Requests
+
+```python
+import requests
+import json
+
+BASE_URL = "https://your-domain.com"
+ACCESS_TOKEN = "your-access-token"
+
+headers = {
+    "Authorization": f"Bearer {ACCESS_TOKEN}",
+    "Content-Type": "application/json"
+}
+
+# Configure SAML
+response = requests.post(
+    f"{BASE_URL}/api/v1/sso/saml/config",
+    headers=headers,
+    json={
+        "metadata_url": "https://idp.example.com/metadata",
+        "jit_enabled": True,
+        "auto_assign_role": "viewer"
+    }
+)
+print(json.dumps(response.json(), indent=2))
+
+# Get SAML config
+response = requests.get(
+    f"{BASE_URL}/api/v1/sso/saml/config",
+    headers=headers
+)
+print(json.dumps(response.json(), indent=2))
+```
+
+### Frontend Integration
+
+#### Add SSO to Login Page
+
+1. Update login component to import SSO buttons:
+```tsx
+import SSOLoginButtons from './components/SSOLoginButtons';
+
+export default function Login() {
+  return (
+    <div className="login-container">
+      <h1>Sign In</h1>
+
+      {/* SSO buttons appear here if configured */}
+      <SSOLoginButtons />
+
+      {/* Traditional login form */}
+      <form>
+        {/* ... */}
+      </form>
+    </div>
+  );
+}
+```
+
+#### Add SSO Configuration Page
+
+1. Navigate to Settings/Admin Panel
+2. SSO Configuration tab appears if you have `saml_sso` or `oidc_sso` features
+3. Fill in IdP details and save
 
 ## Architecture
 
@@ -154,30 +367,30 @@ curl -X POST http://localhost:5000/api/v1/sso/oidc/config \
 
 ### SAML 2.0
 
-- ✓ XML signature validation (ensures IdP authenticity)
-- ✓ TLS 1.2+ encryption for all communications
-- ✓ Support for encrypted assertions
-- ✓ Automatic metadata parsing and validation
-- ✓ Name ID verification
-- ✓ Conditions validation (NotBefore, NotOnOrAfter)
+- XML signature validation (ensures IdP authenticity)
+- TLS 1.2+ encryption for all communications
+- Support for encrypted assertions
+- Automatic metadata parsing and validation
+- Name ID verification
+- Conditions validation (NotBefore, NotOnOrAfter)
 
 ### OpenID Connect
 
-- ✓ PKCE (Proof Key for Code Exchange) for native/SPA apps
-- ✓ JWT validation with cryptographic verification
-- ✓ JWKS endpoint support for key rotation
-- ✓ ID token audience validation
-- ✓ Access token validation
-- ✓ TLS 1.2+ required for all endpoints
+- PKCE (Proof Key for Code Exchange) for native/SPA apps
+- JWT validation with cryptographic verification
+- JWKS endpoint support for key rotation
+- ID token audience validation
+- Access token validation
+- TLS 1.2+ required for all endpoints
 
 ### General Security
 
-- ✓ All tokens include expiration times
-- ✓ Refresh token rotation on use
-- ✓ Role-based access control (RBAC) in JWT
-- ✓ Admin-only configuration endpoints
-- ✓ Audit logging of SSO events
-- ✓ Session protection with CSRF tokens
+- All tokens include expiration times
+- Refresh token rotation on use
+- Role-based access control (RBAC) in JWT
+- Admin-only configuration endpoints
+- Audit logging of SSO events
+- Session protection with CSRF tokens
 
 ## Just-In-Time (JIT) Provisioning
 
@@ -310,6 +523,42 @@ Common attribute names are automatically detected:
 }
 ```
 
+## Troubleshooting
+
+### SAML Issues
+
+1. **"Signature verification failed"**
+   - Check that X.509 certificate matches IdP
+   - Verify certificate is not expired
+   - Ensure metadata URL is correct
+
+2. **"Assertion validation failed"**
+   - Check NotBefore/NotOnOrAfter conditions
+   - Verify server clock is synchronized
+   - Check SAML response has required attributes
+
+3. **"No matching users"**
+   - Enable JIT provisioning
+   - Check attribute mapping (especially email field)
+   - Verify IdP sends required attributes
+
+### OIDC Issues
+
+1. **"Invalid issuer"**
+   - Check issuer URL matches provider
+   - Use HTTPS, not HTTP
+   - Verify no trailing slashes
+
+2. **"JWKS endpoint unreachable"**
+   - Verify network connectivity
+   - Check firewall rules
+   - Ensure provider supports JWKS
+
+3. **"Userinfo request failed"**
+   - Verify access token is valid
+   - Check token scopes include `profile` and `email`
+   - Ensure provider supports userinfo endpoint
+
 ## Deployment Considerations
 
 ### Database Storage
@@ -353,78 +602,6 @@ LICENSE_KEY=PENG-XXXX-XXXX-XXXX-XXXX-XXXX
 LICENSE_SERVER_URL=https://license.penguintech.io
 ```
 
-## Testing
-
-### SAML Testing
-
-```python
-from app.auth import SAMLConfig, SAMLHandler
-
-# Load from metadata
-config = SAMLConfig.from_metadata_url('https://idp.example.com/metadata')
-
-# Create handler
-handler = SAMLHandler(config)
-
-# Get login URL
-login_url = handler.create_saml_request()
-```
-
-### OIDC Testing
-
-```python
-from app.auth import OIDCConfig, OIDCHandler
-
-# Discover configuration
-config = OIDCConfig.from_discovery(
-    issuer='https://accounts.google.com',
-    client_id='your-client-id',
-    client_secret='your-client-secret'
-)
-
-# Create handler
-handler = OIDCHandler(config)
-
-# Generate authorization URL
-auth_url = handler.build_authorization_url()
-```
-
-## Troubleshooting
-
-### SAML Issues
-
-1. **"Signature verification failed"**
-   - Check that X.509 certificate matches IdP
-   - Verify certificate is not expired
-   - Ensure metadata URL is correct
-
-2. **"Assertion validation failed"**
-   - Check NotBefore/NotOnOrAfter conditions
-   - Verify server clock is synchronized
-   - Check SAML response has required attributes
-
-3. **"No matching users"**
-   - Enable JIT provisioning
-   - Check attribute mapping (especially email field)
-   - Verify IdP sends required attributes
-
-### OIDC Issues
-
-1. **"Invalid issuer"**
-   - Check issuer URL matches provider
-   - Use HTTPS, not HTTP
-   - Verify no trailing slashes
-
-2. **"JWKS endpoint unreachable"**
-   - Verify network connectivity
-   - Check firewall rules
-   - Ensure provider supports JWKS
-
-3. **"Userinfo request failed"**
-   - Verify access token is valid
-   - Check token scopes include `profile` and `email`
-   - Ensure provider supports userinfo endpoint
-
 ## License Gating
 
 SSO features are gated behind license features:
@@ -450,6 +627,30 @@ When features are not available, users receive a 403 error with message:
   "message": "Feature 'saml_sso' requires license upgrade"
 }
 ```
+
+## Performance Notes
+
+- SAML metadata is cached (suggested: 24 hours)
+- OIDC JWKS is cached (suggested: 1 hour)
+- Database queries should be indexed on email
+- Use Redis for session storage in production
+
+## Security Checklist
+
+Before deploying to production:
+
+- [ ] Enable TLS 1.2+ for all connections
+- [ ] Use strong client secrets (32+ characters)
+- [ ] Store client secrets in environment variables
+- [ ] Enable license gating (`saml_sso`, `oidc_sso`)
+- [ ] Configure admin-only SSO settings
+- [ ] Test with real IdP
+- [ ] Verify JIT provisioning role assignments
+- [ ] Enable audit logging
+- [ ] Set up monitoring alerts
+- [ ] Document IdP configuration
+- [ ] Create admin runbook
+- [ ] Test failure scenarios
 
 ## Related Documentation
 
