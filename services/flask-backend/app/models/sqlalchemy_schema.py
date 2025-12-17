@@ -346,7 +346,7 @@ class ShapeLibrary(Base):
     name = Column(String(255), nullable=False)
     description = Column(Text)
     is_public = Column(Boolean, default=False, nullable=False)
-    created_by_id = Column(Integer, ForeignKey("identities.id", ondelete="CASCADE"), nullable=False)
+    owner_id = Column(Integer, ForeignKey("identities.id", ondelete="CASCADE"), nullable=False)
     created_at = Column(DateTime, default=datetime.datetime.now(datetime.timezone.utc))
     updated_at = Column(
         DateTime,
