@@ -24,6 +24,7 @@ from .dashboard import dashboard_v1_bp
 from .users import users_v1_bp
 from .admin_stats import admin_stats_v1_bp
 from .admin_sso import admin_sso_v1_bp
+from .admin_license import admin_license_v1_bp
 from .service_accounts import service_accounts_v1_bp
 
 # Import collaboration socket handlers (WebSocket events, not a blueprint)
@@ -48,6 +49,7 @@ api_v1_bp.register_blueprint(dashboard_v1_bp)
 api_v1_bp.register_blueprint(users_v1_bp)
 api_v1_bp.register_blueprint(admin_stats_v1_bp)
 api_v1_bp.register_blueprint(admin_sso_v1_bp)
+api_v1_bp.register_blueprint(admin_license_v1_bp)
 api_v1_bp.register_blueprint(service_accounts_v1_bp)
 
 __all__ = ["api_v1_bp"]

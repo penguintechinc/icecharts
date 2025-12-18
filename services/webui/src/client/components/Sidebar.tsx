@@ -32,6 +32,7 @@ const navigation: NavCategory[] = [
       { label: 'Service Accounts', path: '/admin/service-accounts', icon: '🔑', roles: ['admin'] },
       { label: 'Activity Logs', path: '/admin/activity', icon: '📋', roles: ['admin'] },
       { label: 'Audit Logs', path: '/admin/audit-log', icon: '🔍', roles: ['admin'] },
+      { label: 'License', path: '/admin/license', icon: '📜', roles: ['admin'] },
       { label: 'Settings', path: '/admin/settings', icon: '⚙️', roles: ['admin'] },
     ],
   },

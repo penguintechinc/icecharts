@@ -251,40 +251,52 @@ const monitoringIcons: IconDefinition[] = [
 /**
  * IBM Categories organized by type
  */
-export const ibmCategories: Record<string, IconCategory> = {
-  'ibm-cloud': {
+/**
+ * IBM Categories as array for consistent structure with other providers
+ */
+const ibmCategoriesArray: IconCategory[] = [
+  {
     label: 'Cloud & Infrastructure',
     source: 'ibm',
     icons: cloudIcons,
   },
-  'ibm-security': {
+  {
     label: 'Security & Access',
     source: 'ibm',
     icons: securityIcons,
   },
-  'ibm-network': {
+  {
     label: 'Network & Deployment',
     source: 'ibm',
     icons: networkIcons,
   },
-  'ibm-analytics': {
+  {
     label: 'Data & Analytics',
     source: 'ibm',
     icons: analyticsIcons,
   },
-  'ibm-ai': {
+  {
     label: 'AI & Machine Learning',
     source: 'ibm',
     icons: aiIcons,
   },
-  'ibm-code': {
+  {
     label: 'Development & Code',
     source: 'ibm',
     icons: developmentIcons,
   },
-  'ibm-monitor': {
+  {
     label: 'Monitoring & Operations',
     source: 'ibm',
     icons: monitoringIcons,
   },
-};
+];
+
+/**
+ * IBM Categories organized by type (for backwards compatibility)
+ */
+export const ibmCategories: Record<string, IconCategory> = Object.fromEntries(
+  ibmCategoriesArray.map(cat => [cat.label, cat])
+);
+
+export default ibmCategoriesArray;

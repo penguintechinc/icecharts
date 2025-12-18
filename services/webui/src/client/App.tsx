@@ -14,6 +14,7 @@ import ServiceAccounts from './pages/Admin/ServiceAccounts';
 import AdminSettings from './pages/Admin/AdminSettings';
 import ActivityLogs from './pages/Admin/ActivityLogs';
 import AuditLogs from './pages/Admin/AuditLogs';
+import LicenseSettings from './pages/Admin/LicenseSettings';
 
 function App() {
   const { isAuthenticated, isLoading } = useAuth();
@@ -117,6 +118,14 @@ function App() {
           element={
             <RoleGuard allowedRoles={['admin']}>
               <AdminSettings />
+            </RoleGuard>
+          }
+        />
+        <Route
+          path="/admin/license"
+          element={
+            <RoleGuard allowedRoles={['admin']}>
+              <LicenseSettings />
             </RoleGuard>
           }
         />
