@@ -24,6 +24,14 @@ const VerifyEmail = React.lazy(() => import('./client/pages/VerifyEmail'));
 const SharedDrawing = React.lazy(() => import('./pages/SharedDrawing'));
 const SharedCollectionView = React.lazy(() => import('./pages/SharedCollectionView'));
 
+// IceStreams - Playbooks
+const PlaybookList = React.lazy(() => import('./client/pages/playbooks/PlaybookList'));
+const PlaybookEditor = React.lazy(() => import('./client/pages/playbooks/PlaybookEditor'));
+const PlaybookDetail = React.lazy(() => import('./client/pages/playbooks/PlaybookDetail'));
+const PlaybookTemplates = React.lazy(() => import('./client/pages/playbooks/PlaybookTemplates'));
+const PlaybookCollections = React.lazy(() => import('./client/pages/playbooks/PlaybookCollections'));
+const DiagramCollections = React.lazy(() => import('./client/pages/collections/DiagramCollections'));
+
 // Protected route wrapper
 interface ProtectedRouteProps {
   children: React.ReactNode;
@@ -94,9 +102,18 @@ const App: React.FC = () => {
             <Route path="/drawings/:id" element={<DrawingDetail />} />
             <Route path="/collections" element={<Collections />} />
             <Route path="/collections/:id" element={<Collections />} />
+            <Route path="/collections/diagrams" element={<DiagramCollections />} />
+            <Route path="/collections/playbooks" element={<PlaybookCollections />} />
             <Route path="/groups" element={<Groups />} />
             <Route path="/groups/:id" element={<GroupDetail />} />
             <Route path="/templates" element={<Templates />} />
+
+            {/* IceStreams - Playbooks (Workflows) */}
+            <Route path="/playbooks" element={<PlaybookList />} />
+            <Route path="/playbooks/new" element={<PlaybookEditor />} />
+            <Route path="/playbooks/templates" element={<PlaybookTemplates />} />
+            <Route path="/playbooks/:id" element={<PlaybookDetail />} />
+            <Route path="/playbooks/:id/edit" element={<PlaybookEditor />} />
             <Route path="/settings" element={<Settings />} />
             <Route path="/admin/users" element={<AdminUsers />} />
             <Route path="/admin/dashboard" element={<ProtectedRoute requiredRole="admin"><AdminDashboard /></ProtectedRoute>} />

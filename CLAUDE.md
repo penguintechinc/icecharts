@@ -19,44 +19,12 @@ IceCharts is a diagramming and infrastructure visualization application based on
 - Version management system
 - PenguinTech License Server integration
 
-## Key Directories
-
-- `services/webui/` - React frontend application
-- `services/flask-backend/` - Flask API backend
-- `docs/` - Project documentation
-- `k8s/` - Kubernetes deployment manifests (Helm and Kustomize)
-- `tests/` - Test suites
-- `scripts/` - Utility scripts
-- `config/` - Configuration files
-
-## Development Commands
-
-```bash
-docker-compose up -d          # Start all services
-docker-compose logs -f api    # View API logs
-npm run build                 # Build frontend
-npm run typecheck             # TypeScript type checking
-make setup                    # Install dependencies
-make dev                      # Start development environment
-make test                     # Run all tests
-make lint                     # Run linting
-```
-
-## Temporary Files Policy
-
-**IMPORTANT:** Any temporary reports, checklists, implementation summaries, or other transient documents created by Claude or its task agents during development sessions should be stored in `/tmp`, NOT in the repository.
-
-Examples of temporary files that belong in `/tmp`:
-- Implementation checklists (e.g., `IMPLEMENTATION_CHECKLIST.md`)
-- Files modified lists (e.g., `FILES_MODIFIED.md`)
-- Quick start guides generated during implementation
-- Session-specific summaries or manifests
-- Progress tracking documents
-- Completion status reports
-
-These files are useful during active development sessions but provide no long-term value to users, admins, or developers.
-
-**Permanent documentation** (feature guides, API references, architecture docs) should go in the `docs/` folder.
+**Key IceCharts Specifics:**
+- Diagramming and visualization tools
+- Infrastructure management capabilities
+- Service account-based integration for external systems (e.g., Elder)
+- Multi-tenant capable architecture
+- Advanced drawing and export features
 
 ## Technology Stack
 
@@ -85,7 +53,6 @@ These files are useful during active development sessions but provide no long-te
 - **JavaScript/TypeScript**: Modern ES2022+ standards
 
 ### Infrastructure & DevOps
-
 - **Containers**: Docker with multi-stage builds, Docker Compose
 - **Orchestration**: Kubernetes with Helm charts
 - **Configuration Management**: Ansible for infrastructure automation
@@ -182,7 +149,7 @@ RELEASE_MODE=false  # Development (default)
 RELEASE_MODE=true   # Production (explicitly set)
 ```
 
-Documentation: [License Server Integration Guide](docs/licensing/license-server-integration.md)
+📚 **Detailed Documentation**: [License Server Integration Guide](docs/licensing/license-server-integration.md)
 
 ## WaddleAI Integration (Optional)
 
@@ -201,11 +168,40 @@ For projects requiring AI capabilities, integrate with WaddleAI located at `~/co
 - Environment variable configuration for API endpoints
 - License-gate AI features as enterprise functionality
 
-Documentation: See WaddleAI project at `~/code/WaddleAI` for integration details
+📚 **WaddleAI Documentation**: See WaddleAI project at `~/code/WaddleAI` for integration details
 
-## Container Architecture
+## Project Structure
 
-### Three-Container Model
+```
+IceCharts/
+├── .github/             # CI/CD pipelines and templates
+│   └── workflows/       # GitHub Actions for each container
+├── services/            # Microservices (separate containers by default)
+│   ├── flask-backend/   # Flask + PyDAL backend (auth, users, standard APIs)
+│   ├── webui/           # Node.js + React frontend shell
+│   └── connector/       # Integration services (placeholder)
+├── shared/              # Shared libraries (py_libs, go_libs, node_libs)
+│   ├── py_libs/         # Python shared library (pip installable)
+│   ├── go_libs/         # Go shared library (Go module)
+│   ├── node_libs/       # TypeScript shared library (npm package)
+│   └── README.md        # Shared libraries overview
+├── k8s/                 # Kubernetes deployment templates
+│   ├── helm/            # Helm v3 charts per service
+│   ├── manifests/       # Raw K8s manifests (kubectl apply)
+│   └── kustomize/       # Kustomize overlays (dev/staging/prod)
+├── infrastructure/      # Infrastructure as code
+├── scripts/             # Utility scripts
+├── tests/               # Test suites (unit, integration, e2e, performance)
+├── docs/                # Documentation
+├── config/              # Configuration files
+├── docker-compose.yml   # Production environment
+├── docker-compose.dev.yml # Local development
+├── Makefile             # Build automation
+├── .version             # Version tracking
+└── CLAUDE.md            # This file
+```
+
+### Three-Container Architecture
 
 This project uses three base containers representing the core architecture:
 
@@ -319,6 +315,32 @@ make license-validate        # Validate license
 make license-check-features  # Check available features
 ```
 
+## Key Directories
+
+- `services/webui/` - React frontend application
+- `services/flask-backend/` - Flask API backend
+- `docs/` - Project documentation
+- `k8s/` - Kubernetes deployment manifests (Helm and Kustomize)
+- `tests/` - Test suites
+- `scripts/` - Utility scripts
+- `config/` - Configuration files
+
+## Temporary Files Policy
+
+**IMPORTANT:** Any temporary reports, checklists, implementation summaries, or other transient documents created by Claude or its task agents during development sessions should be stored in `/tmp`, NOT in the repository.
+
+Examples of temporary files that belong in `/tmp`:
+- Implementation checklists
+- Files modified lists
+- Quick start guides generated during implementation
+- Session-specific summaries or manifests
+- Progress tracking documents
+- Completion status reports
+
+These files are useful during active development sessions but provide no long-term value to users, admins, or developers.
+
+**Permanent documentation** (feature guides, API references, architecture docs) should go in the `docs/` folder.
+
 ## Critical Development Rules
 
 ### Development Philosophy: Safe, Stable, and Feature-Complete
@@ -335,6 +357,7 @@ make license-check-features  # Check available features
 
 #### Red Flags (Never Do These)
 - Skipping input validation "just this once"
+- Writing custom validators instead of using shared libraries (py_libs/go_libs/node_libs)
 - Hardcoding credentials or configuration
 - Ignoring error returns or exceptions
 - Commenting out failing tests to make CI pass
@@ -346,18 +369,18 @@ make license-check-features  # Check available features
 - Leaving debug code or backdoors in production
 
 #### Quality Checklist Before Completion
-- All error cases handled properly
-- Unit tests cover all code paths
-- Integration tests verify component interactions
-- Security requirements fully implemented
-- Performance meets acceptable standards
-- Documentation complete and accurate
-- Code review standards met
-- No hardcoded secrets or credentials
-- Logging and monitoring in place
-- Build passes in containerized environment
-- No security vulnerabilities in dependencies
-- Edge cases and boundary conditions tested
+- ✅ All error cases handled properly
+- ✅ Unit tests cover all code paths
+- ✅ Integration tests verify component interactions
+- ✅ Security requirements fully implemented
+- ✅ Performance meets acceptable standards
+- ✅ Documentation complete and accurate
+- ✅ Code review standards met
+- ✅ No hardcoded secrets or credentials
+- ✅ Logging and monitoring in place
+- ✅ Build passes in containerized environment
+- ✅ No security vulnerabilities in dependencies
+- ✅ Edge cases and boundary conditions tested
 
 ### Git Workflow
 - **NEVER commit automatically** unless explicitly requested by the user
@@ -366,6 +389,31 @@ make license-check-features  # Check available features
 - Always use feature branches for development
 - Require pull request reviews for main branch
 - Automated testing must pass before merge
+
+**Before Every Commit - Security Scanning**:
+- **Run security audits on all modified packages**:
+  - **Go packages**: Run `gosec ./...` on modified Go services
+  - **Node.js packages**: Run `npm audit` on modified Node.js services
+  - **Python packages**: Run `bandit -r .` and `safety check` on modified Python services
+- **Do NOT commit if security vulnerabilities are found** - fix all issues first
+- **Document vulnerability fixes** in commit message if applicable
+
+**Before Every Commit - API Testing**:
+- **Create and run API testing scripts** for each modified container service
+- **Testing scope**: All new endpoints and modified functionality
+- **Test files location**: `tests/api/` directory with service-specific subdirectories
+  - `tests/api/flask-backend/` - Flask backend API tests
+  - `tests/api/go-backend/` - Go backend API tests
+  - `tests/api/webui/` - WebUI container tests
+- **Run before commit**: Each test script should be executable and pass completely
+- **Test coverage**: Health checks, authentication, CRUD operations, error cases
+- **Command pattern**: `cd services/<service-name> && npm run test:api` or equivalent
+
+**Before Every Commit - Screenshots**:
+- **Run screenshot tool to update UI screenshots in documentation**
+  - Run `cd services/webui && npm run screenshots` to capture current UI state
+  - This automatically removes old screenshots and captures fresh ones
+  - Commit updated screenshots with relevant feature/documentation changes
 
 ### Local State Management (Crash Recovery)
 - **ALWAYS maintain local .PLAN and .TODO files** for crash recovery
@@ -385,11 +433,11 @@ make license-check-features  # Check available features
 
 ### Linting & Code Quality Requirements
 - **ALL code must pass linting** before commit - no exceptions
-- **Python**: flake8, black, isort, mypy (type checking), bandit (security)
-- **JavaScript/TypeScript**: ESLint, Prettier
+- **Python**: flake8, black, isort, pytest, pytest-cov, mypy (type checking), bandit (security)
+- **JavaScript/TypeScript**: ESLint, Prettier, TypeScript, Vitest, Testing Library
 - **Go**: golangci-lint (includes staticcheck, gosec, etc.)
 - **Ansible**: ansible-lint
-- **Docker**: hadolint
+- **Docker**: hadolint, trivy
 - **YAML**: yamllint
 - **Markdown**: markdownlint
 - **Shell**: shellcheck
@@ -403,6 +451,11 @@ make license-check-features  # Check available features
 - Build failures must be resolved before task completion
 
 ### Documentation Standards
+- **Markdown file locations** (STRICT):
+  - `{PROJECT_ROOT}/README.md` - Project overview only
+  - `{PROJECT_ROOT}/CLAUDE.md` - Claude Code context only
+  - `{PROJECT_ROOT}/docs/` - ALL other markdown documentation
+  - **NEVER nest markdown files in subdirectories** outside of `docs/`
 - **README.md**: Keep as overview and pointer to comprehensive docs/ folder
 - **docs/ folder**: Create comprehensive documentation for all aspects
 - **RELEASE_NOTES.md**: Maintain in docs/ folder, prepend new version releases to top
@@ -427,7 +480,7 @@ make license-check-features  # Check available features
 
 Comprehensive development standards are documented separately to keep this file concise.
 
-Documentation: [Development Standards](docs/STANDARDS.md)
+📚 **Complete Standards Documentation**: [Development Standards](docs/STANDARDS.md)
 
 ### Quick Reference
 
@@ -506,38 +559,71 @@ curl -X GET "https://your-icecharts.com/api/v1/drawings" \
 ### Flask + Flask-Security-Too + PyDAL
 ```python
 from flask import Flask
-from flask_security import Security, SQLAlchemyUserDatastore, auth_required, hash_password
+from flask_security import Security, auth_required, hash_password
+from flask_security.datastore import DataStore, UserDataMixin, RoleDataMixin
 from pydal import DAL, Field
-from dataclasses import dataclass
-from typing import Optional
+import os
 
 app = Flask(__name__)
 app.config['SECRET_KEY'] = os.getenv('SECRET_KEY')
 app.config['SECURITY_PASSWORD_SALT'] = os.getenv('SECURITY_PASSWORD_SALT')
 
-# PyDAL database connection
+# PyDAL database setup
 db = DAL(
     f"postgresql://{os.getenv('DB_USER')}:{os.getenv('DB_PASS')}@"
     f"{os.getenv('DB_HOST')}:{os.getenv('DB_PORT')}/{os.getenv('DB_NAME')}",
-    pool_size=10
+    pool_size=10,
+    migrate=True
 )
 
-# Define tables with PyDAL
-db.define_table('users',
+# Define user and role tables
+db.define_table('auth_user',
     Field('email', 'string', requires=IS_EMAIL(), unique=True),
+    Field('username', 'string', unique=True),
     Field('password', 'string'),
     Field('active', 'boolean', default=True),
     Field('fs_uniquifier', 'string', unique=True),
-    migrate=True)
+    Field('confirmed_at', 'datetime'),
+    migrate=True
+)
 
-db.define_table('roles',
+db.define_table('auth_role',
     Field('name', 'string', unique=True),
     Field('description', 'text'),
-    migrate=True)
+    migrate=True
+)
 
-# Flask-Security-Too setup
-from flask_security import Security, PyDALUserDatastore
-user_datastore = PyDALUserDatastore(db, db.users, db.roles)
+db.define_table('auth_user_roles',
+    Field('user_id', 'reference auth_user'),
+    Field('role_id', 'reference auth_role'),
+    migrate=True
+)
+
+# Custom PyDAL datastore for Flask-Security-Too
+class PyDALUserDatastore(DataStore):
+    def __init__(self, db, user_model, role_model):
+        self.db = db
+        self.user_model = user_model
+        self.role_model = role_model
+
+    def put(self, model):
+        self.db.commit()
+        return model
+
+    def delete(self, model):
+        self.db(self.user_model.id == model.id).delete()
+        self.db.commit()
+
+    def find_user(self, **kwargs):
+        query = self.db(self.user_model)
+        for key, value in kwargs.items():
+            if hasattr(self.user_model, key):
+                query = query(self.user_model[key] == value)
+        row = query.select().first()
+        return row
+
+# Initialize Flask-Security-Too
+user_datastore = PyDALUserDatastore(db, db.auth_user, db.auth_role)
 security = Security(app, user_datastore)
 
 @app.route('/api/protected')
@@ -672,25 +758,6 @@ def metrics():
     return generate_latest(), {'Content-Type': 'text/plain'}
 ```
 
-## Website Integration Requirements
-
-**Each project MUST have two dedicated websites**:
-- Marketing/Sales website (Node.js based)
-- Documentation website (Markdown based)
-
-**Website Design Preferences**:
-- Multi-page design preferred
-- Modern aesthetic with clean appearance
-- Subtle, sophisticated color schemes
-- Gradient usage encouraged
-- Responsive design
-- Performance focused
-
-**Repository Integration**:
-- Add `github.com/penguintechinc/website` as sparse checkout submodule
-- Only include project-specific folders
-- Folder naming: `{app_name}/` and `{app_name}-docs/`
-
 ## Troubleshooting & Support
 
 ### Common Issues
@@ -723,34 +790,10 @@ make license-validate         # Validate current license
 - **Sales Inquiries**: sales@penguintech.io
 - **License Server Status**: https://status.penguintech.io
 
-## Template Customization
-
-### Adding New Languages
-1. Create language-specific directory structure
-2. Add Dockerfile and build scripts
-3. Update CI/CD pipeline configuration
-4. Add language-specific linting and testing
-5. Update documentation and examples
-
-### Adding New Services
-1. Use service template in `services/` directory
-2. Configure service discovery and networking
-3. Add monitoring and logging integration
-4. Integrate license checking for service features
-5. Create service-specific tests
-6. Update deployment configurations
-
-### Enterprise Integration
-- Configure license server integration
-- Set up multi-tenant data isolation
-- Implement usage tracking and reporting
-- Add compliance audit logging
-- Configure enterprise monitoring
-
 ---
 
 **IceCharts Version**: 1.3.0
-**Template Version**: 1.3.0
+**Template Version**: 1.5.0
 **Last Updated**: 2025-12-18
 **Maintained by**: Penguin Tech Inc
 **License Server**: https://license.penguintech.io
@@ -765,22 +808,5 @@ make license-validate         # Validate current license
 - MariaDB Galera cluster support with WSREP and retry logic
 - Hybrid database initialization (SQLAlchemy) and operations (PyDAL)
 - Docker Compose updated for new architecture
-
-**Key Features in v1.2.0:**
-- Web UI and API as separate containers by default
-- Mandatory linting for all languages (flake8, ansible-lint, eslint, etc.)
-- CodeQL inspection compliance required
-- Multi-database support by design (all PyDAL databases + MariaDB Galera)
-- DB_TYPE environment variable with input validation
-- Flask as sole web framework (PyDAL for database abstraction)
-
-**Key Features in v1.1.0:**
-- Flask-Security-Too mandatory for authentication
-- ReactJS as standard frontend framework
-- Python 3.13 vs Go decision criteria
-- XDP/AF_XDP guidance for high-performance networking
-- WaddleAI integration patterns
-- Release-mode license enforcement
-- Performance optimization requirements (dataclasses with slots)
 
 *This comprehensive context provides IceCharts developers with production-ready foundation for enterprise software development with comprehensive tooling, security, operational capabilities, integrated licensing management, and multi-database support.*

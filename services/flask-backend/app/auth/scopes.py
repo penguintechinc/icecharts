@@ -25,6 +25,12 @@ AVAILABLE_SCOPES = {
     # Collections
     "collections:read": "Read collections",
     "collections:write": "Manage collections",
+
+    # Playbooks (IceStreams)
+    "playbooks:read": "Read playbook metadata, canvas, and executions",
+    "playbooks:write": "Create, update, and configure playbooks",
+    "playbooks:delete": "Delete playbooks",
+    "playbooks:execute": "Execute playbooks and manage executions",
 }
 
 # Convenience scope groups for common use cases
@@ -40,11 +46,22 @@ SCOPE_GROUPS = {
         "drawings:write",
         "drawings:delete",
     ],
+    "playbooks_full": [
+        "playbooks:read",
+        "playbooks:write",
+        "playbooks:delete",
+        "playbooks:execute",
+    ],
+    "automation": [
+        "playbooks:read",
+        "playbooks:execute",
+    ],
     "readonly": [
         "drawings:read",
         "exports:read",
         "templates:read",
         "collections:read",
+        "playbooks:read",
     ],
 }
 

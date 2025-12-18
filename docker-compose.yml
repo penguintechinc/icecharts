@@ -159,6 +159,41 @@ services:
     networks:
       - icecharts-network
 
+  # IceStreams Worker (headless task processor)
+  icestreams-worker:
+    build:
+      context: ./services/icestreams-worker
+      dockerfile: Dockerfile
+    container_name: icecharts-worker
+    environment:
+      # Redis Configuration
+      - REDIS_URL=redis://:${REDIS_PASSWORD:-changeme}@redis:6379/0
+
+      # Worker Configuration
+      - WORKER_ID=${WORKER_ID:-worker-1}
+      - WORKER_CONCURRENCY=${WORKER_CONCURRENCY:-4}
+
+      # Database Configuration (for playbook loading)
+      - DB_TYPE=${DB_TYPE:-postgres}
+      - DB_HOST=postgres
+      - DB_PORT=5432
+      - DB_NAME=${POSTGRES_DB:-icecharts}
+      - DB_USER=${POSTGRES_USER:-icecharts_user}
+      - DB_PASSWORD=${POSTGRES_PASSWORD:-changeme}
+
+      # Logging
+      - LOG_LEVEL=${LOG_LEVEL:-info}
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    restart: unless-stopped
+    networks:
+      - icecharts-network
+    deploy:
+      replicas: ${WORKER_REPLICAS:-1}
+
   # Prometheus Monitoring (Optional - disabled by default)
   prometheus:
     image: prom/prometheus:latest

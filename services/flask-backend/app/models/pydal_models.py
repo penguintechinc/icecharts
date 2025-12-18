@@ -941,6 +941,453 @@ def define_all_tables(db):
     )
 
     # ==========================================
+    # IceStreams: Playbook Tables (Workflow Automation)
+    # ==========================================
+
+    # Main playbook/workflow definitions
+    db.define_table(
+        "playbooks",
+        Field(
+            "tenant_id",
+            "reference tenants",
+            default=1,
+            notnull=True,
+            ondelete="CASCADE",
+        ),
+        Field("name", "string", length=255, notnull=True, requires=IS_NOT_EMPTY()),
+        Field("description", "text"),
+        Field("created_by_id", "reference identities", notnull=True, ondelete="CASCADE"),
+        Field("updated_by_id", "reference identities", ondelete="SET NULL"),
+        Field(
+            "status",
+            "string",
+            length=50,
+            default="draft",
+            requires=IS_IN_SET(["draft", "active", "paused", "archived"]),
+        ),
+        Field("is_enabled", "boolean", default=False, notnull=True),
+        Field("is_public", "boolean", default=False, notnull=True),
+        Field("is_template", "boolean", default=False, notnull=True),
+        Field(
+            "trigger_type",
+            "string",
+            length=50,
+        ),  # webhook, schedule, grpc, manual
+        Field("trigger_config", "json"),  # Trigger-specific configuration
+        Field("error_handling", "json"),  # Retry settings, failure notifications
+        Field("tags", "list:string"),
+        Field("canvas_data", "json"),  # ReactFlow viewport, zoom, etc.
+        Field("last_execution_at", "datetime"),
+        Field("next_run_at", "datetime"),  # For scheduled playbooks
+        Field("execution_count", "integer", default=0),
+        Field("success_count", "integer", default=0),
+        Field("failure_count", "integer", default=0),
+        Field(
+            "created_at",
+            "datetime",
+            default=lambda: datetime.datetime.now(datetime.timezone.utc),
+        ),
+        Field(
+            "updated_at",
+            "datetime",
+            update=lambda: datetime.datetime.now(datetime.timezone.utc),
+        ),
+        migrate=True,
+    )
+
+    # Playbook nodes (individual steps in the workflow)
+    db.define_table(
+        "playbook_nodes",
+        Field("playbook_id", "reference playbooks", notnull=True, ondelete="CASCADE"),
+        Field("node_id", "string", length=100, notnull=True),  # ReactFlow node ID (UUID)
+        Field(
+            "node_type",
+            "string",
+            length=50,
+            notnull=True,
+        ),  # trigger_*, transform_*, action_*
+        Field(
+            "node_category",
+            "string",
+            length=50,
+            default="transform",
+            requires=IS_IN_SET(["trigger", "transform", "action"]),
+        ),
+        Field("label", "string", length=255),
+        Field("position_x", "double", notnull=True),
+        Field("position_y", "double", notnull=True),
+        Field("config", "json", notnull=True),  # Node-specific configuration
+        Field("data_schema", "json"),  # Expected input/output schema
+        Field("is_enabled", "boolean", default=True, notnull=True),
+        Field("execution_order", "integer", default=0),  # Computed execution order
+        Field("comments", "text"),  # User comments on this node
+        Field("metadata_json", "json"),  # Key/value metadata
+        Field(
+            "created_at",
+            "datetime",
+            default=lambda: datetime.datetime.now(datetime.timezone.utc),
+        ),
+        Field(
+            "updated_at",
+            "datetime",
+            update=lambda: datetime.datetime.now(datetime.timezone.utc),
+        ),
+        migrate=True,
+    )
+
+    # Playbook edges (connections between nodes)
+    db.define_table(
+        "playbook_edges",
+        Field("playbook_id", "reference playbooks", notnull=True, ondelete="CASCADE"),
+        Field("edge_id", "string", length=100, notnull=True),  # ReactFlow edge ID
+        Field("source_node_id", "string", length=100, notnull=True),
+        Field("target_node_id", "string", length=100, notnull=True),
+        Field("source_handle", "string", length=50),  # For nodes with multiple outputs
+        Field("target_handle", "string", length=50),  # For nodes with multiple inputs
+        Field("condition", "json"),  # Optional condition for conditional edges
+        Field("label", "string", length=255),
+        Field(
+            "created_at",
+            "datetime",
+            default=lambda: datetime.datetime.now(datetime.timezone.utc),
+        ),
+        migrate=True,
+    )
+
+    # Playbook versions (for rollback capability)
+    db.define_table(
+        "playbook_versions",
+        Field("playbook_id", "reference playbooks", notnull=True, ondelete="CASCADE"),
+        Field("version_number", "integer", notnull=True),
+        Field("created_by_id", "reference identities", notnull=True, ondelete="CASCADE"),
+        Field("nodes_json", "json", notnull=True),
+        Field("edges_json", "json", notnull=True),
+        Field("canvas_json", "json"),
+        Field("change_summary", "text"),
+        Field(
+            "created_at",
+            "datetime",
+            default=lambda: datetime.datetime.now(datetime.timezone.utc),
+        ),
+        migrate=True,
+    )
+
+    # Webhook tokens for playbook triggers
+    db.define_table(
+        "playbook_webhooks",
+        Field("playbook_id", "reference playbooks", notnull=True, ondelete="CASCADE"),
+        Field("name", "string", length=255),
+        Field("token", "string", length=255, unique=True, notnull=True),
+        Field("signature_secret", "string", length=255),  # For HMAC signature validation
+        Field("validate_signature", "boolean", default=False, notnull=True),
+        Field("allowed_methods", "list:string"),  # Default: ['POST']
+        Field("ip_whitelist", "list:string"),  # Optional IP restriction
+        Field("is_active", "boolean", default=True, notnull=True),
+        Field("is_enabled", "boolean", default=True, notnull=True),
+        Field("last_triggered_at", "datetime"),
+        Field("trigger_count", "integer", default=0),
+        Field(
+            "created_at",
+            "datetime",
+            default=lambda: datetime.datetime.now(datetime.timezone.utc),
+        ),
+        migrate=True,
+    )
+
+    # Playbook executions (individual runs)
+    db.define_table(
+        "playbook_executions",
+        Field("playbook_id", "reference playbooks", notnull=True, ondelete="CASCADE"),
+        Field("execution_id", "string", length=100, unique=True, notnull=True),  # UUID
+        Field(
+            "status",
+            "string",
+            length=50,
+            default="pending",
+            requires=IS_IN_SET([
+                "pending", "running", "completed", "failed",
+                "cancelled", "timeout", "partial_success"
+            ]),
+        ),
+        Field("trigger_type", "string", length=50),  # webhook, schedule, manual, api
+        Field("triggered_by", "string", length=50),  # webhook, schedule, manual, api
+        Field("triggered_by_id", "reference identities", ondelete="SET NULL"),  # If manual
+        Field("input_json", "json"),  # Initial trigger payload
+        Field("output_json", "json"),  # Final output after completion
+        Field("error_message", "text"),
+        Field("error_details", "json"),  # Stack trace, node that failed
+        Field("retry_count", "integer", default=0),
+        Field("parent_execution_id", "string", length=100),  # For retry chains
+        Field("worker_id", "string", length=100),  # Which worker processed this
+        Field("started_at", "datetime"),
+        Field("completed_at", "datetime"),
+        Field("duration_ms", "integer"),  # Execution time in milliseconds
+        Field(
+            "created_at",
+            "datetime",
+            default=lambda: datetime.datetime.now(datetime.timezone.utc),
+        ),
+        migrate=True,
+    )
+
+    # Node execution logs (per-node execution details)
+    db.define_table(
+        "playbook_node_executions",
+        Field("execution_id", "string", length=100, notnull=True),  # FK to playbook_executions
+        Field("node_id", "string", length=100, notnull=True),
+        Field("node_type", "string", length=50),
+        Field("playbook_id", "reference playbooks", notnull=True, ondelete="CASCADE"),
+        Field(
+            "status",
+            "string",
+            length=50,
+            default="pending",
+            requires=IS_IN_SET(["pending", "running", "completed", "failed", "skipped"]),
+        ),
+        Field("input_json", "json"),
+        Field("output_json", "json"),
+        Field("error_message", "text"),
+        Field("error_details", "json"),
+        Field("started_at", "datetime"),
+        Field("completed_at", "datetime"),
+        Field("duration_ms", "integer"),
+        Field("retry_count", "integer", default=0),
+        Field(
+            "created_at",
+            "datetime",
+            default=lambda: datetime.datetime.now(datetime.timezone.utc),
+        ),
+        migrate=True,
+    )
+
+    # Playbook schedules (cron-like scheduling)
+    db.define_table(
+        "playbook_schedules",
+        Field("playbook_id", "reference playbooks", notnull=True, ondelete="CASCADE"),
+        Field("cron_expression", "string", length=100, notnull=True),  # e.g., "0 9 * * 1-5"
+        Field("timezone", "string", length=100, default="UTC"),
+        Field("is_active", "boolean", default=True, notnull=True),
+        Field("next_run_at", "datetime"),
+        Field("last_run_at", "datetime"),
+        Field("run_count", "integer", default=0),
+        Field("static_input", "json"),  # Optional static payload for scheduled runs
+        Field(
+            "created_at",
+            "datetime",
+            default=lambda: datetime.datetime.now(datetime.timezone.utc),
+        ),
+        Field(
+            "updated_at",
+            "datetime",
+            update=lambda: datetime.datetime.now(datetime.timezone.utc),
+        ),
+        migrate=True,
+    )
+
+    # Playbook sharing (similar to drawing_shares pattern)
+    db.define_table(
+        "playbook_shares",
+        Field("playbook_id", "reference playbooks", notnull=True, ondelete="CASCADE"),
+        Field("identity_id", "reference identities", ondelete="CASCADE"),
+        Field("shared_with_id", "reference identities", ondelete="CASCADE"),
+        Field("shared_with_group_id", "reference groups", ondelete="CASCADE"),
+        Field("shared_by", "reference identities", ondelete="SET NULL"),
+        Field(
+            "permission",
+            "string",
+            length=50,
+            default="viewer",
+            requires=IS_IN_SET(["viewer", "editor"]),
+        ),
+        Field("expires_at", "datetime"),
+        Field(
+            "created_at",
+            "datetime",
+            default=lambda: datetime.datetime.now(datetime.timezone.utc),
+        ),
+        migrate=True,
+    )
+
+    # Playbook editor locks (only 1 editor at a time)
+    db.define_table(
+        "playbook_editor_locks",
+        Field("playbook_id", "reference playbooks", unique=True, notnull=True, ondelete="CASCADE"),
+        Field("locked_by_id", "reference identities", notnull=True, ondelete="CASCADE"),
+        Field("locked_by_name", "string", length=255),
+        Field("locked_at", "datetime", notnull=True),
+        Field("expires_at", "datetime", notnull=True),  # Auto-release after timeout
+        Field("socket_id", "string", length=255),  # WebSocket session for real-time release
+        migrate=True,
+    )
+
+    # Playbook templates (reusable workflow templates)
+    db.define_table(
+        "playbook_templates",
+        Field(
+            "tenant_id",
+            "reference tenants",
+            default=1,
+            notnull=True,
+            ondelete="CASCADE",
+        ),
+        Field("name", "string", length=255, notnull=True, requires=IS_NOT_EMPTY()),
+        Field("description", "text"),
+        Field("category", "string", length=100, default="custom"),
+        Field("created_by_id", "reference identities", notnull=True, ondelete="CASCADE"),
+        Field("nodes_json", "json", notnull=True),
+        Field("edges_json", "json", notnull=True),
+        Field("canvas_data", "json"),
+        Field("is_public", "boolean", default=False, notnull=True),
+        Field("usage_count", "integer", default=0),
+        Field(
+            "created_at",
+            "datetime",
+            default=lambda: datetime.datetime.now(datetime.timezone.utc),
+        ),
+        Field(
+            "updated_at",
+            "datetime",
+            update=lambda: datetime.datetime.now(datetime.timezone.utc),
+        ),
+        migrate=True,
+    )
+
+    # Dynamic forms for playbooks
+    db.define_table(
+        "playbook_forms",
+        Field("playbook_id", "reference playbooks", notnull=True, ondelete="CASCADE"),
+        Field("name", "string", length=255, notnull=True, requires=IS_NOT_EMPTY()),
+        Field("description", "text"),
+        Field("fields_json", "json", notnull=True),  # Form field definitions
+        Field("form_token", "string", length=255, unique=True),  # Public access token
+        Field(
+            "access_type",
+            "string",
+            length=50,
+            default="registered",
+            requires=IS_IN_SET(["public", "registered", "specific"]),
+        ),
+        Field("allowed_users", "list:reference identities"),  # For 'specific' access
+        Field("is_active", "boolean", default=True, notnull=True),
+        Field("submission_count", "integer", default=0),
+        Field(
+            "created_at",
+            "datetime",
+            default=lambda: datetime.datetime.now(datetime.timezone.utc),
+        ),
+        Field(
+            "updated_at",
+            "datetime",
+            update=lambda: datetime.datetime.now(datetime.timezone.utc),
+        ),
+        migrate=True,
+    )
+
+    # Form submissions
+    db.define_table(
+        "playbook_form_submissions",
+        Field("form_id", "reference playbook_forms", notnull=True, ondelete="CASCADE"),
+        Field("playbook_id", "reference playbooks", notnull=True, ondelete="CASCADE"),
+        Field("submitted_by_id", "reference identities", ondelete="SET NULL"),
+        Field("submission_data", "json", notnull=True),
+        Field("ip_address", "string", length=50),
+        Field("user_agent", "string", length=500),
+        Field("execution_id", "string", length=100),  # If it triggered an execution
+        Field(
+            "submitted_at",
+            "datetime",
+            default=lambda: datetime.datetime.now(datetime.timezone.utc),
+            notnull=True,
+        ),
+        migrate=True,
+    )
+
+    # Custom modules (uploadable trigger/action modules)
+    db.define_table(
+        "custom_modules",
+        Field(
+            "tenant_id",
+            "reference tenants",
+            default=1,
+            notnull=True,
+            ondelete="CASCADE",
+        ),
+        Field("name", "string", length=255, notnull=True, unique=True, requires=IS_NOT_EMPTY()),
+        Field("display_name", "string", length=255),
+        Field("description", "text"),
+        Field(
+            "module_type",
+            "string",
+            length=50,
+            notnull=True,
+            requires=IS_IN_SET(["trigger", "action"]),
+        ),
+        Field("version", "string", length=50, default="1.0.0"),
+        Field("code_blob", "blob"),  # Python module file
+        Field("config_schema", "json"),  # JSON Schema for configuration
+        Field("input_schema", "json"),  # Expected input data schema
+        Field("output_schema", "json"),  # Expected output data schema
+        Field("is_validated", "boolean", default=False, notnull=True),
+        Field("validation_errors", "json"),  # Errors from validation
+        Field("is_enabled", "boolean", default=True, notnull=True),
+        Field("uploaded_by_id", "reference identities", ondelete="SET NULL"),
+        Field("usage_count", "integer", default=0),
+        Field(
+            "created_at",
+            "datetime",
+            default=lambda: datetime.datetime.now(datetime.timezone.utc),
+        ),
+        Field(
+            "updated_at",
+            "datetime",
+            update=lambda: datetime.datetime.now(datetime.timezone.utc),
+        ),
+        migrate=True,
+    )
+
+    # Playbook node metadata (comments and key/value for playbook nodes)
+    db.define_table(
+        "playbook_node_metadata",
+        Field("playbook_id", "reference playbooks", notnull=True, ondelete="CASCADE"),
+        Field("node_id", "string", length=100, notnull=True),
+        Field("comments", "text"),
+        Field("metadata_json", "json"),
+        Field("updated_by_id", "reference identities", ondelete="SET NULL"),
+        Field(
+            "updated_at",
+            "datetime",
+            update=lambda: datetime.datetime.now(datetime.timezone.utc),
+        ),
+        Field(
+            "created_at",
+            "datetime",
+            default=lambda: datetime.datetime.now(datetime.timezone.utc),
+        ),
+        migrate=True,
+    )
+
+    # Diagram node metadata (comments and key/value for Charts)
+    db.define_table(
+        "diagram_node_metadata",
+        Field("drawing_id", "reference drawings", notnull=True, ondelete="CASCADE"),
+        Field("node_id", "string", length=100, notnull=True),
+        Field("comments", "text"),
+        Field("metadata_json", "json"),  # Key/value pairs
+        Field("updated_by_id", "reference identities", ondelete="SET NULL"),
+        Field(
+            "updated_at",
+            "datetime",
+            update=lambda: datetime.datetime.now(datetime.timezone.utc),
+        ),
+        Field(
+            "created_at",
+            "datetime",
+            default=lambda: datetime.datetime.now(datetime.timezone.utc),
+        ),
+        migrate=True,
+    )
+
+    # ==========================================
     # Create indexes for performance
     # ==========================================
     # Note: PyDAL will create these indexes automatically after tables are created
