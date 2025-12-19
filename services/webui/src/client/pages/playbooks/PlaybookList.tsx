@@ -6,7 +6,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { useAuthStore } from '../../../store/authStore';
+import api from '../../lib/api';
 
 interface Playbook {
   id: string;
@@ -32,7 +32,6 @@ interface PlaybookListResponse {
 }
 
 const PlaybookList: React.FC = () => {
-  const { token } = useAuthStore();
   const [playbooks, setPlaybooks] = useState<Playbook[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -42,22 +41,13 @@ const PlaybookList: React.FC = () => {
 
   useEffect(() => {
     fetchPlaybooks();
-  }, [token]);
+  }, []);
 
   const fetchPlaybooks = async () => {
     try {
       setLoading(true);
-      const response = await fetch('/api/v1/playbooks', {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      });
-
-      if (!response.ok) {
-        throw new Error('Failed to fetch playbooks');
-      }
-
-      const data: PlaybookListResponse = await response.json();
+      const response = await api.get<PlaybookListResponse>('/playbooks');
+      const data = response.data;
       setPlaybooks(data.playbooks || []);
       setOwnedCount(data.owned_count || 0);
       setLimit(data.limit || 5);
@@ -75,17 +65,7 @@ const PlaybookList: React.FC = () => {
     }
 
     try {
-      const response = await fetch(`/api/v1/playbooks/${id}`, {
-        method: 'DELETE',
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      });
-
-      if (!response.ok) {
-        throw new Error('Failed to delete playbook');
-      }
-
+      await api.delete(`/playbooks/${id}`);
       fetchPlaybooks();
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to delete');

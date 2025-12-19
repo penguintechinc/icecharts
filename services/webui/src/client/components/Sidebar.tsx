@@ -98,6 +98,30 @@ export default function Sidebar({ collapsed, onToggle }: SidebarProps) {
         ))}
       </nav>
 
+      {/* Action buttons */}
+      <div className="border-t border-dark-700 p-4 space-y-2">
+        <Link
+          to="/drawings/new"
+          className={`flex items-center ${
+            collapsed ? 'justify-center' : ''
+          } px-4 py-2 text-sm text-gold-400 hover:bg-dark-800 rounded-lg transition-colors duration-200`}
+          title="New Chart"
+        >
+          <span className="text-lg">📊</span>
+          {!collapsed && <span className="ml-2">New Chart</span>}
+        </Link>
+        <Link
+          to="/playbooks/new"
+          className={`flex items-center ${
+            collapsed ? 'justify-center' : ''
+          } px-4 py-2 text-sm text-gold-400 hover:bg-dark-800 rounded-lg transition-colors duration-200`}
+          title="New Stream"
+        >
+          <span className="text-lg">⚡</span>
+          {!collapsed && <span className="ml-2">New Stream</span>}
+        </Link>
+      </div>
+
       {/* User section */}
       <div className="border-t border-dark-700 p-4">
         {!collapsed && user && (

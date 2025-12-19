@@ -9,7 +9,7 @@
  * - Directional animated edges showing data flow
  */
 
-import React, { useState, useEffect, useCallback, useRef } from 'react';
+import React, { useState, useEffect, useCallback, useRef, DragEvent } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import {
   ReactFlow,
@@ -25,11 +25,74 @@ import {
   type OnConnect,
   MarkerType,
   BackgroundVariant,
+  ConnectionMode,
 } from '@xyflow/react';
 import '@xyflow/react/dist/style.css';
 
-import { useAuthStore } from '../../../store/authStore';
+import api from '../../lib/api';
 import { playbookEdgeTypes } from '../../components/playbooks/edges';
+import { PlaybookNode } from '../../components/playbooks/nodes';
+import { NodeConfigPanel } from '../../components/playbooks/panels';
+
+/**
+ * Define node handles (input/output ports) for different node types
+ * This enables nodes to have multiple output branches for conditional logic
+ */
+interface NodeHandles {
+  inputs: string[];
+  outputs: string[];
+}
+
+const getNodeHandles = (nodeType: string): NodeHandles => {
+  switch (nodeType) {
+    // Conditional branching - true/false branches
+    case 'conditional_if_then':
+    case 'Filter':
+      return { inputs: ['default'], outputs: ['true', 'false'] };
+
+    // Switch statement - multiple case branches plus default
+    case 'conditional_switch':
+      return { inputs: ['default'], outputs: ['case1', 'case2', 'case3', 'default'] };
+
+    // Loop/iteration - item and completion branches
+    case 'conditional_for_each':
+    case 'Split':
+      return { inputs: ['default'], outputs: ['item', 'complete'] };
+
+    // Three-way split
+    case 'transform_split':
+      return { inputs: ['default'], outputs: ['branch1', 'branch2', 'branch3'] };
+
+    // While loop - condition and completion branches
+    case 'conditional_while':
+      return { inputs: ['default'], outputs: ['loop', 'complete'] };
+
+    // Comparison nodes - output true/false
+    case 'conditional_equals':
+    case 'conditional_greater_than':
+    case 'conditional_less_than':
+    case 'conditional_contains':
+    case 'conditional_regex':
+      return { inputs: ['default'], outputs: ['true', 'false'] };
+
+    // Logic gates - output true/false
+    case 'conditional_and':
+    case 'conditional_or':
+      return { inputs: ['input1', 'input2'], outputs: ['true', 'false'] };
+
+    // NOT gate - single input/output
+    case 'conditional_not':
+      return { inputs: ['default'], outputs: ['output'] };
+
+    // Merge operations - single output
+    case 'Merge':
+      return { inputs: ['input1', 'input2', 'input3'], outputs: ['default'] };
+
+    // Default - single input/output
+    default:
+      return { inputs: ['default'], outputs: ['default'] };
+  }
+};
 
 interface EditorLock {
   playbook_id: string;
@@ -68,10 +131,14 @@ const defaultEdgeOptions = {
   },
 };
 
+// Custom node types for playbook workflows
+const playbookNodeTypes = {
+  playbook: PlaybookNode,
+};
+
 const PlaybookEditor: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
-  const { token } = useAuthStore();
   const reactFlowWrapper = useRef<HTMLDivElement>(null);
 
   const [playbook, setPlaybook] = useState<Playbook | null>(null);
@@ -81,6 +148,12 @@ const PlaybookEditor: React.FC = () => {
   const [editorLock, setEditorLock] = useState<EditorLock | null>(null);
   const [isLocked, setIsLocked] = useState(false);
   const [_selectedNode, setSelectedNode] = useState<string | null>(null);
+  const [expandedCategories, setExpandedCategories] = useState<Record<string, boolean>>({
+    triggers: true,
+    transforms: true,
+    conditionals: true,
+    actions: true,
+  });
 
   // ReactFlow state with proper typing
   const [nodes, setNodes, onNodesChange] = useNodesState<Node>([]);
@@ -88,14 +161,89 @@ const PlaybookEditor: React.FC = () => {
 
   const isNewPlaybook = !id;
 
+  // Helper to get the selected node object
+  const selectedNodeObject = nodes.find(n => n.id === _selectedNode) || null;
+
+  // Toggle category expansion
+  const toggleCategory = (category: string) => {
+    setExpandedCategories(prev => ({
+      ...prev,
+      [category]: !prev[category]
+    }));
+  };
+
+  // Handler to update node data
+  const onUpdateNodeData = useCallback((nodeId: string, newData: Record<string, any>) => {
+    setNodes((nds) =>
+      nds.map((node) => {
+        if (node.id === nodeId) {
+          return { ...node, data: newData };
+        }
+        return node;
+      })
+    );
+  }, [setNodes]);
+
+  // Node palette data
+  const triggers = [
+    { id: 'trigger_manual', label: 'Manual', icon: '👆', description: 'Manually trigger workflow' },
+    { id: 'trigger_webhook', label: 'Webhook', icon: '🪝', description: 'Trigger from webhook' },
+    { id: 'trigger_schedule', label: 'Schedule', icon: '⏰', description: 'Trigger on schedule' },
+    { id: 'trigger_grpc', label: 'gRPC', icon: '⚡', description: 'Receive gRPC requests' },
+    { id: 'trigger_mcp', label: 'MCP Server', icon: '🔌', description: 'Receive MCP protocol requests' },
+  ];
+  const transforms = [
+    { id: 'transform_mock_data', label: 'Mock Data', icon: '🎭', description: 'Generate mock data' },
+    { id: 'transform_json', label: 'JSON Transform', icon: '🔧', description: 'Transform JSON data' },
+    { id: 'transform_filter', label: 'Filter', icon: '🔍', description: 'Filter data' },
+    { id: 'transform_split', label: 'Split', icon: '✂️', description: 'Split data stream' },
+    { id: 'transform_merge', label: 'Merge', icon: '🔗', description: 'Merge data streams' },
+    { id: 'transform_delay', label: 'Delay', icon: '⏱️', description: 'Add delay' },
+    { id: 'transform_expression', label: 'Expression', icon: '📐', description: 'Evaluate expression' },
+    { id: 'transform_code', label: 'Code', icon: '💻', description: 'Execute code' },
+    { id: 'transform_ask_ai', label: 'Ask AI', icon: '🤖', description: 'Query LLM (Ollama/Claude/OpenAI)' },
+  ];
+  const conditionals = [
+    // Logic/Control Flow
+    { id: 'conditional_if_then', label: 'If/Then', icon: '🔀', description: 'Conditional branch (true/false)' },
+    { id: 'conditional_switch', label: 'Switch', icon: '🎚️', description: 'Multi-way conditional branch' },
+    { id: 'conditional_for_each', label: 'For Each', icon: '🔁', description: 'Loop over array items' },
+    { id: 'conditional_while', label: 'While', icon: '🔄', description: 'Loop while condition is true' },
+    // Comparisons
+    { id: 'conditional_equals', label: 'Equals', icon: '⚖️', description: 'Check if values are equal' },
+    { id: 'conditional_greater_than', label: 'Greater Than', icon: '➡️', description: 'Check if A > B' },
+    { id: 'conditional_less_than', label: 'Less Than', icon: '⬅️', description: 'Check if A < B' },
+    { id: 'conditional_contains', label: 'Contains', icon: '🔍', description: 'Check if string/array contains value' },
+    { id: 'conditional_regex', label: 'Regex Match', icon: '📝', description: 'Match text against regex pattern' },
+    // Logic Gates
+    { id: 'conditional_and', label: 'AND', icon: '∧', description: 'All conditions must be true' },
+    { id: 'conditional_or', label: 'OR', icon: '∨', description: 'Any condition must be true' },
+    { id: 'conditional_not', label: 'NOT', icon: '¬', description: 'Invert boolean value' },
+  ];
+  const actions = [
+    { id: 'action_http', label: 'HTTP Request', icon: '🌐', description: 'Make HTTP request' },
+    { id: 'action_webhook', label: 'Webhook Out', icon: '📤', description: 'Send to webhook' },
+    { id: 'action_grpc', label: 'gRPC Call', icon: '⚡', description: 'Call gRPC service' },
+    { id: 'action_log', label: 'Log', icon: '📝', description: 'Log output' },
+    { id: 'action_lambda', label: 'AWS Lambda', icon: '🔲', description: 'Invoke Lambda' },
+    { id: 'action_gcp', label: 'GCP Function', icon: '☁️', description: 'Invoke GCP Function' },
+    { id: 'action_mcp_call', label: 'MCP Call', icon: '📡', description: 'Call an MCP server tool' },
+  ];
+
   // Handle new edge connections - always with arrow and animation
+  // Supports multiple handles per node for conditional branching
   const onConnect: OnConnect = useCallback(
     (connection: Connection) => {
       const newEdge: Edge = {
         ...connection,
-        id: `edge-${connection.source}-${connection.target}`,
+        id: `edge-${connection.source}-${connection.target}${
+          connection.sourceHandle ? `-${connection.sourceHandle}` : ''
+        }${connection.targetHandle ? `-${connection.targetHandle}` : ''}`,
         type: 'animatedFlow',
         animated: true,
+        // Include handle information in the edge
+        sourceHandle: connection.sourceHandle || 'default',
+        targetHandle: connection.targetHandle || 'default',
         markerEnd: {
           type: MarkerType.ArrowClosed,
           width: 20,
@@ -105,6 +253,9 @@ const PlaybookEditor: React.FC = () => {
         data: {
           state: 'pending',
           animated: true,
+          // Store handle names as labels for debugging/visualization
+          sourceHandleLabel: connection.sourceHandle,
+          targetHandleLabel: connection.targetHandle,
         },
       } as Edge;
       setEdges((eds) => addEdge(newEdge, eds));
@@ -122,6 +273,63 @@ const PlaybookEditor: React.FC = () => {
     setSelectedNode(null);
   }, []);
 
+  // Drag and drop handlers
+  const onDragStart = (event: DragEvent<HTMLDivElement>, nodeType: string, category: string) => {
+    event.dataTransfer.setData('application/reactflow', JSON.stringify({ nodeType, category }));
+    event.dataTransfer.effectAllowed = 'move';
+  };
+
+  const onDragOver = useCallback((event: DragEvent<HTMLDivElement>) => {
+    event.preventDefault();
+    event.dataTransfer.dropEffect = 'move';
+  }, []);
+
+  const onDrop = useCallback(
+    (event: DragEvent<HTMLDivElement>) => {
+      event.preventDefault();
+
+      const reactFlowBounds = reactFlowWrapper.current?.getBoundingClientRect();
+      if (!reactFlowBounds) return;
+
+      const data = event.dataTransfer.getData('application/reactflow');
+      if (!data) return;
+
+      const { nodeType, category } = JSON.parse(data);
+
+      // Calculate position relative to ReactFlow canvas
+      const position = {
+        x: event.clientX - reactFlowBounds.left - 75,
+        y: event.clientY - reactFlowBounds.top - 20,
+      };
+
+      // Find the node label from the definition
+      let nodeLabel = nodeType;
+      const allNodes = [...triggers, ...transforms, ...conditionals, ...actions];
+      const nodeDef = allNodes.find(n => n.label === nodeType);
+      if (nodeDef) {
+        nodeLabel = nodeDef.label;
+      }
+
+      // Get handles configuration for this node type
+      const nodeHandles = getNodeHandles(nodeType);
+
+      const newNode: Node = {
+        id: `${category}-${Date.now()}`,
+        type: 'playbook',
+        position,
+        data: {
+          label: nodeLabel,
+          nodeType,
+          category,
+          handles: nodeHandles,
+        },
+      };
+
+      setNodes((nds) => nds.concat(newNode));
+    },
+    [setNodes, triggers, transforms, conditionals, actions]
+  );
+
   useEffect(() => {
     if (id) {
       fetchPlaybook();
@@ -138,26 +346,14 @@ const PlaybookEditor: React.FC = () => {
       });
       setLoading(false);
     }
-  }, [id, token]);
+  }, [id]);
 
   const fetchPlaybook = async () => {
     try {
       setLoading(true);
-      const response = await fetch(`/api/v1/playbooks/${id}`, {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      });
+      const response = await api.get(`/playbooks/${id}`);
 
-      if (!response.ok) {
-        if (response.status === 404) {
-          navigate('/playbooks');
-          return;
-        }
-        throw new Error('Failed to fetch playbook');
-      }
-
-      const data = await response.json();
+      const data = response.data;
       setPlaybook(data.playbook);
 
       // Load canvas data into ReactFlow state
@@ -187,7 +383,11 @@ const PlaybookEditor: React.FC = () => {
         setEditorLock(data.editor_lock);
         setIsLocked(!data.editor_lock.is_holder);
       }
-    } catch (err) {
+    } catch (err: any) {
+      if (err.response?.status === 404) {
+        navigate('/playbooks');
+        return;
+      }
       setError(err instanceof Error ? err.message : 'An error occurred');
     } finally {
       setLoading(false);
@@ -199,36 +399,21 @@ const PlaybookEditor: React.FC = () => {
     if (!id) return;
 
     try {
-      const response = await fetch(`/api/v1/playbooks/${id}/lock`, {
-        method: 'POST',
-        headers: {
-          Authorization: `Bearer ${token}`,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({}),
-      });
-
-      if (response.status === 423) {
+      const response = await api.post(`/playbooks/${id}/lock`, {});
+      setEditorLock(response.data.lock);
+      setIsLocked(false);
+      return true;
+    } catch (err: any) {
+      if (err.response?.status === 423) {
         // Locked by another user
-        const data = await response.json();
-        setEditorLock(data.lock);
+        setEditorLock(err.response.data.lock);
         setIsLocked(true);
         return false;
       }
-
-      if (!response.ok) {
-        throw new Error('Failed to acquire lock');
-      }
-
-      const data = await response.json();
-      setEditorLock(data.lock);
-      setIsLocked(false);
-      return true;
-    } catch (err) {
       console.error('Failed to acquire lock:', err);
       return false;
     }
-  }, [id, token]);
+  }, [id]);
 
   // Acquire lock when editing an existing playbook
   useEffect(() => {
@@ -241,12 +426,7 @@ const PlaybookEditor: React.FC = () => {
     if (!id) return;
 
     try {
-      await fetch(`/api/v1/playbooks/${id}/lock`, {
-        method: 'DELETE',
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      });
+      await api.delete(`/playbooks/${id}/lock`);
     } catch (err) {
       console.error('Failed to release lock:', err);
     }
@@ -274,51 +454,27 @@ const PlaybookEditor: React.FC = () => {
 
       if (isNewPlaybook) {
         // Create new playbook
-        const response = await fetch('/api/v1/playbooks', {
-          method: 'POST',
-          headers: {
-            Authorization: `Bearer ${token}`,
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            name: playbook.name,
-            description: playbook.description,
-            canvas_data: canvasData,
-            trigger_type: playbook.trigger_type,
-            visibility: 'private',
-          }),
+        const response = await api.post('/playbooks', {
+          name: playbook.name,
+          description: playbook.description,
+          canvas_data: canvasData,
+          trigger_type: playbook.trigger_type,
+          visibility: 'private',
         });
 
-        if (!response.ok) {
-          const data = await response.json();
-          throw new Error(data.error || 'Failed to create playbook');
-        }
-
-        const data = await response.json();
-        navigate(`/playbooks/${data.playbook.id}/edit`);
+        navigate(`/playbooks/${response.data.playbook.id}/edit`);
       } else {
         // Update existing playbook
-        const response = await fetch(`/api/v1/playbooks/${id}`, {
-          method: 'PUT',
-          headers: {
-            Authorization: `Bearer ${token}`,
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            name: playbook.name,
-            description: playbook.description,
-            canvas_data: canvasData,
-            trigger_type: playbook.trigger_type,
-          }),
+        await api.put(`/playbooks/${id}`, {
+          name: playbook.name,
+          description: playbook.description,
+          canvas_data: canvasData,
+          trigger_type: playbook.trigger_type,
         });
-
-        if (!response.ok) {
-          const data = await response.json();
-          throw new Error(data.error || 'Failed to save playbook');
-        }
       }
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to save');
+    } catch (err: any) {
+      const errorMessage = err.response?.data?.error || err.message || 'Failed to save';
+      setError(errorMessage);
     } finally {
       setSaving(false);
     }
@@ -447,149 +603,302 @@ const PlaybookEditor: React.FC = () => {
       <div className="flex flex-1 overflow-hidden">
         {/* Left panel - Node palette */}
         <div className="w-64 bg-ice-navy-800 border-r border-ice-navy-700 overflow-y-auto">
-          <div className="p-4">
-            <h3 className="text-sm font-semibold text-ice-navy-300 uppercase tracking-wider mb-3">
-              Triggers
-            </h3>
-            <div className="space-y-2">
-              {['Manual', 'Webhook', 'Schedule', 'gRPC'].map((trigger) => (
-                <div
-                  key={trigger}
-                  className="p-3 bg-green-500/10 border border-green-500/30 rounded-lg cursor-move hover:bg-green-500/20 transition-colors"
-                  draggable
+          <div className="p-4 space-y-2">
+            {/* Triggers Category */}
+            <div className="category-section">
+              <button
+                onClick={() => toggleCategory('triggers')}
+                className="w-full flex items-center gap-2 px-3 py-2 rounded-lg bg-ice-navy-700 hover:bg-ice-navy-600 text-ice-navy-200 hover:text-white transition-colors font-medium text-sm"
+              >
+                <svg
+                  className={`w-4 h-4 flex-shrink-0 transition-transform duration-200 ${
+                    expandedCategories.triggers ? 'rotate-90' : ''
+                  }`}
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
                 >
-                  <span className="text-green-400 text-sm">{trigger}</span>
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                </svg>
+                <span className="flex-1 text-left">Triggers</span>
+                <span className="inline-flex items-center justify-center w-5 h-5 text-xs bg-green-500/30 text-green-400 rounded-full">
+                  {triggers.length}
+                </span>
+              </button>
+              {expandedCategories.triggers && (
+                <div className="mt-2 space-y-2 pl-2">
+                  {triggers.map((trigger) => (
+                    <div
+                      key={trigger.id}
+                      className="p-3 bg-green-500/10 border border-green-500/30 rounded-lg cursor-move hover:bg-green-500/20 transition-colors group"
+                      draggable
+                      onDragStart={(event) => onDragStart(event, trigger.label, 'triggers')}
+                      title={trigger.description}
+                    >
+                      <div className="flex items-center gap-2">
+                        <span className="text-lg">{trigger.icon}</span>
+                        <span className="text-green-400 text-sm flex-1">{trigger.label}</span>
+                      </div>
+                      <p className="text-ice-navy-400 text-xs mt-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                        {trigger.description}
+                      </p>
+                    </div>
+                  ))}
                 </div>
-              ))}
+              )}
             </div>
 
-            <h3 className="text-sm font-semibold text-ice-navy-300 uppercase tracking-wider mb-3 mt-6">
-              Transforms
-            </h3>
-            <div className="space-y-2">
-              {['Mock Data', 'JSON Transform', 'Filter', 'Split', 'Merge', 'Delay', 'Expression', 'Code'].map((transform) => (
-                <div
-                  key={transform}
-                  className="p-3 bg-blue-500/10 border border-blue-500/30 rounded-lg cursor-move hover:bg-blue-500/20 transition-colors"
-                  draggable
+            {/* Transforms Category */}
+            <div className="category-section">
+              <button
+                onClick={() => toggleCategory('transforms')}
+                className="w-full flex items-center gap-2 px-3 py-2 rounded-lg bg-ice-navy-700 hover:bg-ice-navy-600 text-ice-navy-200 hover:text-white transition-colors font-medium text-sm"
+              >
+                <svg
+                  className={`w-4 h-4 flex-shrink-0 transition-transform duration-200 ${
+                    expandedCategories.transforms ? 'rotate-90' : ''
+                  }`}
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
                 >
-                  <span className="text-blue-400 text-sm">{transform}</span>
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                </svg>
+                <span className="flex-1 text-left">Transforms</span>
+                <span className="inline-flex items-center justify-center w-5 h-5 text-xs bg-blue-500/30 text-blue-400 rounded-full">
+                  {transforms.length}
+                </span>
+              </button>
+              {expandedCategories.transforms && (
+                <div className="mt-2 space-y-2 pl-2">
+                  {transforms.map((transform) => (
+                    <div
+                      key={transform.id}
+                      className="p-3 bg-blue-500/10 border border-blue-500/30 rounded-lg cursor-move hover:bg-blue-500/20 transition-colors group"
+                      draggable
+                      onDragStart={(event) => onDragStart(event, transform.label, 'transforms')}
+                      title={transform.description}
+                    >
+                      <div className="flex items-center gap-2">
+                        <span className="text-lg">{transform.icon}</span>
+                        <span className="text-blue-400 text-sm flex-1">{transform.label}</span>
+                      </div>
+                      <p className="text-ice-navy-400 text-xs mt-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                        {transform.description}
+                      </p>
+                    </div>
+                  ))}
                 </div>
-              ))}
+              )}
             </div>
 
-            <h3 className="text-sm font-semibold text-ice-navy-300 uppercase tracking-wider mb-3 mt-6">
-              Actions
-            </h3>
-            <div className="space-y-2">
-              {['HTTP Request', 'Webhook Out', 'gRPC Call', 'Log', 'AWS Lambda', 'GCP Function'].map((action) => (
-                <div
-                  key={action}
-                  className="p-3 bg-orange-500/10 border border-orange-500/30 rounded-lg cursor-move hover:bg-orange-500/20 transition-colors"
-                  draggable
+            {/* Conditionals Category */}
+            <div className="category-section">
+              <button
+                onClick={() => toggleCategory('conditionals')}
+                className="w-full flex items-center gap-2 px-3 py-2 rounded-lg bg-ice-navy-700 hover:bg-ice-navy-600 text-ice-navy-200 hover:text-white transition-colors font-medium text-sm"
+              >
+                <svg
+                  className={`w-4 h-4 flex-shrink-0 transition-transform duration-200 ${
+                    expandedCategories.conditionals ? 'rotate-90' : ''
+                  }`}
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
                 >
-                  <span className="text-orange-400 text-sm">{action}</span>
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                </svg>
+                <span className="flex-1 text-left">Conditionals</span>
+                <span className="inline-flex items-center justify-center w-5 h-5 text-xs bg-purple-500/30 text-purple-400 rounded-full">
+                  {conditionals.length}
+                </span>
+              </button>
+              {expandedCategories.conditionals && (
+                <div className="mt-2 space-y-2 pl-2">
+                  {conditionals.map((conditional) => (
+                    <div
+                      key={conditional.id}
+                      className="p-3 bg-purple-500/10 border border-purple-500/30 rounded-lg cursor-move hover:bg-purple-500/20 transition-colors group"
+                      draggable
+                      onDragStart={(event) => onDragStart(event, conditional.label, 'conditionals')}
+                      title={conditional.description}
+                    >
+                      <div className="flex items-center gap-2">
+                        <span className="text-lg">{conditional.icon}</span>
+                        <span className="text-purple-400 text-sm flex-1">{conditional.label}</span>
+                      </div>
+                      <p className="text-ice-navy-400 text-xs mt-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                        {conditional.description}
+                      </p>
+                    </div>
+                  ))}
                 </div>
-              ))}
+              )}
+            </div>
+
+            {/* Actions Category */}
+            <div className="category-section">
+              <button
+                onClick={() => toggleCategory('actions')}
+                className="w-full flex items-center gap-2 px-3 py-2 rounded-lg bg-ice-navy-700 hover:bg-ice-navy-600 text-ice-navy-200 hover:text-white transition-colors font-medium text-sm"
+              >
+                <svg
+                  className={`w-4 h-4 flex-shrink-0 transition-transform duration-200 ${
+                    expandedCategories.actions ? 'rotate-90' : ''
+                  }`}
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                </svg>
+                <span className="flex-1 text-left">Actions</span>
+                <span className="inline-flex items-center justify-center w-5 h-5 text-xs bg-orange-500/30 text-orange-400 rounded-full">
+                  {actions.length}
+                </span>
+              </button>
+              {expandedCategories.actions && (
+                <div className="mt-2 space-y-2 pl-2">
+                  {actions.map((action) => (
+                    <div
+                      key={action.id}
+                      className="p-3 bg-orange-500/10 border border-orange-500/30 rounded-lg cursor-move hover:bg-orange-500/20 transition-colors group"
+                      draggable
+                      onDragStart={(event) => onDragStart(event, action.label, 'actions')}
+                      title={action.description}
+                    >
+                      <div className="flex items-center gap-2">
+                        <span className="text-lg">{action.icon}</span>
+                        <span className="text-orange-400 text-sm flex-1">{action.label}</span>
+                      </div>
+                      <p className="text-ice-navy-400 text-xs mt-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                        {action.description}
+                      </p>
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
           </div>
         </div>
 
-        {/* Canvas area - ReactFlow */}
-        <div className="flex-1 bg-ice-navy-900 relative" ref={reactFlowWrapper}>
-          <ReactFlow
-            nodes={nodes}
-            edges={edges}
-            onNodesChange={onNodesChange}
-            onEdgesChange={onEdgesChange}
-            onConnect={onConnect}
-            onNodeClick={onNodeClick}
-            onPaneClick={onPaneClick}
-            edgeTypes={playbookEdgeTypes}
-            defaultEdgeOptions={defaultEdgeOptions}
-            fitView
-            snapToGrid
-            snapGrid={[15, 15]}
-            minZoom={0.2}
-            maxZoom={2}
-            attributionPosition="bottom-left"
-            proOptions={{ hideAttribution: true }}
+        {/* Canvas and right panel container */}
+        <div className="flex-1 flex overflow-hidden">
+          {/* Canvas area - ReactFlow */}
+          <div
+            className="flex-1 bg-ice-navy-900 relative"
+            ref={reactFlowWrapper}
+            onDrop={onDrop}
+            onDragOver={onDragOver}
           >
-            <Background
-              variant={BackgroundVariant.Dots}
-              gap={20}
-              size={1}
-              color="#374151"
-            />
-            <Controls
-              className="bg-ice-navy-800 border border-ice-navy-700 rounded-lg"
-              showInteractive={false}
-            />
-            <MiniMap
-              className="bg-ice-navy-800 border border-ice-navy-700 rounded-lg"
-              nodeColor="#6B7280"
-              maskColor="rgba(0, 0, 0, 0.5)"
-            />
+            <ReactFlow
+              nodes={nodes}
+              edges={edges}
+              nodeTypes={playbookNodeTypes}
+              onNodesChange={onNodesChange}
+              onEdgesChange={onEdgesChange}
+              onConnect={onConnect}
+              onNodeClick={onNodeClick}
+              onPaneClick={onPaneClick}
+              edgeTypes={playbookEdgeTypes}
+              defaultEdgeOptions={defaultEdgeOptions}
+              connectionMode={ConnectionMode.Loose}
+              connectionLineStyle={{ stroke: '#D4AF37', strokeWidth: 2 }}
+              fitView
+              snapToGrid
+              snapGrid={[15, 15]}
+              minZoom={0.2}
+              maxZoom={2}
+              attributionPosition="bottom-left"
+              proOptions={{ hideAttribution: true }}
+            >
+              <Background
+                variant={BackgroundVariant.Dots}
+                gap={20}
+                size={1}
+                color="#374151"
+              />
+              <Controls
+                className="bg-ice-navy-800 border border-ice-navy-700 rounded-lg"
+                showInteractive={false}
+              />
+              <MiniMap
+                className="bg-ice-navy-800 border border-ice-navy-700 rounded-lg"
+                nodeColor="#6B7280"
+                maskColor="rgba(0, 0, 0, 0.5)"
+              />
 
-            {/* Empty state overlay */}
-            {nodes.length === 0 && (
-              <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-                <div className="text-center text-ice-navy-500">
-                  <svg className="w-16 h-16 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
-                  </svg>
-                  <p className="text-lg">Drag nodes from the left panel to build your workflow</p>
-                  <p className="text-sm mt-2 text-ice-navy-400">
-                    Connections automatically show directional flow with animated arrows
-                  </p>
+              {/* Empty state overlay */}
+              {nodes.length === 0 && (
+                <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+                  <div className="text-center text-ice-navy-500">
+                    <svg className="w-16 h-16 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
+                    </svg>
+                    <p className="text-lg">Drag nodes from the left panel to build your workflow</p>
+                    <p className="text-sm mt-2 text-ice-navy-400">
+                      Connections automatically show directional flow with animated arrows
+                    </p>
+                  </div>
                 </div>
-              </div>
-            )}
-          </ReactFlow>
-        </div>
+              )}
+            </ReactFlow>
+          </div>
 
-        {/* Right panel - Node configuration */}
-        <div className="w-80 bg-ice-navy-800 border-l border-ice-navy-700 overflow-y-auto">
-          <div className="p-4">
-            <h3 className="text-sm font-semibold text-ice-navy-300 uppercase tracking-wider mb-3">
-              Configuration
-            </h3>
-            <p className="text-ice-navy-500 text-sm">
-              Select a node to configure its settings
-            </p>
+          {/* Node Config Panel - slides in from right when node is selected */}
+          {selectedNodeObject && (
+            <NodeConfigPanel
+              node={selectedNodeObject}
+              onClose={() => setSelectedNode(null)}
+              onUpdate={onUpdateNodeData}
+            />
+          )}
 
-            <div className="mt-6">
-              <h3 className="text-sm font-semibold text-ice-navy-300 uppercase tracking-wider mb-3">
-                Playbook Settings
-              </h3>
-              <div className="space-y-4">
-                <div>
-                  <label className="block text-ice-navy-400 text-sm mb-1">Description</label>
-                  <textarea
-                    value={playbook?.description || ''}
-                    onChange={(e) => setPlaybook(p => p ? { ...p, description: e.target.value } : null)}
-                    className="w-full px-3 py-2 bg-ice-navy-700 border border-ice-navy-600 rounded-lg text-white text-sm resize-none focus:outline-none focus:ring-2 focus:ring-ice-gold-500/50"
-                    rows={3}
-                    placeholder="Describe what this playbook does..."
-                  />
-                </div>
+          {/* Right panel - Playbook settings (shown when no node is selected) */}
+          {!selectedNodeObject && (
+            <div className="w-80 bg-ice-navy-800 border-l border-ice-navy-700 overflow-y-auto">
+              <div className="p-4">
+                <h3 className="text-sm font-semibold text-ice-navy-300 uppercase tracking-wider mb-3">
+                  Configuration
+                </h3>
+                <p className="text-ice-navy-500 text-sm">
+                  Select a node to configure its settings
+                </p>
 
-                <div>
-                  <label className="block text-ice-navy-400 text-sm mb-1">Trigger Type</label>
-                  <select
-                    value={playbook?.trigger_type || 'manual'}
-                    onChange={(e) => setPlaybook(p => p ? { ...p, trigger_type: e.target.value } : null)}
-                    className="w-full px-3 py-2 bg-ice-navy-700 border border-ice-navy-600 rounded-lg text-white text-sm focus:outline-none focus:ring-2 focus:ring-ice-gold-500/50"
-                  >
-                    <option value="manual">Manual</option>
-                    <option value="webhook">Webhook</option>
-                    <option value="schedule">Schedule</option>
-                    <option value="grpc">gRPC</option>
-                  </select>
+                <div className="mt-6">
+                  <h3 className="text-sm font-semibold text-ice-navy-300 uppercase tracking-wider mb-3">
+                    Playbook Settings
+                  </h3>
+                  <div className="space-y-4">
+                    <div>
+                      <label className="block text-ice-navy-400 text-sm mb-1">Description</label>
+                      <textarea
+                        value={playbook?.description || ''}
+                        onChange={(e) => setPlaybook(p => p ? { ...p, description: e.target.value } : null)}
+                        className="w-full px-3 py-2 bg-ice-navy-700 border border-ice-navy-600 rounded-lg text-white text-sm resize-none focus:outline-none focus:ring-2 focus:ring-ice-gold-500/50"
+                        rows={3}
+                        placeholder="Describe what this playbook does..."
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-ice-navy-400 text-sm mb-1">Trigger Type</label>
+                      <select
+                        value={playbook?.trigger_type || 'manual'}
+                        onChange={(e) => setPlaybook(p => p ? { ...p, trigger_type: e.target.value } : null)}
+                        className="w-full px-3 py-2 bg-ice-navy-700 border border-ice-navy-600 rounded-lg text-white text-sm focus:outline-none focus:ring-2 focus:ring-ice-gold-500/50"
+                      >
+                        <option value="manual">Manual</option>
+                        <option value="webhook">Webhook</option>
+                        <option value="schedule">Schedule</option>
+                        <option value="grpc">gRPC</option>
+                      </select>
+                    </div>
+                  </div>
                 </div>
               </div>
             </div>
-          </div>
+          )}
         </div>
       </div>
     </div>
