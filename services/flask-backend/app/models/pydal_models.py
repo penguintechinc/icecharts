@@ -975,7 +975,7 @@ def define_all_tables(db):
         ),  # webhook, schedule, grpc, manual
         Field("trigger_config", "json"),  # Trigger-specific configuration
         Field("error_handling", "json"),  # Retry settings, failure notifications
-        Field("tags", "list:string"),
+        Field("tags", "json"),  # Array of tag strings
         Field("canvas_data", "json"),  # ReactFlow viewport, zoom, etc.
         Field("last_execution_at", "datetime"),
         Field("next_run_at", "datetime"),  # For scheduled playbooks

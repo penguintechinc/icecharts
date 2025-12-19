@@ -63,8 +63,8 @@ const injectAnimationStyles = () => {
     }
 
     .animated-flow-edge.pending {
-      stroke: #9CA3AF;
-      stroke-width: 1.5;
+      stroke: #D4AF37;
+      stroke-width: 2;
     }
 
     .flow-edge-path {
@@ -140,8 +140,8 @@ export const AnimatedFlowEdge: React.FC<AnimatedFlowEdgeProps> = ({
 
   // Base stroke color by state
   const strokeColors: Record<string, string> = {
-    pending: '#6B7280',  // Gray
-    active: '#3B82F6',   // Blue
+    pending: '#D4AF37',  // Gold (default)
+    active: '#F5D77A',   // Light gold (active)
     success: '#10B981',  // Green
     error: '#EF4444',    // Red
   };

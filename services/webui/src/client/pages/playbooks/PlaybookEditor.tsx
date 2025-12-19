@@ -118,9 +118,10 @@ const defaultEdgeOptions = {
     type: MarkerType.ArrowClosed,
     width: 20,
     height: 20,
-    color: '#6B7280',
+    color: '#D4AF37',
   },
   style: {
+    stroke: '#D4AF37',
     strokeWidth: 2,
   },
 };
@@ -242,7 +243,11 @@ const PlaybookEditor: React.FC = () => {
           type: MarkerType.ArrowClosed,
           width: 20,
           height: 20,
-          color: '#6B7280',
+          color: '#D4AF37',
+        },
+        style: {
+          stroke: '#D4AF37',
+          strokeWidth: 2,
         },
         data: {
           state: 'pending',
@@ -296,10 +301,10 @@ const PlaybookEditor: React.FC = () => {
         y: event.clientY - reactFlowBounds.top - 20,
       };
 
-      // Find the node label from the definition
+      // Find the node label from the definition (nodeType is now the id)
       let nodeLabel = nodeType;
       const allNodes = [...triggers, ...transforms, ...conditionals, ...actions];
-      const nodeDef = allNodes.find(n => n.label === nodeType);
+      const nodeDef = allNodes.find(n => n.id === nodeType);
       if (nodeDef) {
         nodeLabel = nodeDef.label;
       }
@@ -626,7 +631,7 @@ const PlaybookEditor: React.FC = () => {
                       key={trigger.id}
                       className="p-3 bg-green-500/10 border border-green-500/30 rounded-lg cursor-move hover:bg-green-500/20 transition-colors group"
                       draggable
-                      onDragStart={(event) => onDragStart(event, trigger.label, 'triggers')}
+                      onDragStart={(event) => onDragStart(event, trigger.id, 'triggers')}
                       title={trigger.description}
                     >
                       <div className="flex items-center gap-2">
@@ -670,7 +675,7 @@ const PlaybookEditor: React.FC = () => {
                       key={transform.id}
                       className="p-3 bg-blue-500/10 border border-blue-500/30 rounded-lg cursor-move hover:bg-blue-500/20 transition-colors group"
                       draggable
-                      onDragStart={(event) => onDragStart(event, transform.label, 'transforms')}
+                      onDragStart={(event) => onDragStart(event, transform.id, 'transforms')}
                       title={transform.description}
                     >
                       <div className="flex items-center gap-2">
@@ -714,7 +719,7 @@ const PlaybookEditor: React.FC = () => {
                       key={conditional.id}
                       className="p-3 bg-purple-500/10 border border-purple-500/30 rounded-lg cursor-move hover:bg-purple-500/20 transition-colors group"
                       draggable
-                      onDragStart={(event) => onDragStart(event, conditional.label, 'conditionals')}
+                      onDragStart={(event) => onDragStart(event, conditional.id, 'conditionals')}
                       title={conditional.description}
                     >
                       <div className="flex items-center gap-2">
@@ -758,7 +763,7 @@ const PlaybookEditor: React.FC = () => {
                       key={action.id}
                       className="p-3 bg-orange-500/10 border border-orange-500/30 rounded-lg cursor-move hover:bg-orange-500/20 transition-colors group"
                       draggable
-                      onDragStart={(event) => onDragStart(event, action.label, 'actions')}
+                      onDragStart={(event) => onDragStart(event, action.id, 'actions')}
                       title={action.description}
                     >
                       <div className="flex items-center gap-2">
