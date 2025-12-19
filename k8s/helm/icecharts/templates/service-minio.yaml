@@ -1,0 +1,30 @@
+{{- /*
+MinIO ClusterIP Service
+- Exposes MinIO StatefulSet internally
+- Provides two ports: API (9000) and Console (9001)
+- Used by API for S3-compatible object storage
+*/ -}}
+{{- if .Values.minio.enabled }}
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "icecharts.minio.fullname" . }}-service
+  namespace: {{ include "icecharts.namespace" . }}
+  labels:
+    {{- include "icecharts.minio.labels" . | nindent 4 }}
+  annotations:
+    description: "MinIO Object Storage Service"
+spec:
+  type: ClusterIP
+  ports:
+    - name: api
+      port: {{ .Values.minio.service.apiPort }}
+      targetPort: {{ .Values.minio.service.apiPort }}
+      protocol: TCP
+    - name: console
+      port: {{ .Values.minio.service.consolePort }}
+      targetPort: {{ .Values.minio.service.consolePort }}
+      protocol: TCP
+  selector:
+    {{- include "icecharts.minio.selectorLabels" . | nindent 4 }}
+{{- end }}

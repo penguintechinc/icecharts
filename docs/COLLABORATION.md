@@ -2,6 +2,67 @@
 
 IceCharts includes a comprehensive WebSocket-based collaboration system that enables multiple users to work on diagrams simultaneously with real-time updates, cursor tracking, and shape locking.
 
+## Quick Start
+
+### 5-Minute Setup
+
+**1. Start Redis (Required)**
+
+```bash
+# Using Docker
+docker run -d --name icecharts-redis -p 6379:6379 redis:7-alpine
+
+# Or using your system's Redis
+redis-server
+```
+
+**2. Backend Setup**
+
+```bash
+cd services/flask-backend
+pip install -r requirements.txt
+python run.py
+```
+
+**3. Frontend Setup**
+
+```bash
+cd services/webui
+npm install
+npm run dev
+```
+
+**4. Add Collaboration to Your Canvas**
+
+```tsx
+import { useCollaboration } from './hooks/useCollaboration';
+import { CollaboratorCursors, CollaboratorAvatars } from './components/canvas';
+
+function MyCanvas({ drawingId }) {
+  const { sendCursorPosition, lockShape, unlockShape } = useCollaboration({
+    roomId: drawingId,
+    enabled: true,
+  });
+
+  const handleMouseMove = (e) => {
+    const rect = e.currentTarget.getBoundingClientRect();
+    sendCursorPosition(e.clientX - rect.left, e.clientY - rect.top);
+  };
+
+  return (
+    <div onMouseMove={handleMouseMove}>
+      {/* Your canvas content */}
+      <CollaboratorCursors />
+      <CollaboratorAvatars position="top-right" />
+    </div>
+  );
+}
+```
+
+That's it! You now have real-time cursor tracking, user presence indicators, and collaborative editing with shape locking.
+
+---
+
 ## Architecture Overview
 
 The collaboration system consists of three main components:
@@ -134,7 +195,6 @@ Handles all WebSocket events:
 
 Zustand store managing collaboration state:
 
-**State:**
 ```typescript
 interface CollaborationState {
   connected: boolean;
@@ -189,12 +249,10 @@ const MyComponent = () => {
     onDisconnected: () => console.log('Disconnected'),
     onError: (error) => console.error(error),
   });
-
-  // Use collaboration methods...
 };
 ```
 
-### 3. CollaboratorCursors Component (`/src/client/components/canvas/CollaboratorCursors.tsx`)
+### 3. CollaboratorCursors Component
 
 Renders real-time cursors for other users:
 
@@ -214,7 +272,7 @@ import { CollaboratorCursors } from './components/canvas/CollaboratorCursors';
 </div>
 ```
 
-### 4. CollaboratorAvatars Component (`/src/client/components/canvas/CollaboratorAvatars.tsx`)
+### 4. CollaboratorAvatars Component
 
 Displays active collaborators with avatars:
 
@@ -229,67 +287,80 @@ Displays active collaborators with avatars:
 ```tsx
 import { CollaboratorAvatars } from './components/canvas/CollaboratorAvatars';
 
-<CollaboratorAvatars
-  position="top-right"
-  maxVisible={5}
-/>
+<CollaboratorAvatars position="top-right" maxVisible={5} />
 ```
 
-## Setup and Configuration
+## Common Use Cases
 
-### Backend Setup
+### Shape Locking
 
-1. **Install Dependencies:**
-```bash
-pip install -r requirements.txt
+```tsx
+function EditableCanvas() {
+  const { lockShape, unlockShape, sendShapeUpdate } = useCollaboration({
+    roomId: 'my-drawing',
+  });
+  const isShapeLocked = useCollaborationStore(state => state.isShapeLocked);
+
+  const handleShapeClick = async (shapeId) => {
+    if (isShapeLocked(shapeId)) {
+      alert('Shape is being edited by another user');
+      return;
+    }
+
+    try {
+      await lockShape(shapeId);
+      const updatedShape = editShape(shapeId);
+      sendShapeUpdate(shapeId, updatedShape);
+      unlockShape(shapeId);
+    } catch (error) {
+      console.error('Failed to lock shape:', error);
+    }
+  };
+
+  return <canvas onClick={handleShapeClick} />;
+}
 ```
 
-2. **Configure Environment Variables:**
+### Connection Status
+
+```tsx
+import { useCollaborationStore } from './store/collaborationStore';
+
+function ConnectionStatus() {
+  const connected = useCollaborationStore(state => state.connected);
+  const connecting = useCollaborationStore(state => state.connecting);
+  const error = useCollaborationStore(state => state.error);
+
+  if (error) return <div>Error: {error}</div>;
+  if (connecting) return <div>Connecting...</div>;
+  if (connected) return <div>Connected</div>;
+  return <div>Disconnected</div>;
+}
+```
+
+## Configuration
+
+### Backend Environment Variables
+
 ```bash
-# Redis configuration
+# Redis Configuration
 REDIS_HOST=localhost
 REDIS_PORT=6379
-REDIS_PASSWORD=  # Optional
+REDIS_PASSWORD=
 REDIS_DB=0
 
-# JWT configuration
-JWT_SECRET_KEY=your-secret-key
+# JWT Configuration
+JWT_SECRET_KEY=your-secret-key-change-this-in-production
 
-# CORS origins
+# CORS
 CORS_ORIGINS=http://localhost:3000,http://localhost:5173
 ```
 
-3. **Start Flask with SocketIO:**
-```python
-from app import create_app
+### Frontend Environment Variables
 
-app = create_app()
-socketio = app.socketio
-
-if __name__ == '__main__':
-    socketio.run(app, host='0.0.0.0', port=5000)
-```
-
-### Frontend Setup
-
-1. **Install Dependencies:**
 ```bash
-npm install
-```
-
-2. **Configure Environment Variables:**
-```bash
-# .env
+# API URL (WebSocket will connect to same host)
 VITE_API_URL=http://localhost:5000
-```
-
-3. **Use Collaboration in Your App:**
-```tsx
-import { CollaborativeCanvas } from './components/canvas/CollaborativeCanvas.example';
-
-function App() {
-  return <CollaborativeCanvas drawingId="drawing-123" />;
-}
 ```
 
 ## API Reference
@@ -298,153 +369,29 @@ function App() {
 
 #### Client → Server
 
-**connect**
-```typescript
-// Automatically sent by socket.io-client
-// Requires auth.token in connection options
-```
-
-**join_room**
-```typescript
-socket.emit('join_room', {
-  room_id: string
-});
-```
-
-**leave_room**
-```typescript
-socket.emit('leave_room', {
-  room_id: string
-});
-```
-
-**cursor_move**
-```typescript
-socket.emit('cursor_move', {
-  room_id: string,
-  x: number,
-  y: number
-});
-```
-
-**shape_lock**
-```typescript
-socket.emit('shape_lock', {
-  room_id: string,
-  shape_id: string
-});
-```
-
-**shape_unlock**
-```typescript
-socket.emit('shape_unlock', {
-  room_id: string,
-  shape_id: string
-});
-```
-
-**shape_update**
-```typescript
-socket.emit('shape_update', {
-  room_id: string,
-  shape_id: string,
-  shape_data: any
-});
-```
-
-**request_presence**
-```typescript
-socket.emit('request_presence', {
-  room_id: string
-});
-```
+| Event | Payload | Description |
+|-------|---------|-------------|
+| `join_room` | `{ room_id: string }` | Join a drawing room |
+| `leave_room` | `{ room_id: string }` | Leave a drawing room |
+| `cursor_move` | `{ room_id, x, y }` | Update cursor position |
+| `shape_lock` | `{ room_id, shape_id }` | Request shape lock |
+| `shape_unlock` | `{ room_id, shape_id }` | Release shape lock |
+| `shape_update` | `{ room_id, shape_id, shape_data }` | Broadcast shape changes |
+| `request_presence` | `{ room_id }` | Get current room users |
 
 #### Server → Client
 
-**connected**
-```typescript
-socket.on('connected', (data: {
-  session_id: string
-}) => {});
-```
-
-**room_joined**
-```typescript
-socket.on('room_joined', (data: {
-  room_id: string,
-  user_id: string,
-  color: string
-}) => {});
-```
-
-**presence_update**
-```typescript
-socket.on('presence_update', (data: {
-  users: Array<{
-    user_id: string,
-    username: string,
-    email: string,
-    color: string,
-    session_id: string,
-    cursor_x: number,
-    cursor_y: number,
-    last_seen: number
-  }>
-}) => {});
-```
-
-**cursor_moved**
-```typescript
-socket.on('cursor_moved', (data: {
-  user_id: string,
-  session_id: string,
-  x: number,
-  y: number
-}) => {});
-```
-
-**shape_locked**
-```typescript
-socket.on('shape_locked', (data: {
-  room_id: string,
-  shape_id: string,
-  user_id: string
-}) => {});
-```
-
-**shape_unlocked**
-```typescript
-socket.on('shape_unlocked', (data: {
-  room_id: string,
-  shape_id: string
-}) => {});
-```
-
-**shape_lock_failed**
-```typescript
-socket.on('shape_lock_failed', (data: {
-  room_id: string,
-  shape_id: string,
-  locked_by: string
-}) => {});
-```
-
-**shape_updated**
-```typescript
-socket.on('shape_updated', (data: {
-  room_id: string,
-  shape_id: string,
-  shape_data: any,
-  user_id: string
-}) => {});
-```
-
-**error**
-```typescript
-socket.on('error', (data: {
-  message: string
-}) => {});
-```
+| Event | Payload | Description |
+|-------|---------|-------------|
+| `connected` | `{ session_id }` | Connection confirmed |
+| `room_joined` | `{ room_id, user_id, color }` | Successfully joined room |
+| `presence_update` | `{ users: [...] }` | List of active collaborators |
+| `cursor_moved` | `{ user_id, session_id, x, y }` | Cursor position update |
+| `shape_locked` | `{ room_id, shape_id, user_id }` | Shape lock acquired |
+| `shape_unlocked` | `{ room_id, shape_id }` | Shape lock released |
+| `shape_lock_failed` | `{ room_id, shape_id, locked_by }` | Lock request denied |
+| `shape_updated` | `{ room_id, shape_id, shape_data, user_id }` | Remote shape change |
+| `error` | `{ message }` | Error notification |
 
 ## Security Considerations
 
@@ -463,11 +410,6 @@ socket.on('error', (data: {
 - Lock timeout: 5 minutes
 - Session timeout: 1 hour
 
-### Data Validation
-- All incoming data validated
-- Room IDs and shape IDs checked
-- User permissions verified
-
 ## Performance Optimization
 
 ### Cursor Tracking
@@ -480,86 +422,44 @@ socket.on('error', (data: {
 - Automatic lock expiration
 - Lock cleanup on disconnect
 
-### Presence Tracking
-- Efficient Redis hash storage
-- Automatic cleanup of stale sessions
-- Periodic presence updates
-
 ### Network Optimization
 - Binary protocol with Socket.IO
 - Message batching where possible
 - Reconnection with exponential backoff
 
+## Debugging
+
+### Enable Debug Logging
+
+**Backend:**
+```python
+socketio = SocketIO(app, logger=True, engineio_logger=True)
+```
+
+**Frontend:**
+```typescript
+localStorage.debug = '*';
+```
+
+### Monitor Redis
+
+```bash
+redis-cli
+MONITOR
+KEYS collab:*
+HGETALL collab:room:drawing-123
+```
+
 ## Troubleshooting
 
-### Connection Issues
-
-**Problem:** WebSocket fails to connect
-**Solution:**
-- Check CORS configuration
-- Verify JWT token is present
-- Ensure Redis is running
-- Check firewall rules
-
-**Problem:** Frequent disconnections
-**Solution:**
-- Increase ping timeout
-- Check network stability
-- Review server logs for errors
-
-### Cursor Issues
-
-**Problem:** Cursors are jumpy
-**Solution:**
-- Verify throttling is working (50ms)
-- Check interpolation logic
-- Review network latency
-
-**Problem:** Cursors not appearing
-**Solution:**
-- Verify presence updates
-- Check cursor position calculations
-- Review component rendering
-
-### Lock Issues
-
-**Problem:** Cannot lock shapes
-**Solution:**
-- Check lock timeout (5 minutes)
-- Verify user has lock permission
-- Check Redis connectivity
-
-**Problem:** Locks not released
-**Solution:**
-- Verify unlock is called
-- Check session cleanup on disconnect
-- Review lock expiration settings
-
-## Future Enhancements
-
-Potential improvements for the collaboration system:
-
-1. **Conflict Resolution**
-   - Operational transformation (OT) for concurrent edits
-   - CRDT-based collaborative editing
-   - Automatic merge strategies
-
-2. **Performance**
-   - WebRTC for peer-to-peer communication
-   - Message compression
-   - Selective sync for large diagrams
-
-3. **Features**
-   - Voice/video chat integration
-   - Collaborative annotations
-   - Version history with playback
-   - Commenting system
-
-4. **Scalability**
-   - Redis Cluster support
-   - Load balancing with sticky sessions
-   - Horizontal scaling with multiple servers
-   - Connection pooling optimization
+| Problem | Solution |
+|---------|----------|
+| Cannot connect to WebSocket | Check CORS config, verify JWT token, ensure Redis is running |
+| Frequent disconnections | Increase ping timeout, check network stability |
+| Cursors are jumpy | Verify throttling (50ms), check interpolation logic |
+| Cursors not appearing | Verify presence updates, check cursor position calculations |
+| Cannot lock shapes | Check lock timeout (5 min), verify Redis connectivity |
+| Locks not released | Verify unlock is called, check session cleanup on disconnect |
 
 ## License
 

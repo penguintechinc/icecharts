@@ -9,7 +9,9 @@ class UpdateUserRequest(BaseModel):
     """Schema for updating user profile."""
 
     email: Optional[EmailStr] = Field(None, description="User email address")
-    full_name: Optional[str] = Field(None, max_length=255, description="User's full name")
+    full_name: Optional[str] = Field(
+        None, max_length=255, description="User's full name"
+    )
     role: Optional[str] = Field(
         None, description="User role: 'viewer', 'editor', 'admin', or 'global_admin'"
     )
@@ -97,7 +99,9 @@ class CreateUserRequest(BaseModel):
         max_length=128,
         description="Password (8-128 characters with complexity requirements)",
     )
-    full_name: Optional[str] = Field(None, max_length=255, description="User's full name")
+    full_name: Optional[str] = Field(
+        None, max_length=255, description="User's full name"
+    )
     role: Optional[str] = Field(
         default="viewer",
         description="User role: 'viewer', 'editor', 'admin', or 'global_admin'",

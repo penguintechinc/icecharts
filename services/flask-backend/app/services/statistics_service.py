@@ -42,8 +42,8 @@ class StatisticsService:
         # User statistics
         total_users = db(db.identities.id > 0).count()
         active_users = db(
-            (db.identities.last_login_at != None) &
-            (db.identities.last_login_at > start_time)
+            (db.identities.last_login_at != None)
+            & (db.identities.last_login_at > start_time)
         ).count()
         new_users = db(db.identities.created_at > start_time).count()
         verified_users = db(db.identities.email_verified == True).count()
@@ -65,8 +65,12 @@ class StatisticsService:
 
         # Collaboration statistics
         active_collaborations = db(
-            (db.collaboration_sessions.is_active == True) &
-            (db.collaboration_sessions.joined_at > datetime.datetime.now(datetime.timezone.utc) - datetime.timedelta(minutes=5))
+            (db.collaboration_sessions.is_active == True)
+            & (
+                db.collaboration_sessions.joined_at
+                > datetime.datetime.now(datetime.timezone.utc)
+                - datetime.timedelta(minutes=5)
+            )
         ).count()
         total_collaboration_sessions = db(
             db.collaboration_sessions.joined_at > start_time
@@ -77,9 +81,9 @@ class StatisticsService:
             db.email_verifications.created_at > start_time
         ).count()
         email_verifications_completed = db(
-            (db.email_verifications.is_verified == True) &
-            (db.email_verifications.verified_at != None) &
-            (db.email_verifications.verified_at > start_time)
+            (db.email_verifications.is_verified == True)
+            & (db.email_verifications.verified_at != None)
+            & (db.email_verifications.verified_at > start_time)
         ).count()
 
         # Calculate email verification rate (handle division by zero)
@@ -91,9 +95,7 @@ class StatisticsService:
             email_verification_rate = 0.0
 
         # Share analytics
-        share_views = db(
-            db.share_analytics.accessed_at > start_time
-        ).count()
+        share_views = db(db.share_analytics.accessed_at > start_time).count()
         share_views_by_type = StatisticsService.get_share_views_by_type(start_time)
 
         # System health
@@ -105,38 +107,30 @@ class StatisticsService:
             "active_users": active_users,
             "new_users": new_users,
             "verified_users": verified_users,
-
             # Drawing statistics
             "total_drawings": total_drawings,
             "drawings_created": drawings_created,
             "public_drawings": public_drawings,
             "template_drawings": template_drawings,
-
             # Collection statistics
             "total_collections": total_collections,
             "collections_created": collections_created,
-
             # Share statistics
             "total_drawing_shares": total_drawing_shares,
             "shares_by_type": shares_by_type,
             "shares_by_permission": shares_by_permission,
-
             # Collaboration statistics
             "active_collaborations": active_collaborations,
             "total_collaboration_sessions": total_collaboration_sessions,
-
             # Authentication statistics
             "email_verifications_sent": email_verifications_sent,
             "email_verifications_completed": email_verifications_completed,
             "email_verification_rate": round(email_verification_rate, 2),
-
             # Share analytics
             "share_views": share_views,
             "share_views_by_type": share_views_by_type,
-
             # System health
             "database_size_mb": database_size_mb,
-
             # Metadata
             "time_range": time_range,
             "start_time": start_time.isoformat(),
@@ -147,9 +141,7 @@ class StatisticsService:
 
     @staticmethod
     def get_time_series_data(
-        metric: str,
-        time_range: str = "7d",
-        interval: str = "1h"
+        metric: str, time_range: str = "7d", interval: str = "1h"
     ) -> list[dict[str, Any]]:
         """
         Get time series data for a specific metric.
@@ -204,15 +196,9 @@ class StatisticsService:
             next_time = current_time + interval_delta
 
             # Count items created in this time bucket
-            count = db(
-                (date_field >= current_time) &
-                (date_field < next_time)
-            ).count()
+            count = db((date_field >= current_time) & (date_field < next_time)).count()
 
-            data_points.append({
-                "timestamp": current_time.isoformat(),
-                "value": count
-            })
+            data_points.append({"timestamp": current_time.isoformat(), "value": count})
 
             current_time = next_time
 
@@ -258,14 +244,14 @@ class StatisticsService:
         result = db(db.drawing_shares.id > 0).select(
             db.drawing_shares.permission,
             db.drawing_shares.id.count(),
-            groupby=db.drawing_shares.permission
+            groupby=db.drawing_shares.permission,
         )
 
         # Convert to dictionary (handle empty database)
         shares_by_permission = {}
         for row in result:
             permission = row.drawing_shares.permission
-            count = row._extra[f'COUNT(drawing_shares.id)']
+            count = row._extra[f"COUNT(drawing_shares.id)"]
             shares_by_permission[permission] = count
 
         # Ensure all permission levels are represented (even if 0)
@@ -292,14 +278,14 @@ class StatisticsService:
         result = db(db.share_analytics.accessed_at > start_time).select(
             db.share_analytics.share_type,
             db.share_analytics.id.count(),
-            groupby=db.share_analytics.share_type
+            groupby=db.share_analytics.share_type,
         )
 
         # Convert to dictionary (handle empty database)
         views_by_type = {}
         for row in result:
             share_type = row.share_analytics.share_type
-            count = row._extra[f'COUNT(share_analytics.id)']
+            count = row._extra[f"COUNT(share_analytics.id)"]
             views_by_type[share_type] = count
 
         # Ensure both types are represented (even if 0)
@@ -329,7 +315,7 @@ class StatisticsService:
             "p99_response_time_ms": 0.0,
             "requests_per_second": 0.0,
             "error_rate_percent": 0.0,
-            "note": "Latency metrics require Prometheus integration. Query /metrics endpoint for raw data."
+            "note": "Latency metrics require Prometheus integration. Query /metrics endpoint for raw data.",
         }
 
     @staticmethod
@@ -353,9 +339,12 @@ class StatisticsService:
             db.identities.full_name,
             db.drawings.id.count(),
             left=db.identities.on(db.identities.id == db.drawings.created_by_id),
-            groupby=db.identities.id | db.identities.username | db.identities.email | db.identities.full_name,
+            groupby=db.identities.id
+            | db.identities.username
+            | db.identities.email
+            | db.identities.full_name,
             orderby=~db.drawings.id.count(),
-            limitby=(0, limit)
+            limitby=(0, limit),
         )
 
         # Convert to list of dicts
@@ -365,13 +354,15 @@ class StatisticsService:
             if not row.identities.id:
                 continue
 
-            users.append({
-                "user_id": row.identities.id,
-                "username": row.identities.username,
-                "email": row.identities.email,
-                "full_name": row.identities.full_name or "",
-                "drawing_count": row._extra[f'COUNT(drawings.id)']
-            })
+            users.append(
+                {
+                    "user_id": row.identities.id,
+                    "username": row.identities.username,
+                    "email": row.identities.email,
+                    "full_name": row.identities.full_name or "",
+                    "drawing_count": row._extra[f"COUNT(drawings.id)"],
+                }
+            )
 
         return users
 
@@ -397,7 +388,7 @@ class StatisticsService:
             left=db.drawings.on(db.drawings.id == db.drawing_shares.drawing_id),
             groupby=db.drawings.id | db.drawings.title | db.drawings.created_by_id,
             orderby=~db.drawing_shares.id.count(),
-            limitby=(0, limit)
+            limitby=(0, limit),
         )
 
         # Convert to list of dicts
@@ -407,12 +398,14 @@ class StatisticsService:
             if not row.drawings.id:
                 continue
 
-            drawings.append({
-                "drawing_id": row.drawings.id,
-                "title": row.drawings.title or "Untitled",
-                "owner_id": row.drawings.created_by_id,
-                "share_count": row._extra[f'COUNT(drawing_shares.id)']
-            })
+            drawings.append(
+                {
+                    "drawing_id": row.drawings.id,
+                    "title": row.drawings.title or "Untitled",
+                    "owner_id": row.drawings.created_by_id,
+                    "share_count": row._extra[f"COUNT(drawing_shares.id)"],
+                }
+            )
 
         return drawings
 
@@ -485,7 +478,9 @@ class StatisticsService:
         return mapping.get(interval, datetime.timedelta(hours=1))
 
     @staticmethod
-    def get_logins_by_country(time_range: str = "7d", limit: int = 20) -> list[dict[str, Any]]:
+    def get_logins_by_country(
+        time_range: str = "7d", limit: int = 20
+    ) -> list[dict[str, Any]]:
         """
         Get login counts grouped by country.
 
@@ -503,25 +498,27 @@ class StatisticsService:
 
         # Query login events grouped by country
         result = db(
-            (db.login_events.created_at > start_time) &
-            (db.login_events.country_code != None) &
-            (db.login_events.success == True)
+            (db.login_events.created_at > start_time)
+            & (db.login_events.country_code != None)
+            & (db.login_events.success == True)
         ).select(
             db.login_events.country_code,
             db.login_events.country_name,
             db.login_events.id.count(),
             groupby=db.login_events.country_code | db.login_events.country_name,
             orderby=~db.login_events.id.count(),
-            limitby=(0, limit)
+            limitby=(0, limit),
         )
 
         # Convert to list of dicts
         countries = []
         for row in result:
-            countries.append({
-                "country_code": row.login_events.country_code,
-                "country_name": row.login_events.country_name or "Unknown",
-                "login_count": row._extra.get('COUNT(login_events.id)', 0)
-            })
+            countries.append(
+                {
+                    "country_code": row.login_events.country_code,
+                    "country_name": row.login_events.country_name or "Unknown",
+                    "login_count": row._extra.get("COUNT(login_events.id)", 0),
+                }
+            )
 
         return countries

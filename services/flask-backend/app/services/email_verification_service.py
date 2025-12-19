@@ -37,15 +37,21 @@ class EmailVerificationService:
             token = secrets.token_urlsafe(32)
 
             # Calculate expiration time
-            expires_at = datetime.datetime.now(datetime.timezone.utc) + datetime.timedelta(
+            expires_at = datetime.datetime.now(
+                datetime.timezone.utc
+            ) + datetime.timedelta(
                 hours=EmailVerificationService.TOKEN_EXPIRATION_HOURS
             )
 
             # Check if there's an existing unverified verification for this user
-            existing = db(
-                (db.email_verifications.user_id == user_id)
-                & (db.email_verifications.is_verified == False)
-            ).select().first()
+            existing = (
+                db(
+                    (db.email_verifications.user_id == user_id)
+                    & (db.email_verifications.is_verified == False)
+                )
+                .select()
+                .first()
+            )
 
             if existing:
                 # Update existing verification
@@ -71,13 +77,17 @@ class EmailVerificationService:
             email_sent = EmailService.send_verification_email(email, token, user_name)
 
             if not email_sent:
-                logger.warning(f"Verification created but email failed to send for user {user_id}")
+                logger.warning(
+                    f"Verification created but email failed to send for user {user_id}"
+                )
 
             logger.info(f"Email verification created for user {user_id}")
             return token
 
         except Exception as e:
-            logger.error(f"Failed to create email verification for user {user_id}: {str(e)}")
+            logger.error(
+                f"Failed to create email verification for user {user_id}: {str(e)}"
+            )
             db.rollback()
             return None
 
@@ -96,19 +106,27 @@ class EmailVerificationService:
             db = get_db()
 
             # Find verification record
-            verification = db(
-                (db.email_verifications.verification_token == token)
-                & (db.email_verifications.is_verified == False)
-            ).select().first()
+            verification = (
+                db(
+                    (db.email_verifications.verification_token == token)
+                    & (db.email_verifications.is_verified == False)
+                )
+                .select()
+                .first()
+            )
 
             if not verification:
-                logger.warning(f"Verification token not found or already used: {token[:8]}...")
+                logger.warning(
+                    f"Verification token not found or already used: {token[:8]}..."
+                )
                 return None
 
             # Check if token has expired
             now = datetime.datetime.now(datetime.timezone.utc)
             if verification.expires_at < now:
-                logger.warning(f"Verification token expired for user {verification.user_id}")
+                logger.warning(
+                    f"Verification token expired for user {verification.user_id}"
+                )
                 return None
 
             # Mark verification as complete
@@ -211,10 +229,14 @@ class EmailVerificationService:
                 }
 
             # Check for pending verification
-            verification = db(
-                (db.email_verifications.user_id == user_id)
-                & (db.email_verifications.is_verified == False)
-            ).select(orderby=~db.email_verifications.created_at).first()
+            verification = (
+                db(
+                    (db.email_verifications.user_id == user_id)
+                    & (db.email_verifications.is_verified == False)
+                )
+                .select(orderby=~db.email_verifications.created_at)
+                .first()
+            )
 
             if verification:
                 now = datetime.datetime.now(datetime.timezone.utc)
@@ -230,7 +252,9 @@ class EmailVerificationService:
             return {"verified": False, "pending": False, "expires_at": None}
 
         except Exception as e:
-            logger.error(f"Failed to get verification status for user {user_id}: {str(e)}")
+            logger.error(
+                f"Failed to get verification status for user {user_id}: {str(e)}"
+            )
             return {"verified": False, "pending": False, "expires_at": None}
 
     @staticmethod

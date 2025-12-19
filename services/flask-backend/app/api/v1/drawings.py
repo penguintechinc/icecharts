@@ -14,7 +14,12 @@ from ...models import get_db
 from ...schemas.drawing_schemas import CreateDrawingRequest, UpdateDrawingRequest
 from ...services.drawing_storage_service import DrawingStorageService
 from ...services.export_service import ExportOptions, ExportService
-from ...tasks.export_tasks import export_drawing_task, get_export_status, get_export_result, get_export_metadata
+from ...tasks.export_tasks import (
+    export_drawing_task,
+    get_export_metadata,
+    get_export_result,
+    get_export_status,
+)
 from ...utils.validation import validate_json
 
 drawings_v1_bp = Blueprint("drawings_v1", __name__, url_prefix="/drawings")
@@ -58,19 +63,24 @@ def list_drawings():
 
         # Query drawings owned by or created by the user
         drawings = db(
-            (db.drawings.created_by_id == user_id) |
-            (db.drawings.owner_id == user_id) |
-            (db.drawings.user_id == user_id)
+            (db.drawings.created_by_id == user_id)
+            | (db.drawings.owner_id == user_id)
+            | (db.drawings.user_id == user_id)
         ).select(orderby=~db.drawings.updated_at)
 
         result = [serialize_drawing(d) for d in drawings]
 
-        return jsonify({
-            "success": True,
-            "count": len(result),
-            "items": result,
-            "drawings": result,
-        }), 200
+        return (
+            jsonify(
+                {
+                    "success": True,
+                    "count": len(result),
+                    "items": result,
+                    "drawings": result,
+                }
+            ),
+            200,
+        )
 
     except Exception as e:
         current_app.logger.error(f"Error listing drawings: {e}")
@@ -101,24 +111,30 @@ def get_drawing(drawing_id: str):
 
         # Check access (owner, creator, or public)
         has_access = (
-            drawing.created_by_id == user_id or
-            drawing.owner_id == user_id or
-            drawing.user_id == user_id or
-            drawing.is_public
+            drawing.created_by_id == user_id
+            or drawing.owner_id == user_id
+            or drawing.user_id == user_id
+            or drawing.is_public
         )
         if not has_access:
             return jsonify({"error": "Access denied"}), 403
 
         # Get latest version with content
-        version = db(db.drawing_versions.drawing_id == drawing.id).select(
-            orderby=~db.drawing_versions.version_number,
-            limitby=(0, 1)
-        ).first()
+        version = (
+            db(db.drawing_versions.drawing_id == drawing.id)
+            .select(orderby=~db.drawing_versions.version_number, limitby=(0, 1))
+            .first()
+        )
 
-        return jsonify({
-            "success": True,
-            "drawing": serialize_drawing(drawing, version),
-        }), 200
+        return (
+            jsonify(
+                {
+                    "success": True,
+                    "drawing": serialize_drawing(drawing, version),
+                }
+            ),
+            200,
+        )
 
     except Exception as e:
         current_app.logger.error(f"Error getting drawing {drawing_id}: {e}")
@@ -192,16 +208,23 @@ def create_drawing(validated_data: CreateDrawingRequest):
                 user_id=user_id,
             )
         except Exception as storage_err:
-            current_app.logger.warning(f"Failed to save to object storage: {storage_err}")
+            current_app.logger.warning(
+                f"Failed to save to object storage: {storage_err}"
+            )
             # Continue even if storage fails - content is in DB
 
         # Fetch the created drawing
         drawing = db.drawings(drawing_id)
 
-        return jsonify({
-            "success": True,
-            "drawing": serialize_drawing(drawing),
-        }), 201
+        return (
+            jsonify(
+                {
+                    "success": True,
+                    "drawing": serialize_drawing(drawing),
+                }
+            ),
+            201,
+        )
 
     except Exception as e:
         current_app.logger.error(f"Error creating drawing: {e}")
@@ -243,9 +266,9 @@ def update_drawing(drawing_id: str, validated_data: UpdateDrawingRequest):
 
         # Check ownership
         is_owner = (
-            drawing.created_by_id == user_id or
-            drawing.owner_id == user_id or
-            drawing.user_id == user_id
+            drawing.created_by_id == user_id
+            or drawing.owner_id == user_id
+            or drawing.user_id == user_id
         )
         if not is_owner:
             return jsonify({"error": "Access denied"}), 403
@@ -271,9 +294,12 @@ def update_drawing(drawing_id: str, validated_data: UpdateDrawingRequest):
         # If content is provided, create new version
         if validated_data.content is not None:
             # Get current max version
-            max_version = db(db.drawing_versions.drawing_id == drawing_id).select(
-                db.drawing_versions.version_number.max()
-            ).first()[db.drawing_versions.version_number.max()] or 0
+            max_version = (
+                db(db.drawing_versions.drawing_id == drawing_id)
+                .select(db.drawing_versions.version_number.max())
+                .first()[db.drawing_versions.version_number.max()]
+                or 0
+            )
 
             new_version = max_version + 1
             db.drawing_versions.insert(
@@ -294,20 +320,28 @@ def update_drawing(drawing_id: str, validated_data: UpdateDrawingRequest):
                     user_id=user_id,
                 )
             except Exception as storage_err:
-                current_app.logger.warning(f"Failed to save to object storage: {storage_err}")
+                current_app.logger.warning(
+                    f"Failed to save to object storage: {storage_err}"
+                )
                 # Continue even if storage fails - content is in DB
 
         # Fetch updated drawing with latest version
         drawing = db.drawings(drawing_id)
-        version = db(db.drawing_versions.drawing_id == drawing_id).select(
-            orderby=~db.drawing_versions.version_number,
-            limitby=(0, 1)
-        ).first()
+        version = (
+            db(db.drawing_versions.drawing_id == drawing_id)
+            .select(orderby=~db.drawing_versions.version_number, limitby=(0, 1))
+            .first()
+        )
 
-        return jsonify({
-            "success": True,
-            "drawing": serialize_drawing(drawing, version),
-        }), 200
+        return (
+            jsonify(
+                {
+                    "success": True,
+                    "drawing": serialize_drawing(drawing, version),
+                }
+            ),
+            200,
+        )
 
     except Exception as e:
         current_app.logger.error(f"Error updating drawing {drawing_id}: {e}")
@@ -338,9 +372,9 @@ def delete_drawing(drawing_id: str):
 
         # Check ownership
         is_owner = (
-            drawing.created_by_id == user_id or
-            drawing.owner_id == user_id or
-            drawing.user_id == user_id
+            drawing.created_by_id == user_id
+            or drawing.owner_id == user_id
+            or drawing.user_id == user_id
         )
         if not is_owner:
             return jsonify({"error": "Access denied"}), 403
@@ -349,17 +383,24 @@ def delete_drawing(drawing_id: str):
         try:
             DrawingStorageService.delete_content(int(drawing_id))
         except Exception as storage_err:
-            current_app.logger.warning(f"Failed to delete from object storage: {storage_err}")
+            current_app.logger.warning(
+                f"Failed to delete from object storage: {storage_err}"
+            )
             # Continue with DB deletion even if storage fails
 
         # Delete drawing (cascade will handle versions, shapes, etc.)
         db(db.drawings.id == drawing_id).delete()
         db.commit()
 
-        return jsonify({
-            "success": True,
-            "message": "Drawing deleted successfully",
-        }), 200
+        return (
+            jsonify(
+                {
+                    "success": True,
+                    "message": "Drawing deleted successfully",
+                }
+            ),
+            200,
+        )
 
     except Exception as e:
         current_app.logger.error(f"Error deleting drawing {drawing_id}: {e}")
@@ -401,18 +442,19 @@ def export_drawing(drawing_id: str):
 
         # Check access
         has_access = (
-            drawing.created_by_id == user_id or
-            drawing.owner_id == user_id or
-            drawing.user_id == user_id
+            drawing.created_by_id == user_id
+            or drawing.owner_id == user_id
+            or drawing.user_id == user_id
         )
         if not has_access:
             return jsonify({"error": "Access denied"}), 403
 
         # Get latest version with content
-        version = db(db.drawing_versions.drawing_id == drawing.id).select(
-            orderby=~db.drawing_versions.version_number,
-            limitby=(0, 1)
-        ).first()
+        version = (
+            db(db.drawing_versions.drawing_id == drawing.id)
+            .select(orderby=~db.drawing_versions.version_number, limitby=(0, 1))
+            .first()
+        )
 
         if not version:
             return jsonify({"error": "No drawing content found"}), 404
@@ -429,9 +471,14 @@ def export_drawing(drawing_id: str):
 
         # Validate format
         if export_format not in ExportService.VALID_FORMATS:
-            return jsonify({
-                "error": f"Invalid format. Must be one of: {ExportService.VALID_FORMATS}"
-            }), 400
+            return (
+                jsonify(
+                    {
+                        "error": f"Invalid format. Must be one of: {ExportService.VALID_FORMATS}"
+                    }
+                ),
+                400,
+            )
 
         # Validate dimensions
         if width <= 0 or height <= 0:
@@ -440,7 +487,12 @@ def export_drawing(drawing_id: str):
             return jsonify({"error": "Quality must be between 1 and 100"}), 400
 
         # Determine if should use background job
-        use_background_job = force_async or width > 2000 or height > 2000 or export_format in ["png", "jpg"]
+        use_background_job = (
+            force_async
+            or width > 2000
+            or height > 2000
+            or export_format in ["png", "jpg"]
+        )
 
         if use_background_job:
             # Queue background job
@@ -465,11 +517,16 @@ def export_drawing(drawing_id: str):
                 f"Queued background export job {task.id} for drawing {drawing_id}"
             )
 
-            return jsonify({
-                "job_id": task.id,
-                "status": "processing",
-                "message": "Export job queued for processing"
-            }), 202
+            return (
+                jsonify(
+                    {
+                        "job_id": task.id,
+                        "status": "processing",
+                        "message": "Export job queued for processing",
+                    }
+                ),
+                202,
+            )
 
         else:
             # Synchronous export for small files
@@ -504,7 +561,11 @@ def export_drawing(drawing_id: str):
                 filename = f"{drawing.title or drawing_id}.json"
 
             return send_file(
-                io.BytesIO(exported_content) if isinstance(exported_content, bytes) else io.BytesIO(exported_content.encode("utf-8")),
+                (
+                    io.BytesIO(exported_content)
+                    if isinstance(exported_content, bytes)
+                    else io.BytesIO(exported_content.encode("utf-8"))
+                ),
                 mimetype=mimetype,
                 as_attachment=True,
                 download_name=filename,
@@ -538,7 +599,9 @@ def export_drawing_png(drawing_id: str):
         width = request.args.get("width", 800, type=int)
         height = request.args.get("height", 600, type=int)
         quality = request.args.get("quality", 95, type=int)
-        include_background = request.args.get("include_background", "true").lower() == "true"
+        include_background = (
+            request.args.get("include_background", "true").lower() == "true"
+        )
 
         # Validate dimensions
         if width <= 0 or height <= 0:
@@ -631,7 +694,9 @@ def export_drawing_pdf(drawing_id: str):
 
         # Get query parameters
         page_size = request.args.get("page_size", "A4")
-        include_background = request.args.get("include_background", "true").lower() == "true"
+        include_background = (
+            request.args.get("include_background", "true").lower() == "true"
+        )
 
         # TODO: Load drawing from database, verify user access
         # Placeholder drawing data
@@ -718,13 +783,18 @@ def get_export_job_status(job_id: str):
         if not status:
             return jsonify({"error": "Job not found or expired"}), 404
 
-        return jsonify({
-            "success": True,
-            "job_id": job_id,
-            "status": status.get("status", "unknown"),
-            "progress": status.get("progress", 0),
-            "error": status.get("error"),
-        }), 200
+        return (
+            jsonify(
+                {
+                    "success": True,
+                    "job_id": job_id,
+                    "status": status.get("status", "unknown"),
+                    "progress": status.get("progress", 0),
+                    "error": status.get("error"),
+                }
+            ),
+            200,
+        )
 
     except Exception as e:
         current_app.logger.error(f"Error getting export status {job_id}: {e}")

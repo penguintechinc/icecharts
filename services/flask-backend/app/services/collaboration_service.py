@@ -20,10 +20,7 @@ class CollaborationService:
 
     @staticmethod
     def join_drawing_session(
-        drawing_id: int,
-        user_id: int,
-        session_id: str,
-        socket_id: Optional[str] = None
+        drawing_id: int, user_id: int, session_id: str, socket_id: Optional[str] = None
     ) -> Dict:
         """
         Join a drawing collaboration session.
@@ -54,11 +51,15 @@ class CollaborationService:
         )
 
         # Check if session already exists
-        existing = db(
-            (db.collaboration_sessions.drawing_id == drawing_id) &
-            (db.collaboration_sessions.identity_id == user_id) &
-            (db.collaboration_sessions.session_id == session_id)
-        ).select().first()
+        existing = (
+            db(
+                (db.collaboration_sessions.drawing_id == drawing_id)
+                & (db.collaboration_sessions.identity_id == user_id)
+                & (db.collaboration_sessions.session_id == session_id)
+            )
+            .select()
+            .first()
+        )
 
         if existing:
             # Update existing session
@@ -66,7 +67,7 @@ class CollaborationService:
                 socket_id=socket_id,
                 is_active=True,
                 permission=permission_level or "viewer",
-                joined_at=datetime.datetime.now(datetime.timezone.utc)
+                joined_at=datetime.datetime.now(datetime.timezone.utc),
             )
             db.commit()
             session = db(db.collaboration_sessions.id == existing.id).select().first()
@@ -81,10 +82,12 @@ class CollaborationService:
                 is_active=True,
                 last_cursor_x=0.0,
                 last_cursor_y=0.0,
-                joined_at=datetime.datetime.now(datetime.timezone.utc)
+                joined_at=datetime.datetime.now(datetime.timezone.utc),
             )
             db.commit()
-            session = db(db.collaboration_sessions.id == session_record_id).select().first()
+            session = (
+                db(db.collaboration_sessions.id == session_record_id).select().first()
+            )
 
         # Get all active collaborators
         collaborators = CollaborationService.get_active_collaborators(drawing_id)
@@ -99,24 +102,22 @@ class CollaborationService:
                 "user_id": user_id,
                 "session_id": session_id,
                 "permission": session.permission,
-                "joined_at": session.joined_at.isoformat() if session.joined_at else None
+                "joined_at": (
+                    session.joined_at.isoformat() if session.joined_at else None
+                ),
             },
             "user": {
                 "id": user.id,
                 "username": user.username,
                 "email": user.email,
-                "full_name": user.full_name
+                "full_name": user.full_name,
             },
             "collaborators": collaborators,
-            "can_edit": PermissionService.can_edit_drawing(user_id, drawing_id)
+            "can_edit": PermissionService.can_edit_drawing(user_id, drawing_id),
         }
 
     @staticmethod
-    def leave_drawing_session(
-        drawing_id: int,
-        user_id: int,
-        session_id: str
-    ) -> bool:
+    def leave_drawing_session(drawing_id: int, user_id: int, session_id: str) -> bool:
         """
         Leave a drawing collaboration session.
 
@@ -132,24 +133,17 @@ class CollaborationService:
 
         # Update session to inactive
         updated = db(
-            (db.collaboration_sessions.drawing_id == drawing_id) &
-            (db.collaboration_sessions.identity_id == user_id) &
-            (db.collaboration_sessions.session_id == session_id)
-        ).update(
-            is_active=False,
-            left_at=datetime.datetime.now(datetime.timezone.utc)
-        )
+            (db.collaboration_sessions.drawing_id == drawing_id)
+            & (db.collaboration_sessions.identity_id == user_id)
+            & (db.collaboration_sessions.session_id == session_id)
+        ).update(is_active=False, left_at=datetime.datetime.now(datetime.timezone.utc))
         db.commit()
 
         return updated > 0
 
     @staticmethod
     def update_cursor_position(
-        drawing_id: int,
-        user_id: int,
-        session_id: str,
-        cursor_x: float,
-        cursor_y: float
+        drawing_id: int, user_id: int, session_id: str, cursor_x: float, cursor_y: float
     ) -> bool:
         """
         Update cursor position for a collaboration session.
@@ -168,14 +162,14 @@ class CollaborationService:
 
         # Update cursor position and last active timestamp
         updated = db(
-            (db.collaboration_sessions.drawing_id == drawing_id) &
-            (db.collaboration_sessions.identity_id == user_id) &
-            (db.collaboration_sessions.session_id == session_id) &
-            (db.collaboration_sessions.is_active == True)
+            (db.collaboration_sessions.drawing_id == drawing_id)
+            & (db.collaboration_sessions.identity_id == user_id)
+            & (db.collaboration_sessions.session_id == session_id)
+            & (db.collaboration_sessions.is_active == True)
         ).update(
             last_cursor_x=cursor_x,
             last_cursor_y=cursor_y,
-            cursor_position_json={"x": cursor_x, "y": cursor_y}
+            cursor_position_json={"x": cursor_x, "y": cursor_y},
         )
         db.commit()
 
@@ -183,10 +177,7 @@ class CollaborationService:
 
     @staticmethod
     def trigger_attention_click(
-        drawing_id: int,
-        user_id: int,
-        click_x: float,
-        click_y: float
+        drawing_id: int, user_id: int, click_x: float, click_y: float
     ) -> Dict:
         """
         Trigger an attention click event to broadcast to other collaborators.
@@ -213,13 +204,10 @@ class CollaborationService:
             "user": {
                 "id": user.id,
                 "username": user.username,
-                "full_name": user.full_name
+                "full_name": user.full_name,
             },
-            "click_position": {
-                "x": click_x,
-                "y": click_y
-            },
-            "timestamp": datetime.datetime.now(datetime.timezone.utc).isoformat()
+            "click_position": {"x": click_x, "y": click_y},
+            "timestamp": datetime.datetime.now(datetime.timezone.utc).isoformat(),
         }
 
     @staticmethod
@@ -250,15 +238,16 @@ class CollaborationService:
         db = get_db()
 
         # Get active sessions (active in last 5 minutes)
-        cutoff_time = datetime.datetime.now(datetime.timezone.utc) - datetime.timedelta(minutes=5)
+        cutoff_time = datetime.datetime.now(datetime.timezone.utc) - datetime.timedelta(
+            minutes=5
+        )
 
         sessions = db(
-            (db.collaboration_sessions.drawing_id == drawing_id) &
-            (db.collaboration_sessions.is_active == True) &
-            (db.collaboration_sessions.joined_at > cutoff_time)
+            (db.collaboration_sessions.drawing_id == drawing_id)
+            & (db.collaboration_sessions.is_active == True)
+            & (db.collaboration_sessions.joined_at > cutoff_time)
         ).select(
-            db.collaboration_sessions.ALL,
-            orderby=db.collaboration_sessions.joined_at
+            db.collaboration_sessions.ALL, orderby=db.collaboration_sessions.joined_at
         )
 
         collaborators = []
@@ -267,21 +256,25 @@ class CollaborationService:
             user = db(db.identities.id == session.identity_id).select().first()
 
             if user:
-                collaborators.append({
-                    "session_id": session.session_id,
-                    "user": {
-                        "id": user.id,
-                        "username": user.username,
-                        "email": user.email,
-                        "full_name": user.full_name
-                    },
-                    "permission": session.permission,
-                    "cursor_position": {
-                        "x": session.last_cursor_x or 0.0,
-                        "y": session.last_cursor_y or 0.0
-                    },
-                    "joined_at": session.joined_at.isoformat() if session.joined_at else None
-                })
+                collaborators.append(
+                    {
+                        "session_id": session.session_id,
+                        "user": {
+                            "id": user.id,
+                            "username": user.username,
+                            "email": user.email,
+                            "full_name": user.full_name,
+                        },
+                        "permission": session.permission,
+                        "cursor_position": {
+                            "x": session.last_cursor_x or 0.0,
+                            "y": session.last_cursor_y or 0.0,
+                        },
+                        "joined_at": (
+                            session.joined_at.isoformat() if session.joined_at else None
+                        ),
+                    }
+                )
 
         return collaborators
 
@@ -299,19 +292,19 @@ class CollaborationService:
         db = get_db()
 
         # Mark sessions as inactive if no activity in last 10 minutes
-        cutoff_time = datetime.datetime.now(datetime.timezone.utc) - datetime.timedelta(minutes=10)
+        cutoff_time = datetime.datetime.now(datetime.timezone.utc) - datetime.timedelta(
+            minutes=10
+        )
 
-        query = (
-            (db.collaboration_sessions.is_active == True) &
-            (db.collaboration_sessions.joined_at < cutoff_time)
+        query = (db.collaboration_sessions.is_active == True) & (
+            db.collaboration_sessions.joined_at < cutoff_time
         )
 
         if drawing_id:
-            query &= (db.collaboration_sessions.drawing_id == drawing_id)
+            query &= db.collaboration_sessions.drawing_id == drawing_id
 
         updated = db(query).update(
-            is_active=False,
-            left_at=datetime.datetime.now(datetime.timezone.utc)
+            is_active=False, left_at=datetime.datetime.now(datetime.timezone.utc)
         )
         db.commit()
 
@@ -330,10 +323,14 @@ class CollaborationService:
         """
         db = get_db()
 
-        session = db(
-            (db.collaboration_sessions.socket_id == socket_id) &
-            (db.collaboration_sessions.is_active == True)
-        ).select().first()
+        session = (
+            db(
+                (db.collaboration_sessions.socket_id == socket_id)
+                & (db.collaboration_sessions.is_active == True)
+            )
+            .select()
+            .first()
+        )
 
         if not session:
             return None
@@ -348,10 +345,14 @@ class CollaborationService:
             "session_id": session.session_id,
             "socket_id": session.socket_id,
             "permission": session.permission,
-            "user": {
-                "id": user.id,
-                "username": user.username,
-                "email": user.email,
-                "full_name": user.full_name
-            } if user else None
+            "user": (
+                {
+                    "id": user.id,
+                    "username": user.username,
+                    "email": user.email,
+                    "full_name": user.full_name,
+                }
+                if user
+                else None
+            ),
         }

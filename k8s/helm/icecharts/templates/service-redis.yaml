@@ -1,0 +1,26 @@
+{{- /*
+Redis ClusterIP Service
+- Exposes Redis StatefulSet internally
+- Used by API for caching and session storage
+- Single port: 6379
+*/ -}}
+{{- if .Values.redis.enabled }}
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "icecharts.redis.fullname" . }}-service
+  namespace: {{ include "icecharts.namespace" . }}
+  labels:
+    {{- include "icecharts.redis.labels" . | nindent 4 }}
+  annotations:
+    description: "Redis Cache Service"
+spec:
+  type: ClusterIP
+  ports:
+    - port: {{ .Values.redis.service.port }}
+      targetPort: {{ .Values.redis.service.port }}
+      protocol: TCP
+      name: redis
+  selector:
+    {{- include "icecharts.redis.selectorLabels" . | nindent 4 }}
+{{- end }}

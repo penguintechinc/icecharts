@@ -4,10 +4,10 @@ from flask import Blueprint, jsonify, request
 
 from app.middleware import auth_required, get_current_user, optional_auth
 from app.schemas.collection_schemas import (
-    CreateCollectionRequest,
-    UpdateCollectionRequest,
     AddDrawingToCollectionRequest,
+    CreateCollectionRequest,
     ReorderCollectionDrawingsRequest,
+    UpdateCollectionRequest,
 )
 from app.services.collection_service import CollectionService
 from app.utils.validation import validate_json
@@ -316,7 +316,9 @@ def list_collection_shares(collection_id: int):
         return jsonify({"error": "Failed to list shares"}), 500
 
 
-@collections_v1_bp.route("/<int:collection_id>/shares/<int:share_id>", methods=["DELETE"])
+@collections_v1_bp.route(
+    "/<int:collection_id>/shares/<int:share_id>", methods=["DELETE"]
+)
 @auth_required
 def revoke_collection_share(collection_id: int, share_id: int):
     """Revoke a collection share."""
@@ -479,8 +481,15 @@ def get_collection_analytics(collection_id: int):
             return jsonify({"error": "Collection not found"}), 404
 
         # Only owner or global admin can view analytics
-        if collection.owner_id != user["id"] and not PermissionService.is_global_admin(user["id"]):
-            return jsonify({"error": "Only the collection owner or admin can view analytics"}), 403
+        if collection.owner_id != user["id"] and not PermissionService.is_global_admin(
+            user["id"]
+        ):
+            return (
+                jsonify(
+                    {"error": "Only the collection owner or admin can view analytics"}
+                ),
+                403,
+            )
 
         stats = CollectionService.get_collection_stats(collection_id=collection_id)
 

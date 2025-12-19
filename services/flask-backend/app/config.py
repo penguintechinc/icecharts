@@ -149,7 +149,9 @@ class Config:
     GOOGLE_REDIRECT_URI = config("GOOGLE_REDIRECT_URI", default="")
 
     # Email Configuration
-    EMAIL_PROVIDER = config("EMAIL_PROVIDER", default="smtp")  # smtp, sendgrid, ses, mailgun, gmail
+    EMAIL_PROVIDER = config(
+        "EMAIL_PROVIDER", default="smtp"
+    )  # smtp, sendgrid, ses, mailgun, gmail
     EMAIL_FROM = config("EMAIL_FROM", default="noreply@icecharts.local")
     EMAIL_FROM_NAME = config("EMAIL_FROM_NAME", default="IceCharts")
 

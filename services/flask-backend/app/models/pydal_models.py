@@ -204,7 +204,9 @@ def define_all_tables(db):
             "string",
             length=50,
             notnull=True,
-            requires=IS_IN_SET(["local", "s3", "gcs", "azure_blob", "minio", "gdrive", "onedrive"]),
+            requires=IS_IN_SET(
+                ["local", "s3", "gcs", "azure_blob", "minio", "gdrive", "onedrive"]
+            ),
         ),
         Field("config_json", "json", notnull=True),
         Field("storage_config", "json"),  # Alias for API compatibility
@@ -252,7 +254,9 @@ def define_all_tables(db):
         ),
         Field("title", "string", length=255, notnull=True, requires=IS_NOT_EMPTY()),
         Field("description", "text"),
-        Field("created_by_id", "reference identities", notnull=True, ondelete="CASCADE"),
+        Field(
+            "created_by_id", "reference identities", notnull=True, ondelete="CASCADE"
+        ),
         Field("updated_by_id", "reference identities", ondelete="SET NULL"),
         Field("owner_id", "reference identities", ondelete="CASCADE"),
         Field("user_id", "reference identities", ondelete="CASCADE"),
@@ -288,7 +292,9 @@ def define_all_tables(db):
         "drawing_versions",
         Field("drawing_id", "reference drawings", notnull=True, ondelete="CASCADE"),
         Field("version_number", "integer", notnull=True),
-        Field("created_by_id", "reference identities", notnull=True, ondelete="CASCADE"),
+        Field(
+            "created_by_id", "reference identities", notnull=True, ondelete="CASCADE"
+        ),
         Field("content_json", "json", notnull=True),
         Field("change_summary", "text"),
         Field(
@@ -481,7 +487,11 @@ def define_all_tables(db):
             default="member",
             requires=IS_IN_SET(["admin", "member"]),
         ),
-        Field("joined_at", "datetime", default=lambda: datetime.datetime.now(datetime.timezone.utc)),
+        Field(
+            "joined_at",
+            "datetime",
+            default=lambda: datetime.datetime.now(datetime.timezone.utc),
+        ),
         migrate=True,
     )
 
@@ -529,7 +539,9 @@ def define_all_tables(db):
     # Library shapes table
     db.define_table(
         "library_shapes",
-        Field("library_id", "reference shape_libraries", notnull=True, ondelete="CASCADE"),
+        Field(
+            "library_id", "reference shape_libraries", notnull=True, ondelete="CASCADE"
+        ),
         Field("name", "string", length=255, notnull=True, requires=IS_NOT_EMPTY()),
         Field("description", "text"),
         Field("shape_data", "json", notnull=True),
@@ -590,7 +602,9 @@ def define_all_tables(db):
     # Collection items (drawings in a collection)
     db.define_table(
         "collection_items",
-        Field("collection_id", "reference collections", notnull=True, ondelete="CASCADE"),
+        Field(
+            "collection_id", "reference collections", notnull=True, ondelete="CASCADE"
+        ),
         Field("drawing_id", "reference drawings", notnull=True, ondelete="CASCADE"),
         Field("added_by_id", "reference identities", notnull=True, ondelete="SET NULL"),
         Field("order_index", "integer", default=0),
@@ -605,7 +619,9 @@ def define_all_tables(db):
     # Collection sharing (user/group level permissions)
     db.define_table(
         "collection_shares",
-        Field("collection_id", "reference collections", notnull=True, ondelete="CASCADE"),
+        Field(
+            "collection_id", "reference collections", notnull=True, ondelete="CASCADE"
+        ),
         Field("shared_with_id", "reference identities", ondelete="CASCADE"),
         Field("shared_with_group_id", "reference groups", ondelete="CASCADE"),
         Field(
@@ -615,7 +631,9 @@ def define_all_tables(db):
             default="viewer",
             requires=IS_IN_SET(["viewer", "editor", "admin"]),
         ),
-        Field("created_by_id", "reference identities", notnull=True, ondelete="SET NULL"),
+        Field(
+            "created_by_id", "reference identities", notnull=True, ondelete="SET NULL"
+        ),
         Field(
             "created_at",
             "datetime",
@@ -691,7 +709,9 @@ def define_all_tables(db):
     db.define_table(
         "login_events",
         Field("user_id", "reference identities", notnull=True, ondelete="CASCADE"),
-        Field("login_type", "string", length=50, default="password"),  # password, google, sso
+        Field(
+            "login_type", "string", length=50, default="password"
+        ),  # password, google, sso
         Field("ip_address", "string", length=50),
         Field("user_agent", "string", length=500),
         Field("country_code", "string", length=2),  # ISO 3166-1 alpha-2
@@ -703,6 +723,118 @@ def define_all_tables(db):
             "datetime",
             default=lambda: datetime.datetime.now(datetime.timezone.utc),
             notnull=True,
+        ),
+        migrate=True,
+    )
+
+    # ==========================================
+    # Activity and Audit Logging (v1.0+)
+    # ==========================================
+
+    # Activity logs for tracking user actions (logins, drawing edits, sharing, etc.)
+    db.define_table(
+        "activity_logs",
+        Field("user_id", "reference identities", notnull=True, ondelete="CASCADE"),
+        Field("tenant_id", "reference tenants", notnull=True, ondelete="CASCADE"),
+        Field(
+            "action",
+            "string",
+            length=100,
+            notnull=True,
+            requires=IS_NOT_EMPTY(),
+        ),  # e.g., "login", "drawing_created", "drawing_shared", "comment_added"
+        Field(
+            "resource_type",
+            "string",
+            length=100,
+        ),  # e.g., "drawing", "comment", "user", "group", "share"
+        Field("resource_id", "integer"),  # ID of the resource being acted upon
+        Field("resource_name", "string", length=255),  # Human-readable name of resource
+        Field("details", "json"),  # Additional context-specific data
+        Field("ip_address", "string", length=50),
+        Field("user_agent", "string", length=500),
+        Field(
+            "timestamp",
+            "datetime",
+            default=lambda: datetime.datetime.now(datetime.timezone.utc),
+            notnull=True,
+        ),
+        migrate=True,
+    )
+
+    # Audit logs for tracking admin/sensitive actions with change history
+    db.define_table(
+        "audit_logs",
+        Field(
+            "user_id", "reference identities", ondelete="SET NULL"
+        ),  # User who made the change
+        Field("tenant_id", "reference tenants", notnull=True, ondelete="CASCADE"),
+        Field(
+            "action",
+            "string",
+            length=100,
+            notnull=True,
+            requires=IS_NOT_EMPTY(),
+        ),  # e.g., "user_created", "user_updated", "user_deleted", "settings_changed"
+        Field(
+            "resource_type",
+            "string",
+            length=100,
+            notnull=True,
+        ),  # e.g., "user", "group", "settings", "system"
+        Field("resource_id", "integer"),  # ID of the resource being modified
+        Field("resource_name", "string", length=255),  # Human-readable name
+        Field(
+            "changes", "json"
+        ),  # Detailed change data (old_value, new_value for each field)
+        Field("reason", "text"),  # Why the action was taken
+        Field("ip_address", "string", length=50),
+        Field("user_agent", "string", length=500),
+        Field("status", "string", length=50, default="success"),  # success, failed
+        Field("error_message", "text"),  # If status is failed
+        Field(
+            "timestamp",
+            "datetime",
+            default=lambda: datetime.datetime.now(datetime.timezone.utc),
+            notnull=True,
+        ),
+        migrate=True,
+    )
+
+    # ==========================================
+    # Templates Table
+    # ==========================================
+
+    # Templates for creating drawings from predefined layouts
+    db.define_table(
+        "templates",
+        Field(
+            "tenant_id",
+            "reference tenants",
+            default=1,
+            notnull=True,
+            ondelete="CASCADE",
+        ),
+        Field("name", "string", length=255, notnull=True, requires=IS_NOT_EMPTY()),
+        Field("description", "text"),
+        Field(
+            "content", "json", notnull=True
+        ),  # Template drawing content (nodes, edges, viewport)
+        Field("category", "string", length=100, default="custom"),
+        Field("thumbnail_url", "string", length=1024),
+        Field("is_public", "boolean", default=False, notnull=True),
+        Field(
+            "created_by_id", "reference identities", notnull=True, ondelete="CASCADE"
+        ),
+        Field(
+            "created_at",
+            "datetime",
+            default=lambda: datetime.datetime.now(datetime.timezone.utc),
+        ),
+        Field(
+            "updated_at",
+            "datetime",
+            update=lambda: datetime.datetime.now(datetime.timezone.utc),
         ),
         migrate=True,
     )
@@ -730,10 +862,14 @@ def define_all_tables(db):
             notnull=True,
             unique=True,
         ),  # Format: sa_xxxxxxxxxxxx
-        Field("scopes", "json"),  # Array of scope strings e.g., ["drawings:read", "exports:create"]
+        Field(
+            "scopes", "json"
+        ),  # Array of scope strings e.g., ["drawings:read", "exports:create"]
         Field("rate_limit", "integer", default=1000),  # Requests per hour
         Field("is_active", "boolean", default=True, notnull=True),
-        Field("created_by_id", "reference identities", notnull=True, ondelete="CASCADE"),
+        Field(
+            "created_by_id", "reference identities", notnull=True, ondelete="CASCADE"
+        ),
         Field("last_used_at", "datetime"),
         Field(
             "created_at",
@@ -770,6 +906,559 @@ def define_all_tables(db):
         Field("last_used_ip", "string", length=50),
         Field("revoked_at", "datetime"),
         Field("revoked_by_id", "reference identities", ondelete="SET NULL"),
+        Field(
+            "created_at",
+            "datetime",
+            default=lambda: datetime.datetime.now(datetime.timezone.utc),
+        ),
+        migrate=True,
+    )
+
+    # ==========================================
+    # Storage Migration Jobs (for async migration tracking)
+    # ==========================================
+
+    db.define_table(
+        "migration_jobs",
+        Field("user_id", "reference identities", notnull=True, ondelete="CASCADE"),
+        Field(
+            "source_provider_id",
+            "reference storage_providers",
+            notnull=True,
+            ondelete="CASCADE",
+        ),
+        Field(
+            "target_provider_id",
+            "reference storage_providers",
+            notnull=True,
+            ondelete="CASCADE",
+        ),
+        Field(
+            "status",
+            "string",
+            length=50,
+            default="pending",
+            requires=IS_IN_SET(
+                [
+                    "pending",
+                    "in_progress",
+                    "completed",
+                    "completed_with_errors",
+                    "failed",
+                    "rolled_back",
+                    "rollback_failed",
+                ]
+            ),
+        ),
+        Field("progress", "integer", default=0),  # 0-100
+        Field("total_count", "integer", default=0),  # Total drawings to migrate
+        Field("migrated_count", "integer", default=0),  # Successfully migrated
+        Field("failed_count", "integer", default=0),  # Failed migrations
+        Field("skipped_count", "integer", default=0),  # Skipped (no versions, etc.)
+        Field("error_message", "text"),  # Error message if status is failed
+        Field("celery_task_id", "string", length=255),  # Celery task ID for monitoring
+        Field("result_json", "json"),  # Detailed results including failed drawings
+        Field("status_json", "json"),  # Current status metadata
+        Field(
+            "started_at",
+            "datetime",
+        ),
+        Field(
+            "completed_at",
+            "datetime",
+        ),
+        Field(
+            "created_at",
+            "datetime",
+            default=lambda: datetime.datetime.now(datetime.timezone.utc),
+        ),
+        Field(
+            "updated_at",
+            "datetime",
+            update=lambda: datetime.datetime.now(datetime.timezone.utc),
+        ),
+        migrate=True,
+    )
+
+    # ==========================================
+    # IceStreams: Playbook Tables (Workflow Automation)
+    # ==========================================
+
+    # Main playbook/workflow definitions
+    db.define_table(
+        "playbooks",
+        Field(
+            "tenant_id",
+            "reference tenants",
+            default=1,
+            notnull=True,
+            ondelete="CASCADE",
+        ),
+        Field("name", "string", length=255, notnull=True, requires=IS_NOT_EMPTY()),
+        Field("description", "text"),
+        Field(
+            "created_by_id", "reference identities", notnull=True, ondelete="CASCADE"
+        ),
+        Field("updated_by_id", "reference identities", ondelete="SET NULL"),
+        Field(
+            "status",
+            "string",
+            length=50,
+            default="draft",
+            requires=IS_IN_SET(["draft", "active", "paused", "archived"]),
+        ),
+        Field("is_enabled", "boolean", default=False, notnull=True),
+        Field("is_public", "boolean", default=False, notnull=True),
+        Field("is_template", "boolean", default=False, notnull=True),
+        Field(
+            "trigger_type",
+            "string",
+            length=50,
+        ),  # webhook, schedule, grpc, manual
+        Field("trigger_config", "json"),  # Trigger-specific configuration
+        Field("error_handling", "json"),  # Retry settings, failure notifications
+        Field("tags", "json"),  # Array of tag strings
+        Field("canvas_data", "json"),  # ReactFlow viewport, zoom, etc.
+        Field("last_execution_at", "datetime"),
+        Field("next_run_at", "datetime"),  # For scheduled playbooks
+        Field("execution_count", "integer", default=0),
+        Field("success_count", "integer", default=0),
+        Field("failure_count", "integer", default=0),
+        Field(
+            "created_at",
+            "datetime",
+            default=lambda: datetime.datetime.now(datetime.timezone.utc),
+        ),
+        Field(
+            "updated_at",
+            "datetime",
+            update=lambda: datetime.datetime.now(datetime.timezone.utc),
+        ),
+        migrate=True,
+    )
+
+    # Playbook nodes (individual steps in the workflow)
+    db.define_table(
+        "playbook_nodes",
+        Field("playbook_id", "reference playbooks", notnull=True, ondelete="CASCADE"),
+        Field(
+            "node_id", "string", length=100, notnull=True
+        ),  # ReactFlow node ID (UUID)
+        Field(
+            "node_type",
+            "string",
+            length=50,
+            notnull=True,
+        ),  # trigger_*, transform_*, action_*
+        Field(
+            "node_category",
+            "string",
+            length=50,
+            default="transform",
+            requires=IS_IN_SET(["trigger", "transform", "action"]),
+        ),
+        Field("label", "string", length=255),
+        Field("position_x", "double", notnull=True),
+        Field("position_y", "double", notnull=True),
+        Field("config", "json", notnull=True),  # Node-specific configuration
+        Field("data_schema", "json"),  # Expected input/output schema
+        Field("is_enabled", "boolean", default=True, notnull=True),
+        Field("execution_order", "integer", default=0),  # Computed execution order
+        Field("comments", "text"),  # User comments on this node
+        Field("metadata_json", "json"),  # Key/value metadata
+        Field(
+            "created_at",
+            "datetime",
+            default=lambda: datetime.datetime.now(datetime.timezone.utc),
+        ),
+        Field(
+            "updated_at",
+            "datetime",
+            update=lambda: datetime.datetime.now(datetime.timezone.utc),
+        ),
+        migrate=True,
+    )
+
+    # Playbook edges (connections between nodes)
+    db.define_table(
+        "playbook_edges",
+        Field("playbook_id", "reference playbooks", notnull=True, ondelete="CASCADE"),
+        Field("edge_id", "string", length=100, notnull=True),  # ReactFlow edge ID
+        Field("source_node_id", "string", length=100, notnull=True),
+        Field("target_node_id", "string", length=100, notnull=True),
+        Field("source_handle", "string", length=50),  # For nodes with multiple outputs
+        Field("target_handle", "string", length=50),  # For nodes with multiple inputs
+        Field("condition", "json"),  # Optional condition for conditional edges
+        Field("label", "string", length=255),
+        Field(
+            "created_at",
+            "datetime",
+            default=lambda: datetime.datetime.now(datetime.timezone.utc),
+        ),
+        migrate=True,
+    )
+
+    # Playbook versions (for rollback capability)
+    db.define_table(
+        "playbook_versions",
+        Field("playbook_id", "reference playbooks", notnull=True, ondelete="CASCADE"),
+        Field("version_number", "integer", notnull=True),
+        Field(
+            "created_by_id", "reference identities", notnull=True, ondelete="CASCADE"
+        ),
+        Field("nodes_json", "json", notnull=True),
+        Field("edges_json", "json", notnull=True),
+        Field("canvas_json", "json"),
+        Field("change_summary", "text"),
+        Field(
+            "created_at",
+            "datetime",
+            default=lambda: datetime.datetime.now(datetime.timezone.utc),
+        ),
+        migrate=True,
+    )
+
+    # Webhook tokens for playbook triggers
+    db.define_table(
+        "playbook_webhooks",
+        Field("playbook_id", "reference playbooks", notnull=True, ondelete="CASCADE"),
+        Field("name", "string", length=255),
+        Field("token", "string", length=255, unique=True, notnull=True),
+        Field(
+            "signature_secret", "string", length=255
+        ),  # For HMAC signature validation
+        Field("validate_signature", "boolean", default=False, notnull=True),
+        Field("allowed_methods", "list:string"),  # Default: ['POST']
+        Field("ip_whitelist", "list:string"),  # Optional IP restriction
+        Field("is_active", "boolean", default=True, notnull=True),
+        Field("is_enabled", "boolean", default=True, notnull=True),
+        Field("last_triggered_at", "datetime"),
+        Field("trigger_count", "integer", default=0),
+        Field(
+            "created_at",
+            "datetime",
+            default=lambda: datetime.datetime.now(datetime.timezone.utc),
+        ),
+        migrate=True,
+    )
+
+    # Playbook executions (individual runs)
+    db.define_table(
+        "playbook_executions",
+        Field("playbook_id", "reference playbooks", notnull=True, ondelete="CASCADE"),
+        Field("execution_id", "string", length=100, unique=True, notnull=True),  # UUID
+        Field(
+            "status",
+            "string",
+            length=50,
+            default="pending",
+            requires=IS_IN_SET(
+                [
+                    "pending",
+                    "running",
+                    "completed",
+                    "failed",
+                    "cancelled",
+                    "timeout",
+                    "partial_success",
+                ]
+            ),
+        ),
+        Field("trigger_type", "string", length=50),  # webhook, schedule, manual, api
+        Field("triggered_by", "string", length=50),  # webhook, schedule, manual, api
+        Field(
+            "triggered_by_id", "reference identities", ondelete="SET NULL"
+        ),  # If manual
+        Field("input_json", "json"),  # Initial trigger payload
+        Field("output_json", "json"),  # Final output after completion
+        Field("error_message", "text"),
+        Field("error_details", "json"),  # Stack trace, node that failed
+        Field("retry_count", "integer", default=0),
+        Field("parent_execution_id", "string", length=100),  # For retry chains
+        Field("worker_id", "string", length=100),  # Which worker processed this
+        Field("started_at", "datetime"),
+        Field("completed_at", "datetime"),
+        Field("duration_ms", "integer"),  # Execution time in milliseconds
+        Field(
+            "created_at",
+            "datetime",
+            default=lambda: datetime.datetime.now(datetime.timezone.utc),
+        ),
+        migrate=True,
+    )
+
+    # Node execution logs (per-node execution details)
+    db.define_table(
+        "playbook_node_executions",
+        Field(
+            "execution_id", "string", length=100, notnull=True
+        ),  # FK to playbook_executions
+        Field("node_id", "string", length=100, notnull=True),
+        Field("node_type", "string", length=50),
+        Field("playbook_id", "reference playbooks", notnull=True, ondelete="CASCADE"),
+        Field(
+            "status",
+            "string",
+            length=50,
+            default="pending",
+            requires=IS_IN_SET(
+                ["pending", "running", "completed", "failed", "skipped"]
+            ),
+        ),
+        Field("input_json", "json"),
+        Field("output_json", "json"),
+        Field("error_message", "text"),
+        Field("error_details", "json"),
+        Field("started_at", "datetime"),
+        Field("completed_at", "datetime"),
+        Field("duration_ms", "integer"),
+        Field("retry_count", "integer", default=0),
+        Field(
+            "created_at",
+            "datetime",
+            default=lambda: datetime.datetime.now(datetime.timezone.utc),
+        ),
+        migrate=True,
+    )
+
+    # Playbook schedules (cron-like scheduling)
+    db.define_table(
+        "playbook_schedules",
+        Field("playbook_id", "reference playbooks", notnull=True, ondelete="CASCADE"),
+        Field(
+            "cron_expression", "string", length=100, notnull=True
+        ),  # e.g., "0 9 * * 1-5"
+        Field("timezone", "string", length=100, default="UTC"),
+        Field("is_active", "boolean", default=True, notnull=True),
+        Field("next_run_at", "datetime"),
+        Field("last_run_at", "datetime"),
+        Field("run_count", "integer", default=0),
+        Field("static_input", "json"),  # Optional static payload for scheduled runs
+        Field(
+            "created_at",
+            "datetime",
+            default=lambda: datetime.datetime.now(datetime.timezone.utc),
+        ),
+        Field(
+            "updated_at",
+            "datetime",
+            update=lambda: datetime.datetime.now(datetime.timezone.utc),
+        ),
+        migrate=True,
+    )
+
+    # Playbook sharing (similar to drawing_shares pattern)
+    db.define_table(
+        "playbook_shares",
+        Field("playbook_id", "reference playbooks", notnull=True, ondelete="CASCADE"),
+        Field("identity_id", "reference identities", ondelete="CASCADE"),
+        Field("shared_with_id", "reference identities", ondelete="CASCADE"),
+        Field("shared_with_group_id", "reference groups", ondelete="CASCADE"),
+        Field("shared_by", "reference identities", ondelete="SET NULL"),
+        Field(
+            "permission",
+            "string",
+            length=50,
+            default="viewer",
+            requires=IS_IN_SET(["viewer", "editor"]),
+        ),
+        Field("expires_at", "datetime"),
+        Field(
+            "created_at",
+            "datetime",
+            default=lambda: datetime.datetime.now(datetime.timezone.utc),
+        ),
+        migrate=True,
+    )
+
+    # Playbook editor locks (only 1 editor at a time)
+    db.define_table(
+        "playbook_editor_locks",
+        Field(
+            "playbook_id",
+            "reference playbooks",
+            unique=True,
+            notnull=True,
+            ondelete="CASCADE",
+        ),
+        Field("locked_by_id", "reference identities", notnull=True, ondelete="CASCADE"),
+        Field("locked_by_name", "string", length=255),
+        Field("locked_at", "datetime", notnull=True),
+        Field("expires_at", "datetime", notnull=True),  # Auto-release after timeout
+        Field(
+            "socket_id", "string", length=255
+        ),  # WebSocket session for real-time release
+        migrate=True,
+    )
+
+    # Playbook templates (reusable workflow templates)
+    db.define_table(
+        "playbook_templates",
+        Field(
+            "tenant_id",
+            "reference tenants",
+            default=1,
+            notnull=True,
+            ondelete="CASCADE",
+        ),
+        Field("name", "string", length=255, notnull=True, requires=IS_NOT_EMPTY()),
+        Field("description", "text"),
+        Field("category", "string", length=100, default="custom"),
+        Field(
+            "created_by_id", "reference identities", notnull=True, ondelete="CASCADE"
+        ),
+        Field("nodes_json", "json", notnull=True),
+        Field("edges_json", "json", notnull=True),
+        Field("canvas_data", "json"),
+        Field("is_public", "boolean", default=False, notnull=True),
+        Field("usage_count", "integer", default=0),
+        Field(
+            "created_at",
+            "datetime",
+            default=lambda: datetime.datetime.now(datetime.timezone.utc),
+        ),
+        Field(
+            "updated_at",
+            "datetime",
+            update=lambda: datetime.datetime.now(datetime.timezone.utc),
+        ),
+        migrate=True,
+    )
+
+    # Dynamic forms for playbooks
+    db.define_table(
+        "playbook_forms",
+        Field("playbook_id", "reference playbooks", notnull=True, ondelete="CASCADE"),
+        Field("name", "string", length=255, notnull=True, requires=IS_NOT_EMPTY()),
+        Field("description", "text"),
+        Field("fields_json", "json", notnull=True),  # Form field definitions
+        Field("form_token", "string", length=255, unique=True),  # Public access token
+        Field(
+            "access_type",
+            "string",
+            length=50,
+            default="registered",
+            requires=IS_IN_SET(["public", "registered", "specific"]),
+        ),
+        Field("allowed_users", "list:reference identities"),  # For 'specific' access
+        Field("is_active", "boolean", default=True, notnull=True),
+        Field("submission_count", "integer", default=0),
+        Field(
+            "created_at",
+            "datetime",
+            default=lambda: datetime.datetime.now(datetime.timezone.utc),
+        ),
+        Field(
+            "updated_at",
+            "datetime",
+            update=lambda: datetime.datetime.now(datetime.timezone.utc),
+        ),
+        migrate=True,
+    )
+
+    # Form submissions
+    db.define_table(
+        "playbook_form_submissions",
+        Field("form_id", "reference playbook_forms", notnull=True, ondelete="CASCADE"),
+        Field("playbook_id", "reference playbooks", notnull=True, ondelete="CASCADE"),
+        Field("submitted_by_id", "reference identities", ondelete="SET NULL"),
+        Field("submission_data", "json", notnull=True),
+        Field("ip_address", "string", length=50),
+        Field("user_agent", "string", length=500),
+        Field("execution_id", "string", length=100),  # If it triggered an execution
+        Field(
+            "submitted_at",
+            "datetime",
+            default=lambda: datetime.datetime.now(datetime.timezone.utc),
+            notnull=True,
+        ),
+        migrate=True,
+    )
+
+    # Custom modules (uploadable trigger/action modules)
+    db.define_table(
+        "custom_modules",
+        Field(
+            "tenant_id",
+            "reference tenants",
+            default=1,
+            notnull=True,
+            ondelete="CASCADE",
+        ),
+        Field(
+            "name",
+            "string",
+            length=255,
+            notnull=True,
+            unique=True,
+            requires=IS_NOT_EMPTY(),
+        ),
+        Field("display_name", "string", length=255),
+        Field("description", "text"),
+        Field(
+            "module_type",
+            "string",
+            length=50,
+            notnull=True,
+            requires=IS_IN_SET(["trigger", "action"]),
+        ),
+        Field("version", "string", length=50, default="1.0.0"),
+        Field("code_blob", "blob"),  # Python module file
+        Field("config_schema", "json"),  # JSON Schema for configuration
+        Field("input_schema", "json"),  # Expected input data schema
+        Field("output_schema", "json"),  # Expected output data schema
+        Field("is_validated", "boolean", default=False, notnull=True),
+        Field("validation_errors", "json"),  # Errors from validation
+        Field("is_enabled", "boolean", default=True, notnull=True),
+        Field("uploaded_by_id", "reference identities", ondelete="SET NULL"),
+        Field("usage_count", "integer", default=0),
+        Field(
+            "created_at",
+            "datetime",
+            default=lambda: datetime.datetime.now(datetime.timezone.utc),
+        ),
+        Field(
+            "updated_at",
+            "datetime",
+            update=lambda: datetime.datetime.now(datetime.timezone.utc),
+        ),
+        migrate=True,
+    )
+
+    # Playbook node metadata (comments and key/value for playbook nodes)
+    db.define_table(
+        "playbook_node_metadata",
+        Field("playbook_id", "reference playbooks", notnull=True, ondelete="CASCADE"),
+        Field("node_id", "string", length=100, notnull=True),
+        Field("comments", "text"),
+        Field("metadata_json", "json"),
+        Field("updated_by_id", "reference identities", ondelete="SET NULL"),
+        Field(
+            "updated_at",
+            "datetime",
+            update=lambda: datetime.datetime.now(datetime.timezone.utc),
+        ),
+        Field(
+            "created_at",
+            "datetime",
+            default=lambda: datetime.datetime.now(datetime.timezone.utc),
+        ),
+        migrate=True,
+    )
+
+    # Diagram node metadata (comments and key/value for Charts)
+    db.define_table(
+        "diagram_node_metadata",
+        Field("drawing_id", "reference drawings", notnull=True, ondelete="CASCADE"),
+        Field("node_id", "string", length=100, notnull=True),
+        Field("comments", "text"),
+        Field("metadata_json", "json"),  # Key/value pairs
+        Field("updated_by_id", "reference identities", ondelete="SET NULL"),
+        Field(
+            "updated_at",
+            "datetime",
+            update=lambda: datetime.datetime.now(datetime.timezone.utc),
+        ),
         Field(
             "created_at",
             "datetime",

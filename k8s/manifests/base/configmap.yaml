@@ -1,0 +1,157 @@
+# IceCharts Application Configuration
+# Contains non-sensitive configuration values shared across all components
+# Sensitive values (passwords, keys) are defined in secret.yaml
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: icecharts-config
+  namespace: icecharts
+  labels:
+    app.kubernetes.io/name: icecharts
+    app.kubernetes.io/component: config
+data:
+  # ============================================================================
+  # License Configuration
+  # ============================================================================
+  PRODUCT_NAME: "icecharts"
+  LICENSE_SERVER_URL: "https://license.penguintech.io"
+  RELEASE_MODE: "false"
+
+  # ============================================================================
+  # PostgreSQL Database Configuration
+  # ============================================================================
+  POSTGRES_DB: "icecharts"
+  POSTGRES_USER: "icecharts_user"
+  POSTGRES_PORT: "5432"
+  DB_TYPE: "postgres"
+  DB_HOST: "postgres.icecharts.svc.cluster.local"
+  DB_PORT: "5432"
+  DB_NAME: "icecharts"
+  DB_POOL_SIZE: "10"
+
+  # ============================================================================
+  # Redis Cache Configuration
+  # ============================================================================
+  REDIS_PORT: "6379"
+  REDIS_HOST: "redis.icecharts.svc.cluster.local"
+  REDIS_URL: "redis://:$(REDIS_PASSWORD)@redis.icecharts.svc.cluster.local:6379/0"
+
+  # ============================================================================
+  # MinIO Object Storage Configuration
+  # ============================================================================
+  MINIO_API_PORT: "9000"
+  MINIO_CONSOLE_PORT: "9001"
+  MINIO_BUCKET: "icecharts"
+  MINIO_SECURE: "false"
+  MINIO_ENDPOINT: "minio.icecharts.svc.cluster.local:9000"
+  MINIO_BROWSER_REDIRECT_URL: "http://minio.icecharts.svc.cluster.local:9001"
+
+  # ============================================================================
+  # Application Ports
+  # ============================================================================
+  API_PORT: "5000"
+  WEB_PORT: "3000"
+  PROMETHEUS_PORT: "9090"
+  GRAFANA_PORT: "3000"
+
+  # ============================================================================
+  # Flask Backend Configuration
+  # ============================================================================
+  FLASK_ENV: "production"
+  FLASK_APP: "app.py"
+
+  # JWT Configuration
+  JWT_ACCESS_TOKEN_EXPIRES: "3600"
+  JWT_REFRESH_TOKEN_EXPIRES: "2592000"
+
+  # Default Admin User
+  DEFAULT_ADMIN_EMAIL: "admin@icecharts.local"
+
+  # CORS Configuration
+  CORS_ORIGINS: "http://localhost:3000"
+
+  # ============================================================================
+  # React Frontend Configuration
+  # ============================================================================
+  NODE_ENV: "production"
+  VITE_API_URL: "http://api.icecharts.svc.cluster.local:5000"
+  VITE_API_BASE_PATH: "/api/v1"
+
+  # ============================================================================
+  # Logging Configuration
+  # ============================================================================
+  LOG_LEVEL: "info"
+  LOG_FORMAT: "json"
+  LOG_FILE_PATH: "/var/log/icecharts.log"
+  LOG_MAX_SIZE: "100MB"
+  LOG_MAX_FILES: "10"
+
+  # ============================================================================
+  # Security Configuration
+  # ============================================================================
+  BCRYPT_ROUNDS: "12"
+  TLS_ENABLED: "false"
+  TLS_CERT_PATH: "/etc/ssl/certs/server.crt"
+  TLS_KEY_PATH: "/etc/ssl/private/server.key"
+
+  # ============================================================================
+  # Email Configuration
+  # ============================================================================
+  SMTP_SERVER: "localhost"
+  SMTP_PORT: "587"
+  SMTP_SENDER: "noreply@icecharts.local"
+  SMTP_TLS: "true"
+
+  # ============================================================================
+  # Monitoring Configuration
+  # ============================================================================
+  GRAFANA_USER: "admin"
+
+  # ============================================================================
+  # Performance Configuration
+  # ============================================================================
+  MAX_CONNECTIONS: "100"
+  CONNECTION_TIMEOUT: "30s"
+  IDLE_TIMEOUT: "15m"
+  READ_TIMEOUT: "10s"
+  WRITE_TIMEOUT: "10s"
+
+  # ============================================================================
+  # Cache Configuration
+  # ============================================================================
+  CACHE_TTL: "300"
+  CACHE_MAX_SIZE: "1000"
+  CACHE_CLEANUP_INTERVAL: "60s"
+
+  # ============================================================================
+  # Rate Limiting
+  # ============================================================================
+  RATE_LIMIT_ENABLED: "true"
+  RATE_LIMIT_MAX_REQUESTS: "100"
+  RATE_LIMIT_WINDOW_MINUTES: "15"
+
+  # ============================================================================
+  # Feature Flags
+  # ============================================================================
+  FEATURE_ADVANCED_ANALYTICS: "true"
+  FEATURE_ENTERPRISE_REPORTS: "false"
+  FEATURE_USER_MANAGEMENT: "true"
+
+  # ============================================================================
+  # Development Tools
+  # ============================================================================
+  DEBUG: "false"
+  ENABLE_PROFILING: "false"
+  METRICS_ENABLED: "true"
+
+  # ============================================================================
+  # Backup Configuration
+  # ============================================================================
+  BACKUP_ENABLED: "false"
+  BACKUP_SCHEDULE: "0 2 * * *"
+  BACKUP_RETENTION_DAYS: "30"
+
+  # ============================================================================
+  # Storage Provider
+  # ============================================================================
+  STORAGE_PROVIDER: "minio"

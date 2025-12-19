@@ -6,25 +6,26 @@ utility functions for scope validation.
 
 from typing import List, Set
 
-
 # Available scopes with descriptions
 AVAILABLE_SCOPES = {
     # Drawings
     "drawings:read": "Read drawing metadata and content",
     "drawings:write": "Create and update drawings",
     "drawings:delete": "Delete drawings",
-
     # Exports
     "exports:create": "Generate exports (PNG, PDF, SVG, JSON)",
     "exports:read": "Download export results",
-
     # Templates
     "templates:read": "Read available templates",
     "templates:write": "Create and modify templates",
-
     # Collections
     "collections:read": "Read collections",
     "collections:write": "Manage collections",
+    # Playbooks (IceStreams)
+    "playbooks:read": "Read playbook metadata, canvas, and executions",
+    "playbooks:write": "Create, update, and configure playbooks",
+    "playbooks:delete": "Delete playbooks",
+    "playbooks:execute": "Execute playbooks and manage executions",
 }
 
 # Convenience scope groups for common use cases
@@ -40,11 +41,22 @@ SCOPE_GROUPS = {
         "drawings:write",
         "drawings:delete",
     ],
+    "playbooks_full": [
+        "playbooks:read",
+        "playbooks:write",
+        "playbooks:delete",
+        "playbooks:execute",
+    ],
+    "automation": [
+        "playbooks:read",
+        "playbooks:execute",
+    ],
     "readonly": [
         "drawings:read",
         "exports:read",
         "templates:read",
         "collections:read",
+        "playbooks:read",
     ],
 }
 
@@ -141,7 +153,9 @@ def has_any_scope(token_scopes: List[str], required_scopes: List[str]) -> bool:
     return bool(set(token_scopes) & set(required_scopes))
 
 
-def get_missing_scopes(token_scopes: List[str], required_scopes: List[str]) -> List[str]:
+def get_missing_scopes(
+    token_scopes: List[str], required_scopes: List[str]
+) -> List[str]:
     """
     Get the scopes that are required but missing from the token.
 

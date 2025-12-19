@@ -1,0 +1,38 @@
+{{- /*
+ServiceMonitor Template for Prometheus Operator
+- Defines metrics scrape targets for Prometheus Operator
+- Monitors the API service /metrics endpoint
+- Compatible with kube-prometheus-stack
+- Enables automated metrics discovery in Kubernetes
+*/ -}}
+{{- if .Values.monitoring.serviceMonitor.enabled }}
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: {{ include "icecharts.api.fullname" . }}-metrics
+  namespace: {{ include "icecharts.namespace" . }}
+  labels:
+    {{- include "icecharts.api.labels" . | nindent 4 }}
+    prometheus: kube-prometheus
+  annotations:
+    description: "Prometheus ServiceMonitor for IceCharts API metrics"
+spec:
+  selector:
+    matchLabels:
+      {{- include "icecharts.api.selectorLabels" . | nindent 6 }}
+  endpoints:
+    - name: metrics
+      port: http
+      path: /metrics
+      interval: {{ .Values.monitoring.serviceMonitor.scrapeInterval | default "30s" }}
+      scrapeTimeout: 10s
+      scheme: http
+      relabelings:
+        - sourceLabels: [__meta_kubernetes_pod_name]
+          targetLabel: pod
+        - sourceLabels: [__meta_kubernetes_namespace]
+          targetLabel: namespace
+        - sourceLabels: [__meta_kubernetes_pod_node_name]
+          targetLabel: node
+
+{{- end }}

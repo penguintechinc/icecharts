@@ -168,11 +168,15 @@ class EmailService:
             sg = SendGridAPIClient(Config.SENDGRID_API_KEY)
             response = sg.send(message)
 
-            logger.info(f"Email sent via SendGrid to {to}, status: {response.status_code}")
+            logger.info(
+                f"Email sent via SendGrid to {to}, status: {response.status_code}"
+            )
             return response.status_code in (200, 201, 202)
 
         except ImportError:
-            logger.error("SendGrid library not installed. Install with: pip install sendgrid")
+            logger.error(
+                "SendGrid library not installed. Install with: pip install sendgrid"
+            )
             return False
         except Exception as e:
             logger.error(f"SendGrid send failed: {str(e)}")
@@ -210,7 +214,9 @@ class EmailService:
                 },
             )
 
-            logger.info(f"Email sent via AWS SES to {to}, message_id: {response['MessageId']}")
+            logger.info(
+                f"Email sent via AWS SES to {to}, message_id: {response['MessageId']}"
+            )
             return True
 
         except ImportError:
@@ -245,11 +251,15 @@ class EmailService:
                 },
             )
 
-            logger.info(f"Email sent via Mailgun to {to}, status: {response.status_code}")
+            logger.info(
+                f"Email sent via Mailgun to {to}, status: {response.status_code}"
+            )
             return response.status_code == 200
 
         except ImportError:
-            logger.error("Requests library not installed. Install with: pip install requests")
+            logger.error(
+                "Requests library not installed. Install with: pip install requests"
+            )
             return False
         except Exception as e:
             logger.error(f"Mailgun send failed: {str(e)}")

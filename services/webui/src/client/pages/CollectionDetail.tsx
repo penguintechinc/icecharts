@@ -4,6 +4,7 @@ import { useAuth } from '../hooks/useAuth';
 import api from '../lib/api';
 import Button from '../components/Button';
 import Card from '../components/Card';
+import { AnalyticsCard } from '../components/common/AnalyticsCard';
 import type { Collection, CollectionItem, CollectionAnalytics } from '../types';
 
 export default function CollectionDetail() {
@@ -397,51 +398,7 @@ export default function CollectionDetail() {
       )}
 
       {/* Analytics Section (Owner Only) */}
-      {isOwner && analytics && (
-        <Card title="Analytics" className="mb-6">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <div className="p-4 rounded-lg bg-ice-navy-850">
-              <div className="text-2xl font-bold text-ice-gold-400">{analytics.view_count}</div>
-              <div className="text-sm text-ice-navy-400">Total Views</div>
-            </div>
-            <div className="p-4 rounded-lg bg-ice-navy-850">
-              <div className="text-2xl font-bold text-ice-gold-400">
-                {analytics.unique_viewers}
-              </div>
-              <div className="text-sm text-ice-navy-400">Unique Viewers</div>
-            </div>
-            <div className="p-4 rounded-lg bg-ice-navy-850">
-              <div className="text-2xl font-bold text-ice-gold-400">
-                {analytics.last_accessed
-                  ? new Date(analytics.last_accessed).toLocaleDateString()
-                  : 'Never'}
-              </div>
-              <div className="text-sm text-ice-navy-400">Last Accessed</div>
-            </div>
-          </div>
-
-          {analytics.recent_accesses.length > 0 && (
-            <div className="mt-4">
-              <h4 className="text-sm font-medium text-ice-gold-400 mb-2">Recent Access</h4>
-              <div className="space-y-2">
-                {analytics.recent_accesses.slice(0, 5).map((access, index) => (
-                  <div
-                    key={index}
-                    className="flex items-center justify-between text-sm p-2 rounded bg-ice-navy-850"
-                  >
-                    <span className="text-ice-navy-400">
-                      {access.user_name || 'Anonymous'}
-                    </span>
-                    <span className="text-ice-navy-500">
-                      {new Date(access.accessed_at).toLocaleString()}
-                    </span>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
-        </Card>
-      )}
+      {isOwner && <AnalyticsCard analytics={analytics} title="Collection Analytics" />}
 
       {/* Drawings Grid */}
       <div className="flex items-center justify-between mb-4">

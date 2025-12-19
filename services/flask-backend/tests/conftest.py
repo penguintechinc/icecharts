@@ -14,11 +14,7 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from app import create_app
 from app.api.v1.auth import create_access_token, hash_password
 from app.config import TestingConfig
-from app.models import (
-    create_user,
-    get_db,
-    store_refresh_token,
-)
+from app.models import create_user, get_db, store_refresh_token
 
 
 @pytest.fixture
@@ -164,9 +160,7 @@ def expired_jwt_token(app: Flask) -> str:
         }
         import jwt
 
-        return jwt.encode(
-            payload, app.config["JWT_SECRET_KEY"], algorithm="HS256"
-        )
+        return jwt.encode(payload, app.config["JWT_SECRET_KEY"], algorithm="HS256")
 
 
 @pytest.fixture
@@ -180,12 +174,11 @@ def refresh_token(app: Flask, test_user: dict) -> str:
             "exp": expires,
             "iat": datetime.utcnow(),
         }
-        import jwt
         import hashlib
 
-        token = jwt.encode(
-            payload, app.config["JWT_SECRET_KEY"], algorithm="HS256"
-        )
+        import jwt
+
+        token = jwt.encode(payload, app.config["JWT_SECRET_KEY"], algorithm="HS256")
         # Store token hash in database
         token_hash = hashlib.sha256(token.encode()).hexdigest()
         store_refresh_token(test_user["id"], token_hash, expires)

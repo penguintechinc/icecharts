@@ -1,0 +1,28 @@
+# Azure Production Overlay for Kustomize
+# Optimized for Azure AKS (Azure Kubernetes Service)
+# Features: Application Gateway Ingress, managed-premium storage, production resource allocation, 3 replicas
+# Usage: kubectl apply -k overlays/azure/
+
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+# Reference the base kustomization
+resources:
+  - ../../base
+  - ingress-patch.yaml
+  - storage-class-patch.yaml
+
+# Apply patches for Azure production environment
+patchesStrategicMerge:
+  - replica-patch.yaml
+  - resources-patch.yaml
+
+# Common labels and annotations
+commonLabels:
+  environment: azure-production
+  managed-by: kustomize
+  cloud-provider: azure
+
+commonAnnotations:
+  description: "Azure AKS production environment"
+  backup: "enabled"

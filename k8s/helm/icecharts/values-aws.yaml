@@ -1,0 +1,322 @@
+# ============================================================================
+# IceCharts Helm Chart - AWS EKS Environment Values
+# ============================================================================
+# This file overrides base values.yaml for deployments on AWS Elastic
+# Kubernetes Service (EKS) using AWS ALB (Application Load Balancer) as
+# the ingress controller and AWS Secrets Manager for secret management.
+#
+# Key features:
+# - AWS ALB ingress controller integration
+# - AWS Secrets Manager for secure secret management via External Secrets Operator
+# - GP3 storage class for EBS volumes (cost-optimized)
+# - High availability setup with 3 replicas for API and Web services
+# - Auto-scaling enabled for API and Web services based on CPU/memory
+# - Production-grade resources (100% of base values)
+# - Network policies enabled for security
+# - Monitoring stack (Prometheus + Grafana) enabled
+# - Database backups enabled with 200Gi storage
+#
+# Prerequisites:
+# - External Secrets Operator installed in cluster
+# - IAM role with Secrets Manager access (IRSA configured)
+# - AWS ALB controller installed in cluster
+# - AWS Certificate Manager certificate created and ARN updated
+#
+# Usage:
+#   helm install icecharts . -f values.yaml -f values-aws.yaml
+# ============================================================================
+
+# ============================================================================
+# Global Settings
+# ============================================================================
+global:
+  # Use AWS GP3 storage class
+  storageClass: gp3
+
+# ============================================================================
+# Secrets Management
+# ============================================================================
+secrets:
+  # Use External Secrets Operator for AWS Secrets Manager integration
+  provider: external-secrets
+
+  # External Secrets Operator configuration
+  externalSecrets:
+    # Use AWS Secrets Manager backend
+    backend: aws
+
+    # Refresh secrets every hour
+    refreshInterval: 1h
+
+    # AWS configuration
+    aws:
+      # Update with your AWS region
+      region: us-west-2
+
+      # Prefix for secret paths in AWS Secrets Manager
+      secretsPrefix: "icecharts/prod/"
+
+      # IRSA role ARN (leave empty to use node IAM role)
+      # Format: arn:aws:iam::ACCOUNT_ID:role/ROLE_NAME
+      roleArn: ""
+
+      # Secret names in AWS Secrets Manager
+      secrets:
+        postgres: "postgres-credentials"
+        redis: "redis-credentials"
+        minio: "minio-credentials"
+        api: "api-secrets"
+        admin: "admin-credentials"
+        oauth: "oauth-credentials"
+        smtp: "smtp-credentials"
+
+# ============================================================================
+# PostgreSQL Configuration
+# ============================================================================
+postgres:
+  # Single primary node (can be scaled with replicas if using RDS)
+  replicaCount: 1
+
+  # Production-grade storage
+  persistence:
+    enabled: true
+    size: 100Gi
+
+  # Production resources (100% of base)
+  resources:
+    requests:
+      memory: "500Mi"
+      cpu: "250m"
+    limits:
+      memory: "2Gi"
+      cpu: "1000m"
+
+# ============================================================================
+# Redis Configuration
+# ============================================================================
+redis:
+  # Single node (can be scaled with replicas for HA)
+  replicaCount: 1
+
+  # Production-grade storage
+  persistence:
+    enabled: true
+    size: 50Gi
+
+  # Production resources (100% of base)
+  resources:
+    requests:
+      memory: "256Mi"
+      cpu: "100m"
+    limits:
+      memory: "1Gi"
+      cpu: "500m"
+
+# ============================================================================
+# MinIO Configuration
+# ============================================================================
+minio:
+  # Single node (can be scaled with replicas for distributed mode)
+  replicaCount: 1
+
+  # Production-grade storage
+  persistence:
+    enabled: true
+    size: 100Gi
+
+  # Production resources (100% of base)
+  resources:
+    requests:
+      memory: "512Mi"
+      cpu: "250m"
+    limits:
+      memory: "2Gi"
+      cpu: "1000m"
+
+# ============================================================================
+# API (Flask Backend) Configuration
+# ============================================================================
+api:
+  # Multiple replicas for high availability
+  replicaCount: 3
+
+  # Environment configuration for AWS
+  env:
+    # Production settings
+    debug: "false"
+    logLevel: info
+    flaskEnv: production
+
+  # Production resources (100% of base)
+  resources:
+    requests:
+      memory: "512Mi"
+      cpu: "250m"
+    limits:
+      memory: "2Gi"
+      cpu: "1000m"
+
+  # Enable auto-scaling for production workloads
+  autoscaling:
+    enabled: true
+    minReplicas: 3
+    maxReplicas: 10
+    targetCPUUtilizationPercentage: 70
+    targetMemoryUtilizationPercentage: 80
+    scaleDownStabilizationWindowSeconds: 300
+    scaleUpStabilizationWindowSeconds: 60
+
+# ============================================================================
+# Web (React Frontend) Configuration
+# ============================================================================
+web:
+  # Multiple replicas for high availability
+  replicaCount: 3
+
+  # Production resources (100% of base)
+  resources:
+    requests:
+      memory: "256Mi"
+      cpu: "100m"
+    limits:
+      memory: "1Gi"
+      cpu: "500m"
+
+  # Enable auto-scaling for production workloads
+  autoscaling:
+    enabled: true
+    minReplicas: 3
+    maxReplicas: 10
+    targetCPUUtilizationPercentage: 70
+
+# ============================================================================
+# Ingress Configuration
+# ============================================================================
+ingress:
+  # Enable ingress for AWS ALB
+  enabled: true
+
+  # Use AWS ALB as ingress controller
+  className: alb
+
+  # Update with your domain name
+  host: icecharts.example.com
+
+  # Enable TLS with AWS ACM certificate
+  tls:
+    enabled: true
+    # Update with your AWS Certificate Manager certificate ARN
+    # Format: arn:aws:acm:REGION:ACCOUNT_ID:certificate/CERTIFICATE_ID
+    certificateArn: "arn:aws:acm:us-west-2:ACCOUNT_ID:certificate/CERTIFICATE_ID"
+
+  # AWS ALB specific annotations
+  annotations:
+    alb.ingress.kubernetes.io/scheme: internet-facing
+    alb.ingress.kubernetes.io/target-type: ip
+    alb.ingress.kubernetes.io/listen-ports: '[{"HTTP": 80}, {"HTTPS": 443}]'
+    alb.ingress.kubernetes.io/ssl-redirect: '443'
+
+# ============================================================================
+# Monitoring Configuration
+# ============================================================================
+monitoring:
+  # Enable monitoring stack for production
+  enabled: true
+
+  prometheus:
+    # Enable Prometheus for metrics collection
+    enabled: true
+
+    # Production storage for Prometheus
+    persistence:
+      enabled: true
+      size: 100Gi
+
+    # Production resources
+    resources:
+      requests:
+        memory: "1Gi"
+        cpu: "500m"
+      limits:
+        memory: "4Gi"
+        cpu: "2000m"
+
+  grafana:
+    # Enable Grafana for metrics visualization
+    enabled: true
+
+    # Storage for Grafana dashboards and data
+    persistence:
+      enabled: true
+      size: 10Gi
+
+    # Production resources
+    resources:
+      requests:
+        memory: "512Mi"
+        cpu: "250m"
+      limits:
+        memory: "2Gi"
+        cpu: "1000m"
+
+  # Enable ServiceMonitor for Prometheus Operator
+  serviceMonitor:
+    enabled: true
+    scrapeInterval: 30s
+
+# ============================================================================
+# Network Policies
+# ============================================================================
+networkPolicies:
+  # Enable network policies for production security
+  enabled: true
+
+  # Allow both ingress and egress traffic
+  policyTypes:
+    - Ingress
+    - Egress
+
+  # Allow DNS resolution for external services
+  allowDns: true
+
+# ============================================================================
+# Database Backup Configuration
+# ============================================================================
+backup:
+  # Enable automated backups for production
+  enabled: true
+
+  # Run backups daily at 2 AM UTC
+  schedule: "0 2 * * *"
+
+  # Retain backups for 30 days
+  retention: 30
+
+  # Production backup storage
+  persistence:
+    enabled: true
+    size: 200Gi
+
+  # Resources for backup jobs
+  resources:
+    requests:
+      memory: "256Mi"
+      cpu: "100m"
+    limits:
+      memory: "1Gi"
+      cpu: "500m"
+
+# ============================================================================
+# Pod Disruption Budget
+# ============================================================================
+podDisruptionBudget:
+  # Enable PDB for production to ensure availability during cluster updates
+  enabled: true
+
+  api:
+    # Allow at least 1 replica to be available
+    minAvailable: 1
+
+  web:
+    # Allow at least 1 replica to be available
+    minAvailable: 1

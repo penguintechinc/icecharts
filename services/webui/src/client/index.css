@@ -162,3 +162,59 @@
     @apply bg-gradient-to-r from-gold-500 to-gold-300 bg-clip-text text-transparent;
   }
 }
+
+/* ReactFlow Playbook Editor Styles */
+.react-flow__node {
+  cursor: grab;
+}
+
+.react-flow__node:active {
+  cursor: grabbing;
+}
+
+/* Make handles visible and interactive */
+.react-flow__handle {
+  width: 12px !important;
+  height: 12px !important;
+  background: #D4AF37 !important;
+  border: 2px solid #1e293b !important;
+  border-radius: 50% !important;
+  z-index: 10 !important;
+}
+
+.react-flow__handle:hover {
+  background: #fbbf24 !important;
+  transform: scale(1.2);
+}
+
+.react-flow__handle-top {
+  top: -6px !important;
+}
+
+.react-flow__handle-bottom {
+  bottom: -6px !important;
+}
+
+.react-flow__handle-left {
+  left: -6px !important;
+}
+
+.react-flow__handle-right {
+  right: -6px !important;
+}
+
+/* Connection line while dragging */
+.react-flow__connection-line {
+  stroke: #D4AF37;
+  stroke-width: 2;
+}
+
+/* Edge styling */
+.react-flow__edge-path {
+  stroke: #6B7280;
+  stroke-width: 2;
+}
+
+.react-flow__edge.selected .react-flow__edge-path {
+  stroke: #D4AF37;
+}

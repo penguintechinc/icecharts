@@ -1,0 +1,20 @@
+# Replica patch for local development
+# Sets minimal replicas (1 replica per service for development)
+# Using $patch: merge to merge with existing Deployment resources
+
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: api
+  namespace: icecharts
+spec:
+  replicas: 1
+
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: web
+  namespace: icecharts
+spec:
+  replicas: 1

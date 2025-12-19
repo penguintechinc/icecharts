@@ -4,7 +4,7 @@ import secrets
 from typing import Dict, List, Optional
 
 from app.models import get_db
-from app.services.permission_service import PermissionService, Permission
+from app.services.permission_service import Permission, PermissionService
 
 
 class CollectionService:
@@ -93,9 +93,7 @@ class CollectionService:
         return collection_dict
 
     @staticmethod
-    def update_collection(
-        collection_id: int, user_id: int, **kwargs
-    ) -> Optional[dict]:
+    def update_collection(collection_id: int, user_id: int, **kwargs) -> Optional[dict]:
         """
         Update a collection.
 
@@ -112,9 +110,7 @@ class CollectionService:
             ValueError: If validation fails
         """
         if not CollectionService.can_edit_collection(collection_id, user_id):
-            raise PermissionError(
-                "You don't have permission to edit this collection"
-            )
+            raise PermissionError("You don't have permission to edit this collection")
 
         db = get_db()
         collection = db(db.collections.id == collection_id).select().first()
@@ -123,12 +119,24 @@ class CollectionService:
             return None
 
         # Filter allowed fields
-        allowed_fields = {"name", "description", "share_mode", "is_public", "thumbnail_url"}
-        update_data = {k: v for k, v in kwargs.items() if k in allowed_fields and v is not None}
+        allowed_fields = {
+            "name",
+            "description",
+            "share_mode",
+            "is_public",
+            "thumbnail_url",
+        }
+        update_data = {
+            k: v for k, v in kwargs.items() if k in allowed_fields and v is not None
+        }
 
         # Validate share_mode if provided
         if "share_mode" in update_data:
-            if update_data["share_mode"] not in ["private", "link_only", "registered_users"]:
+            if update_data["share_mode"] not in [
+                "private",
+                "link_only",
+                "registered_users",
+            ]:
                 raise ValueError(
                     "share_mode must be 'private', 'link_only', or 'registered_users'"
                 )
@@ -174,10 +182,10 @@ class CollectionService:
             return False
 
         # Only owner or global admin can delete
-        if collection.owner_id != user_id and not PermissionService.is_global_admin(user_id):
-            raise PermissionError(
-                "Only the collection owner or admin can delete it"
-            )
+        if collection.owner_id != user_id and not PermissionService.is_global_admin(
+            user_id
+        ):
+            raise PermissionError("Only the collection owner or admin can delete it")
 
         # Delete collection (cascade will handle items and shares)
         db(db.collections.id == collection_id).delete()
@@ -186,9 +194,7 @@ class CollectionService:
         return True
 
     @staticmethod
-    def list_user_collections(
-        user_id: int, page: int = 1, per_page: int = 20
-    ) -> dict:
+    def list_user_collections(user_id: int, page: int = 1, per_page: int = 20) -> dict:
         """
         List collections accessible by a user.
 
@@ -239,15 +245,16 @@ class CollectionService:
         # Get paginated results
         offset = (page - 1) * per_page
         collections = db(query).select(
-            orderby=~db.collections.updated_at,
-            limitby=(offset, offset + per_page)
+            orderby=~db.collections.updated_at, limitby=(offset, offset + per_page)
         )
 
         # Add drawing count to each collection
         result_collections = []
         for collection in collections:
             coll_dict = collection.as_dict()
-            drawing_count = db(db.collection_items.collection_id == collection.id).count()
+            drawing_count = db(
+                db.collection_items.collection_id == collection.id
+            ).count()
             coll_dict["drawing_count"] = drawing_count
             result_collections.append(coll_dict)
 
@@ -281,15 +288,11 @@ class CollectionService:
         """
         # Check collection edit permission
         if not CollectionService.can_edit_collection(collection_id, user_id):
-            raise PermissionError(
-                "You don't have permission to edit this collection"
-            )
+            raise PermissionError("You don't have permission to edit this collection")
 
         # Check drawing view permission
         if not PermissionService.can_view_drawing(user_id, drawing_id):
-            raise PermissionError(
-                "You don't have permission to view this drawing"
-            )
+            raise PermissionError("You don't have permission to view this drawing")
 
         db = get_db()
 
@@ -304,10 +307,14 @@ class CollectionService:
             raise ValueError("Drawing not found")
 
         # Check if already in collection
-        existing = db(
-            (db.collection_items.collection_id == collection_id) &
-            (db.collection_items.drawing_id == drawing_id)
-        ).select().first()
+        existing = (
+            db(
+                (db.collection_items.collection_id == collection_id)
+                & (db.collection_items.drawing_id == drawing_id)
+            )
+            .select()
+            .first()
+        )
 
         if existing:
             raise ValueError("Drawing is already in this collection")
@@ -344,16 +351,14 @@ class CollectionService:
             PermissionError: If user doesn't have edit permission
         """
         if not CollectionService.can_edit_collection(collection_id, user_id):
-            raise PermissionError(
-                "You don't have permission to edit this collection"
-            )
+            raise PermissionError("You don't have permission to edit this collection")
 
         db = get_db()
 
         # Delete the item
         deleted = db(
-            (db.collection_items.collection_id == collection_id) &
-            (db.collection_items.drawing_id == drawing_id)
+            (db.collection_items.collection_id == collection_id)
+            & (db.collection_items.drawing_id == drawing_id)
         ).delete()
 
         db.commit()
@@ -379,17 +384,15 @@ class CollectionService:
             PermissionError: If user doesn't have edit permission
         """
         if not CollectionService.can_edit_collection(collection_id, user_id):
-            raise PermissionError(
-                "You don't have permission to edit this collection"
-            )
+            raise PermissionError("You don't have permission to edit this collection")
 
         db = get_db()
 
         # Update order for each drawing
         for item in drawing_orders:
             db(
-                (db.collection_items.collection_id == collection_id) &
-                (db.collection_items.drawing_id == item["drawing_id"])
+                (db.collection_items.collection_id == collection_id)
+                & (db.collection_items.drawing_id == item["drawing_id"])
             ).update(order_index=item["order_index"])
 
         db.commit()
@@ -444,7 +447,7 @@ class CollectionService:
         # Apply pagination to filtered results
         total = len(accessible_drawings)
         offset = (page - 1) * per_page
-        paginated_drawings = accessible_drawings[offset:offset + per_page]
+        paginated_drawings = accessible_drawings[offset : offset + per_page]
 
         return {
             "drawings": paginated_drawings,
@@ -477,7 +480,9 @@ class CollectionService:
             raise ValueError("Collection not found")
 
         # Only owner or admin can generate share token
-        if collection.owner_id != user_id and not PermissionService.is_global_admin(user_id):
+        if collection.owner_id != user_id and not PermissionService.is_global_admin(
+            user_id
+        ):
             raise PermissionError(
                 "Only the collection owner or admin can generate share tokens"
             )
@@ -523,9 +528,7 @@ class CollectionService:
             )
 
         if shared_with_id and shared_with_group_id:
-            raise ValueError(
-                "Cannot share with both user and group simultaneously"
-            )
+            raise ValueError("Cannot share with both user and group simultaneously")
 
         # Validate permission level
         if permission not in ["viewer", "editor", "admin"]:
@@ -538,10 +541,10 @@ class CollectionService:
             raise ValueError("Collection not found")
 
         # Check if user can share the collection (owner or admin)
-        if collection.owner_id != user_id and not PermissionService.is_global_admin(user_id):
-            raise PermissionError(
-                "Only the collection owner or admin can share it"
-            )
+        if collection.owner_id != user_id and not PermissionService.is_global_admin(
+            user_id
+        ):
+            raise PermissionError("Only the collection owner or admin can share it")
 
         # Validate target user/group exists
         if shared_with_id:
@@ -550,10 +553,14 @@ class CollectionService:
                 raise ValueError("Target user not found")
 
             # Check if already shared with this user
-            existing = db(
-                (db.collection_shares.collection_id == collection_id) &
-                (db.collection_shares.shared_with_id == shared_with_id)
-            ).select().first()
+            existing = (
+                db(
+                    (db.collection_shares.collection_id == collection_id)
+                    & (db.collection_shares.shared_with_id == shared_with_id)
+                )
+                .select()
+                .first()
+            )
 
             if existing:
                 # Update existing share
@@ -568,10 +575,17 @@ class CollectionService:
                 raise ValueError("Target group not found")
 
             # Check if already shared with this group
-            existing = db(
-                (db.collection_shares.collection_id == collection_id) &
-                (db.collection_shares.shared_with_group_id == shared_with_group_id)
-            ).select().first()
+            existing = (
+                db(
+                    (db.collection_shares.collection_id == collection_id)
+                    & (
+                        db.collection_shares.shared_with_group_id
+                        == shared_with_group_id
+                    )
+                )
+                .select()
+                .first()
+            )
 
             if existing:
                 # Update existing share
@@ -619,15 +633,17 @@ class CollectionService:
             return False
 
         # Only owner or admin can revoke shares
-        if collection.owner_id != user_id and not PermissionService.is_global_admin(user_id):
+        if collection.owner_id != user_id and not PermissionService.is_global_admin(
+            user_id
+        ):
             raise PermissionError(
                 "Only the collection owner or admin can revoke shares"
             )
 
         # Delete the share
         deleted = db(
-            (db.collection_shares.id == share_id) &
-            (db.collection_shares.collection_id == collection_id)
+            (db.collection_shares.id == share_id)
+            & (db.collection_shares.collection_id == collection_id)
         ).delete()
 
         db.commit()
@@ -656,15 +672,15 @@ class CollectionService:
             return {"user_shares": [], "group_shares": []}
 
         # Only owner or admin can view shares
-        if collection.owner_id != user_id and not PermissionService.is_global_admin(user_id):
-            raise PermissionError(
-                "Only the collection owner or admin can view shares"
-            )
+        if collection.owner_id != user_id and not PermissionService.is_global_admin(
+            user_id
+        ):
+            raise PermissionError("Only the collection owner or admin can view shares")
 
         # Get user shares with user details
         user_shares_rows = db(
-            (db.collection_shares.collection_id == collection_id) &
-            (db.collection_shares.shared_with_id == db.identities.id)
+            (db.collection_shares.collection_id == collection_id)
+            & (db.collection_shares.shared_with_id == db.identities.id)
         ).select(
             db.collection_shares.ALL,
             db.identities.id,
@@ -674,19 +690,25 @@ class CollectionService:
 
         user_shares = []
         for row in user_shares_rows:
-            user_shares.append({
-                "id": row.collection_shares.id,
-                "user_id": row.identities.id,
-                "email": row.identities.email,
-                "full_name": row.identities.full_name,
-                "permission": row.collection_shares.permission,
-                "created_at": row.collection_shares.created_at.isoformat() if row.collection_shares.created_at else None,
-            })
+            user_shares.append(
+                {
+                    "id": row.collection_shares.id,
+                    "user_id": row.identities.id,
+                    "email": row.identities.email,
+                    "full_name": row.identities.full_name,
+                    "permission": row.collection_shares.permission,
+                    "created_at": (
+                        row.collection_shares.created_at.isoformat()
+                        if row.collection_shares.created_at
+                        else None
+                    ),
+                }
+            )
 
         # Get group shares with group details
         group_shares_rows = db(
-            (db.collection_shares.collection_id == collection_id) &
-            (db.collection_shares.shared_with_group_id == db.groups.id)
+            (db.collection_shares.collection_id == collection_id)
+            & (db.collection_shares.shared_with_group_id == db.groups.id)
         ).select(
             db.collection_shares.ALL,
             db.groups.id,
@@ -695,13 +717,19 @@ class CollectionService:
 
         group_shares = []
         for row in group_shares_rows:
-            group_shares.append({
-                "id": row.collection_shares.id,
-                "group_id": row.groups.id,
-                "group_name": row.groups.name,
-                "permission": row.collection_shares.permission,
-                "created_at": row.collection_shares.created_at.isoformat() if row.collection_shares.created_at else None,
-            })
+            group_shares.append(
+                {
+                    "id": row.collection_shares.id,
+                    "group_id": row.groups.id,
+                    "group_name": row.groups.name,
+                    "permission": row.collection_shares.permission,
+                    "created_at": (
+                        row.collection_shares.created_at.isoformat()
+                        if row.collection_shares.created_at
+                        else None
+                    ),
+                }
+            )
 
         return {
             "user_shares": user_shares,
@@ -746,7 +774,9 @@ class CollectionService:
 
             try:
                 access_ip = flask_request.remote_addr if flask_request else None
-                user_agent = flask_request.headers.get('User-Agent') if flask_request else None
+                user_agent = (
+                    flask_request.headers.get("User-Agent") if flask_request else None
+                )
             except:
                 pass
 
@@ -799,10 +829,14 @@ class CollectionService:
             return True
 
         # Check if collection is shared with user
-        user_share = db(
-            (db.collection_shares.collection_id == collection_id) &
-            (db.collection_shares.shared_with_id == user_id)
-        ).select().first()
+        user_share = (
+            db(
+                (db.collection_shares.collection_id == collection_id)
+                & (db.collection_shares.shared_with_id == user_id)
+            )
+            .select()
+            .first()
+        )
 
         if user_share:
             return True
@@ -814,10 +848,14 @@ class CollectionService:
         group_ids = [g.group_id for g in user_groups]
 
         if group_ids:
-            group_share = db(
-                (db.collection_shares.collection_id == collection_id) &
-                (db.collection_shares.shared_with_group_id.belongs(group_ids))
-            ).select().first()
+            group_share = (
+                db(
+                    (db.collection_shares.collection_id == collection_id)
+                    & (db.collection_shares.shared_with_group_id.belongs(group_ids))
+                )
+                .select()
+                .first()
+            )
 
             if group_share:
                 return True
@@ -851,11 +889,15 @@ class CollectionService:
             return True
 
         # Check if user has editor or admin permission via direct share
-        user_share = db(
-            (db.collection_shares.collection_id == collection_id) &
-            (db.collection_shares.shared_with_id == user_id) &
-            (db.collection_shares.permission.belongs(["editor", "admin"]))
-        ).select().first()
+        user_share = (
+            db(
+                (db.collection_shares.collection_id == collection_id)
+                & (db.collection_shares.shared_with_id == user_id)
+                & (db.collection_shares.permission.belongs(["editor", "admin"]))
+            )
+            .select()
+            .first()
+        )
 
         if user_share:
             return True
@@ -867,11 +909,15 @@ class CollectionService:
         group_ids = [g.group_id for g in user_groups]
 
         if group_ids:
-            group_share = db(
-                (db.collection_shares.collection_id == collection_id) &
-                (db.collection_shares.shared_with_group_id.belongs(group_ids)) &
-                (db.collection_shares.permission.belongs(["editor", "admin"]))
-            ).select().first()
+            group_share = (
+                db(
+                    (db.collection_shares.collection_id == collection_id)
+                    & (db.collection_shares.shared_with_group_id.belongs(group_ids))
+                    & (db.collection_shares.permission.belongs(["editor", "admin"]))
+                )
+                .select()
+                .first()
+            )
 
             if group_share:
                 return True
@@ -896,19 +942,23 @@ class CollectionService:
 
         # Get view count from analytics
         view_count = db(
-            (db.share_analytics.share_type == "collection") &
-            (db.share_analytics.share_id == collection_id)
+            (db.share_analytics.share_type == "collection")
+            & (db.share_analytics.share_id == collection_id)
         ).count()
 
         # Get last accessed time
-        last_access = db(
-            (db.share_analytics.share_type == "collection") &
-            (db.share_analytics.share_id == collection_id)
-        ).select(
-            db.share_analytics.accessed_at,
-            orderby=~db.share_analytics.accessed_at,
-            limitby=(0, 1)
-        ).first()
+        last_access = (
+            db(
+                (db.share_analytics.share_type == "collection")
+                & (db.share_analytics.share_id == collection_id)
+            )
+            .select(
+                db.share_analytics.accessed_at,
+                orderby=~db.share_analytics.accessed_at,
+                limitby=(0, 1),
+            )
+            .first()
+        )
 
         last_accessed = last_access.accessed_at if last_access else None
 

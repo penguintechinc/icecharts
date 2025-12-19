@@ -1,0 +1,146 @@
+{{- /*
+CronJob for PostgreSQL Backup
+- Scheduled backup of PostgreSQL database with compression
+- Gzip compression with timestamp in filename
+- Automatic cleanup of old backups based on retention policy
+- Persistent volume for backup storage
+- Runs as a batch job with proper resource management
+*/ -}}
+{{- if .Values.backup.enabled }}
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: {{ include "icecharts.fullname" . }}-backup
+  namespace: {{ include "icecharts.namespace" . }}
+  labels:
+    {{- include "icecharts.labels" . | nindent 4 }}
+    app.kubernetes.io/component: backup
+  annotations:
+    description: "CronJob for PostgreSQL database backup with gzip compression"
+spec:
+  schedule: "{{ .Values.backup.schedule }}"
+  concurrencyPolicy: Forbid
+  successfulJobsHistoryLimit: 3
+  failedJobsHistoryLimit: 1
+  jobTemplate:
+    spec:
+      template:
+        metadata:
+          labels:
+            {{- include "icecharts.labels" . | nindent 12 }}
+            app.kubernetes.io/component: backup
+          annotations:
+            description: "PostgreSQL backup job"
+        spec:
+          {{- with .Values.global.imagePullSecrets }}
+          imagePullSecrets:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+          serviceAccountName: {{ include "icecharts.serviceAccountName" . }}
+          restartPolicy: OnFailure
+          securityContext:
+            runAsUser: 999
+            runAsGroup: 999
+            fsGroup: 999
+            runAsNonRoot: true
+          containers:
+            - name: postgres-backup
+              image: postgres:17-alpine
+              imagePullPolicy: IfNotPresent
+              command:
+                - /bin/sh
+                - -c
+                - |
+                  set -e
+
+                  # Create backup directory if it doesn't exist
+                  mkdir -p /backup
+
+                  # Define backup file with timestamp
+                  BACKUP_FILE="/backup/icecharts-postgres-$(date +%Y%m%d-%H%M%S).sql.gz"
+
+                  echo "Starting PostgreSQL backup..."
+                  echo "Backup file: $BACKUP_FILE"
+
+                  # Perform backup with gzip compression
+                  pg_dump \
+                    -h {{ include "icecharts.postgres.host" . }} \
+                    -p {{ include "icecharts.postgres.port" . }} \
+                    -U "$POSTGRES_USER" \
+                    -d "$POSTGRES_DB" \
+                    --verbose \
+                    | gzip > "$BACKUP_FILE"
+
+                  echo "Backup completed successfully"
+
+                  # Cleanup old backups based on retention policy
+                  echo "Cleaning up backups older than {{ .Values.backup.retention }} days..."
+                  find /backup -name "icecharts-postgres-*.sql.gz" -mtime +{{ .Values.backup.retention }} -delete
+
+                  echo "Backup cleanup completed"
+                  ls -lh /backup/
+              env:
+                - name: POSTGRES_USER
+                  valueFrom:
+                    secretKeyRef:
+                      name: {{ include "icecharts.secretName" . }}
+                      key: postgres-user
+                - name: POSTGRES_PASSWORD
+                  valueFrom:
+                    secretKeyRef:
+                      name: {{ include "icecharts.secretName" . }}
+                      key: postgres-password
+                - name: POSTGRES_DB
+                  valueFrom:
+                    secretKeyRef:
+                      name: {{ include "icecharts.secretName" . }}
+                      key: postgres-db
+                - name: PGPASSWORD
+                  valueFrom:
+                    secretKeyRef:
+                      name: {{ include "icecharts.secretName" . }}
+                      key: postgres-password
+              volumeMounts:
+                - name: backup-storage
+                  mountPath: /backup
+              resources:
+                {{- toYaml .Values.backup.resources | nindent 16 }}
+              securityContext:
+                allowPrivilegeEscalation: false
+                readOnlyRootFilesystem: false
+                capabilities:
+                  drop:
+                    - ALL
+          volumes:
+            - name: backup-storage
+              persistentVolumeClaim:
+                claimName: {{ include "icecharts.fullname" . }}-backup-pvc
+          terminationGracePeriodSeconds: 60
+{{- end }}
+---
+{{- /*
+PersistentVolumeClaim for Backup Storage
+*/ -}}
+{{- if .Values.backup.enabled }}
+{{- if .Values.backup.persistence.enabled }}
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: {{ include "icecharts.fullname" . }}-backup-pvc
+  namespace: {{ include "icecharts.namespace" . }}
+  labels:
+    {{- include "icecharts.labels" . | nindent 4 }}
+    app.kubernetes.io/component: backup
+  annotations:
+    description: "PersistentVolumeClaim for PostgreSQL backup storage"
+spec:
+  accessModes:
+    - {{ .Values.backup.persistence.accessMode }}
+  {{- with (include "icecharts.storageClass" (dict "storageClass" .Values.backup.persistence.storageClass "global" .Values.global)) }}
+  storageClassName: {{ . }}
+  {{- end }}
+  resources:
+    requests:
+      storage: {{ .Values.backup.persistence.size }}
+{{- end }}
+{{- end }}

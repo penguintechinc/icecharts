@@ -25,6 +25,7 @@ import ConnectorEdge from './edges/ConnectorEdge';
 import Toolbar from './Toolbar';
 import ShapePanel from './ShapePanel';
 import PropertiesPanel from './PropertiesPanel';
+import ElderImportDialog from '../drawing/ElderImportDialog';
 
 const nodeTypes: NodeTypes = {
   shape: ShapeNode,
@@ -60,6 +61,7 @@ const Canvas: React.FC<CanvasProps> = ({
   const [selectedNodes, setSelectedNodes] = useState<string[]>([]);
   const [selectedEdges, setSelectedEdges] = useState<string[]>([]);
   const [clipboard, setClipboard] = useState<{ nodes: Node[]; edges: Edge[] } | null>(null);
+  const [isElderDialogOpen, setIsElderDialogOpen] = useState(false);
 
   // History for undo/redo
   const [history, setHistory] = useState<HistoryState[]>([{ nodes: initialNodes, edges: initialEdges }]);
@@ -321,6 +323,21 @@ const Canvas: React.FC<CanvasProps> = ({
     [nodes, edges, setNodes, saveToHistory, onNodesChange]
   );
 
+  // Handle Elder import
+  const handleElderImport = useCallback(
+    (importedNodes: any[], importedConnectors: any[]) => {
+      const updatedNodes = [...nodes, ...importedNodes];
+      const updatedEdges = [...edges, ...importedConnectors];
+
+      setNodes(updatedNodes);
+      setEdges(updatedEdges);
+      saveToHistory(updatedNodes, updatedEdges);
+      onNodesChange?.(updatedNodes);
+      onEdgesChange?.(updatedEdges);
+    },
+    [nodes, edges, setNodes, setEdges, saveToHistory, onNodesChange, onEdgesChange]
+  );
+
   const selectedNode = selectedNodes.length === 1 ? (nodes.find((n) => n.id === selectedNodes[0]) || null) : null;
   const selectedEdge = selectedEdges.length === 1 ? (edges.find((e) => e.id === selectedEdges[0]) || null) : null;
 
@@ -361,6 +378,7 @@ const Canvas: React.FC<CanvasProps> = ({
               canUndo={historyIndex > 0}
               canRedo={historyIndex < history.length - 1}
               onAddNode={addNode}
+              onElderImport={() => setIsElderDialogOpen(true)}
             />
           </Panel>
         </ReactFlow>
@@ -372,6 +390,14 @@ const Canvas: React.FC<CanvasProps> = ({
         selectedEdge={selectedEdge}
         onUpdateNode={updateNodeData}
         onUpdateEdge={updateEdgeData}
+      />
+
+      {/* Elder Import Dialog */}
+      <ElderImportDialog
+        drawingId="current"
+        isOpen={isElderDialogOpen}
+        onClose={() => setIsElderDialogOpen(false)}
+        onImport={handleElderImport}
       />
     </div>
   );

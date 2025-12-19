@@ -1,0 +1,19 @@
+# PostgreSQL Headless Service
+# Provides stable DNS identity for StatefulSet pods
+apiVersion: v1
+kind: Service
+metadata:
+  name: postgres
+  namespace: icecharts
+  labels:
+    app.kubernetes.io/name: icecharts
+    app.kubernetes.io/component: postgres
+spec:
+  clusterIP: None  # Headless service for StatefulSet
+  selector:
+    app: postgres
+  ports:
+  - name: postgres
+    port: 5432
+    targetPort: postgres
+    protocol: TCP

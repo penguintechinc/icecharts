@@ -1,0 +1,28 @@
+# AWS Production Overlay for Kustomize
+# Optimized for AWS EKS (Elastic Kubernetes Service)
+# Features: ALB Ingress, GP3 storage, production resource allocation, 3 replicas
+# Usage: kubectl apply -k overlays/aws/
+
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+# Reference the base kustomization
+resources:
+  - ../../base
+  - ingress-patch.yaml
+  - storage-class-patch.yaml
+
+# Apply patches for AWS production environment
+patchesStrategicMerge:
+  - replica-patch.yaml
+  - resources-patch.yaml
+
+# Common labels and annotations
+commonLabels:
+  environment: aws-production
+  managed-by: kustomize
+  cloud-provider: aws
+
+commonAnnotations:
+  description: "AWS EKS production environment"
+  backup: "enabled"

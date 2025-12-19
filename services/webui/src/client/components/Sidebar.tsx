@@ -21,6 +21,7 @@ const navigation: NavCategory[] = [
     roles: ['admin', 'maintainer'],
     items: [
       { label: 'Settings', path: '/settings', icon: '⚙️', roles: ['admin', 'maintainer'] },
+      { label: 'Libraries', path: '/libraries', icon: '📚', roles: ['admin', 'maintainer'] },
     ],
   },
   {
@@ -28,6 +29,11 @@ const navigation: NavCategory[] = [
     roles: ['admin'],
     items: [
       { label: 'Users', path: '/users', icon: '👥', roles: ['admin'] },
+      { label: 'Service Accounts', path: '/admin/service-accounts', icon: '🔑', roles: ['admin'] },
+      { label: 'Activity Logs', path: '/admin/activity', icon: '📋', roles: ['admin'] },
+      { label: 'Audit Logs', path: '/admin/audit-log', icon: '🔍', roles: ['admin'] },
+      { label: 'License', path: '/admin/license', icon: '📜', roles: ['admin'] },
+      { label: 'Settings', path: '/admin/settings', icon: '⚙️', roles: ['admin'] },
     ],
   },
 ];
@@ -91,6 +97,30 @@ export default function Sidebar({ collapsed, onToggle }: SidebarProps) {
           </div>
         ))}
       </nav>
+
+      {/* Action buttons */}
+      <div className="border-t border-dark-700 p-4 space-y-2">
+        <Link
+          to="/drawings/new"
+          className={`flex items-center ${
+            collapsed ? 'justify-center' : ''
+          } px-4 py-2 text-sm text-gold-400 hover:bg-dark-800 rounded-lg transition-colors duration-200`}
+          title="New Chart"
+        >
+          <span className="text-lg">📊</span>
+          {!collapsed && <span className="ml-2">New Chart</span>}
+        </Link>
+        <Link
+          to="/playbooks/new"
+          className={`flex items-center ${
+            collapsed ? 'justify-center' : ''
+          } px-4 py-2 text-sm text-gold-400 hover:bg-dark-800 rounded-lg transition-colors duration-200`}
+          title="New Stream"
+        >
+          <span className="text-lg">⚡</span>
+          {!collapsed && <span className="ml-2">New Stream</span>}
+        </Link>
+      </div>
 
       {/* User section */}
       <div className="border-t border-dark-700 p-4">

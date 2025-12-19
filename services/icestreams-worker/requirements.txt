@@ -1,0 +1,15 @@
+# IceStreams Worker Service - Requirements
+# Python 3.11+ required
+
+# Redis Stream Support
+redis>=5.0
+
+# Database & ORM
+pydal>=20241001
+
+# HTTP & Network
+requests>=2.31.0
+aiohttp>=3.9.0
+
+# Async Support
+asyncio-contextmanager>=1.0.0

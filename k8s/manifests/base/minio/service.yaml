@@ -1,0 +1,22 @@
+# MinIO Service
+# Exposes MinIO API (9000) and Console (9001) ports
+apiVersion: v1
+kind: Service
+metadata:
+  name: minio
+  namespace: icecharts
+  labels:
+    app.kubernetes.io/name: icecharts
+    app.kubernetes.io/component: minio
+spec:
+  selector:
+    app: minio
+  ports:
+  - name: api
+    port: 9000
+    targetPort: api
+    protocol: TCP
+  - name: console
+    port: 9001
+    targetPort: console
+    protocol: TCP

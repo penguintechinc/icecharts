@@ -1,6 +1,7 @@
 """WebSocket module initialization with Flask-SocketIO."""
 
 from typing import Optional
+
 from flask import Flask
 from flask_socketio import SocketIO
 
@@ -48,7 +49,5 @@ def get_socketio() -> SocketIO:
         RuntimeError: If SocketIO has not been initialized
     """
     if socketio is None:
-        raise RuntimeError(
-            "SocketIO not initialized. Call init_socketio() first."
-        )
+        raise RuntimeError("SocketIO not initialized. Call init_socketio() first.")
     return socketio

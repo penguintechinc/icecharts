@@ -14,7 +14,9 @@
     "typecheck": "tsc --noEmit",
     "test": "vitest",
     "test:ui": "vitest --ui",
-    "test:coverage": "vitest --run --coverage"
+    "test:coverage": "vitest --run --coverage",
+    "generate-icons": "node scripts/generate-iconoir-icons.js",
+    "process-cloud-icons": "node scripts/process-cloud-icons.js"
   },
   "dependencies": {
     "@carbon/icons-react": "^11.71.0",

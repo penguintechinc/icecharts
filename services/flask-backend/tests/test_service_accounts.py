@@ -53,7 +53,9 @@ class TestServiceAccountScopes:
 
         token_scopes = ["drawings:read", "drawings:write", "exports:create"]
         assert has_all_scopes(token_scopes, ["drawings:read", "drawings:write"]) is True
-        assert has_all_scopes(token_scopes, ["drawings:read", "templates:read"]) is False
+        assert (
+            has_all_scopes(token_scopes, ["drawings:read", "templates:read"]) is False
+        )
 
     def test_get_missing_scopes(self):
         """Test getting missing scopes."""
@@ -323,3 +325,283 @@ class TestScopeEnforcement:
         headers = {"Authorization": f"Bearer {readonly_service_token}"}
         response = client.get("/api/v1/drawings", headers=headers)
         assert response.status_code == 200
+
+
+class TestServiceAccountErrorPaths:
+    """Tests for service account admin endpoint error handling."""
+
+    @pytest.fixture
+    def service_account(self, client, admin_auth_headers):
+        """Create a service account for testing."""
+        data = {
+            "name": "Error Test Account",
+            "scopes": ["drawings:read"],
+        }
+        response = client.post(
+            "/api/v1/admin/service-accounts",
+            headers=admin_auth_headers,
+            data=json.dumps(data),
+            content_type="application/json",
+        )
+        result = response.get_json()
+        return result["service_account"]
+
+    def test_update_service_account_invalid_scopes_returns_available(
+        self, client, admin_auth_headers, service_account
+    ):
+        """Test that updating with invalid scopes returns available scopes."""
+        data = {
+            "name": "Updated Name",
+            "scopes": ["invalid:scope", "also:invalid"],
+        }
+        response = client.put(
+            f"/api/v1/admin/service-accounts/{service_account['id']}",
+            headers=admin_auth_headers,
+            data=json.dumps(data),
+            content_type="application/json",
+        )
+        assert response.status_code == 400
+        result = response.get_json()
+        # Should include available scopes in error response
+        assert "available_scopes" in result or "details" in result
+
+    def test_delete_nonexistent_service_account_returns_404(
+        self, client, admin_auth_headers
+    ):
+        """Test that deleting a non-existent service account returns 404."""
+        # Use a very large ID that doesn't exist
+        response = client.delete(
+            "/api/v1/admin/service-accounts/999999",
+            headers=admin_auth_headers,
+        )
+        assert response.status_code == 404
+
+    def test_generate_token_invalid_expires_days(
+        self, client, admin_auth_headers, service_account
+    ):
+        """Test that invalid expires_days values are rejected."""
+        invalid_values = [0, -1, 999999]
+
+        for invalid_value in invalid_values:
+            response = client.post(
+                f"/api/v1/admin/service-accounts/{service_account['id']}/tokens",
+                headers=admin_auth_headers,
+                data=json.dumps({"expires_days": invalid_value}),
+                content_type="application/json",
+            )
+            assert (
+                response.status_code == 400
+            ), f"Expected 400 for expires_days={invalid_value}"
+
+    def test_get_nonexistent_service_account_returns_404(
+        self, client, admin_auth_headers
+    ):
+        """Test that getting a non-existent service account returns 404."""
+        response = client.get(
+            "/api/v1/admin/service-accounts/999999",
+            headers=admin_auth_headers,
+        )
+        assert response.status_code == 404
+
+
+class TestTokenRevocationEffects:
+    """Tests to verify token revocation behavior."""
+
+    @pytest.fixture
+    def service_account_with_token(self, client, admin_auth_headers):
+        """Create a service account and generate a token."""
+        # Create service account
+        sa_data = {
+            "name": "Revocation Test Account",
+            "scopes": ["drawings:read", "drawings:write"],
+        }
+        sa_response = client.post(
+            "/api/v1/admin/service-accounts",
+            headers=admin_auth_headers,
+            data=json.dumps(sa_data),
+            content_type="application/json",
+        )
+        service_account = sa_response.get_json()["service_account"]
+
+        # Generate token
+        token_response = client.post(
+            f"/api/v1/admin/service-accounts/{service_account['id']}/tokens",
+            headers=admin_auth_headers,
+            data=json.dumps({"name": "Revocation Test Token"}),
+            content_type="application/json",
+        )
+        token_data = token_response.get_json()
+
+        return {
+            "service_account": service_account,
+            "token": token_data["token"],
+            "token_info": token_data["token_info"],
+        }
+
+    def test_revoked_token_omitted_when_include_revoked_false(
+        self, client, admin_auth_headers, service_account_with_token
+    ):
+        """Test that revoked tokens are omitted when include_revoked=false."""
+        sa = service_account_with_token["service_account"]
+        token_info = service_account_with_token["token_info"]
+
+        # Revoke the token
+        client.delete(
+            f"/api/v1/admin/service-accounts/{sa['id']}/tokens/{token_info['token_jti']}",
+            headers=admin_auth_headers,
+        )
+
+        # List tokens without revoked
+        response = client.get(
+            f"/api/v1/admin/service-accounts/{sa['id']}/tokens",
+            headers=admin_auth_headers,
+            query_string={"include_revoked": "false"},
+        )
+        assert response.status_code == 200
+        result = response.get_json()
+        tokens = result["tokens"]
+
+        # Revoked token should not be in the list
+        token_jtis = [t["token_jti"] for t in tokens]
+        assert token_info["token_jti"] not in token_jtis
+
+    def test_revoked_token_flagged_when_include_revoked_true(
+        self, client, admin_auth_headers, service_account_with_token
+    ):
+        """Test that revoked tokens show revoked_at when include_revoked=true."""
+        sa = service_account_with_token["service_account"]
+        token_info = service_account_with_token["token_info"]
+
+        # Revoke the token
+        client.delete(
+            f"/api/v1/admin/service-accounts/{sa['id']}/tokens/{token_info['token_jti']}",
+            headers=admin_auth_headers,
+        )
+
+        # List tokens with revoked
+        response = client.get(
+            f"/api/v1/admin/service-accounts/{sa['id']}/tokens",
+            headers=admin_auth_headers,
+            query_string={"include_revoked": "true"},
+        )
+        assert response.status_code == 200
+        result = response.get_json()
+        tokens = result["tokens"]
+
+        # Find our revoked token
+        revoked_token = next(
+            (t for t in tokens if t["token_jti"] == token_info["token_jti"]), None
+        )
+        assert revoked_token is not None
+        assert revoked_token["revoked_at"] is not None
+
+    def test_revoked_service_token_is_rejected(
+        self, client, admin_auth_headers, service_account_with_token
+    ):
+        """Test that revoked service tokens cannot authenticate requests."""
+        sa = service_account_with_token["service_account"]
+        token = service_account_with_token["token"]
+        token_info = service_account_with_token["token_info"]
+
+        # First verify the token works
+        headers = {"Authorization": f"Bearer {token}"}
+        response = client.get("/api/v1/drawings", headers=headers)
+        assert response.status_code == 200
+
+        # Revoke the token
+        client.delete(
+            f"/api/v1/admin/service-accounts/{sa['id']}/tokens/{token_info['token_jti']}",
+            headers=admin_auth_headers,
+        )
+
+        # Now the token should be rejected
+        response = client.get("/api/v1/drawings", headers=headers)
+        assert response.status_code == 401
+
+
+class TestBroaderScopeEnforcement:
+    """Tests for scope enforcement across different endpoints and scopes."""
+
+    @pytest.fixture
+    def templates_read_token(self, client, admin_auth_headers):
+        """Create a service account with templates:read scope."""
+        sa_data = {
+            "name": "Templates Reader",
+            "scopes": ["templates:read"],
+        }
+        sa_response = client.post(
+            "/api/v1/admin/service-accounts",
+            headers=admin_auth_headers,
+            data=json.dumps(sa_data),
+            content_type="application/json",
+        )
+        service_account = sa_response.get_json()["service_account"]
+
+        token_response = client.post(
+            f"/api/v1/admin/service-accounts/{service_account['id']}/tokens",
+            headers=admin_auth_headers,
+            data=json.dumps({"name": "Templates Read Token"}),
+            content_type="application/json",
+        )
+        return token_response.get_json()["token"]
+
+    @pytest.fixture
+    def templates_write_token(self, client, admin_auth_headers):
+        """Create a service account with templates:write scope."""
+        sa_data = {
+            "name": "Templates Writer",
+            "scopes": ["templates:write"],
+        }
+        sa_response = client.post(
+            "/api/v1/admin/service-accounts",
+            headers=admin_auth_headers,
+            data=json.dumps(sa_data),
+            content_type="application/json",
+        )
+        service_account = sa_response.get_json()["service_account"]
+
+        token_response = client.post(
+            f"/api/v1/admin/service-accounts/{service_account['id']}/tokens",
+            headers=admin_auth_headers,
+            data=json.dumps({"name": "Templates Write Token"}),
+            content_type="application/json",
+        )
+        return token_response.get_json()["token"]
+
+    def test_templates_read_allows_list_but_denies_create(
+        self, client, templates_read_token
+    ):
+        """Test that templates:read allows listing but denies creation."""
+        headers = {"Authorization": f"Bearer {templates_read_token}"}
+
+        # List should work
+        response = client.get("/api/v1/templates", headers=headers)
+        assert response.status_code == 200
+
+        # Create should be denied
+        data = {"name": "New Template", "content": {}}
+        response = client.post(
+            "/api/v1/templates",
+            headers=headers,
+            data=json.dumps(data),
+            content_type="application/json",
+        )
+        assert response.status_code == 403
+
+    def test_templates_write_allows_create(self, client, templates_write_token):
+        """Test that templates:write allows creation."""
+        headers = {"Authorization": f"Bearer {templates_write_token}"}
+
+        data = {"name": "Created Template", "content": {}}
+        response = client.post(
+            "/api/v1/templates",
+            headers=headers,
+            data=json.dumps(data),
+            content_type="application/json",
+        )
+        # Should succeed (or fail for reasons other than scopes)
+        assert response.status_code in [200, 201, 400]  # Not 403
+        if response.status_code == 403:
+            result = response.get_json()
+            # If it's 403, it shouldn't be a scope issue
+            assert "scope" not in result.get("error", "").lower()

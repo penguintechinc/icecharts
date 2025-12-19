@@ -1,0 +1,28 @@
+# Azure Storage Class Patch
+# Configures Azure Managed Disks for persistent volumes
+# Uses managed-premium (SSD) for high-performance storage
+# Note: PVCs are managed by StatefulSet volumeClaimTemplates, not defined here
+
+apiVersion: storage.k8s.io/v1
+kind: StorageClass
+metadata:
+  name: azure-managed-premium
+provisioner: disk.csi.azure.com
+parameters:
+  skuName: Premium_LRS  # Locally Redundant Storage (Premium)
+  kind: Managed
+reclaimPolicy: Retain
+allowVolumeExpansion: true
+
+---
+# Alternative: Standard managed disk storage class
+apiVersion: storage.k8s.io/v1
+kind: StorageClass
+metadata:
+  name: azure-managed-standard
+provisioner: disk.csi.azure.com
+parameters:
+  skuName: Standard_LRS  # Locally Redundant Storage (Standard)
+  kind: Managed
+reclaimPolicy: Retain
+allowVolumeExpansion: true
