@@ -15,7 +15,7 @@ pymysql==1.1.1  # MySQL dialect for SQLAlchemy (optional, PyDAL supports MySQL)
 
 # Redis/Cache
 redis==5.2.1
-flask-caching==2.3.0
+flask-caching==2.3.1
 
 # Background Jobs & Celery
 celery==5.4.0
@@ -66,6 +66,7 @@ python-socketio==5.14.0
 python-dateutil==2.9.0.post0
 pytz==2024.2
 psutil==6.1.0  # System monitoring and resource checks
+croniter>=2.0.0  # Cron expression parsing and scheduling
 
 # Image Processing
 Pillow==12.0.0
@@ -74,7 +75,7 @@ Pillow==12.0.0
 # Cloud Storage (optional)
 boto3==1.35.90  # AWS S3
 google-cloud-storage==2.19.0  # GCS
-minio==7.2.8  # MinIO S3-compatible storage
+minio==7.2.11  # MinIO S3-compatible storage
 
 # Email Services
 sendgrid==6.10.0
