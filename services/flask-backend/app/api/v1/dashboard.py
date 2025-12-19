@@ -36,8 +36,11 @@ def get_dashboard_stats():
 
         # Count templates owned or created by user
         total_templates = db(
-            (db.drawings.is_template == True) &
-            ((db.drawings.owner_id == user_id) | (db.drawings.created_by_id == user_id))
+            (db.drawings.is_template == True)
+            & (
+                (db.drawings.owner_id == user_id)
+                | (db.drawings.created_by_id == user_id)
+            )
         ).count()
 
         # Count collections owned by user
@@ -86,19 +89,22 @@ def get_activity_feed():
         # Query recent drawings updated by or created by user, ordered by updated_at desc
         drawings = db(
             (db.drawings.owner_id == user_id) | (db.drawings.created_by_id == user_id)
-        ).select(
-            orderby=~db.drawings.updated_at,
-            limitby=(offset, offset + limit)
-        )
+        ).select(orderby=~db.drawings.updated_at, limitby=(offset, offset + limit))
 
         # Format as activity items
         activity = []
         for drawing in drawings:
             activity_item = {
                 "id": str(drawing.id),
-                "type": "drawing_updated" if drawing.updated_by_id else "drawing_created",
+                "type": (
+                    "drawing_updated" if drawing.updated_by_id else "drawing_created"
+                ),
                 "title": drawing.title or "Untitled Drawing",
-                "timestamp": drawing.updated_at.isoformat() if drawing.updated_at else drawing.created_at.isoformat() if drawing.created_at else None,
+                "timestamp": (
+                    drawing.updated_at.isoformat()
+                    if drawing.updated_at
+                    else drawing.created_at.isoformat() if drawing.created_at else None
+                ),
                 "resource_id": str(drawing.id),
                 "resource_type": "drawing",
             }
@@ -109,14 +115,19 @@ def get_activity_feed():
             (db.drawings.owner_id == user_id) | (db.drawings.created_by_id == user_id)
         ).count()
 
-        return jsonify({
-            "success": True,
-            "count": len(activity),
-            "items": activity,
-            "limit": limit,
-            "offset": offset,
-            "total": total_count,
-        }), 200
+        return (
+            jsonify(
+                {
+                    "success": True,
+                    "count": len(activity),
+                    "items": activity,
+                    "limit": limit,
+                    "offset": offset,
+                    "total": total_count,
+                }
+            ),
+            200,
+        )
 
     except Exception as e:
         current_app.logger.error(f"Error getting activity feed: {e}")

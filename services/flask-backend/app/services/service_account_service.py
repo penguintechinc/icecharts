@@ -157,8 +157,7 @@ class ServiceAccountService:
 
         return {
             "items": [
-                ServiceAccountService._serialize_service_account(a)
-                for a in accounts
+                ServiceAccountService._serialize_service_account(a) for a in accounts
             ],
             "total": total,
             "page": page,
@@ -284,6 +283,7 @@ class ServiceAccountService:
             ValueError: If account not found or token generation fails
         """
         from flask import current_app
+
         from app.auth.jwt_handler import generate_service_token
 
         # Get max days from config
@@ -312,7 +312,9 @@ class ServiceAccountService:
             token, jti = generate_service_token(sa_dict, expires_days)
 
             # Store token record in database
-            expires_at = datetime.datetime.now(datetime.timezone.utc) + datetime.timedelta(days=expires_days)
+            expires_at = datetime.datetime.now(
+                datetime.timezone.utc
+            ) + datetime.timedelta(days=expires_days)
 
             token_id = db.service_account_tokens.insert(
                 service_account_id=account_id,
@@ -413,8 +415,8 @@ class ServiceAccountService:
         try:
             now = datetime.datetime.now(datetime.timezone.utc)
             updated = db(
-                (db.service_account_tokens.service_account_id == account_id) &
-                (db.service_account_tokens.revoked_at == None)
+                (db.service_account_tokens.service_account_id == account_id)
+                & (db.service_account_tokens.revoked_at == None)
             ).update(
                 revoked_at=now,
                 revoked_by_id=revoked_by_id,
@@ -443,7 +445,9 @@ class ServiceAccountService:
             now = datetime.datetime.now(datetime.timezone.utc)
 
             # Get the token to find the service account
-            token = db(db.service_account_tokens.token_jti == token_jti).select().first()
+            token = (
+                db(db.service_account_tokens.token_jti == token_jti).select().first()
+            )
             if not token:
                 return
 
@@ -475,12 +479,15 @@ class ServiceAccountService:
             "rate_limit": account.rate_limit,
             "is_active": account.is_active,
             "created_by_id": account.created_by_id,
-            "last_used_at": account.last_used_at.isoformat()
-            if account.last_used_at else None,
-            "created_at": account.created_at.isoformat()
-            if account.created_at else None,
-            "updated_at": account.updated_at.isoformat()
-            if account.updated_at else None,
+            "last_used_at": (
+                account.last_used_at.isoformat() if account.last_used_at else None
+            ),
+            "created_at": (
+                account.created_at.isoformat() if account.created_at else None
+            ),
+            "updated_at": (
+                account.updated_at.isoformat() if account.updated_at else None
+            ),
         }
 
     @staticmethod
@@ -491,13 +498,11 @@ class ServiceAccountService:
             "service_account_id": token.service_account_id,
             "token_jti": token.token_jti,
             "name": token.name,
-            "expires_at": token.expires_at.isoformat()
-            if token.expires_at else None,
-            "last_used_at": token.last_used_at.isoformat()
-            if token.last_used_at else None,
+            "expires_at": token.expires_at.isoformat() if token.expires_at else None,
+            "last_used_at": (
+                token.last_used_at.isoformat() if token.last_used_at else None
+            ),
             "last_used_ip": token.last_used_ip,
-            "revoked_at": token.revoked_at.isoformat()
-            if token.revoked_at else None,
-            "created_at": token.created_at.isoformat()
-            if token.created_at else None,
+            "revoked_at": token.revoked_at.isoformat() if token.revoked_at else None,
+            "created_at": token.created_at.isoformat() if token.created_at else None,
         }

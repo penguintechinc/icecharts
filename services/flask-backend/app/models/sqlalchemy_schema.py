@@ -5,7 +5,9 @@ After initialization, PyDAL is used for all database operations.
 """
 
 import datetime
+
 from sqlalchemy import (
+    JSON,
     Boolean,
     Column,
     DateTime,
@@ -13,7 +15,6 @@ from sqlalchemy import (
     Integer,
     String,
     Text,
-    JSON,
     create_engine,
 )
 from sqlalchemy.ext.declarative import declarative_base
@@ -52,7 +53,9 @@ class Identity(Base):
     __tablename__ = "identities"
 
     id = Column(Integer, primary_key=True, autoincrement=True)
-    tenant_id = Column(Integer, ForeignKey("tenants.id", ondelete="CASCADE"), nullable=False, default=1)
+    tenant_id = Column(
+        Integer, ForeignKey("tenants.id", ondelete="CASCADE"), nullable=False, default=1
+    )
     username = Column(String(255), nullable=False, unique=True)
     email = Column(String(255))
     full_name = Column(String(255))
@@ -79,7 +82,9 @@ class Group(Base):
     __tablename__ = "groups"
 
     id = Column(Integer, primary_key=True, autoincrement=True)
-    tenant_id = Column(Integer, ForeignKey("tenants.id", ondelete="CASCADE"), nullable=False, default=1)
+    tenant_id = Column(
+        Integer, ForeignKey("tenants.id", ondelete="CASCADE"), nullable=False, default=1
+    )
     name = Column(String(255), nullable=False)
     description = Column(Text)
     owner_id = Column(Integer, ForeignKey("identities.id", ondelete="CASCADE"))
@@ -98,7 +103,9 @@ class IdpConfiguration(Base):
     __tablename__ = "idp_configurations"
 
     id = Column(Integer, primary_key=True, autoincrement=True)
-    tenant_id = Column(Integer, ForeignKey("tenants.id", ondelete="CASCADE"), nullable=False, default=1)
+    tenant_id = Column(
+        Integer, ForeignKey("tenants.id", ondelete="CASCADE"), nullable=False, default=1
+    )
     provider_type = Column(String(50), nullable=False)
     name = Column(String(255), nullable=False)
     entity_id = Column(String(512))
@@ -124,7 +131,9 @@ class StorageProvider(Base):
     __tablename__ = "storage_providers"
 
     id = Column(Integer, primary_key=True, autoincrement=True)
-    tenant_id = Column(Integer, ForeignKey("tenants.id", ondelete="CASCADE"), nullable=False, default=1)
+    tenant_id = Column(
+        Integer, ForeignKey("tenants.id", ondelete="CASCADE"), nullable=False, default=1
+    )
     name = Column(String(255), nullable=False)
     provider_type = Column(String(50), nullable=False)
     config_json = Column(JSON, nullable=False)
@@ -146,8 +155,12 @@ class GroupMembership(Base):
     __tablename__ = "group_memberships"
 
     id = Column(Integer, primary_key=True, autoincrement=True)
-    identity_id = Column(Integer, ForeignKey("identities.id", ondelete="CASCADE"), nullable=False)
-    group_id = Column(Integer, ForeignKey("groups.id", ondelete="CASCADE"), nullable=False)
+    identity_id = Column(
+        Integer, ForeignKey("identities.id", ondelete="CASCADE"), nullable=False
+    )
+    group_id = Column(
+        Integer, ForeignKey("groups.id", ondelete="CASCADE"), nullable=False
+    )
     expires_at = Column(DateTime)
     created_at = Column(DateTime, default=datetime.datetime.now(datetime.timezone.utc))
 
@@ -158,10 +171,14 @@ class Drawing(Base):
     __tablename__ = "drawings"
 
     id = Column(Integer, primary_key=True, autoincrement=True)
-    tenant_id = Column(Integer, ForeignKey("tenants.id", ondelete="CASCADE"), nullable=False, default=1)
+    tenant_id = Column(
+        Integer, ForeignKey("tenants.id", ondelete="CASCADE"), nullable=False, default=1
+    )
     title = Column(String(255), nullable=False)
     description = Column(Text)
-    created_by_id = Column(Integer, ForeignKey("identities.id", ondelete="CASCADE"), nullable=False)
+    created_by_id = Column(
+        Integer, ForeignKey("identities.id", ondelete="CASCADE"), nullable=False
+    )
     updated_by_id = Column(Integer, ForeignKey("identities.id", ondelete="SET NULL"))
     owner_id = Column(Integer, ForeignKey("identities.id", ondelete="CASCADE"))
     user_id = Column(Integer, ForeignKey("identities.id", ondelete="CASCADE"))
@@ -184,12 +201,18 @@ class DrawingVersion(Base):
     __tablename__ = "drawing_versions"
 
     id = Column(Integer, primary_key=True, autoincrement=True)
-    drawing_id = Column(Integer, ForeignKey("drawings.id", ondelete="CASCADE"), nullable=False)
+    drawing_id = Column(
+        Integer, ForeignKey("drawings.id", ondelete="CASCADE"), nullable=False
+    )
     version_number = Column(Integer, nullable=False)
-    created_by_id = Column(Integer, ForeignKey("identities.id", ondelete="CASCADE"), nullable=False)
+    created_by_id = Column(
+        Integer, ForeignKey("identities.id", ondelete="CASCADE"), nullable=False
+    )
     content_json = Column(JSON, nullable=False)
     change_summary = Column(Text)
-    storage_provider_id = Column(Integer, ForeignKey("storage_providers.id", ondelete="SET NULL"))
+    storage_provider_id = Column(
+        Integer, ForeignKey("storage_providers.id", ondelete="SET NULL")
+    )
     storage_path = Column(String(1024))
     created_at = Column(DateTime, default=datetime.datetime.now(datetime.timezone.utc))
 
@@ -200,7 +223,9 @@ class Shape(Base):
     __tablename__ = "shapes"
 
     id = Column(Integer, primary_key=True, autoincrement=True)
-    drawing_id = Column(Integer, ForeignKey("drawings.id", ondelete="CASCADE"), nullable=False)
+    drawing_id = Column(
+        Integer, ForeignKey("drawings.id", ondelete="CASCADE"), nullable=False
+    )
     shape_type = Column(String(50), nullable=False)
     x_position = Column(Integer)
     y_position = Column(Integer)
@@ -221,7 +246,9 @@ class Connector(Base):
     __tablename__ = "connectors"
 
     id = Column(Integer, primary_key=True, autoincrement=True)
-    drawing_id = Column(Integer, ForeignKey("drawings.id", ondelete="CASCADE"), nullable=False)
+    drawing_id = Column(
+        Integer, ForeignKey("drawings.id", ondelete="CASCADE"), nullable=False
+    )
     start_shape_id = Column(Integer, ForeignKey("shapes.id", ondelete="CASCADE"))
     end_shape_id = Column(Integer, ForeignKey("shapes.id", ondelete="CASCADE"))
     connector_type = Column(String(50))
@@ -240,8 +267,15 @@ class ShapeMetadata(Base):
     __tablename__ = "shape_metadata"
 
     id = Column(Integer, primary_key=True, autoincrement=True)
-    shape_id = Column(Integer, ForeignKey("shapes.id", ondelete="CASCADE"), nullable=False, unique=True)
-    drawing_id = Column(Integer, ForeignKey("drawings.id", ondelete="CASCADE"), nullable=False)
+    shape_id = Column(
+        Integer,
+        ForeignKey("shapes.id", ondelete="CASCADE"),
+        nullable=False,
+        unique=True,
+    )
+    drawing_id = Column(
+        Integer, ForeignKey("drawings.id", ondelete="CASCADE"), nullable=False
+    )
     label = Column(String(255))
     description = Column(Text)
     custom_data = Column(JSON)
@@ -259,8 +293,12 @@ class Comment(Base):
     __tablename__ = "comments"
 
     id = Column(Integer, primary_key=True, autoincrement=True)
-    drawing_id = Column(Integer, ForeignKey("drawings.id", ondelete="CASCADE"), nullable=False)
-    author_id = Column(Integer, ForeignKey("identities.id", ondelete="CASCADE"), nullable=False)
+    drawing_id = Column(
+        Integer, ForeignKey("drawings.id", ondelete="CASCADE"), nullable=False
+    )
+    author_id = Column(
+        Integer, ForeignKey("identities.id", ondelete="CASCADE"), nullable=False
+    )
     text_content = Column(Text, nullable=False)
     x_position = Column(Integer)
     y_position = Column(Integer)
@@ -279,7 +317,9 @@ class DrawingShare(Base):
     __tablename__ = "drawing_shares"
 
     id = Column(Integer, primary_key=True, autoincrement=True)
-    drawing_id = Column(Integer, ForeignKey("drawings.id", ondelete="CASCADE"), nullable=False)
+    drawing_id = Column(
+        Integer, ForeignKey("drawings.id", ondelete="CASCADE"), nullable=False
+    )
     shared_with_id = Column(Integer, ForeignKey("identities.id", ondelete="CASCADE"))
     shared_with_group_id = Column(Integer, ForeignKey("groups.id", ondelete="CASCADE"))
     user_id = Column(Integer, ForeignKey("identities.id", ondelete="CASCADE"))
@@ -298,8 +338,12 @@ class CollaborationSession(Base):
     __tablename__ = "collaboration_sessions"
 
     id = Column(Integer, primary_key=True, autoincrement=True)
-    drawing_id = Column(Integer, ForeignKey("drawings.id", ondelete="CASCADE"), nullable=False)
-    identity_id = Column(Integer, ForeignKey("identities.id", ondelete="CASCADE"), nullable=False)
+    drawing_id = Column(
+        Integer, ForeignKey("drawings.id", ondelete="CASCADE"), nullable=False
+    )
+    identity_id = Column(
+        Integer, ForeignKey("identities.id", ondelete="CASCADE"), nullable=False
+    )
     session_id = Column(String(255), nullable=False)
     socket_id = Column(String(255))
     cursor_position_json = Column(JSON)
@@ -318,8 +362,12 @@ class GroupMember(Base):
     __tablename__ = "group_members"
 
     id = Column(Integer, primary_key=True, autoincrement=True)
-    group_id = Column(Integer, ForeignKey("groups.id", ondelete="CASCADE"), nullable=False)
-    user_id = Column(Integer, ForeignKey("identities.id", ondelete="CASCADE"), nullable=False)
+    group_id = Column(
+        Integer, ForeignKey("groups.id", ondelete="CASCADE"), nullable=False
+    )
+    user_id = Column(
+        Integer, ForeignKey("identities.id", ondelete="CASCADE"), nullable=False
+    )
     role = Column(String(50), default="member")
     joined_at = Column(DateTime, default=datetime.datetime.now(datetime.timezone.utc))
 
@@ -330,8 +378,12 @@ class CommentReply(Base):
     __tablename__ = "comment_replies"
 
     id = Column(Integer, primary_key=True, autoincrement=True)
-    comment_id = Column(Integer, ForeignKey("comments.id", ondelete="CASCADE"), nullable=False)
-    author_id = Column(Integer, ForeignKey("identities.id", ondelete="CASCADE"), nullable=False)
+    comment_id = Column(
+        Integer, ForeignKey("comments.id", ondelete="CASCADE"), nullable=False
+    )
+    author_id = Column(
+        Integer, ForeignKey("identities.id", ondelete="CASCADE"), nullable=False
+    )
     text_content = Column(Text, nullable=False)
     created_at = Column(DateTime, default=datetime.datetime.now(datetime.timezone.utc))
 
@@ -342,11 +394,15 @@ class ShapeLibrary(Base):
     __tablename__ = "shape_libraries"
 
     id = Column(Integer, primary_key=True, autoincrement=True)
-    tenant_id = Column(Integer, ForeignKey("tenants.id", ondelete="CASCADE"), nullable=False, default=1)
+    tenant_id = Column(
+        Integer, ForeignKey("tenants.id", ondelete="CASCADE"), nullable=False, default=1
+    )
     name = Column(String(255), nullable=False)
     description = Column(Text)
     is_public = Column(Boolean, default=False, nullable=False)
-    owner_id = Column(Integer, ForeignKey("identities.id", ondelete="CASCADE"), nullable=False)
+    owner_id = Column(
+        Integer, ForeignKey("identities.id", ondelete="CASCADE"), nullable=False
+    )
     created_at = Column(DateTime, default=datetime.datetime.now(datetime.timezone.utc))
     updated_at = Column(
         DateTime,
@@ -361,7 +417,9 @@ class LibraryShape(Base):
     __tablename__ = "library_shapes"
 
     id = Column(Integer, primary_key=True, autoincrement=True)
-    library_id = Column(Integer, ForeignKey("shape_libraries.id", ondelete="CASCADE"), nullable=False)
+    library_id = Column(
+        Integer, ForeignKey("shape_libraries.id", ondelete="CASCADE"), nullable=False
+    )
     name = Column(String(255), nullable=False)
     shape_type = Column(String(50), nullable=False)
     default_width = Column(Integer)
@@ -377,10 +435,14 @@ class Collection(Base):
     __tablename__ = "collections"
 
     id = Column(Integer, primary_key=True, autoincrement=True)
-    tenant_id = Column(Integer, ForeignKey("tenants.id", ondelete="CASCADE"), nullable=False, default=1)
+    tenant_id = Column(
+        Integer, ForeignKey("tenants.id", ondelete="CASCADE"), nullable=False, default=1
+    )
     name = Column(String(255), nullable=False)
     description = Column(Text)
-    owner_id = Column(Integer, ForeignKey("identities.id", ondelete="CASCADE"), nullable=False)
+    owner_id = Column(
+        Integer, ForeignKey("identities.id", ondelete="CASCADE"), nullable=False
+    )
     thumbnail_url = Column(String(500))
     is_public = Column(Boolean, default=False, nullable=False)
     share_token = Column(String(255), unique=True)
@@ -399,9 +461,15 @@ class CollectionItem(Base):
     __tablename__ = "collection_items"
 
     id = Column(Integer, primary_key=True, autoincrement=True)
-    collection_id = Column(Integer, ForeignKey("collections.id", ondelete="CASCADE"), nullable=False)
-    drawing_id = Column(Integer, ForeignKey("drawings.id", ondelete="CASCADE"), nullable=False)
-    added_by_id = Column(Integer, ForeignKey("identities.id", ondelete="SET NULL"), nullable=False)
+    collection_id = Column(
+        Integer, ForeignKey("collections.id", ondelete="CASCADE"), nullable=False
+    )
+    drawing_id = Column(
+        Integer, ForeignKey("drawings.id", ondelete="CASCADE"), nullable=False
+    )
+    added_by_id = Column(
+        Integer, ForeignKey("identities.id", ondelete="SET NULL"), nullable=False
+    )
     order_index = Column(Integer, default=0)
     added_at = Column(DateTime, default=datetime.datetime.now(datetime.timezone.utc))
 
@@ -412,11 +480,15 @@ class CollectionShare(Base):
     __tablename__ = "collection_shares"
 
     id = Column(Integer, primary_key=True, autoincrement=True)
-    collection_id = Column(Integer, ForeignKey("collections.id", ondelete="CASCADE"), nullable=False)
+    collection_id = Column(
+        Integer, ForeignKey("collections.id", ondelete="CASCADE"), nullable=False
+    )
     shared_with_id = Column(Integer, ForeignKey("identities.id", ondelete="CASCADE"))
     shared_with_group_id = Column(Integer, ForeignKey("groups.id", ondelete="CASCADE"))
     permission = Column(String(50), default="viewer")
-    created_by_id = Column(Integer, ForeignKey("identities.id", ondelete="SET NULL"), nullable=False)
+    created_by_id = Column(
+        Integer, ForeignKey("identities.id", ondelete="SET NULL"), nullable=False
+    )
     created_at = Column(DateTime, default=datetime.datetime.now(datetime.timezone.utc))
 
 
@@ -426,7 +498,9 @@ class EmailVerification(Base):
     __tablename__ = "email_verifications"
 
     id = Column(Integer, primary_key=True, autoincrement=True)
-    user_id = Column(Integer, ForeignKey("identities.id", ondelete="CASCADE"), nullable=False)
+    user_id = Column(
+        Integer, ForeignKey("identities.id", ondelete="CASCADE"), nullable=False
+    )
     email = Column(String(255), nullable=False)
     verification_token = Column(String(255), nullable=False, unique=True)
     expires_at = Column(DateTime, nullable=False)
@@ -465,7 +539,9 @@ class ShareAnalytic(Base):
     accessed_by_id = Column(Integer, ForeignKey("identities.id", ondelete="SET NULL"))
     access_ip = Column(String(50))
     user_agent = Column(String(500))
-    accessed_at = Column(DateTime, default=datetime.datetime.now(datetime.timezone.utc), nullable=False)
+    accessed_at = Column(
+        DateTime, default=datetime.datetime.now(datetime.timezone.utc), nullable=False
+    )
 
 
 class LoginEvent(Base):
@@ -474,7 +550,9 @@ class LoginEvent(Base):
     __tablename__ = "login_events"
 
     id = Column(Integer, primary_key=True, autoincrement=True)
-    user_id = Column(Integer, ForeignKey("identities.id", ondelete="CASCADE"), nullable=False)
+    user_id = Column(
+        Integer, ForeignKey("identities.id", ondelete="CASCADE"), nullable=False
+    )
     login_type = Column(String(50), default="password")  # password, google, sso
     ip_address = Column(String(50))
     user_agent = Column(String(500))
@@ -482,7 +560,9 @@ class LoginEvent(Base):
     country_name = Column(String(100))
     city = Column(String(100))
     success = Column(Boolean, default=True, nullable=False)
-    created_at = Column(DateTime, default=datetime.datetime.now(datetime.timezone.utc), nullable=False)
+    created_at = Column(
+        DateTime, default=datetime.datetime.now(datetime.timezone.utc), nullable=False
+    )
 
 
 class ActivityLog(Base):
@@ -491,8 +571,12 @@ class ActivityLog(Base):
     __tablename__ = "activity_logs"
 
     id = Column(Integer, primary_key=True, autoincrement=True)
-    user_id = Column(Integer, ForeignKey("identities.id", ondelete="CASCADE"), nullable=False)
-    tenant_id = Column(Integer, ForeignKey("tenants.id", ondelete="CASCADE"), nullable=False)
+    user_id = Column(
+        Integer, ForeignKey("identities.id", ondelete="CASCADE"), nullable=False
+    )
+    tenant_id = Column(
+        Integer, ForeignKey("tenants.id", ondelete="CASCADE"), nullable=False
+    )
     action = Column(String(100), nullable=False)
     resource_type = Column(String(100))
     resource_id = Column(Integer)
@@ -500,7 +584,9 @@ class ActivityLog(Base):
     details = Column(JSON)
     ip_address = Column(String(50))
     user_agent = Column(String(500))
-    timestamp = Column(DateTime, default=datetime.datetime.now(datetime.timezone.utc), nullable=False)
+    timestamp = Column(
+        DateTime, default=datetime.datetime.now(datetime.timezone.utc), nullable=False
+    )
 
 
 class AuditLog(Base):
@@ -510,7 +596,9 @@ class AuditLog(Base):
 
     id = Column(Integer, primary_key=True, autoincrement=True)
     user_id = Column(Integer, ForeignKey("identities.id", ondelete="SET NULL"))
-    tenant_id = Column(Integer, ForeignKey("tenants.id", ondelete="CASCADE"), nullable=False)
+    tenant_id = Column(
+        Integer, ForeignKey("tenants.id", ondelete="CASCADE"), nullable=False
+    )
     action = Column(String(100), nullable=False)
     resource_type = Column(String(100), nullable=False)
     resource_id = Column(Integer)
@@ -521,7 +609,9 @@ class AuditLog(Base):
     user_agent = Column(String(500))
     status = Column(String(50), default="success")
     error_message = Column(Text)
-    timestamp = Column(DateTime, default=datetime.datetime.now(datetime.timezone.utc), nullable=False)
+    timestamp = Column(
+        DateTime, default=datetime.datetime.now(datetime.timezone.utc), nullable=False
+    )
 
 
 class Template(Base):
@@ -530,14 +620,18 @@ class Template(Base):
     __tablename__ = "templates"
 
     id = Column(Integer, primary_key=True, autoincrement=True)
-    tenant_id = Column(Integer, ForeignKey("tenants.id", ondelete="CASCADE"), nullable=False, default=1)
+    tenant_id = Column(
+        Integer, ForeignKey("tenants.id", ondelete="CASCADE"), nullable=False, default=1
+    )
     name = Column(String(255), nullable=False)
     description = Column(Text)
     content = Column(JSON, nullable=False)
     category = Column(String(100), default="custom")
     thumbnail_url = Column(String(1024))
     is_public = Column(Boolean, default=False, nullable=False)
-    created_by_id = Column(Integer, ForeignKey("identities.id", ondelete="CASCADE"), nullable=False)
+    created_by_id = Column(
+        Integer, ForeignKey("identities.id", ondelete="CASCADE"), nullable=False
+    )
     created_at = Column(DateTime, default=datetime.datetime.now(datetime.timezone.utc))
     updated_at = Column(
         DateTime,
@@ -552,14 +646,18 @@ class ServiceAccount(Base):
     __tablename__ = "service_accounts"
 
     id = Column(Integer, primary_key=True, autoincrement=True)
-    tenant_id = Column(Integer, ForeignKey("tenants.id", ondelete="CASCADE"), nullable=False, default=1)
+    tenant_id = Column(
+        Integer, ForeignKey("tenants.id", ondelete="CASCADE"), nullable=False, default=1
+    )
     name = Column(String(255), nullable=False)
     description = Column(Text)
     client_id = Column(String(50), nullable=False, unique=True)
     scopes = Column(JSON)
     rate_limit = Column(Integer, default=1000)
     is_active = Column(Boolean, default=True, nullable=False)
-    created_by_id = Column(Integer, ForeignKey("identities.id", ondelete="CASCADE"), nullable=False)
+    created_by_id = Column(
+        Integer, ForeignKey("identities.id", ondelete="CASCADE"), nullable=False
+    )
     last_used_at = Column(DateTime)
     created_at = Column(DateTime, default=datetime.datetime.now(datetime.timezone.utc))
     updated_at = Column(
@@ -575,7 +673,9 @@ class ServiceAccountToken(Base):
     __tablename__ = "service_account_tokens"
 
     id = Column(Integer, primary_key=True, autoincrement=True)
-    service_account_id = Column(Integer, ForeignKey("service_accounts.id", ondelete="CASCADE"), nullable=False)
+    service_account_id = Column(
+        Integer, ForeignKey("service_accounts.id", ondelete="CASCADE"), nullable=False
+    )
     token_jti = Column(String(100), nullable=False, unique=True)
     name = Column(String(255))
     expires_at = Column(DateTime, nullable=False)
@@ -592,9 +692,15 @@ class MigrationJob(Base):
     __tablename__ = "migration_jobs"
 
     id = Column(Integer, primary_key=True, autoincrement=True)
-    user_id = Column(Integer, ForeignKey("identities.id", ondelete="CASCADE"), nullable=False)
-    source_provider_id = Column(Integer, ForeignKey("storage_providers.id", ondelete="CASCADE"), nullable=False)
-    target_provider_id = Column(Integer, ForeignKey("storage_providers.id", ondelete="CASCADE"), nullable=False)
+    user_id = Column(
+        Integer, ForeignKey("identities.id", ondelete="CASCADE"), nullable=False
+    )
+    source_provider_id = Column(
+        Integer, ForeignKey("storage_providers.id", ondelete="CASCADE"), nullable=False
+    )
+    target_provider_id = Column(
+        Integer, ForeignKey("storage_providers.id", ondelete="CASCADE"), nullable=False
+    )
     status = Column(String(50), default="pending")
     progress = Column(Integer, default=0)
     total_count = Column(Integer, default=0)
@@ -621,10 +727,14 @@ class Playbook(Base):
     __tablename__ = "playbooks"
 
     id = Column(Integer, primary_key=True, autoincrement=True)
-    tenant_id = Column(Integer, ForeignKey("tenants.id", ondelete="CASCADE"), nullable=False, default=1)
+    tenant_id = Column(
+        Integer, ForeignKey("tenants.id", ondelete="CASCADE"), nullable=False, default=1
+    )
     name = Column(String(255), nullable=False)
     description = Column(Text)
-    created_by_id = Column(Integer, ForeignKey("identities.id", ondelete="CASCADE"), nullable=False)
+    created_by_id = Column(
+        Integer, ForeignKey("identities.id", ondelete="CASCADE"), nullable=False
+    )
     updated_by_id = Column(Integer, ForeignKey("identities.id", ondelete="SET NULL"))
     status = Column(String(50), default="draft")
     is_enabled = Column(Boolean, default=False, nullable=False)
@@ -654,7 +764,9 @@ class PlaybookNode(Base):
     __tablename__ = "playbook_nodes"
 
     id = Column(Integer, primary_key=True, autoincrement=True)
-    playbook_id = Column(Integer, ForeignKey("playbooks.id", ondelete="CASCADE"), nullable=False)
+    playbook_id = Column(
+        Integer, ForeignKey("playbooks.id", ondelete="CASCADE"), nullable=False
+    )
     node_id = Column(String(100), nullable=False)
     node_type = Column(String(50), nullable=False)
     node_category = Column(String(50), default="transform")
@@ -681,7 +793,9 @@ class PlaybookEdge(Base):
     __tablename__ = "playbook_edges"
 
     id = Column(Integer, primary_key=True, autoincrement=True)
-    playbook_id = Column(Integer, ForeignKey("playbooks.id", ondelete="CASCADE"), nullable=False)
+    playbook_id = Column(
+        Integer, ForeignKey("playbooks.id", ondelete="CASCADE"), nullable=False
+    )
     edge_id = Column(String(100), nullable=False)
     source_node_id = Column(String(100), nullable=False)
     target_node_id = Column(String(100), nullable=False)
@@ -698,9 +812,13 @@ class PlaybookVersion(Base):
     __tablename__ = "playbook_versions"
 
     id = Column(Integer, primary_key=True, autoincrement=True)
-    playbook_id = Column(Integer, ForeignKey("playbooks.id", ondelete="CASCADE"), nullable=False)
+    playbook_id = Column(
+        Integer, ForeignKey("playbooks.id", ondelete="CASCADE"), nullable=False
+    )
     version_number = Column(Integer, nullable=False)
-    created_by_id = Column(Integer, ForeignKey("identities.id", ondelete="CASCADE"), nullable=False)
+    created_by_id = Column(
+        Integer, ForeignKey("identities.id", ondelete="CASCADE"), nullable=False
+    )
     nodes_json = Column(JSON, nullable=False)
     edges_json = Column(JSON, nullable=False)
     canvas_json = Column(JSON)
@@ -714,7 +832,9 @@ class PlaybookWebhook(Base):
     __tablename__ = "playbook_webhooks"
 
     id = Column(Integer, primary_key=True, autoincrement=True)
-    playbook_id = Column(Integer, ForeignKey("playbooks.id", ondelete="CASCADE"), nullable=False)
+    playbook_id = Column(
+        Integer, ForeignKey("playbooks.id", ondelete="CASCADE"), nullable=False
+    )
     name = Column(String(255))
     token = Column(String(255), nullable=False, unique=True)
     signature_secret = Column(String(255))
@@ -734,7 +854,9 @@ class PlaybookExecution(Base):
     __tablename__ = "playbook_executions"
 
     id = Column(Integer, primary_key=True, autoincrement=True)
-    playbook_id = Column(Integer, ForeignKey("playbooks.id", ondelete="CASCADE"), nullable=False)
+    playbook_id = Column(
+        Integer, ForeignKey("playbooks.id", ondelete="CASCADE"), nullable=False
+    )
     execution_id = Column(String(100), nullable=False, unique=True)
     status = Column(String(50), default="pending")
     trigger_type = Column(String(50))
@@ -762,7 +884,9 @@ class PlaybookNodeExecution(Base):
     execution_id = Column(String(100), nullable=False)
     node_id = Column(String(100), nullable=False)
     node_type = Column(String(50))
-    playbook_id = Column(Integer, ForeignKey("playbooks.id", ondelete="CASCADE"), nullable=False)
+    playbook_id = Column(
+        Integer, ForeignKey("playbooks.id", ondelete="CASCADE"), nullable=False
+    )
     status = Column(String(50), default="pending")
     input_json = Column(JSON)
     output_json = Column(JSON)
@@ -781,7 +905,9 @@ class PlaybookSchedule(Base):
     __tablename__ = "playbook_schedules"
 
     id = Column(Integer, primary_key=True, autoincrement=True)
-    playbook_id = Column(Integer, ForeignKey("playbooks.id", ondelete="CASCADE"), nullable=False)
+    playbook_id = Column(
+        Integer, ForeignKey("playbooks.id", ondelete="CASCADE"), nullable=False
+    )
     cron_expression = Column(String(100), nullable=False)
     timezone = Column(String(100), default="UTC")
     is_active = Column(Boolean, default=True, nullable=False)
@@ -803,7 +929,9 @@ class PlaybookShare(Base):
     __tablename__ = "playbook_shares"
 
     id = Column(Integer, primary_key=True, autoincrement=True)
-    playbook_id = Column(Integer, ForeignKey("playbooks.id", ondelete="CASCADE"), nullable=False)
+    playbook_id = Column(
+        Integer, ForeignKey("playbooks.id", ondelete="CASCADE"), nullable=False
+    )
     identity_id = Column(Integer, ForeignKey("identities.id", ondelete="CASCADE"))
     shared_with_id = Column(Integer, ForeignKey("identities.id", ondelete="CASCADE"))
     shared_with_group_id = Column(Integer, ForeignKey("groups.id", ondelete="CASCADE"))
@@ -819,8 +947,15 @@ class PlaybookEditorLock(Base):
     __tablename__ = "playbook_editor_locks"
 
     id = Column(Integer, primary_key=True, autoincrement=True)
-    playbook_id = Column(Integer, ForeignKey("playbooks.id", ondelete="CASCADE"), nullable=False, unique=True)
-    locked_by_id = Column(Integer, ForeignKey("identities.id", ondelete="CASCADE"), nullable=False)
+    playbook_id = Column(
+        Integer,
+        ForeignKey("playbooks.id", ondelete="CASCADE"),
+        nullable=False,
+        unique=True,
+    )
+    locked_by_id = Column(
+        Integer, ForeignKey("identities.id", ondelete="CASCADE"), nullable=False
+    )
     locked_by_name = Column(String(255))
     locked_at = Column(DateTime, nullable=False)
     expires_at = Column(DateTime, nullable=False)
@@ -833,11 +968,15 @@ class PlaybookTemplate(Base):
     __tablename__ = "playbook_templates"
 
     id = Column(Integer, primary_key=True, autoincrement=True)
-    tenant_id = Column(Integer, ForeignKey("tenants.id", ondelete="CASCADE"), nullable=False, default=1)
+    tenant_id = Column(
+        Integer, ForeignKey("tenants.id", ondelete="CASCADE"), nullable=False, default=1
+    )
     name = Column(String(255), nullable=False)
     description = Column(Text)
     category = Column(String(100), default="custom")
-    created_by_id = Column(Integer, ForeignKey("identities.id", ondelete="CASCADE"), nullable=False)
+    created_by_id = Column(
+        Integer, ForeignKey("identities.id", ondelete="CASCADE"), nullable=False
+    )
     nodes_json = Column(JSON, nullable=False)
     edges_json = Column(JSON, nullable=False)
     canvas_data = Column(JSON)
@@ -857,7 +996,9 @@ class PlaybookForm(Base):
     __tablename__ = "playbook_forms"
 
     id = Column(Integer, primary_key=True, autoincrement=True)
-    playbook_id = Column(Integer, ForeignKey("playbooks.id", ondelete="CASCADE"), nullable=False)
+    playbook_id = Column(
+        Integer, ForeignKey("playbooks.id", ondelete="CASCADE"), nullable=False
+    )
     name = Column(String(255), nullable=False)
     description = Column(Text)
     fields_json = Column(JSON, nullable=False)
@@ -880,14 +1021,20 @@ class PlaybookFormSubmission(Base):
     __tablename__ = "playbook_form_submissions"
 
     id = Column(Integer, primary_key=True, autoincrement=True)
-    form_id = Column(Integer, ForeignKey("playbook_forms.id", ondelete="CASCADE"), nullable=False)
-    playbook_id = Column(Integer, ForeignKey("playbooks.id", ondelete="CASCADE"), nullable=False)
+    form_id = Column(
+        Integer, ForeignKey("playbook_forms.id", ondelete="CASCADE"), nullable=False
+    )
+    playbook_id = Column(
+        Integer, ForeignKey("playbooks.id", ondelete="CASCADE"), nullable=False
+    )
     submitted_by_id = Column(Integer, ForeignKey("identities.id", ondelete="SET NULL"))
     submission_data = Column(JSON, nullable=False)
     ip_address = Column(String(50))
     user_agent = Column(String(500))
     execution_id = Column(String(100))
-    submitted_at = Column(DateTime, default=datetime.datetime.now(datetime.timezone.utc), nullable=False)
+    submitted_at = Column(
+        DateTime, default=datetime.datetime.now(datetime.timezone.utc), nullable=False
+    )
 
 
 class CustomModule(Base):
@@ -896,7 +1043,9 @@ class CustomModule(Base):
     __tablename__ = "custom_modules"
 
     id = Column(Integer, primary_key=True, autoincrement=True)
-    tenant_id = Column(Integer, ForeignKey("tenants.id", ondelete="CASCADE"), nullable=False, default=1)
+    tenant_id = Column(
+        Integer, ForeignKey("tenants.id", ondelete="CASCADE"), nullable=False, default=1
+    )
     name = Column(String(255), nullable=False, unique=True)
     display_name = Column(String(255))
     description = Column(Text)
@@ -925,7 +1074,9 @@ class PlaybookNodeMetadata(Base):
     __tablename__ = "playbook_node_metadata"
 
     id = Column(Integer, primary_key=True, autoincrement=True)
-    playbook_id = Column(Integer, ForeignKey("playbooks.id", ondelete="CASCADE"), nullable=False)
+    playbook_id = Column(
+        Integer, ForeignKey("playbooks.id", ondelete="CASCADE"), nullable=False
+    )
     node_id = Column(String(100), nullable=False)
     comments = Column(Text)
     metadata_json = Column(JSON)
@@ -944,7 +1095,9 @@ class DiagramNodeMetadata(Base):
     __tablename__ = "diagram_node_metadata"
 
     id = Column(Integer, primary_key=True, autoincrement=True)
-    drawing_id = Column(Integer, ForeignKey("drawings.id", ondelete="CASCADE"), nullable=False)
+    drawing_id = Column(
+        Integer, ForeignKey("drawings.id", ondelete="CASCADE"), nullable=False
+    )
     node_id = Column(String(100), nullable=False)
     comments = Column(Text)
     metadata_json = Column(JSON)
@@ -978,6 +1131,7 @@ def initialize_database(db_uri: str):
 
 if __name__ == "__main__":
     import os
+
     from dotenv import load_dotenv
 
     load_dotenv()

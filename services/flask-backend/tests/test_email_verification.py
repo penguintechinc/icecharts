@@ -41,9 +41,9 @@ class TestEmailVerificationTokenCreation:
             from app.models import get_db
 
             db = get_db()
-            verification = db(
-                db.email_verifications.verification_token == token
-            ).select().first()
+            verification = (
+                db(db.email_verifications.verification_token == token).select().first()
+            )
 
         assert verification is not None
         assert verification.user_id == test_user["id"]
@@ -70,7 +70,9 @@ class TestEmailVerificationTokenCreation:
         # Tokens should be different
         assert token1 != token2
 
-    @patch("app.services.email_verification_service.EmailService.send_verification_email")
+    @patch(
+        "app.services.email_verification_service.EmailService.send_verification_email"
+    )
     def test_verification_email_sent_on_creation(self, mock_send_email, app, test_user):
         """Test email is sent when verification is created."""
         from app.services.email_verification_service import EmailVerificationService
@@ -152,9 +154,9 @@ class TestEmailVerificationWithValidToken:
             from app.models import get_db
 
             db = get_db()
-            verification = db(
-                db.email_verifications.verification_token == token
-            ).select().first()
+            verification = (
+                db(db.email_verifications.verification_token == token).select().first()
+            )
 
         assert verification.is_verified is True
         assert verification.verified_at is not None
@@ -209,8 +211,8 @@ class TestEmailVerificationWithExpiredToken:
 
     def test_verify_email_with_expired_token(self, app, test_user):
         """Test verification fails with expired token."""
-        from app.services.email_verification_service import EmailVerificationService
         from app.models import get_db
+        from app.services.email_verification_service import EmailVerificationService
 
         # Create a verification
         with app.app_context():
@@ -236,8 +238,8 @@ class TestEmailVerificationWithExpiredToken:
 
     def test_verify_email_after_24_hours_fails(self, app, test_user):
         """Test verification fails after 24 hours."""
-        from app.services.email_verification_service import EmailVerificationService
         from app.models import get_db
+        from app.services.email_verification_service import EmailVerificationService
 
         with app.app_context():
             token = EmailVerificationService.create_verification(
@@ -416,8 +418,8 @@ class TestEmailVerificationDatabaseCleanup:
 
     def test_cleanup_expired_verifications(self, app, test_user):
         """Test cleaning up expired verification records."""
-        from app.services.email_verification_service import EmailVerificationService
         from app.models import get_db
+        from app.services.email_verification_service import EmailVerificationService
 
         # Create multiple verifications
         with app.app_context():
@@ -443,10 +445,12 @@ class TestEmailVerificationDatabaseCleanup:
 
         assert deleted_count > 0
 
-    def test_cleanup_only_deletes_unverified_expired(self, app, test_user, create_test_user):
+    def test_cleanup_only_deletes_unverified_expired(
+        self, app, test_user, create_test_user
+    ):
         """Test cleanup only deletes unverified, expired records."""
-        from app.services.email_verification_service import EmailVerificationService
         from app.models import get_db
+        from app.services.email_verification_service import EmailVerificationService
 
         user2 = create_test_user("another@example.com")
 

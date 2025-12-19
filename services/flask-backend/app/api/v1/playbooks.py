@@ -12,16 +12,16 @@ from flask import Blueprint, current_app, jsonify, request
 
 from ...middleware import auth_required, get_current_user, scopes_required
 from ...models import get_db
-from ...services.redis_streams import publish_task as redis_publish_task
 from ...schemas.playbook_schemas import (
+    AcquireLockRequest,
     CreatePlaybookRequest,
-    UpdatePlaybookRequest,
-    ExecutePlaybookRequest,
-    PlaybookNodeMetadataRequest,
     CreateScheduleRequest,
     CreateWebhookRequest,
-    AcquireLockRequest,
+    ExecutePlaybookRequest,
+    PlaybookNodeMetadataRequest,
+    UpdatePlaybookRequest,
 )
+from ...services.redis_streams import publish_task as redis_publish_task
 from ...utils.validation import validate_json
 
 playbooks_v1_bp = Blueprint("playbooks_v1", __name__, url_prefix="/playbooks")
@@ -38,7 +38,9 @@ def serialize_playbook(playbook, version=None):
         "id": str(playbook.id),
         "name": playbook.name,
         "description": playbook.description or "",
-        "created_by_id": str(playbook.created_by_id) if playbook.created_by_id else None,
+        "created_by_id": (
+            str(playbook.created_by_id) if playbook.created_by_id else None
+        ),
         "trigger_type": playbook.trigger_type,
         "is_public": playbook.is_public,
         "is_template": playbook.is_template,
@@ -46,7 +48,11 @@ def serialize_playbook(playbook, version=None):
         "status": playbook.status,
         "tags": playbook.tags or [],
         "execution_count": playbook.execution_count or 0,
-        "last_execution_at": playbook.last_execution_at.isoformat() if playbook.last_execution_at else None,
+        "last_execution_at": (
+            playbook.last_execution_at.isoformat()
+            if playbook.last_execution_at
+            else None
+        ),
         "created_at": playbook.created_at.isoformat() if playbook.created_at else None,
         "updated_at": playbook.updated_at.isoformat() if playbook.updated_at else None,
     }
@@ -66,8 +72,12 @@ def serialize_execution(execution):
         "input_data": execution.input_json,
         "output_data": execution.output_json,
         "error_message": execution.error_message,
-        "started_at": execution.started_at.isoformat() if execution.started_at else None,
-        "completed_at": execution.completed_at.isoformat() if execution.completed_at else None,
+        "started_at": (
+            execution.started_at.isoformat() if execution.started_at else None
+        ),
+        "completed_at": (
+            execution.completed_at.isoformat() if execution.completed_at else None
+        ),
         "duration_ms": execution.duration_ms,
     }
 
@@ -116,8 +126,8 @@ def list_playbooks():
 
         # Query playbooks owned by or created by the user
         playbooks = db(
-            (db.playbooks.created_by_id == user_id) |
-            (db.playbooks.is_public == True)  # noqa: E712
+            (db.playbooks.created_by_id == user_id)
+            | (db.playbooks.is_public == True)  # noqa: E712
         ).select(orderby=~db.playbooks.updated_at)
 
         result = [serialize_playbook(p) for p in playbooks]
@@ -125,15 +135,20 @@ def list_playbooks():
         # Also return limit info for free users
         owned_count = db(db.playbooks.created_by_id == user_id).count()
 
-        return jsonify({
-            "success": True,
-            "count": len(result),
-            "items": result,
-            "playbooks": result,
-            "owned_count": owned_count,
-            "limit": FREE_USER_PLAYBOOK_LIMIT,
-            "can_create": owned_count < FREE_USER_PLAYBOOK_LIMIT,
-        }), 200
+        return (
+            jsonify(
+                {
+                    "success": True,
+                    "count": len(result),
+                    "items": result,
+                    "playbooks": result,
+                    "owned_count": owned_count,
+                    "limit": FREE_USER_PLAYBOOK_LIMIT,
+                    "can_create": owned_count < FREE_USER_PLAYBOOK_LIMIT,
+                }
+            ),
+            200,
+        )
 
     except Exception as e:
         current_app.logger.error(f"Error listing playbooks: {e}")
@@ -162,27 +177,29 @@ def get_playbook(playbook_id: str):
             return jsonify({"error": "Playbook not found"}), 404
 
         # Check access (owner or public)
-        has_access = (
-            playbook.created_by_id == user_id or
-            playbook.is_public
-        )
+        has_access = playbook.created_by_id == user_id or playbook.is_public
 
         # Also check shares table
         if not has_access:
-            share = db(
-                (db.playbook_shares.playbook_id == playbook_id) &
-                (db.playbook_shares.identity_id == user_id)
-            ).select().first()
+            share = (
+                db(
+                    (db.playbook_shares.playbook_id == playbook_id)
+                    & (db.playbook_shares.identity_id == user_id)
+                )
+                .select()
+                .first()
+            )
             has_access = share is not None
 
         if not has_access:
             return jsonify({"error": "Access denied"}), 403
 
         # Get latest version with canvas data
-        version = db(db.playbook_versions.playbook_id == playbook.id).select(
-            orderby=~db.playbook_versions.version_number,
-            limitby=(0, 1)
-        ).first()
+        version = (
+            db(db.playbook_versions.playbook_id == playbook.id)
+            .select(orderby=~db.playbook_versions.version_number, limitby=(0, 1))
+            .first()
+        )
 
         # Check if there's an active editor lock
         lock = db(db.playbook_editor_locks.playbook_id == playbook.id).select().first()
@@ -194,13 +211,20 @@ def get_playbook(playbook_id: str):
                 db(db.playbook_editor_locks.playbook_id == playbook.id).delete()
                 db.commit()
             else:
-                lock_info = serialize_lock(lock, user_is_holder=(lock.locked_by_id == user_id))
+                lock_info = serialize_lock(
+                    lock, user_is_holder=(lock.locked_by_id == user_id)
+                )
 
-        return jsonify({
-            "success": True,
-            "playbook": serialize_playbook(playbook, version),
-            "editor_lock": lock_info,
-        }), 200
+        return (
+            jsonify(
+                {
+                    "success": True,
+                    "playbook": serialize_playbook(playbook, version),
+                    "editor_lock": lock_info,
+                }
+            ),
+            200,
+        )
 
     except Exception as e:
         current_app.logger.error(f"Error getting playbook {playbook_id}: {e}")
@@ -224,10 +248,15 @@ def create_playbook(validated_data: CreatePlaybookRequest):
 
         # Check playbook limit for free users
         if not check_playbook_limit(db, user_id):
-            return jsonify({
-                "error": f"Free users are limited to {FREE_USER_PLAYBOOK_LIMIT} playbooks. "
-                         "Upgrade to premium for unlimited playbooks."
-            }), 403
+            return (
+                jsonify(
+                    {
+                        "error": f"Free users are limited to {FREE_USER_PLAYBOOK_LIMIT} playbooks. "
+                        "Upgrade to premium for unlimited playbooks."
+                    }
+                ),
+                403,
+            )
 
         # Create playbook record
         playbook_id = db.playbooks.insert(
@@ -258,10 +287,15 @@ def create_playbook(validated_data: CreatePlaybookRequest):
         # Fetch the created playbook
         playbook = db.playbooks(playbook_id)
 
-        return jsonify({
-            "success": True,
-            "playbook": serialize_playbook(playbook),
-        }), 201
+        return (
+            jsonify(
+                {
+                    "success": True,
+                    "playbook": serialize_playbook(playbook),
+                }
+            ),
+            201,
+        )
 
     except Exception as e:
         current_app.logger.error(f"Error creating playbook: {e}")
@@ -292,11 +326,15 @@ def update_playbook(playbook_id: str, validated_data: UpdatePlaybookRequest):
 
         # Check ownership or editor share
         is_owner = playbook.created_by_id == user_id
-        share = db(
-            (db.playbook_shares.playbook_id == playbook_id) &
-            (db.playbook_shares.identity_id == user_id) &
-            (db.playbook_shares.permission.belongs(['editor', 'owner']))
-        ).select().first()
+        share = (
+            db(
+                (db.playbook_shares.playbook_id == playbook_id)
+                & (db.playbook_shares.identity_id == user_id)
+                & (db.playbook_shares.permission.belongs(["editor", "owner"]))
+            )
+            .select()
+            .first()
+        )
 
         if not is_owner and not share:
             return jsonify({"error": "Access denied"}), 403
@@ -309,11 +347,18 @@ def update_playbook(playbook_id: str, validated_data: UpdatePlaybookRequest):
                 db(db.playbook_editor_locks.playbook_id == playbook.id).delete()
                 db.commit()
             elif lock.locked_by_id != user_id:
-                return jsonify({
-                    "error": "Playbook is locked for editing",
-                    "locked_by": lock.locked_by_name,
-                    "expires_at": lock.expires_at.isoformat() if lock.expires_at else None,
-                }), 423  # Locked status code
+                return (
+                    jsonify(
+                        {
+                            "error": "Playbook is locked for editing",
+                            "locked_by": lock.locked_by_name,
+                            "expires_at": (
+                                lock.expires_at.isoformat() if lock.expires_at else None
+                            ),
+                        }
+                    ),
+                    423,
+                )  # Locked status code
 
         # Update playbook metadata
         update_data = {"updated_at": datetime.datetime.utcnow()}
@@ -339,9 +384,12 @@ def update_playbook(playbook_id: str, validated_data: UpdatePlaybookRequest):
 
         # If canvas_data is provided, create new version
         if validated_data.canvas_data is not None:
-            max_version = db(db.playbook_versions.playbook_id == playbook_id).select(
-                db.playbook_versions.version_number.max()
-            ).first()[db.playbook_versions.version_number.max()] or 0
+            max_version = (
+                db(db.playbook_versions.playbook_id == playbook_id)
+                .select(db.playbook_versions.version_number.max())
+                .first()[db.playbook_versions.version_number.max()]
+                or 0
+            )
 
             new_version = max_version + 1
             db.playbook_versions.insert(
@@ -355,15 +403,21 @@ def update_playbook(playbook_id: str, validated_data: UpdatePlaybookRequest):
 
         # Fetch updated playbook with latest version
         playbook = db.playbooks(playbook_id)
-        version = db(db.playbook_versions.playbook_id == playbook_id).select(
-            orderby=~db.playbook_versions.version_number,
-            limitby=(0, 1)
-        ).first()
+        version = (
+            db(db.playbook_versions.playbook_id == playbook_id)
+            .select(orderby=~db.playbook_versions.version_number, limitby=(0, 1))
+            .first()
+        )
 
-        return jsonify({
-            "success": True,
-            "playbook": serialize_playbook(playbook, version),
-        }), 200
+        return (
+            jsonify(
+                {
+                    "success": True,
+                    "playbook": serialize_playbook(playbook, version),
+                }
+            ),
+            200,
+        )
 
     except Exception as e:
         current_app.logger.error(f"Error updating playbook {playbook_id}: {e}")
@@ -399,10 +453,15 @@ def delete_playbook(playbook_id: str):
         db(db.playbooks.id == playbook_id).delete()
         db.commit()
 
-        return jsonify({
-            "success": True,
-            "message": "Playbook deleted successfully",
-        }), 200
+        return (
+            jsonify(
+                {
+                    "success": True,
+                    "message": "Playbook deleted successfully",
+                }
+            ),
+            200,
+        )
 
     except Exception as e:
         current_app.logger.error(f"Error deleting playbook {playbook_id}: {e}")
@@ -428,9 +487,14 @@ def duplicate_playbook(playbook_id: str):
 
         # Check playbook limit
         if not check_playbook_limit(db, user_id):
-            return jsonify({
-                "error": f"Free users are limited to {FREE_USER_PLAYBOOK_LIMIT} playbooks."
-            }), 403
+            return (
+                jsonify(
+                    {
+                        "error": f"Free users are limited to {FREE_USER_PLAYBOOK_LIMIT} playbooks."
+                    }
+                ),
+                403,
+            )
 
         original = db.playbooks(playbook_id)
         if not original:
@@ -438,18 +502,19 @@ def duplicate_playbook(playbook_id: str):
 
         # Check access
         has_access = (
-            original.created_by_id == user_id or
-            original.is_public or
-            original.is_template
+            original.created_by_id == user_id
+            or original.is_public
+            or original.is_template
         )
         if not has_access:
             return jsonify({"error": "Access denied"}), 403
 
         # Get latest version
-        version = db(db.playbook_versions.playbook_id == playbook_id).select(
-            orderby=~db.playbook_versions.version_number,
-            limitby=(0, 1)
-        ).first()
+        version = (
+            db(db.playbook_versions.playbook_id == playbook_id)
+            .select(orderby=~db.playbook_versions.version_number, limitby=(0, 1))
+            .first()
+        )
 
         # Create duplicate
         new_playbook_id = db.playbooks.insert(
@@ -480,10 +545,15 @@ def duplicate_playbook(playbook_id: str):
 
         new_playbook = db.playbooks(new_playbook_id)
 
-        return jsonify({
-            "success": True,
-            "playbook": serialize_playbook(new_playbook),
-        }), 201
+        return (
+            jsonify(
+                {
+                    "success": True,
+                    "playbook": serialize_playbook(new_playbook),
+                }
+            ),
+            201,
+        )
 
     except Exception as e:
         current_app.logger.error(f"Error duplicating playbook {playbook_id}: {e}")
@@ -519,27 +589,44 @@ def get_lock_status(playbook_id: str):
         lock = db(db.playbook_editor_locks.playbook_id == playbook.id).select().first()
 
         if not lock:
-            return jsonify({
-                "success": True,
-                "locked": False,
-                "lock": None,
-            }), 200
+            return (
+                jsonify(
+                    {
+                        "success": True,
+                        "locked": False,
+                        "lock": None,
+                    }
+                ),
+                200,
+            )
 
         # Check if lock is expired
         if lock.expires_at and lock.expires_at < datetime.datetime.utcnow():
             db(db.playbook_editor_locks.playbook_id == playbook.id).delete()
             db.commit()
-            return jsonify({
-                "success": True,
-                "locked": False,
-                "lock": None,
-            }), 200
+            return (
+                jsonify(
+                    {
+                        "success": True,
+                        "locked": False,
+                        "lock": None,
+                    }
+                ),
+                200,
+            )
 
-        return jsonify({
-            "success": True,
-            "locked": True,
-            "lock": serialize_lock(lock, user_is_holder=(lock.locked_by_id == user_id)),
-        }), 200
+        return (
+            jsonify(
+                {
+                    "success": True,
+                    "locked": True,
+                    "lock": serialize_lock(
+                        lock, user_is_holder=(lock.locked_by_id == user_id)
+                    ),
+                }
+            ),
+            200,
+        )
 
     except Exception as e:
         current_app.logger.error(f"Error getting lock status for {playbook_id}: {e}")
@@ -573,21 +660,30 @@ def acquire_lock(playbook_id: str, validated_data: AcquireLockRequest):
 
         # Check if user has edit access
         is_owner = playbook.created_by_id == user_id
-        share = db(
-            (db.playbook_shares.playbook_id == playbook_id) &
-            (db.playbook_shares.identity_id == user_id) &
-            (db.playbook_shares.permission.belongs(['editor', 'owner']))
-        ).select().first()
+        share = (
+            db(
+                (db.playbook_shares.playbook_id == playbook_id)
+                & (db.playbook_shares.identity_id == user_id)
+                & (db.playbook_shares.permission.belongs(["editor", "owner"]))
+            )
+            .select()
+            .first()
+        )
 
         if not is_owner and not share:
             return jsonify({"error": "Access denied - no editor permission"}), 403
 
         # Check existing lock
-        existing_lock = db(db.playbook_editor_locks.playbook_id == playbook.id).select().first()
+        existing_lock = (
+            db(db.playbook_editor_locks.playbook_id == playbook.id).select().first()
+        )
 
         if existing_lock:
             # Check if expired
-            if existing_lock.expires_at and existing_lock.expires_at < datetime.datetime.utcnow():
+            if (
+                existing_lock.expires_at
+                and existing_lock.expires_at < datetime.datetime.utcnow()
+            ):
                 # Remove expired lock
                 db(db.playbook_editor_locks.playbook_id == playbook.id).delete()
                 db.commit()
@@ -601,16 +697,26 @@ def acquire_lock(playbook_id: str, validated_data: AcquireLockRequest):
                     socket_id=validated_data.socket_id,
                 )
                 db.commit()
-                return jsonify({
-                    "success": True,
-                    "lock": serialize_lock(existing_lock, user_is_holder=True),
-                }), 200
+                return (
+                    jsonify(
+                        {
+                            "success": True,
+                            "lock": serialize_lock(existing_lock, user_is_holder=True),
+                        }
+                    ),
+                    200,
+                )
             else:
                 # Another user holds the lock
-                return jsonify({
-                    "error": "Playbook is locked by another user",
-                    "lock": serialize_lock(existing_lock, user_is_holder=False),
-                }), 423
+                return (
+                    jsonify(
+                        {
+                            "error": "Playbook is locked by another user",
+                            "lock": serialize_lock(existing_lock, user_is_holder=False),
+                        }
+                    ),
+                    423,
+                )
 
         # Create new lock
         now = datetime.datetime.utcnow()
@@ -628,10 +734,15 @@ def acquire_lock(playbook_id: str, validated_data: AcquireLockRequest):
 
         lock = db(db.playbook_editor_locks.playbook_id == playbook.id).select().first()
 
-        return jsonify({
-            "success": True,
-            "lock": serialize_lock(lock, user_is_holder=True),
-        }), 201
+        return (
+            jsonify(
+                {
+                    "success": True,
+                    "lock": serialize_lock(lock, user_is_holder=True),
+                }
+            ),
+            201,
+        )
 
     except Exception as e:
         current_app.logger.error(f"Error acquiring lock for {playbook_id}: {e}")
@@ -664,10 +775,15 @@ def release_lock(playbook_id: str):
         lock = db(db.playbook_editor_locks.playbook_id == playbook.id).select().first()
 
         if not lock:
-            return jsonify({
-                "success": True,
-                "message": "No lock exists",
-            }), 200
+            return (
+                jsonify(
+                    {
+                        "success": True,
+                        "message": "No lock exists",
+                    }
+                ),
+                200,
+            )
 
         # Only lock holder or admin can release
         if lock.locked_by_id != user_id:
@@ -677,10 +793,15 @@ def release_lock(playbook_id: str):
         db(db.playbook_editor_locks.playbook_id == playbook.id).delete()
         db.commit()
 
-        return jsonify({
-            "success": True,
-            "message": "Lock released successfully",
-        }), 200
+        return (
+            jsonify(
+                {
+                    "success": True,
+                    "message": "Lock released successfully",
+                }
+            ),
+            200,
+        )
 
     except Exception as e:
         current_app.logger.error(f"Error releasing lock for {playbook_id}: {e}")
@@ -717,20 +838,22 @@ def execute_playbook(playbook_id: str, validated_data: ExecutePlaybookRequest):
             return jsonify({"error": "Playbook not found"}), 404
 
         # Check access
-        has_access = (
-            playbook.created_by_id == user_id or
-            playbook.is_public
-        )
+        has_access = playbook.created_by_id == user_id or playbook.is_public
         if not has_access:
             return jsonify({"error": "Access denied"}), 403
 
         if validated_data.dry_run:
             # Dry run - just validate
-            return jsonify({
-                "success": True,
-                "dry_run": True,
-                "message": "Playbook validation successful",
-            }), 200
+            return (
+                jsonify(
+                    {
+                        "success": True,
+                        "dry_run": True,
+                        "message": "Playbook validation successful",
+                    }
+                ),
+                200,
+            )
 
         # Create execution record
         execution_id = str(uuid.uuid4())
@@ -771,12 +894,17 @@ def execute_playbook(playbook_id: str, validated_data: ExecutePlaybookRequest):
                 f"Execution {execution_id} created but may need manual processing."
             )
 
-        return jsonify({
-            "success": True,
-            "execution_id": execution_id,
-            "status": "pending",
-            "message": "Execution queued for processing",
-        }), 202
+        return (
+            jsonify(
+                {
+                    "success": True,
+                    "execution_id": execution_id,
+                    "status": "pending",
+                    "message": "Execution queued for processing",
+                }
+            ),
+            202,
+        )
 
     except Exception as e:
         current_app.logger.error(f"Error executing playbook {playbook_id}: {e}")
@@ -817,19 +945,23 @@ def list_executions(playbook_id: str):
         offset = int(request.args.get("offset", 0))
 
         executions = db(db.playbook_executions.playbook_id == playbook_id).select(
-            orderby=~db.playbook_executions.started_at,
-            limitby=(offset, offset + limit)
+            orderby=~db.playbook_executions.started_at, limitby=(offset, offset + limit)
         )
 
         total = db(db.playbook_executions.playbook_id == playbook_id).count()
 
-        return jsonify({
-            "success": True,
-            "executions": [serialize_execution(e) for e in executions],
-            "total": total,
-            "limit": limit,
-            "offset": offset,
-        }), 200
+        return (
+            jsonify(
+                {
+                    "success": True,
+                    "executions": [serialize_execution(e) for e in executions],
+                    "total": total,
+                    "limit": limit,
+                    "offset": offset,
+                }
+            ),
+            200,
+        )
 
     except Exception as e:
         current_app.logger.error(f"Error listing executions for {playbook_id}: {e}")
@@ -863,43 +995,59 @@ def get_execution(playbook_id: str, execution_id: str):
         if not has_access:
             return jsonify({"error": "Access denied"}), 403
 
-        execution = db(
-            (db.playbook_executions.id == execution_id) &
-            (db.playbook_executions.playbook_id == playbook_id)
-        ).select().first()
+        execution = (
+            db(
+                (db.playbook_executions.id == execution_id)
+                & (db.playbook_executions.playbook_id == playbook_id)
+            )
+            .select()
+            .first()
+        )
 
         if not execution:
             return jsonify({"error": "Execution not found"}), 404
 
         # Get node execution logs
-        node_logs = db(
-            db.playbook_node_executions.execution_id == execution_id
-        ).select(orderby=db.playbook_node_executions.started_at)
+        node_logs = db(db.playbook_node_executions.execution_id == execution_id).select(
+            orderby=db.playbook_node_executions.started_at
+        )
 
-        node_log_data = [{
-            "node_id": log.node_id,
-            "node_type": log.node_type,
-            "status": log.status,
-            "input_data": log.input_json,
-            "output_data": log.output_json,
-            "error_message": log.error_message,
-            "started_at": log.started_at.isoformat() if log.started_at else None,
-            "completed_at": log.completed_at.isoformat() if log.completed_at else None,
-            "duration_ms": log.duration_ms,
-        } for log in node_logs]
+        node_log_data = [
+            {
+                "node_id": log.node_id,
+                "node_type": log.node_type,
+                "status": log.status,
+                "input_data": log.input_json,
+                "output_data": log.output_json,
+                "error_message": log.error_message,
+                "started_at": log.started_at.isoformat() if log.started_at else None,
+                "completed_at": (
+                    log.completed_at.isoformat() if log.completed_at else None
+                ),
+                "duration_ms": log.duration_ms,
+            }
+            for log in node_logs
+        ]
 
-        return jsonify({
-            "success": True,
-            "execution": serialize_execution(execution),
-            "node_logs": node_log_data,
-        }), 200
+        return (
+            jsonify(
+                {
+                    "success": True,
+                    "execution": serialize_execution(execution),
+                    "node_logs": node_log_data,
+                }
+            ),
+            200,
+        )
 
     except Exception as e:
         current_app.logger.error(f"Error getting execution {execution_id}: {e}")
         return jsonify({"error": str(e)}), 500
 
 
-@playbooks_v1_bp.route("/<playbook_id>/executions/<execution_id>/cancel", methods=["POST"])
+@playbooks_v1_bp.route(
+    "/<playbook_id>/executions/<execution_id>/cancel", methods=["POST"]
+)
 @auth_required
 @scopes_required("playbooks:execute")
 def cancel_execution(playbook_id: str, execution_id: str):
@@ -925,10 +1073,14 @@ def cancel_execution(playbook_id: str, execution_id: str):
         if playbook.created_by_id != user_id:
             return jsonify({"error": "Access denied"}), 403
 
-        execution = db(
-            (db.playbook_executions.id == execution_id) &
-            (db.playbook_executions.playbook_id == playbook_id)
-        ).select().first()
+        execution = (
+            db(
+                (db.playbook_executions.id == execution_id)
+                & (db.playbook_executions.playbook_id == playbook_id)
+            )
+            .select()
+            .first()
+        )
 
         if not execution:
             return jsonify({"error": "Execution not found"}), 404
@@ -945,10 +1097,15 @@ def cancel_execution(playbook_id: str, execution_id: str):
 
         # TODO: Send cancel signal to worker via Redis
 
-        return jsonify({
-            "success": True,
-            "message": "Execution cancelled",
-        }), 200
+        return (
+            jsonify(
+                {
+                    "success": True,
+                    "message": "Execution cancelled",
+                }
+            ),
+            200,
+        )
 
     except Exception as e:
         current_app.logger.error(f"Error cancelling execution {execution_id}: {e}")
@@ -987,26 +1144,42 @@ def get_node_metadata(playbook_id: str, node_id: str):
         if not has_access:
             return jsonify({"error": "Access denied"}), 403
 
-        metadata = db(
-            (db.playbook_node_metadata.playbook_id == playbook_id) &
-            (db.playbook_node_metadata.node_id == node_id)
-        ).select().first()
+        metadata = (
+            db(
+                (db.playbook_node_metadata.playbook_id == playbook_id)
+                & (db.playbook_node_metadata.node_id == node_id)
+            )
+            .select()
+            .first()
+        )
 
         if not metadata:
-            return jsonify({
-                "success": True,
-                "node_id": node_id,
-                "comments": None,
-                "metadata": {},
-            }), 200
+            return (
+                jsonify(
+                    {
+                        "success": True,
+                        "node_id": node_id,
+                        "comments": None,
+                        "metadata": {},
+                    }
+                ),
+                200,
+            )
 
-        return jsonify({
-            "success": True,
-            "node_id": node_id,
-            "comments": metadata.comments,
-            "metadata": metadata.metadata_json or {},
-            "updated_at": metadata.updated_at.isoformat() if metadata.updated_at else None,
-        }), 200
+        return (
+            jsonify(
+                {
+                    "success": True,
+                    "node_id": node_id,
+                    "comments": metadata.comments,
+                    "metadata": metadata.metadata_json or {},
+                    "updated_at": (
+                        metadata.updated_at.isoformat() if metadata.updated_at else None
+                    ),
+                }
+            ),
+            200,
+        )
 
     except Exception as e:
         current_app.logger.error(f"Error getting node metadata: {e}")
@@ -1017,7 +1190,9 @@ def get_node_metadata(playbook_id: str, node_id: str):
 @auth_required
 @scopes_required("playbooks:write")
 @validate_json(PlaybookNodeMetadataRequest)
-def update_node_metadata(playbook_id: str, node_id: str, validated_data: PlaybookNodeMetadataRequest):
+def update_node_metadata(
+    playbook_id: str, node_id: str, validated_data: PlaybookNodeMetadataRequest
+):
     """Update metadata for a specific node.
 
     Args:
@@ -1038,11 +1213,15 @@ def update_node_metadata(playbook_id: str, node_id: str, validated_data: Playboo
 
         # Check edit access
         is_owner = playbook.created_by_id == user_id
-        share = db(
-            (db.playbook_shares.playbook_id == playbook_id) &
-            (db.playbook_shares.identity_id == user_id) &
-            (db.playbook_shares.permission.belongs(['editor', 'owner']))
-        ).select().first()
+        share = (
+            db(
+                (db.playbook_shares.playbook_id == playbook_id)
+                & (db.playbook_shares.identity_id == user_id)
+                & (db.playbook_shares.permission.belongs(["editor", "owner"]))
+            )
+            .select()
+            .first()
+        )
 
         if not is_owner and not share:
             return jsonify({"error": "Access denied"}), 403
@@ -1050,10 +1229,14 @@ def update_node_metadata(playbook_id: str, node_id: str, validated_data: Playboo
         now = datetime.datetime.utcnow()
 
         # Check if metadata exists
-        existing = db(
-            (db.playbook_node_metadata.playbook_id == playbook_id) &
-            (db.playbook_node_metadata.node_id == node_id)
-        ).select().first()
+        existing = (
+            db(
+                (db.playbook_node_metadata.playbook_id == playbook_id)
+                & (db.playbook_node_metadata.node_id == node_id)
+            )
+            .select()
+            .first()
+        )
 
         if existing:
             existing.update_record(
@@ -1074,13 +1257,18 @@ def update_node_metadata(playbook_id: str, node_id: str, validated_data: Playboo
 
         db.commit()
 
-        return jsonify({
-            "success": True,
-            "node_id": node_id,
-            "comments": validated_data.comments,
-            "metadata": validated_data.metadata or {},
-            "updated_at": now.isoformat(),
-        }), 200
+        return (
+            jsonify(
+                {
+                    "success": True,
+                    "node_id": node_id,
+                    "comments": validated_data.comments,
+                    "metadata": validated_data.metadata or {},
+                    "updated_at": now.isoformat(),
+                }
+            ),
+            200,
+        )
 
     except Exception as e:
         current_app.logger.error(f"Error updating node metadata: {e}")
@@ -1119,19 +1307,29 @@ def list_webhooks(playbook_id: str):
 
         webhooks = db(db.playbook_webhooks.playbook_id == playbook_id).select()
 
-        return jsonify({
-            "success": True,
-            "webhooks": [{
-                "id": str(w.id),
-                "name": w.name,
-                "token": w.token,
-                "url": f"/api/v1/hooks/{w.token}",
-                "allowed_methods": w.allowed_methods or ["POST"],
-                "validate_signature": w.validate_signature,
-                "is_enabled": w.is_enabled,
-                "created_at": w.created_at.isoformat() if w.created_at else None,
-            } for w in webhooks],
-        }), 200
+        return (
+            jsonify(
+                {
+                    "success": True,
+                    "webhooks": [
+                        {
+                            "id": str(w.id),
+                            "name": w.name,
+                            "token": w.token,
+                            "url": f"/api/v1/hooks/{w.token}",
+                            "allowed_methods": w.allowed_methods or ["POST"],
+                            "validate_signature": w.validate_signature,
+                            "is_enabled": w.is_enabled,
+                            "created_at": (
+                                w.created_at.isoformat() if w.created_at else None
+                            ),
+                        }
+                        for w in webhooks
+                    ],
+                }
+            ),
+            200,
+        )
 
     except Exception as e:
         current_app.logger.error(f"Error listing webhooks for {playbook_id}: {e}")
@@ -1178,18 +1376,23 @@ def create_webhook(playbook_id: str, validated_data: CreateWebhookRequest):
         )
         db.commit()
 
-        return jsonify({
-            "success": True,
-            "webhook": {
-                "id": str(webhook_id),
-                "name": validated_data.name,
-                "token": token,
-                "url": f"/api/v1/hooks/{token}",
-                "allowed_methods": validated_data.allowed_methods,
-                "validate_signature": validated_data.validate_signature,
-                "is_enabled": True,
-            },
-        }), 201
+        return (
+            jsonify(
+                {
+                    "success": True,
+                    "webhook": {
+                        "id": str(webhook_id),
+                        "name": validated_data.name,
+                        "token": token,
+                        "url": f"/api/v1/hooks/{token}",
+                        "allowed_methods": validated_data.allowed_methods,
+                        "validate_signature": validated_data.validate_signature,
+                        "is_enabled": True,
+                    },
+                }
+            ),
+            201,
+        )
 
     except Exception as e:
         current_app.logger.error(f"Error creating webhook for {playbook_id}: {e}")
@@ -1222,10 +1425,14 @@ def delete_webhook(playbook_id: str, webhook_id: str):
         if playbook.created_by_id != user_id:
             return jsonify({"error": "Access denied"}), 403
 
-        webhook = db(
-            (db.playbook_webhooks.id == webhook_id) &
-            (db.playbook_webhooks.playbook_id == playbook_id)
-        ).select().first()
+        webhook = (
+            db(
+                (db.playbook_webhooks.id == webhook_id)
+                & (db.playbook_webhooks.playbook_id == playbook_id)
+            )
+            .select()
+            .first()
+        )
 
         if not webhook:
             return jsonify({"error": "Webhook not found"}), 404
@@ -1233,10 +1440,15 @@ def delete_webhook(playbook_id: str, webhook_id: str):
         db(db.playbook_webhooks.id == webhook_id).delete()
         db.commit()
 
-        return jsonify({
-            "success": True,
-            "message": "Webhook deleted successfully",
-        }), 200
+        return (
+            jsonify(
+                {
+                    "success": True,
+                    "message": "Webhook deleted successfully",
+                }
+            ),
+            200,
+        )
 
     except Exception as e:
         current_app.logger.error(f"Error deleting webhook {webhook_id}: {e}")

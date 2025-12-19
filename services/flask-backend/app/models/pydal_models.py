@@ -204,7 +204,9 @@ def define_all_tables(db):
             "string",
             length=50,
             notnull=True,
-            requires=IS_IN_SET(["local", "s3", "gcs", "azure_blob", "minio", "gdrive", "onedrive"]),
+            requires=IS_IN_SET(
+                ["local", "s3", "gcs", "azure_blob", "minio", "gdrive", "onedrive"]
+            ),
         ),
         Field("config_json", "json", notnull=True),
         Field("storage_config", "json"),  # Alias for API compatibility
@@ -252,7 +254,9 @@ def define_all_tables(db):
         ),
         Field("title", "string", length=255, notnull=True, requires=IS_NOT_EMPTY()),
         Field("description", "text"),
-        Field("created_by_id", "reference identities", notnull=True, ondelete="CASCADE"),
+        Field(
+            "created_by_id", "reference identities", notnull=True, ondelete="CASCADE"
+        ),
         Field("updated_by_id", "reference identities", ondelete="SET NULL"),
         Field("owner_id", "reference identities", ondelete="CASCADE"),
         Field("user_id", "reference identities", ondelete="CASCADE"),
@@ -288,7 +292,9 @@ def define_all_tables(db):
         "drawing_versions",
         Field("drawing_id", "reference drawings", notnull=True, ondelete="CASCADE"),
         Field("version_number", "integer", notnull=True),
-        Field("created_by_id", "reference identities", notnull=True, ondelete="CASCADE"),
+        Field(
+            "created_by_id", "reference identities", notnull=True, ondelete="CASCADE"
+        ),
         Field("content_json", "json", notnull=True),
         Field("change_summary", "text"),
         Field(
@@ -481,7 +487,11 @@ def define_all_tables(db):
             default="member",
             requires=IS_IN_SET(["admin", "member"]),
         ),
-        Field("joined_at", "datetime", default=lambda: datetime.datetime.now(datetime.timezone.utc)),
+        Field(
+            "joined_at",
+            "datetime",
+            default=lambda: datetime.datetime.now(datetime.timezone.utc),
+        ),
         migrate=True,
     )
 
@@ -529,7 +539,9 @@ def define_all_tables(db):
     # Library shapes table
     db.define_table(
         "library_shapes",
-        Field("library_id", "reference shape_libraries", notnull=True, ondelete="CASCADE"),
+        Field(
+            "library_id", "reference shape_libraries", notnull=True, ondelete="CASCADE"
+        ),
         Field("name", "string", length=255, notnull=True, requires=IS_NOT_EMPTY()),
         Field("description", "text"),
         Field("shape_data", "json", notnull=True),
@@ -590,7 +602,9 @@ def define_all_tables(db):
     # Collection items (drawings in a collection)
     db.define_table(
         "collection_items",
-        Field("collection_id", "reference collections", notnull=True, ondelete="CASCADE"),
+        Field(
+            "collection_id", "reference collections", notnull=True, ondelete="CASCADE"
+        ),
         Field("drawing_id", "reference drawings", notnull=True, ondelete="CASCADE"),
         Field("added_by_id", "reference identities", notnull=True, ondelete="SET NULL"),
         Field("order_index", "integer", default=0),
@@ -605,7 +619,9 @@ def define_all_tables(db):
     # Collection sharing (user/group level permissions)
     db.define_table(
         "collection_shares",
-        Field("collection_id", "reference collections", notnull=True, ondelete="CASCADE"),
+        Field(
+            "collection_id", "reference collections", notnull=True, ondelete="CASCADE"
+        ),
         Field("shared_with_id", "reference identities", ondelete="CASCADE"),
         Field("shared_with_group_id", "reference groups", ondelete="CASCADE"),
         Field(
@@ -615,7 +631,9 @@ def define_all_tables(db):
             default="viewer",
             requires=IS_IN_SET(["viewer", "editor", "admin"]),
         ),
-        Field("created_by_id", "reference identities", notnull=True, ondelete="SET NULL"),
+        Field(
+            "created_by_id", "reference identities", notnull=True, ondelete="SET NULL"
+        ),
         Field(
             "created_at",
             "datetime",
@@ -691,7 +709,9 @@ def define_all_tables(db):
     db.define_table(
         "login_events",
         Field("user_id", "reference identities", notnull=True, ondelete="CASCADE"),
-        Field("login_type", "string", length=50, default="password"),  # password, google, sso
+        Field(
+            "login_type", "string", length=50, default="password"
+        ),  # password, google, sso
         Field("ip_address", "string", length=50),
         Field("user_agent", "string", length=500),
         Field("country_code", "string", length=2),  # ISO 3166-1 alpha-2
@@ -745,7 +765,9 @@ def define_all_tables(db):
     # Audit logs for tracking admin/sensitive actions with change history
     db.define_table(
         "audit_logs",
-        Field("user_id", "reference identities", ondelete="SET NULL"),  # User who made the change
+        Field(
+            "user_id", "reference identities", ondelete="SET NULL"
+        ),  # User who made the change
         Field("tenant_id", "reference tenants", notnull=True, ondelete="CASCADE"),
         Field(
             "action",
@@ -762,7 +784,9 @@ def define_all_tables(db):
         ),  # e.g., "user", "group", "settings", "system"
         Field("resource_id", "integer"),  # ID of the resource being modified
         Field("resource_name", "string", length=255),  # Human-readable name
-        Field("changes", "json"),  # Detailed change data (old_value, new_value for each field)
+        Field(
+            "changes", "json"
+        ),  # Detailed change data (old_value, new_value for each field)
         Field("reason", "text"),  # Why the action was taken
         Field("ip_address", "string", length=50),
         Field("user_agent", "string", length=500),
@@ -793,11 +817,15 @@ def define_all_tables(db):
         ),
         Field("name", "string", length=255, notnull=True, requires=IS_NOT_EMPTY()),
         Field("description", "text"),
-        Field("content", "json", notnull=True),  # Template drawing content (nodes, edges, viewport)
+        Field(
+            "content", "json", notnull=True
+        ),  # Template drawing content (nodes, edges, viewport)
         Field("category", "string", length=100, default="custom"),
         Field("thumbnail_url", "string", length=1024),
         Field("is_public", "boolean", default=False, notnull=True),
-        Field("created_by_id", "reference identities", notnull=True, ondelete="CASCADE"),
+        Field(
+            "created_by_id", "reference identities", notnull=True, ondelete="CASCADE"
+        ),
         Field(
             "created_at",
             "datetime",
@@ -834,10 +862,14 @@ def define_all_tables(db):
             notnull=True,
             unique=True,
         ),  # Format: sa_xxxxxxxxxxxx
-        Field("scopes", "json"),  # Array of scope strings e.g., ["drawings:read", "exports:create"]
+        Field(
+            "scopes", "json"
+        ),  # Array of scope strings e.g., ["drawings:read", "exports:create"]
         Field("rate_limit", "integer", default=1000),  # Requests per hour
         Field("is_active", "boolean", default=True, notnull=True),
-        Field("created_by_id", "reference identities", notnull=True, ondelete="CASCADE"),
+        Field(
+            "created_by_id", "reference identities", notnull=True, ondelete="CASCADE"
+        ),
         Field("last_used_at", "datetime"),
         Field(
             "created_at",
@@ -907,7 +939,15 @@ def define_all_tables(db):
             length=50,
             default="pending",
             requires=IS_IN_SET(
-                ["pending", "in_progress", "completed", "completed_with_errors", "failed", "rolled_back", "rollback_failed"]
+                [
+                    "pending",
+                    "in_progress",
+                    "completed",
+                    "completed_with_errors",
+                    "failed",
+                    "rolled_back",
+                    "rollback_failed",
+                ]
             ),
         ),
         Field("progress", "integer", default=0),  # 0-100
@@ -956,7 +996,9 @@ def define_all_tables(db):
         ),
         Field("name", "string", length=255, notnull=True, requires=IS_NOT_EMPTY()),
         Field("description", "text"),
-        Field("created_by_id", "reference identities", notnull=True, ondelete="CASCADE"),
+        Field(
+            "created_by_id", "reference identities", notnull=True, ondelete="CASCADE"
+        ),
         Field("updated_by_id", "reference identities", ondelete="SET NULL"),
         Field(
             "status",
@@ -999,7 +1041,9 @@ def define_all_tables(db):
     db.define_table(
         "playbook_nodes",
         Field("playbook_id", "reference playbooks", notnull=True, ondelete="CASCADE"),
-        Field("node_id", "string", length=100, notnull=True),  # ReactFlow node ID (UUID)
+        Field(
+            "node_id", "string", length=100, notnull=True
+        ),  # ReactFlow node ID (UUID)
         Field(
             "node_type",
             "string",
@@ -1059,7 +1103,9 @@ def define_all_tables(db):
         "playbook_versions",
         Field("playbook_id", "reference playbooks", notnull=True, ondelete="CASCADE"),
         Field("version_number", "integer", notnull=True),
-        Field("created_by_id", "reference identities", notnull=True, ondelete="CASCADE"),
+        Field(
+            "created_by_id", "reference identities", notnull=True, ondelete="CASCADE"
+        ),
         Field("nodes_json", "json", notnull=True),
         Field("edges_json", "json", notnull=True),
         Field("canvas_json", "json"),
@@ -1078,7 +1124,9 @@ def define_all_tables(db):
         Field("playbook_id", "reference playbooks", notnull=True, ondelete="CASCADE"),
         Field("name", "string", length=255),
         Field("token", "string", length=255, unique=True, notnull=True),
-        Field("signature_secret", "string", length=255),  # For HMAC signature validation
+        Field(
+            "signature_secret", "string", length=255
+        ),  # For HMAC signature validation
         Field("validate_signature", "boolean", default=False, notnull=True),
         Field("allowed_methods", "list:string"),  # Default: ['POST']
         Field("ip_whitelist", "list:string"),  # Optional IP restriction
@@ -1104,14 +1152,23 @@ def define_all_tables(db):
             "string",
             length=50,
             default="pending",
-            requires=IS_IN_SET([
-                "pending", "running", "completed", "failed",
-                "cancelled", "timeout", "partial_success"
-            ]),
+            requires=IS_IN_SET(
+                [
+                    "pending",
+                    "running",
+                    "completed",
+                    "failed",
+                    "cancelled",
+                    "timeout",
+                    "partial_success",
+                ]
+            ),
         ),
         Field("trigger_type", "string", length=50),  # webhook, schedule, manual, api
         Field("triggered_by", "string", length=50),  # webhook, schedule, manual, api
-        Field("triggered_by_id", "reference identities", ondelete="SET NULL"),  # If manual
+        Field(
+            "triggered_by_id", "reference identities", ondelete="SET NULL"
+        ),  # If manual
         Field("input_json", "json"),  # Initial trigger payload
         Field("output_json", "json"),  # Final output after completion
         Field("error_message", "text"),
@@ -1133,7 +1190,9 @@ def define_all_tables(db):
     # Node execution logs (per-node execution details)
     db.define_table(
         "playbook_node_executions",
-        Field("execution_id", "string", length=100, notnull=True),  # FK to playbook_executions
+        Field(
+            "execution_id", "string", length=100, notnull=True
+        ),  # FK to playbook_executions
         Field("node_id", "string", length=100, notnull=True),
         Field("node_type", "string", length=50),
         Field("playbook_id", "reference playbooks", notnull=True, ondelete="CASCADE"),
@@ -1142,7 +1201,9 @@ def define_all_tables(db):
             "string",
             length=50,
             default="pending",
-            requires=IS_IN_SET(["pending", "running", "completed", "failed", "skipped"]),
+            requires=IS_IN_SET(
+                ["pending", "running", "completed", "failed", "skipped"]
+            ),
         ),
         Field("input_json", "json"),
         Field("output_json", "json"),
@@ -1164,7 +1225,9 @@ def define_all_tables(db):
     db.define_table(
         "playbook_schedules",
         Field("playbook_id", "reference playbooks", notnull=True, ondelete="CASCADE"),
-        Field("cron_expression", "string", length=100, notnull=True),  # e.g., "0 9 * * 1-5"
+        Field(
+            "cron_expression", "string", length=100, notnull=True
+        ),  # e.g., "0 9 * * 1-5"
         Field("timezone", "string", length=100, default="UTC"),
         Field("is_active", "boolean", default=True, notnull=True),
         Field("next_run_at", "datetime"),
@@ -1211,12 +1274,20 @@ def define_all_tables(db):
     # Playbook editor locks (only 1 editor at a time)
     db.define_table(
         "playbook_editor_locks",
-        Field("playbook_id", "reference playbooks", unique=True, notnull=True, ondelete="CASCADE"),
+        Field(
+            "playbook_id",
+            "reference playbooks",
+            unique=True,
+            notnull=True,
+            ondelete="CASCADE",
+        ),
         Field("locked_by_id", "reference identities", notnull=True, ondelete="CASCADE"),
         Field("locked_by_name", "string", length=255),
         Field("locked_at", "datetime", notnull=True),
         Field("expires_at", "datetime", notnull=True),  # Auto-release after timeout
-        Field("socket_id", "string", length=255),  # WebSocket session for real-time release
+        Field(
+            "socket_id", "string", length=255
+        ),  # WebSocket session for real-time release
         migrate=True,
     )
 
@@ -1233,7 +1304,9 @@ def define_all_tables(db):
         Field("name", "string", length=255, notnull=True, requires=IS_NOT_EMPTY()),
         Field("description", "text"),
         Field("category", "string", length=100, default="custom"),
-        Field("created_by_id", "reference identities", notnull=True, ondelete="CASCADE"),
+        Field(
+            "created_by_id", "reference identities", notnull=True, ondelete="CASCADE"
+        ),
         Field("nodes_json", "json", notnull=True),
         Field("edges_json", "json", notnull=True),
         Field("canvas_data", "json"),
@@ -1312,7 +1385,14 @@ def define_all_tables(db):
             notnull=True,
             ondelete="CASCADE",
         ),
-        Field("name", "string", length=255, notnull=True, unique=True, requires=IS_NOT_EMPTY()),
+        Field(
+            "name",
+            "string",
+            length=255,
+            notnull=True,
+            unique=True,
+            requires=IS_NOT_EMPTY(),
+        ),
         Field("display_name", "string", length=255),
         Field("description", "text"),
         Field(

@@ -4,8 +4,9 @@ Unit and integration tests for storage usage calculation and quota management.
 """
 
 import pytest
-from app.services.storage_usage_service import StorageUsageService
+
 from app.models import get_db
+from app.services.storage_usage_service import StorageUsageService
 
 
 class TestStorageUsageCalculation:
@@ -85,8 +86,7 @@ class TestStorageUsageCalculation:
         try:
             # For a new/empty user, quota should not be exceeded
             is_exceeded = StorageUsageService.check_quota_exceeded(
-                user_id=1,
-                additional_bytes=1024  # 1KB
+                user_id=1, additional_bytes=1024  # 1KB
             )
             assert isinstance(is_exceeded, bool)
 
@@ -162,10 +162,7 @@ class TestQuotaManagement:
         """Test that set_tenant_quota validates input."""
         try:
             # Negative quota should fail
-            result = StorageUsageService.set_tenant_quota(
-                tenant_id=1,
-                quota_gb=-1
-            )
+            result = StorageUsageService.set_tenant_quota(tenant_id=1, quota_gb=-1)
             # May return False due to validation
 
         except Exception as e:
@@ -175,10 +172,7 @@ class TestQuotaManagement:
         """Test that set_user_quota validates input."""
         try:
             # Negative quota should fail
-            result = StorageUsageService.set_user_quota(
-                user_id=1,
-                quota_mb=-1
-            )
+            result = StorageUsageService.set_user_quota(user_id=1, quota_mb=-1)
             # May return False due to validation
 
         except Exception as e:

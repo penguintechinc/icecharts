@@ -21,21 +21,29 @@ def get_group_by_id(group_id: int) -> Optional[dict]:
 def user_is_group_member(user_id: int, group_id: int) -> bool:
     """Check if user is a member of group."""
     db = get_db()
-    membership = db(
-        (db.group_members.user_id == user_id) &
-        (db.group_members.group_id == group_id)
-    ).select().first()
+    membership = (
+        db(
+            (db.group_members.user_id == user_id)
+            & (db.group_members.group_id == group_id)
+        )
+        .select()
+        .first()
+    )
     return membership is not None
 
 
 def user_is_group_admin(user_id: int, group_id: int) -> bool:
     """Check if user is an admin of group."""
     db = get_db()
-    membership = db(
-        (db.group_members.user_id == user_id) &
-        (db.group_members.group_id == group_id) &
-        (db.group_members.role == "admin")
-    ).select().first()
+    membership = (
+        db(
+            (db.group_members.user_id == user_id)
+            & (db.group_members.group_id == group_id)
+            & (db.group_members.role == "admin")
+        )
+        .select()
+        .first()
+    )
     return membership is not None
 
 
@@ -57,7 +65,9 @@ def list_groups():
         # Get groups where user is a member
         query = db(
             db.groups.id.belongs(
-                db(db.group_members.user_id == user["id"])._select(db.group_members.group_id)
+                db(db.group_members.user_id == user["id"])._select(
+                    db.group_members.group_id
+                )
             )
         )
 
@@ -67,13 +77,18 @@ def list_groups():
     )
     total = query.count()
 
-    return jsonify({
-        "groups": [g.as_dict() for g in groups],
-        "total": total,
-        "page": page,
-        "per_page": per_page,
-        "pages": (total + per_page - 1) // per_page,
-    }), 200
+    return (
+        jsonify(
+            {
+                "groups": [g.as_dict() for g in groups],
+                "total": total,
+                "page": page,
+                "per_page": per_page,
+                "pages": (total + per_page - 1) // per_page,
+            }
+        ),
+        200,
+    )
 
 
 @groups_v1_bp.route("", methods=["POST"])
@@ -114,10 +129,15 @@ def create_group():
 
     group = get_group_by_id(group_id)
 
-    return jsonify({
-        "message": "Group created successfully",
-        "group": group,
-    }), 201
+    return (
+        jsonify(
+            {
+                "message": "Group created successfully",
+                "group": group,
+            }
+        ),
+        201,
+    )
 
 
 @groups_v1_bp.route("/<int:group_id>", methods=["GET"])
@@ -176,10 +196,15 @@ def update_group(group_id: int):
 
     updated_group = get_group_by_id(group_id)
 
-    return jsonify({
-        "message": "Group updated successfully",
-        "group": updated_group,
-    }), 200
+    return (
+        jsonify(
+            {
+                "message": "Group updated successfully",
+                "group": updated_group,
+            }
+        ),
+        200,
+    )
 
 
 @groups_v1_bp.route("/<int:group_id>", methods=["DELETE"])
@@ -205,9 +230,14 @@ def delete_group(group_id: int):
     db(db.groups.id == group_id).delete()
     db.commit()
 
-    return jsonify({
-        "message": "Group deleted successfully",
-    }), 200
+    return (
+        jsonify(
+            {
+                "message": "Group deleted successfully",
+            }
+        ),
+        200,
+    )
 
 
 @groups_v1_bp.route("/<int:group_id>/members", methods=["GET"])
@@ -236,21 +266,28 @@ def list_group_members(group_id: int):
         try:
             user = db.identities(m.user_id)
             if user:
-                member_list.append({
-                    "user_id": user.id,
-                    "email": user.email,
-                    "full_name": user.full_name,
-                    "role": m.role,
-                    "joined_at": m.joined_at.isoformat() if m.joined_at else None,
-                })
+                member_list.append(
+                    {
+                        "user_id": user.id,
+                        "email": user.email,
+                        "full_name": user.full_name,
+                        "role": m.role,
+                        "joined_at": m.joined_at.isoformat() if m.joined_at else None,
+                    }
+                )
         except Exception as e:
             current_app.logger.warning(f"Error fetching user {m.user_id}: {e}")
             continue
 
-    return jsonify({
-        "members": member_list,
-        "total": len(member_list),
-    }), 200
+    return (
+        jsonify(
+            {
+                "members": member_list,
+                "total": len(member_list),
+            }
+        ),
+        200,
+    )
 
 
 @groups_v1_bp.route("/<int:group_id>/members", methods=["POST"])
@@ -300,11 +337,16 @@ def add_group_member(group_id: int):
     )
     db.commit()
 
-    return jsonify({
-        "message": "Member added successfully",
-        "user_id": user_id,
-        "role": role,
-    }), 201
+    return (
+        jsonify(
+            {
+                "message": "Member added successfully",
+                "user_id": user_id,
+                "role": role,
+            }
+        ),
+        201,
+    )
 
 
 @groups_v1_bp.route("/<int:group_id>/members/<int:member_id>", methods=["PUT"])
@@ -333,8 +375,8 @@ def update_group_member(group_id: int, member_id: int):
 
     # Update member role
     updated = db(
-        (db.group_members.group_id == group_id) &
-        (db.group_members.user_id == member_id)
+        (db.group_members.group_id == group_id)
+        & (db.group_members.user_id == member_id)
     ).update(role=role)
 
     if not updated:
@@ -342,11 +384,16 @@ def update_group_member(group_id: int, member_id: int):
 
     db.commit()
 
-    return jsonify({
-        "message": "Member role updated successfully",
-        "user_id": member_id,
-        "role": role,
-    }), 200
+    return (
+        jsonify(
+            {
+                "message": "Member role updated successfully",
+                "user_id": member_id,
+                "role": role,
+            }
+        ),
+        200,
+    )
 
 
 @groups_v1_bp.route("/<int:group_id>/members/<int:member_id>", methods=["DELETE"])
@@ -375,8 +422,8 @@ def remove_group_member(group_id: int, member_id: int):
 
     # Remove member
     deleted = db(
-        (db.group_members.group_id == group_id) &
-        (db.group_members.user_id == member_id)
+        (db.group_members.group_id == group_id)
+        & (db.group_members.user_id == member_id)
     ).delete()
 
     if not deleted:
@@ -384,6 +431,11 @@ def remove_group_member(group_id: int, member_id: int):
 
     db.commit()
 
-    return jsonify({
-        "message": "Member removed successfully",
-    }), 200
+    return (
+        jsonify(
+            {
+                "message": "Member removed successfully",
+            }
+        ),
+        200,
+    )

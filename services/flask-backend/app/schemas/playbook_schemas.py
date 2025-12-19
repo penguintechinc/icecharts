@@ -18,7 +18,8 @@ class CreatePlaybookRequest(BaseModel):
         None, description="Playbook canvas data (nodes, edges, etc.)"
     )
     trigger_type: Optional[str] = Field(
-        default="manual", description="Trigger type: 'manual', 'webhook', 'schedule', 'grpc'"
+        default="manual",
+        description="Trigger type: 'manual', 'webhook', 'schedule', 'grpc'",
     )
     visibility: Optional[str] = Field(
         default="private", description="Playbook visibility: 'private' or 'public'"
@@ -57,7 +58,9 @@ class CreatePlaybookRequest(BaseModel):
             return "manual"
         v = v.lower()
         if v not in ["manual", "webhook", "schedule", "grpc"]:
-            raise ValueError("trigger_type must be 'manual', 'webhook', 'schedule', or 'grpc'")
+            raise ValueError(
+                "trigger_type must be 'manual', 'webhook', 'schedule', or 'grpc'"
+            )
         return v
 
     @field_validator("visibility")
@@ -132,11 +135,10 @@ class UpdatePlaybookRequest(BaseModel):
     is_template: Optional[bool] = Field(
         None, description="Whether this playbook is a template"
     )
-    tags: Optional[List[str]] = Field(
-        None, description="List of tags for the playbook"
-    )
+    tags: Optional[List[str]] = Field(None, description="List of tags for the playbook")
     status: Optional[str] = Field(
-        None, description="Playbook status (e.g., 'draft', 'active', 'paused', 'archived')"
+        None,
+        description="Playbook status (e.g., 'draft', 'active', 'paused', 'archived')",
     )
     is_enabled: Optional[bool] = Field(
         None, description="Whether the playbook is enabled for execution"
@@ -169,7 +171,9 @@ class UpdatePlaybookRequest(BaseModel):
         if v is not None:
             v = v.lower()
             if v not in ["manual", "webhook", "schedule", "grpc"]:
-                raise ValueError("trigger_type must be 'manual', 'webhook', 'schedule', or 'grpc'")
+                raise ValueError(
+                    "trigger_type must be 'manual', 'webhook', 'schedule', or 'grpc'"
+                )
         return v
 
     @field_validator("visibility")
@@ -189,7 +193,9 @@ class UpdatePlaybookRequest(BaseModel):
         if v is not None:
             v = v.lower()
             if v not in ["draft", "active", "paused", "archived"]:
-                raise ValueError("status must be 'draft', 'active', 'paused', or 'archived'")
+                raise ValueError(
+                    "status must be 'draft', 'active', 'paused', or 'archived'"
+                )
         return v
 
     @field_validator("tags")
@@ -275,7 +281,10 @@ class CreateScheduleRequest(BaseModel):
     """Schema for creating a playbook schedule."""
 
     cron_expression: str = Field(
-        ..., min_length=5, max_length=100, description="Cron expression (e.g., '0 * * * *')"
+        ...,
+        min_length=5,
+        max_length=100,
+        description="Cron expression (e.g., '0 * * * *')",
     )
     timezone: Optional[str] = Field(
         default="UTC", description="Timezone for the schedule"

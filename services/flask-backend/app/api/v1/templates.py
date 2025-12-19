@@ -20,7 +20,9 @@ def serialize_template(template, version=None):
         "name": template.title,
         "description": template.description or "",
         "category": "custom",  # Default category for custom templates
-        "created_by_id": str(template.created_by_id) if template.created_by_id else None,
+        "created_by_id": (
+            str(template.created_by_id) if template.created_by_id else None
+        ),
         "owner_id": str(template.owner_id) if template.owner_id else None,
         "is_public": template.is_public,
         "tags": template.tags or [],
@@ -58,9 +60,9 @@ def list_templates():
         # Query templates: public templates OR user's own templates
         # Templates are drawings with is_template=true
         query = (db.drawings.is_template == True) & (
-            (db.drawings.is_public == True) |
-            (db.drawings.created_by_id == user_id) |
-            (db.drawings.owner_id == user_id)
+            (db.drawings.is_public == True)
+            | (db.drawings.created_by_id == user_id)
+            | (db.drawings.owner_id == user_id)
         )
 
         templates = db(query).select(orderby=~db.drawings.updated_at)
@@ -71,16 +73,23 @@ def list_templates():
             # Apply search filter
             if search:
                 search_lower = search.lower()
-                if not (search_lower in template.title.lower() or
-                        search_lower in (template.description or "").lower()):
+                if not (
+                    search_lower in template.title.lower()
+                    or search_lower in (template.description or "").lower()
+                ):
                     continue
             result.append(serialize_template(template))
 
-        return jsonify({
-            "success": True,
-            "count": len(result),
-            "templates": result,
-        }), 200
+        return (
+            jsonify(
+                {
+                    "success": True,
+                    "count": len(result),
+                    "templates": result,
+                }
+            ),
+            200,
+        )
 
     except Exception as e:
         current_app.logger.error(f"Error listing templates: {e}")
@@ -111,23 +120,29 @@ def get_template(template_id: str):
 
         # Check access (owner, creator, or public)
         has_access = (
-            template.created_by_id == user_id or
-            template.owner_id == user_id or
-            template.is_public
+            template.created_by_id == user_id
+            or template.owner_id == user_id
+            or template.is_public
         )
         if not has_access:
             return jsonify({"success": False, "error": "Access denied"}), 403
 
         # Get latest version with content
-        version = db(db.drawing_versions.drawing_id == template.id).select(
-            orderby=~db.drawing_versions.version_number,
-            limitby=(0, 1)
-        ).first()
+        version = (
+            db(db.drawing_versions.drawing_id == template.id)
+            .select(orderby=~db.drawing_versions.version_number, limitby=(0, 1))
+            .first()
+        )
 
-        return jsonify({
-            "success": True,
-            "template": serialize_template(template, version),
-        }), 200
+        return (
+            jsonify(
+                {
+                    "success": True,
+                    "template": serialize_template(template, version),
+                }
+            ),
+            200,
+        )
 
     except Exception as e:
         current_app.logger.error(f"Error getting template {template_id}: {e}")
@@ -159,7 +174,10 @@ def create_template():
 
         # Validate required fields
         if not data.get("name"):
-            return jsonify({"success": False, "error": "Template name is required"}), 400
+            return (
+                jsonify({"success": False, "error": "Template name is required"}),
+                400,
+            )
 
         drawing_id = data.get("drawing_id")
         if not drawing_id:
@@ -171,10 +189,11 @@ def create_template():
             return jsonify({"success": False, "error": "Source drawing not found"}), 404
 
         # Get the latest version of the source drawing
-        source_version = db(db.drawing_versions.drawing_id == source_drawing.id).select(
-            orderby=~db.drawing_versions.version_number,
-            limitby=(0, 1)
-        ).first()
+        source_version = (
+            db(db.drawing_versions.drawing_id == source_drawing.id)
+            .select(orderby=~db.drawing_versions.version_number, limitby=(0, 1))
+            .first()
+        )
 
         # Create new template (as a drawing with is_template=True)
         template_id = db.drawings.insert(
@@ -191,7 +210,11 @@ def create_template():
         db.commit()
 
         # Copy content from source drawing to template
-        template_content = source_version.content_json if source_version else {"nodes": [], "edges": []}
+        template_content = (
+            source_version.content_json
+            if source_version
+            else {"nodes": [], "edges": []}
+        )
 
         # Create initial version with content
         db.drawing_versions.insert(
@@ -212,17 +235,27 @@ def create_template():
                 user_id=user_id,
             )
         except Exception as storage_err:
-            current_app.logger.warning(f"Failed to save to object storage: {storage_err}")
+            current_app.logger.warning(
+                f"Failed to save to object storage: {storage_err}"
+            )
 
         # Get the created template
         template = db.drawings(template_id)
         if not template:
-            return jsonify({"success": False, "error": "Failed to create template"}), 500
+            return (
+                jsonify({"success": False, "error": "Failed to create template"}),
+                500,
+            )
 
-        return jsonify({
-            "success": True,
-            "template": serialize_template(template),
-        }), 201
+        return (
+            jsonify(
+                {
+                    "success": True,
+                    "template": serialize_template(template),
+                }
+            ),
+            201,
+        )
 
     except Exception as e:
         current_app.logger.error(f"Error creating template: {e}")
@@ -260,10 +293,7 @@ def update_template(template_id: str):
             return jsonify({"success": False, "error": "Template not found"}), 404
 
         # Check ownership
-        is_owner = (
-            template.created_by_id == user_id or
-            template.owner_id == user_id
-        )
+        is_owner = template.created_by_id == user_id or template.owner_id == user_id
         if not is_owner:
             return jsonify({"success": False, "error": "Access denied"}), 403
 
@@ -282,10 +312,15 @@ def update_template(template_id: str):
         # Fetch updated template
         template = db.drawings(template_id)
 
-        return jsonify({
-            "success": True,
-            "template": serialize_template(template),
-        }), 200
+        return (
+            jsonify(
+                {
+                    "success": True,
+                    "template": serialize_template(template),
+                }
+            ),
+            200,
+        )
 
     except Exception as e:
         current_app.logger.error(f"Error updating template {template_id}: {e}")
@@ -315,10 +350,7 @@ def delete_template(template_id: str):
             return jsonify({"success": False, "error": "Template not found"}), 404
 
         # Check ownership
-        is_owner = (
-            template.created_by_id == user_id or
-            template.owner_id == user_id
-        )
+        is_owner = template.created_by_id == user_id or template.owner_id == user_id
         if not is_owner:
             return jsonify({"success": False, "error": "Access denied"}), 403
 
@@ -326,16 +358,23 @@ def delete_template(template_id: str):
         try:
             DrawingStorageService.delete_content(int(template_id))
         except Exception as storage_err:
-            current_app.logger.warning(f"Failed to delete from object storage: {storage_err}")
+            current_app.logger.warning(
+                f"Failed to delete from object storage: {storage_err}"
+            )
 
         # Delete template (cascade will handle versions, shapes, etc.)
         db(db.drawings.id == template_id).delete()
         db.commit()
 
-        return jsonify({
-            "success": True,
-            "message": "Template deleted successfully",
-        }), 200
+        return (
+            jsonify(
+                {
+                    "success": True,
+                    "message": "Template deleted successfully",
+                }
+            ),
+            200,
+        )
 
     except Exception as e:
         current_app.logger.error(f"Error deleting template {template_id}: {e}")
@@ -374,20 +413,25 @@ def use_template(template_id: str):
 
         # Check access (public templates or user's own templates)
         has_access = (
-            template.created_by_id == user_id or
-            template.owner_id == user_id or
-            template.is_public
+            template.created_by_id == user_id
+            or template.owner_id == user_id
+            or template.is_public
         )
         if not has_access:
             return jsonify({"success": False, "error": "Access denied"}), 403
 
         # Get latest version of template with content
-        template_version = db(db.drawing_versions.drawing_id == template.id).select(
-            orderby=~db.drawing_versions.version_number,
-            limitby=(0, 1)
-        ).first()
+        template_version = (
+            db(db.drawing_versions.drawing_id == template.id)
+            .select(orderby=~db.drawing_versions.version_number, limitby=(0, 1))
+            .first()
+        )
 
-        template_content = template_version.content_json if template_version else {"nodes": [], "edges": []}
+        template_content = (
+            template_version.content_json
+            if template_version
+            else {"nodes": [], "edges": []}
+        )
 
         # Create new drawing from template
         drawing_id = db.drawings.insert(
@@ -422,29 +466,46 @@ def use_template(template_id: str):
                 user_id=user_id,
             )
         except Exception as storage_err:
-            current_app.logger.warning(f"Failed to save to object storage: {storage_err}")
+            current_app.logger.warning(
+                f"Failed to save to object storage: {storage_err}"
+            )
 
         # Get the created drawing
         drawing = db.drawings(drawing_id)
         if not drawing:
             return jsonify({"success": False, "error": "Failed to create drawing"}), 500
 
-        return jsonify({
-            "success": True,
-            "drawing": {
-                "id": drawing.id,
-                "name": drawing.title,
-                "description": drawing.description or "",
-                "created_by_id": drawing.created_by_id,
-                "owner_id": drawing.owner_id,
-                "is_public": drawing.is_public,
-                "status": drawing.status,
-                "created_at": drawing.created_at.isoformat() if drawing.created_at else None,
-                "updated_at": drawing.updated_at.isoformat() if drawing.updated_at else None,
-            },
-            "drawing_id": drawing_id,
-        }), 201
+        return (
+            jsonify(
+                {
+                    "success": True,
+                    "drawing": {
+                        "id": drawing.id,
+                        "name": drawing.title,
+                        "description": drawing.description or "",
+                        "created_by_id": drawing.created_by_id,
+                        "owner_id": drawing.owner_id,
+                        "is_public": drawing.is_public,
+                        "status": drawing.status,
+                        "created_at": (
+                            drawing.created_at.isoformat()
+                            if drawing.created_at
+                            else None
+                        ),
+                        "updated_at": (
+                            drawing.updated_at.isoformat()
+                            if drawing.updated_at
+                            else None
+                        ),
+                    },
+                    "drawing_id": drawing_id,
+                }
+            ),
+            201,
+        )
 
     except Exception as e:
-        current_app.logger.error(f"Error creating drawing from template: {e}", exc_info=True)
+        current_app.logger.error(
+            f"Error creating drawing from template: {e}", exc_info=True
+        )
         return jsonify({"success": False, "error": str(e)}), 500

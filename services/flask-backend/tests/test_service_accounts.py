@@ -53,7 +53,9 @@ class TestServiceAccountScopes:
 
         token_scopes = ["drawings:read", "drawings:write", "exports:create"]
         assert has_all_scopes(token_scopes, ["drawings:read", "drawings:write"]) is True
-        assert has_all_scopes(token_scopes, ["drawings:read", "templates:read"]) is False
+        assert (
+            has_all_scopes(token_scopes, ["drawings:read", "templates:read"]) is False
+        )
 
     def test_get_missing_scopes(self):
         """Test getting missing scopes."""
@@ -387,7 +389,9 @@ class TestServiceAccountErrorPaths:
                 data=json.dumps({"expires_days": invalid_value}),
                 content_type="application/json",
             )
-            assert response.status_code == 400, f"Expected 400 for expires_days={invalid_value}"
+            assert (
+                response.status_code == 400
+            ), f"Expected 400 for expires_days={invalid_value}"
 
     def test_get_nonexistent_service_account_returns_404(
         self, client, admin_auth_headers
@@ -486,8 +490,7 @@ class TestTokenRevocationEffects:
 
         # Find our revoked token
         revoked_token = next(
-            (t for t in tokens if t["token_jti"] == token_info["token_jti"]),
-            None
+            (t for t in tokens if t["token_jti"] == token_info["token_jti"]), None
         )
         assert revoked_token is not None
         assert revoked_token["revoked_at"] is not None

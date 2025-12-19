@@ -182,13 +182,13 @@ const PlaybookEditor: React.FC = () => {
   // Node palette data
   const triggers = [
     { id: 'trigger_manual', label: 'Manual', icon: '👆', description: 'Manually trigger workflow' },
+    { id: 'trigger_mock_data', label: 'Mock Data', icon: '🎭', description: 'Generate mock data for testing' },
     { id: 'trigger_webhook', label: 'Webhook', icon: '🪝', description: 'Trigger from webhook' },
     { id: 'trigger_schedule', label: 'Schedule', icon: '⏰', description: 'Trigger on schedule' },
     { id: 'trigger_grpc', label: 'gRPC', icon: '⚡', description: 'Receive gRPC requests' },
     { id: 'trigger_mcp', label: 'MCP Server', icon: '🔌', description: 'Receive MCP protocol requests' },
   ];
   const transforms = [
-    { id: 'transform_mock_data', label: 'Mock Data', icon: '🎭', description: 'Generate mock data' },
     { id: 'transform_json', label: 'JSON Transform', icon: '🔧', description: 'Transform JSON data' },
     { id: 'transform_filter', label: 'Filter', icon: '🔍', description: 'Filter data' },
     { id: 'transform_split', label: 'Split', icon: '✂️', description: 'Split data stream' },

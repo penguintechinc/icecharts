@@ -623,9 +623,7 @@ class TestCollectionSharingTokens:
         data = json.loads(response.data)
         assert "collection" in data
 
-    def test_access_shared_collection_drawings_with_token(
-        self, client, auth_headers
-    ):
+    def test_access_shared_collection_drawings_with_token(self, client, auth_headers):
         """Test accessing drawings in a shared collection using token."""
         # Create a collection
         collection_response = client.post(
@@ -733,7 +731,9 @@ class TestCollectionAnalytics:
         data = json.loads(response.data)
         assert "stats" in data
 
-    def test_non_owner_cannot_view_analytics(self, client, auth_headers, create_test_user):
+    def test_non_owner_cannot_view_analytics(
+        self, client, auth_headers, create_test_user
+    ):
         """Test that non-owners can't view collection analytics."""
         # Create a collection with first user
         collection_response = client.post(

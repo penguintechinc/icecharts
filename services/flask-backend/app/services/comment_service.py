@@ -19,9 +19,13 @@ class CommentService:
     """Service class for comment operations."""
 
     @staticmethod
-    def create_comment(drawing_id: int, author_id: int, content: str,
-                       shape_id: Optional[str] = None,
-                       parent_comment_id: Optional[int] = None) -> dict:
+    def create_comment(
+        drawing_id: int,
+        author_id: int,
+        content: str,
+        shape_id: Optional[str] = None,
+        parent_comment_id: Optional[int] = None,
+    ) -> dict:
         """Create a new comment on a drawing.
 
         Args:
@@ -38,7 +42,9 @@ class CommentService:
             raise ValueError("Comment content cannot be empty")
 
         if len(content) > 5000:
-            raise ValueError("Comment content exceeds maximum length of 5000 characters")
+            raise ValueError(
+                "Comment content exceeds maximum length of 5000 characters"
+            )
 
         return create_comment(
             drawing_id=drawing_id,
@@ -49,8 +55,9 @@ class CommentService:
         )
 
     @staticmethod
-    def get_comments_for_drawing(drawing_id: int, shape_id: Optional[str] = None,
-                                 filter_type: str = "all") -> list[dict]:
+    def get_comments_for_drawing(
+        drawing_id: int, shape_id: Optional[str] = None, filter_type: str = "all"
+    ) -> list[dict]:
         """Get comments for a drawing with optional filtering.
 
         Args:
@@ -105,11 +112,12 @@ class CommentService:
         def collect_replies(parent_id: int):
             """Recursively collect all nested replies."""
             from ..models import get_db
+
             db = get_db()
 
-            direct_replies = db(
-                db.comments.parent_comment_id == parent_id
-            ).select(orderby=db.comments.created_at)
+            direct_replies = db(db.comments.parent_comment_id == parent_id).select(
+                orderby=db.comments.created_at
+            )
 
             for reply in direct_replies:
                 reply_dict = get_comment_by_id(reply.id)
@@ -137,7 +145,9 @@ class CommentService:
             raise ValueError("Comment content cannot be empty")
 
         if len(content) > 5000:
-            raise ValueError("Comment content exceeds maximum length of 5000 characters")
+            raise ValueError(
+                "Comment content exceeds maximum length of 5000 characters"
+            )
 
         return update_comment(comment_id=comment_id, content=content.strip())
 
@@ -190,6 +200,7 @@ class CommentService:
             Count of unresolved comments
         """
         from ..models import get_db
+
         db = get_db()
 
         query = db.comments.drawing_id == drawing_id
@@ -210,6 +221,7 @@ class CommentService:
             Dictionary with comment counts and metadata
         """
         from ..models import get_db
+
         db = get_db()
 
         all_comments = db(db.comments.drawing_id == drawing_id).select()
@@ -221,9 +233,9 @@ class CommentService:
         shape_counts = {}
         for comment in all_comments:
             if comment.shape_id:
-                shape_counts[comment.shape_id] = shape_counts.get(
-                    comment.shape_id, 0
-                ) + 1
+                shape_counts[comment.shape_id] = (
+                    shape_counts.get(comment.shape_id, 0) + 1
+                )
 
         return {
             "total_comments": total,

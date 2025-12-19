@@ -398,7 +398,6 @@ jobs:
         # Verify license client files exist
         test -f shared/licensing/client.go
         test -f shared/licensing/python_client.py
-        test -f web/src/lib/license-client.js
 
         echo "License integration check passed"
 

@@ -1,9 +1,12 @@
 """Admin SSO Configuration API endpoints."""
 
 import logging
+
 from flask import Blueprint, jsonify, request
-from app.middleware import admin_required, auth_required, get_current_user
+
 from app.licensing import check_feature, get_all_features
+from app.middleware import admin_required, auth_required, get_current_user
+
 from ...models import get_db
 
 logger = logging.getLogger(__name__)
@@ -38,28 +41,37 @@ def get_available_providers():
 
         # Check for SAML feature
         saml_available = check_feature("saml_sso")
-        providers.append({
-            "id": "saml",
-            "name": "SAML 2.0",
-            "description": "Enterprise SAML single sign-on",
-            "available": saml_available,
-            "premium": True,
-        })
+        providers.append(
+            {
+                "id": "saml",
+                "name": "SAML 2.0",
+                "description": "Enterprise SAML single sign-on",
+                "available": saml_available,
+                "premium": True,
+            }
+        )
 
         # Check for OIDC feature
         oidc_available = check_feature("oidc_sso")
-        providers.append({
-            "id": "oidc",
-            "name": "OpenID Connect",
-            "description": "Enterprise OIDC authentication",
-            "available": oidc_available,
-            "premium": True,
-        })
+        providers.append(
+            {
+                "id": "oidc",
+                "name": "OpenID Connect",
+                "description": "Enterprise OIDC authentication",
+                "available": oidc_available,
+                "premium": True,
+            }
+        )
 
-        return jsonify({
-            "providers": providers,
-            "has_premium": saml_available or oidc_available,
-        }), 200
+        return (
+            jsonify(
+                {
+                    "providers": providers,
+                    "has_premium": saml_available or oidc_available,
+                }
+            ),
+            200,
+        )
 
     except Exception as e:
         logger.error(f"Failed to get SSO providers: {e}")
@@ -86,17 +98,23 @@ def list_sso_configs():
 
         items = []
         for config in configs:
-            items.append({
-                "id": config.id,
-                "provider": config.provider_type,  # 'saml' or 'oidc'
-                "name": config.name,
-                "enabled": config.is_active,
-                "client_id": config.oidc_client_id or config.entity_id or "",
-                "metadata_url": config.metadata_url or config.oidc_issuer_url or "",
-                "sso_url": config.sso_url or "",
-                "created_at": config.created_at.isoformat() if config.created_at else None,
-                "updated_at": config.updated_at.isoformat() if config.updated_at else None,
-            })
+            items.append(
+                {
+                    "id": config.id,
+                    "provider": config.provider_type,  # 'saml' or 'oidc'
+                    "name": config.name,
+                    "enabled": config.is_active,
+                    "client_id": config.oidc_client_id or config.entity_id or "",
+                    "metadata_url": config.metadata_url or config.oidc_issuer_url or "",
+                    "sso_url": config.sso_url or "",
+                    "created_at": (
+                        config.created_at.isoformat() if config.created_at else None
+                    ),
+                    "updated_at": (
+                        config.updated_at.isoformat() if config.updated_at else None
+                    ),
+                }
+            )
 
         return jsonify({"items": items}), 200
 
@@ -148,8 +166,12 @@ def create_sso_config():
             name=name,
             entity_id=data.get("client_id") if provider_type == "saml" else None,
             oidc_client_id=data.get("client_id") if provider_type == "oidc" else None,
-            oidc_client_secret=data.get("client_secret") if provider_type == "oidc" else None,
-            oidc_issuer_url=data.get("metadata_url") if provider_type == "oidc" else None,
+            oidc_client_secret=(
+                data.get("client_secret") if provider_type == "oidc" else None
+            ),
+            oidc_issuer_url=(
+                data.get("metadata_url") if provider_type == "oidc" else None
+            ),
             metadata_url=data.get("metadata_url") if provider_type == "saml" else None,
             sso_url=data.get("sso_url"),
             is_active=data.get("enabled", True),
@@ -162,17 +184,24 @@ def create_sso_config():
         current_user = get_current_user()
         logger.info(f"SSO config created by user {current_user['id']}: {name}")
 
-        return jsonify({
-            "message": "SSO configuration created",
-            "config": {
-                "id": config.id,
-                "provider": provider,
-                "name": config.name,
-                "enabled": config.is_active,
-                "client_id": config.oidc_client_id or config.entity_id or "",
-                "metadata_url": config.metadata_url or config.oidc_issuer_url or "",
-            }
-        }), 201
+        return (
+            jsonify(
+                {
+                    "message": "SSO configuration created",
+                    "config": {
+                        "id": config.id,
+                        "provider": provider,
+                        "name": config.name,
+                        "enabled": config.is_active,
+                        "client_id": config.oidc_client_id or config.entity_id or "",
+                        "metadata_url": config.metadata_url
+                        or config.oidc_issuer_url
+                        or "",
+                    },
+                }
+            ),
+            201,
+        )
 
     except Exception as e:
         logger.error(f"Failed to create SSO config: {e}")
@@ -191,19 +220,30 @@ def get_sso_config(config_id: int):
         if not config:
             return jsonify({"error": "SSO configuration not found"}), 404
 
-        return jsonify({
-            "config": {
-                "id": config.id,
-                "provider": config.provider_type,
-                "name": config.name,
-                "enabled": config.is_active,
-                "client_id": config.oidc_client_id or config.entity_id or "",
-                "metadata_url": config.metadata_url or config.oidc_issuer_url or "",
-                "sso_url": config.sso_url or "",
-                "created_at": config.created_at.isoformat() if config.created_at else None,
-                "updated_at": config.updated_at.isoformat() if config.updated_at else None,
-            }
-        }), 200
+        return (
+            jsonify(
+                {
+                    "config": {
+                        "id": config.id,
+                        "provider": config.provider_type,
+                        "name": config.name,
+                        "enabled": config.is_active,
+                        "client_id": config.oidc_client_id or config.entity_id or "",
+                        "metadata_url": config.metadata_url
+                        or config.oidc_issuer_url
+                        or "",
+                        "sso_url": config.sso_url or "",
+                        "created_at": (
+                            config.created_at.isoformat() if config.created_at else None
+                        ),
+                        "updated_at": (
+                            config.updated_at.isoformat() if config.updated_at else None
+                        ),
+                    }
+                }
+            ),
+            200,
+        )
 
     except Exception as e:
         logger.error(f"Failed to get SSO config {config_id}: {e}")
@@ -260,17 +300,24 @@ def update_sso_config(config_id: int):
         # Refresh config
         config = db.idp_configurations(config_id)
 
-        return jsonify({
-            "message": "SSO configuration updated",
-            "config": {
-                "id": config.id,
-                "provider": config.provider_type,
-                "name": config.name,
-                "enabled": config.is_active,
-                "client_id": config.oidc_client_id or config.entity_id or "",
-                "metadata_url": config.metadata_url or config.oidc_issuer_url or "",
-            }
-        }), 200
+        return (
+            jsonify(
+                {
+                    "message": "SSO configuration updated",
+                    "config": {
+                        "id": config.id,
+                        "provider": config.provider_type,
+                        "name": config.name,
+                        "enabled": config.is_active,
+                        "client_id": config.oidc_client_id or config.entity_id or "",
+                        "metadata_url": config.metadata_url
+                        or config.oidc_issuer_url
+                        or "",
+                    },
+                }
+            ),
+            200,
+        )
 
     except Exception as e:
         logger.error(f"Failed to update SSO config {config_id}: {e}")

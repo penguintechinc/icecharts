@@ -18,7 +18,9 @@ class TestAdminPermissions:
         response = client.get("/api/v1/drawings", headers=admin_auth_headers)
         assert response.status_code == 200
 
-    def test_admin_can_delete_any_drawing(self, client, admin_auth_headers, auth_headers):
+    def test_admin_can_delete_any_drawing(
+        self, client, admin_auth_headers, auth_headers
+    ):
         """Test that admins can delete any drawing."""
         # Create drawing as regular user
         create_response = client.post(
@@ -52,12 +54,12 @@ class TestAdminPermissions:
 class TestMaintainerPermissions:
     """Test maintainer role permissions."""
 
-    def test_maintainer_can_manage_drawings(self, client, auth_headers, create_test_user):
+    def test_maintainer_can_manage_drawings(
+        self, client, auth_headers, create_test_user
+    ):
         """Test that maintainers can create and edit drawings."""
         # Create a maintainer
-        maintainer = create_test_user(
-            email="maintainer@example.com", role="maintainer"
-        )
+        maintainer = create_test_user(email="maintainer@example.com", role="maintainer")
         maintainer_headers = {"Authorization": f"Bearer {maintainer['token']}"}
 
         # Should be able to create drawings
@@ -166,7 +168,9 @@ class TestResourceOwnershipPermissions:
         )
         assert response.status_code == 200
 
-    def test_user_cannot_edit_others_drawing(self, client, auth_headers, create_test_user):
+    def test_user_cannot_edit_others_drawing(
+        self, client, auth_headers, create_test_user
+    ):
         """Test that users cannot edit other users' drawings."""
         # Create drawing as first user
         create_response = client.post(
@@ -238,7 +242,9 @@ class TestGroupPermissions:
         )
         assert response.status_code == 200
 
-    def test_non_owner_cannot_manage_group(self, client, auth_headers, create_test_user):
+    def test_non_owner_cannot_manage_group(
+        self, client, auth_headers, create_test_user
+    ):
         """Test that non-owners cannot manage groups."""
         # Create a group as first user
         create_response = client.post(
@@ -287,7 +293,9 @@ class TestGroupPermissions:
 class TestDrawingPermissions:
     """Test sharing and permission levels on drawings."""
 
-    def test_shared_drawing_read_permission(self, client, auth_headers, create_test_user):
+    def test_shared_drawing_read_permission(
+        self, client, auth_headers, create_test_user
+    ):
         """Test user with read permission can view shared drawing."""
         # Create a drawing as first user
         create_response = client.post(
@@ -312,7 +320,9 @@ class TestDrawingPermissions:
         )
         assert response.status_code in [200, 201, 404]
 
-    def test_shared_drawing_edit_permission(self, client, auth_headers, create_test_user):
+    def test_shared_drawing_edit_permission(
+        self, client, auth_headers, create_test_user
+    ):
         """Test user with edit permission can modify shared drawing."""
         # Create a drawing
         create_response = client.post(

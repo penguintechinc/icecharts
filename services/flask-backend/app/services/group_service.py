@@ -35,10 +35,7 @@ class GroupService:
 
     @staticmethod
     def create_group(
-        owner_id: int,
-        name: str,
-        description: Optional[str] = None,
-        tenant_id: int = 1
+        owner_id: int, name: str, description: Optional[str] = None, tenant_id: int = 1
     ) -> dict:
         """
         Create a new group.
@@ -107,7 +104,7 @@ class GroupService:
         group_id: int,
         name: Optional[str] = None,
         description: Optional[str] = None,
-        is_active: Optional[bool] = None
+        is_active: Optional[bool] = None,
     ) -> Optional[dict]:
         """
         Update group information.
@@ -190,9 +187,7 @@ class GroupService:
 
     @staticmethod
     def add_member(
-        group_id: int,
-        user_id: int,
-        expires_at: Optional[datetime.datetime] = None
+        group_id: int, user_id: int, expires_at: Optional[datetime.datetime] = None
     ) -> dict:
         """
         Add a member to a group.
@@ -220,10 +215,14 @@ class GroupService:
             raise ValueError("User not found")
 
         # Check if already a member
-        existing = db(
-            (db.group_memberships.group_id == group_id) &
-            (db.group_memberships.identity_id == user_id)
-        ).select().first()
+        existing = (
+            db(
+                (db.group_memberships.group_id == group_id)
+                & (db.group_memberships.identity_id == user_id)
+            )
+            .select()
+            .first()
+        )
 
         if existing:
             raise ValueError("User is already a member of this group")
@@ -261,8 +260,8 @@ class GroupService:
 
         try:
             deleted = db(
-                (db.group_memberships.group_id == group_id) &
-                (db.group_memberships.identity_id == user_id)
+                (db.group_memberships.group_id == group_id)
+                & (db.group_memberships.identity_id == user_id)
             ).delete()
             db.commit()
 
@@ -274,9 +273,7 @@ class GroupService:
 
     @staticmethod
     def update_member_role(
-        group_id: int,
-        user_id: int,
-        expires_at: Optional[datetime.datetime] = None
+        group_id: int, user_id: int, expires_at: Optional[datetime.datetime] = None
     ) -> Optional[dict]:
         """
         Update a member's role or expiration in a group.
@@ -301,8 +298,8 @@ class GroupService:
 
         try:
             db(
-                (db.group_memberships.group_id == group_id) &
-                (db.group_memberships.identity_id == user_id)
+                (db.group_memberships.group_id == group_id)
+                & (db.group_memberships.identity_id == user_id)
             ).update(expires_at=expires_at)
             db.commit()
 
@@ -325,10 +322,14 @@ class GroupService:
             Dictionary containing membership data or None if not found
         """
         db = get_db()
-        membership = db(
-            (db.group_memberships.group_id == group_id) &
-            (db.group_memberships.identity_id == user_id)
-        ).select().first()
+        membership = (
+            db(
+                (db.group_memberships.group_id == group_id)
+                & (db.group_memberships.identity_id == user_id)
+            )
+            .select()
+            .first()
+        )
 
         if not membership:
             return None
@@ -350,8 +351,8 @@ class GroupService:
 
         # Join with identities to get user details
         members = db(
-            (db.group_memberships.group_id == group_id) &
-            (db.group_memberships.identity_id == db.identities.id)
+            (db.group_memberships.group_id == group_id)
+            & (db.group_memberships.identity_id == db.identities.id)
         ).select(
             db.group_memberships.ALL,
             db.identities.id,
@@ -363,16 +364,24 @@ class GroupService:
 
         result = []
         for m in members:
-            result.append({
-                "identity_id": m.identities.id,
-                "username": m.identities.username,
-                "email": m.identities.email,
-                "full_name": m.identities.full_name,
-                "expires_at": m.group_memberships.expires_at.isoformat()
-                if m.group_memberships.expires_at else None,
-                "created_at": m.group_memberships.created_at.isoformat()
-                if m.group_memberships.created_at else None,
-            })
+            result.append(
+                {
+                    "identity_id": m.identities.id,
+                    "username": m.identities.username,
+                    "email": m.identities.email,
+                    "full_name": m.identities.full_name,
+                    "expires_at": (
+                        m.group_memberships.expires_at.isoformat()
+                        if m.group_memberships.expires_at
+                        else None
+                    ),
+                    "created_at": (
+                        m.group_memberships.created_at.isoformat()
+                        if m.group_memberships.created_at
+                        else None
+                    ),
+                }
+            )
 
         return result
 
@@ -391,8 +400,8 @@ class GroupService:
 
         # Join with groups to get group details
         memberships = db(
-            (db.group_memberships.identity_id == user_id) &
-            (db.group_memberships.group_id == db.groups.id)
+            (db.group_memberships.identity_id == user_id)
+            & (db.group_memberships.group_id == db.groups.id)
         ).select(
             db.groups.ALL,
             orderby=db.groups.name,

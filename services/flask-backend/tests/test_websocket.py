@@ -5,13 +5,14 @@ Tests the WebSocket handlers, collaboration manager, and integration
 with Flask-SocketIO.
 """
 
-import pytest
 import json
+import os
 import time
+
+import jwt
+import pytest
 from flask import Flask
 from flask_socketio import SocketIOTestClient
-import jwt
-import os
 
 from app import create_app
 from app.websocket.collaboration import CollaborationManager, get_collaboration_manager
@@ -20,9 +21,9 @@ from app.websocket.collaboration import CollaborationManager, get_collaboration_
 @pytest.fixture
 def app():
     """Create Flask app for testing."""
-    os.environ['TESTING'] = 'true'
+    os.environ["TESTING"] = "true"
     app = create_app()
-    app.config['TESTING'] = True
+    app.config["TESTING"] = True
     return app
 
 
@@ -55,7 +56,7 @@ def auth_token():
             "email": "test@example.com",
         },
         secret,
-        algorithm="HS256"
+        algorithm="HS256",
     )
     return token
 
@@ -76,7 +77,7 @@ class TestCollaborationManager:
             user_id="user-1",
             username="User One",
             email="user1@example.com",
-            session_id="session-1"
+            session_id="session-1",
         )
 
         assert collaborator.user_id == "user-1"
@@ -91,7 +92,7 @@ class TestCollaborationManager:
             user_id="user-1",
             username="User One",
             email="user1@example.com",
-            session_id="session-1"
+            session_id="session-1",
         )
 
         manager.leave_room("test-room", "session-1")
@@ -105,7 +106,7 @@ class TestCollaborationManager:
             user_id="user-1",
             username="User One",
             email="user1@example.com",
-            session_id="session-1"
+            session_id="session-1",
         )
 
         manager.update_cursor("test-room", "session-1", 100.0, 200.0)
@@ -122,7 +123,7 @@ class TestCollaborationManager:
             user_id="user-1",
             username="User One",
             email="user1@example.com",
-            session_id="session-1"
+            session_id="session-1",
         )
 
         manager.join_room(
@@ -130,7 +131,7 @@ class TestCollaborationManager:
             user_id="user-2",
             username="User Two",
             email="user2@example.com",
-            session_id="session-2"
+            session_id="session-2",
         )
 
         users = manager.get_room_users("test-room")
@@ -142,7 +143,7 @@ class TestCollaborationManager:
             room_id="test-room",
             shape_id="shape-1",
             user_id="user-1",
-            session_id="session-1"
+            session_id="session-1",
         )
 
         assert success is True
@@ -152,7 +153,7 @@ class TestCollaborationManager:
             room_id="test-room",
             shape_id="shape-1",
             user_id="user-2",
-            session_id="session-2"
+            session_id="session-2",
         )
 
         assert success2 is False
@@ -163,13 +164,11 @@ class TestCollaborationManager:
             room_id="test-room",
             shape_id="shape-1",
             user_id="user-1",
-            session_id="session-1"
+            session_id="session-1",
         )
 
         success = manager.unlock_shape(
-            room_id="test-room",
-            shape_id="shape-1",
-            session_id="session-1"
+            room_id="test-room", shape_id="shape-1", session_id="session-1"
         )
 
         assert success is True
@@ -184,13 +183,13 @@ class TestCollaborationManager:
             room_id="test-room",
             shape_id="shape-1",
             user_id="user-1",
-            session_id="session-1"
+            session_id="session-1",
         )
 
         success = manager.unlock_shape(
             room_id="test-room",
             shape_id="shape-1",
-            session_id="session-2"  # Different session
+            session_id="session-2",  # Different session
         )
 
         assert success is False
@@ -201,7 +200,7 @@ class TestCollaborationManager:
             room_id="test-room",
             shape_id="shape-1",
             user_id="user-1",
-            session_id="session-1"
+            session_id="session-1",
         )
 
         lock = manager.get_shape_lock("test-room", "shape-1")
@@ -220,7 +219,7 @@ class TestCollaborationManager:
                 user_id=f"user-{i}",
                 username=f"User {i}",
                 email=f"user{i}@example.com",
-                session_id=f"session-{i}"
+                session_id=f"session-{i}",
             )
             colors.add(collaborator.color)
 
@@ -260,14 +259,14 @@ class TestIntegration:
 
     def test_health_check(self, client):
         """Test health check endpoint."""
-        response = client.get('/healthz')
+        response = client.get("/healthz")
         assert response.status_code == 200
 
     def test_readiness_check(self, client):
         """Test readiness check endpoint."""
-        response = client.get('/readyz')
+        response = client.get("/readyz")
         assert response.status_code in [200, 503]
 
 
-if __name__ == '__main__':
-    pytest.main([__file__, '-v'])
+if __name__ == "__main__":
+    pytest.main([__file__, "-v"])

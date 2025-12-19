@@ -69,8 +69,7 @@ def _authenticate_service_account(payload: dict) -> tuple:
 
     # Update last used timestamps through service layer
     ServiceAccountService.record_token_usage(
-        token_jti=token_jti,
-        ip_address=request.remote_addr
+        token_jti=token_jti, ip_address=request.remote_addr
     )
 
     # Store service account info in request context
@@ -87,6 +86,7 @@ def _authenticate_service_account(payload: dict) -> tuple:
 
 def auth_required(f: Callable) -> Callable:
     """Decorator to require authentication (user or service account)."""
+
     @wraps(f)
     def decorated(*args, **kwargs):
         token = get_token_from_header()
@@ -134,6 +134,7 @@ def auth_required(f: Callable) -> Callable:
 
 def user_auth_required(f: Callable) -> Callable:
     """Decorator to require user authentication only (no service accounts)."""
+
     @wraps(f)
     def decorated(*args, **kwargs):
         token = get_token_from_header()
@@ -186,6 +187,7 @@ def scopes_required(*required_scopes: str) -> Callable:
         def my_endpoint():
             ...
     """
+
     def decorator(f: Callable) -> Callable:
         @wraps(f)
         def decorated(*args, **kwargs):
@@ -198,11 +200,16 @@ def scopes_required(*required_scopes: str) -> Callable:
             missing = set(required_scopes) - set(token_scopes)
 
             if missing:
-                return jsonify({
-                    "error": "Insufficient scope",
-                    "required_scopes": list(required_scopes),
-                    "missing_scopes": list(missing),
-                }), 403
+                return (
+                    jsonify(
+                        {
+                            "error": "Insufficient scope",
+                            "required_scopes": list(required_scopes),
+                            "missing_scopes": list(missing),
+                        }
+                    ),
+                    403,
+                )
 
             return f(*args, **kwargs)
 
@@ -213,6 +220,7 @@ def scopes_required(*required_scopes: str) -> Callable:
 
 def role_required(*allowed_roles: str) -> Callable:
     """Decorator to require specific roles."""
+
     def decorator(f: Callable) -> Callable:
         @wraps(f)
         def decorated(*args, **kwargs):
@@ -223,11 +231,16 @@ def role_required(*allowed_roles: str) -> Callable:
 
             user_role = user.get("role", "")
             if user_role not in allowed_roles:
-                return jsonify({
-                    "error": "Insufficient permissions",
-                    "required_roles": list(allowed_roles),
-                    "your_role": user_role,
-                }), 403
+                return (
+                    jsonify(
+                        {
+                            "error": "Insufficient permissions",
+                            "required_roles": list(allowed_roles),
+                            "your_role": user_role,
+                        }
+                    ),
+                    403,
+                )
 
             return f(*args, **kwargs)
 

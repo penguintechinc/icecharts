@@ -30,16 +30,14 @@ def verify_hmac_signature(payload: bytes, signature: str, secret: str) -> bool:
         return False
 
     expected_sig = signature[7:]  # Remove 'sha256=' prefix
-    computed_sig = hmac.new(
-        secret.encode("utf-8"),
-        payload,
-        hashlib.sha256
-    ).hexdigest()
+    computed_sig = hmac.new(secret.encode("utf-8"), payload, hashlib.sha256).hexdigest()
 
     return hmac.compare_digest(expected_sig, computed_sig)
 
 
-@playbook_hooks_v1_bp.route("/<token>", methods=["GET", "POST", "PUT", "PATCH", "DELETE"])
+@playbook_hooks_v1_bp.route(
+    "/<token>", methods=["GET", "POST", "PUT", "PATCH", "DELETE"]
+)
 def trigger_webhook(token: str):
     """Trigger a playbook via webhook.
 
@@ -66,9 +64,14 @@ def trigger_webhook(token: str):
         # Check allowed methods
         allowed_methods = webhook.allowed_methods or ["POST"]
         if request.method not in allowed_methods:
-            return jsonify({
-                "error": f"Method {request.method} not allowed. Allowed: {allowed_methods}"
-            }), 405
+            return (
+                jsonify(
+                    {
+                        "error": f"Method {request.method} not allowed. Allowed: {allowed_methods}"
+                    }
+                ),
+                405,
+            )
 
         # Get playbook
         playbook = db.playbooks(webhook.playbook_id)
@@ -80,8 +83,12 @@ def trigger_webhook(token: str):
 
         # Validate signature if required
         if webhook.validate_signature and webhook.signature_secret:
-            signature = request.headers.get("X-Hub-Signature-256") or request.headers.get("X-Signature-256")
-            if not verify_hmac_signature(request.data, signature, webhook.signature_secret):
+            signature = request.headers.get(
+                "X-Hub-Signature-256"
+            ) or request.headers.get("X-Signature-256")
+            if not verify_hmac_signature(
+                request.data, signature, webhook.signature_secret
+            ):
                 return jsonify({"error": "Invalid signature"}), 401
 
         # Get input data from request
@@ -130,12 +137,17 @@ def trigger_webhook(token: str):
             f"Webhook triggered playbook {playbook.id}, execution {execution_id}"
         )
 
-        return jsonify({
-            "success": True,
-            "execution_id": execution_id,
-            "status": "pending",
-            "message": "Execution queued for processing",
-        }), 202
+        return (
+            jsonify(
+                {
+                    "success": True,
+                    "execution_id": execution_id,
+                    "status": "pending",
+                    "message": "Execution queued for processing",
+                }
+            ),
+            202,
+        )
 
     except Exception as e:
         current_app.logger.error(f"Error triggering webhook {token}: {e}")
@@ -164,32 +176,41 @@ def test_webhook(token: str):
         # Validate signature if provided and required
         signature_valid = None
         if webhook.validate_signature and webhook.signature_secret:
-            signature = request.headers.get("X-Hub-Signature-256") or request.headers.get("X-Signature-256")
+            signature = request.headers.get(
+                "X-Hub-Signature-256"
+            ) or request.headers.get("X-Signature-256")
             if signature:
-                signature_valid = verify_hmac_signature(request.data, signature, webhook.signature_secret)
+                signature_valid = verify_hmac_signature(
+                    request.data, signature, webhook.signature_secret
+                )
             else:
                 signature_valid = False
 
-        return jsonify({
-            "success": True,
-            "webhook": {
-                "name": webhook.name,
-                "is_enabled": webhook.is_enabled,
-                "allowed_methods": webhook.allowed_methods or ["POST"],
-                "validate_signature": webhook.validate_signature,
-            },
-            "playbook": {
-                "id": str(playbook.id) if playbook else None,
-                "name": playbook.name if playbook else None,
-                "is_enabled": playbook.is_enabled if playbook else None,
-            },
-            "request": {
-                "method": request.method,
-                "content_type": request.content_type,
-                "has_body": len(request.data) > 0,
-            },
-            "signature_valid": signature_valid,
-        }), 200
+        return (
+            jsonify(
+                {
+                    "success": True,
+                    "webhook": {
+                        "name": webhook.name,
+                        "is_enabled": webhook.is_enabled,
+                        "allowed_methods": webhook.allowed_methods or ["POST"],
+                        "validate_signature": webhook.validate_signature,
+                    },
+                    "playbook": {
+                        "id": str(playbook.id) if playbook else None,
+                        "name": playbook.name if playbook else None,
+                        "is_enabled": playbook.is_enabled if playbook else None,
+                    },
+                    "request": {
+                        "method": request.method,
+                        "content_type": request.content_type,
+                        "has_body": len(request.data) > 0,
+                    },
+                    "signature_valid": signature_valid,
+                }
+            ),
+            200,
+        )
 
     except Exception as e:
         current_app.logger.error(f"Error testing webhook {token}: {e}")

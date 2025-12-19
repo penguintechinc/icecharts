@@ -7,7 +7,7 @@ and files between storage providers with progress tracking and rollback support.
 import json
 import logging
 from datetime import datetime, timedelta
-from typing import Optional, Dict, Any, List
+from typing import Any, Dict, List, Optional
 from uuid import uuid4
 
 from celery import Celery, Task
@@ -159,7 +159,9 @@ def migrate_storage_task(
         # Migrate each drawing
         for idx, drawing_id in enumerate(drawing_ids):
             try:
-                progress = int((idx / total_drawings) * 100) if total_drawings > 0 else 0
+                progress = (
+                    int((idx / total_drawings) * 100) if total_drawings > 0 else 0
+                )
                 _set_migration_status(
                     migration_id,
                     "in_progress",
@@ -187,20 +189,26 @@ def migrate_storage_task(
                     migrated_count += 1
                 elif result["status"] == "failed":
                     failed_count += 1
-                    failed_drawings.append({
-                        "drawing_id": drawing_id,
-                        "error": result.get("error", "Unknown error"),
-                    })
+                    failed_drawings.append(
+                        {
+                            "drawing_id": drawing_id,
+                            "error": result.get("error", "Unknown error"),
+                        }
+                    )
                 else:  # skipped
                     skipped_count += 1
 
             except Exception as e:
-                logger.error(f"Error migrating drawing {drawing_id}: {e}", exc_info=True)
+                logger.error(
+                    f"Error migrating drawing {drawing_id}: {e}", exc_info=True
+                )
                 failed_count += 1
-                failed_drawings.append({
-                    "drawing_id": drawing_id,
-                    "error": str(e),
-                })
+                failed_drawings.append(
+                    {
+                        "drawing_id": drawing_id,
+                        "error": str(e),
+                    }
+                )
 
         # Update final status
         migration_result = {
@@ -280,8 +288,8 @@ def _migrate_drawing(
     try:
         # Get all versions of this drawing stored in source provider
         versions = db(
-            (db.drawing_versions.drawing_id == drawing_id) &
-            (db.drawing_versions.storage_provider_id == source_provider_id)
+            (db.drawing_versions.drawing_id == drawing_id)
+            & (db.drawing_versions.storage_provider_id == source_provider_id)
         ).select()
 
         if not versions:
@@ -344,9 +352,7 @@ def _migrate_drawing(
                 )
                 db.commit()
 
-                logger.debug(
-                    f"Migrated drawing {drawing_id} v{version.version_number}"
-                )
+                logger.debug(f"Migrated drawing {drawing_id} v{version.version_number}")
 
             except Exception as e:
                 logger.error(

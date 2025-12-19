@@ -210,7 +210,11 @@ class TestDrawingUpdate:
         new_content = {
             "nodes": [
                 {"id": "1", "data": {"label": "Node 1"}, "position": {"x": 0, "y": 0}},
-                {"id": "2", "data": {"label": "Node 2"}, "position": {"x": 100, "y": 0}},
+                {
+                    "id": "2",
+                    "data": {"label": "Node 2"},
+                    "position": {"x": 100, "y": 0},
+                },
             ],
             "edges": [{"id": "e1-2", "source": "1", "target": "2"}],
         }
@@ -341,9 +345,7 @@ class TestDrawingVersionHistory:
         client.put(
             f"/api/v1/drawings/{drawing_id}",
             headers=auth_headers,
-            json={
-                "canvas_data": {"nodes": [{"id": "1"}, {"id": "2"}], "edges": []}
-            },
+            json={"canvas_data": {"nodes": [{"id": "1"}, {"id": "2"}], "edges": []}},
         )
 
         # Restore first version

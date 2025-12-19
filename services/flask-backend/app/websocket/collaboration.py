@@ -1,10 +1,11 @@
 """Collaboration session management with Redis."""
 
+import json
+import os
+import time
 from dataclasses import dataclass
 from typing import Dict, List, Optional, Set
-import json
-import time
-import os
+
 import redis
 from redis.exceptions import RedisError
 
@@ -168,9 +169,7 @@ class CollaborationManager:
         # Clean up any locks held by this user
         self._cleanup_user_locks(room_id, session_id)
 
-    def update_cursor(
-        self, room_id: str, session_id: str, x: float, y: float
-    ) -> None:
+    def update_cursor(self, room_id: str, session_id: str, x: float, y: float) -> None:
         """
         Update cursor position for a user.
 
@@ -190,9 +189,7 @@ class CollaborationManager:
                     data["cursor_x"] = x
                     data["cursor_y"] = y
                     data["last_seen"] = time.time()
-                    self.redis_client.hset(
-                        room_key, session_id, json.dumps(data)
-                    )
+                    self.redis_client.hset(room_key, session_id, json.dumps(data))
             except RedisError:
                 pass
         else:
@@ -200,9 +197,7 @@ class CollaborationManager:
                 if session_id in self._memory_storage[room_id]:
                     self._memory_storage[room_id][session_id]["cursor_x"] = x
                     self._memory_storage[room_id][session_id]["cursor_y"] = y
-                    self._memory_storage[room_id][session_id][
-                        "last_seen"
-                    ] = time.time()
+                    self._memory_storage[room_id][session_id]["last_seen"] = time.time()
 
     def get_room_users(self, room_id: str) -> List[Dict]:
         """
@@ -223,8 +218,7 @@ class CollaborationManager:
                 return [
                     json.loads(data)
                     for data in users_data.values()
-                    if current_time - json.loads(data).get("last_seen", 0)
-                    < 60
+                    if current_time - json.loads(data).get("last_seen", 0) < 60
                 ]
             except RedisError:
                 return []
@@ -279,17 +273,12 @@ class CollaborationManager:
             else:
                 # Check if lock expired
                 existing = self._memory_locks[lock_full_key]
-                if (
-                    time.time() - existing["timestamp"]
-                    > self.LOCK_TIMEOUT
-                ):
+                if time.time() - existing["timestamp"] > self.LOCK_TIMEOUT:
                     self._memory_locks[lock_full_key] = lock_data
                     return True
                 return False
 
-    def unlock_shape(
-        self, room_id: str, shape_id: str, session_id: str
-    ) -> bool:
+    def unlock_shape(self, room_id: str, shape_id: str, session_id: str) -> bool:
         """
         Release a lock on a shape.
 
@@ -317,10 +306,7 @@ class CollaborationManager:
         else:
             lock_full_key = f"{room_id}:{shape_id}"
             if lock_full_key in self._memory_locks:
-                if (
-                    self._memory_locks[lock_full_key]["session_id"]
-                    == session_id
-                ):
+                if self._memory_locks[lock_full_key]["session_id"] == session_id:
                     del self._memory_locks[lock_full_key]
                     return True
             return False

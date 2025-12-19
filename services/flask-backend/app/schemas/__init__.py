@@ -5,9 +5,6 @@ using Pydantic v2. Each schema includes proper type hints, field validators,
 and constraints to ensure data integrity and security.
 """
 
-# Common schemas
-from .common_schemas import PaginationParams
-
 # Authentication schemas
 from .auth_schemas import (
     LoginRequest,
@@ -16,13 +13,6 @@ from .auth_schemas import (
     RefreshTokenRequest,
     RegisterRequest,
     VerifyEmailRequest,
-)
-
-# Drawing schemas
-from .drawing_schemas import (
-    CreateDrawingRequest,
-    ExportDrawingRequest,
-    UpdateDrawingRequest,
 )
 
 # Collection schemas
@@ -34,6 +24,16 @@ from .collection_schemas import (
     UpdateCollectionRequest,
 )
 
+# Common schemas
+from .common_schemas import PaginationParams
+
+# Drawing schemas
+from .drawing_schemas import (
+    CreateDrawingRequest,
+    ExportDrawingRequest,
+    UpdateDrawingRequest,
+)
+
 # Share schemas
 from .share_schemas import (
     CreateShareRequest,
@@ -43,11 +43,7 @@ from .share_schemas import (
 )
 
 # User schemas
-from .user_schemas import (
-    CreateUserRequest,
-    UpdatePasswordRequest,
-    UpdateUserRequest,
-)
+from .user_schemas import CreateUserRequest, UpdatePasswordRequest, UpdateUserRequest
 
 __all__ = [
     # Common

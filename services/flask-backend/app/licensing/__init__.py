@@ -3,10 +3,9 @@
 import logging
 import os
 import threading
-from typing import Optional, Dict, Any
+from typing import Any, Dict, Optional
 
-from .client import PenguinTechLicenseClient, LicenseValidationError
-
+from .client import LicenseValidationError, PenguinTechLicenseClient
 
 logger = logging.getLogger(__name__)
 
@@ -22,6 +21,7 @@ def _get_license_key_from_db() -> Optional[str]:
     try:
         # Import here to avoid circular imports
         from app.services.system_settings_service import SystemSettingsService
+
         key = SystemSettingsService.get_setting("license_key")
         if key and isinstance(key, str) and key.strip():
             return key.strip()
@@ -89,9 +89,7 @@ def initialize_licensing() -> bool:
         # Start keepalive background thread
         _keepalive_stop_event = threading.Event()
         _keepalive_thread = threading.Thread(
-            target=_run_keepalive_loop,
-            daemon=True,
-            name="LicenseKeepaliveThread"
+            target=_run_keepalive_loop, daemon=True, name="LicenseKeepaliveThread"
         )
         _keepalive_thread.start()
         logger.debug("License keepalive thread started")

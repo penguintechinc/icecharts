@@ -86,6 +86,14 @@ export default function SSOConfiguration() {
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
 
+  // Fetch available providers on mount
+  useEffect(() => {
+    if (user?.role === 'admin') {
+      fetchProviders();
+      fetchExistingConfigs();
+    }
+  }, [user?.role]);
+
   // Check authorization
   if (user?.role !== 'admin') {
     return (
@@ -96,12 +104,6 @@ export default function SSOConfiguration() {
       </div>
     );
   }
-
-  // Fetch available providers on mount
-  useEffect(() => {
-    fetchProviders();
-    fetchExistingConfigs();
-  }, []);
 
   const fetchProviders = async () => {
     try {

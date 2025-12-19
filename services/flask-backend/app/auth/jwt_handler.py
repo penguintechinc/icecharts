@@ -282,9 +282,7 @@ def verify_service_token_with_db_check(payload: dict) -> dict:
         }
 
     # Check if token exists in database
-    token_record = db(
-        db.service_account_tokens.token_jti == token_jti
-    ).select().first()
+    token_record = db(db.service_account_tokens.token_jti == token_jti).select().first()
 
     if not token_record:
         return {
@@ -304,9 +302,7 @@ def verify_service_token_with_db_check(payload: dict) -> dict:
         }
 
     # Check if service account exists and is active
-    service_account = db(
-        db.service_accounts.id == service_account_id
-    ).select().first()
+    service_account = db(db.service_accounts.id == service_account_id).select().first()
 
     if not service_account:
         return {
@@ -355,9 +351,9 @@ def get_service_account_from_token() -> Optional[dict]:
     from app.models import get_db
 
     db = get_db()
-    service_account = db(
-        db.service_accounts.id == payload["service_account_id"]
-    ).select().first()
+    service_account = (
+        db(db.service_accounts.id == payload["service_account_id"]).select().first()
+    )
 
     if not service_account:
         return None

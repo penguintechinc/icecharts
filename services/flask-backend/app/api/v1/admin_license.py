@@ -10,23 +10,27 @@ from typing import Any, Dict, Optional
 
 from flask import Blueprint, jsonify, request
 
-from app.middleware import admin_required, auth_required, get_current_user
-from app.services.system_settings_service import SystemSettingsService
 from app.licensing import (
-    get_client,
+    LicenseValidationError,
     check_feature,
     get_all_features,
+    get_client,
     reinitialize_licensing,
-    LicenseValidationError,
 )
 from app.licensing.client import PenguinTechLicenseClient
+from app.middleware import admin_required, auth_required, get_current_user
+from app.services.system_settings_service import SystemSettingsService
 
 logger = logging.getLogger(__name__)
 
-admin_license_v1_bp = Blueprint("admin_license_v1", __name__, url_prefix="/admin/license")
+admin_license_v1_bp = Blueprint(
+    "admin_license_v1", __name__, url_prefix="/admin/license"
+)
 
 # License key format regex
-LICENSE_KEY_PATTERN = re.compile(r"^PENG-[A-Z0-9]{4}-[A-Z0-9]{4}-[A-Z0-9]{4}-[A-Z0-9]{4}-[A-Z0-9]{4}$")
+LICENSE_KEY_PATTERN = re.compile(
+    r"^PENG-[A-Z0-9]{4}-[A-Z0-9]{4}-[A-Z0-9]{4}-[A-Z0-9]{4}-[A-Z0-9]{4}$"
+)
 
 
 def _mask_license_key(key: Optional[str]) -> Optional[str]:
@@ -152,27 +156,41 @@ def update_license_key():
 
         # Validate format
         if not LICENSE_KEY_PATTERN.match(license_key):
-            return jsonify({
-                "error": "Invalid license key format",
-                "message": "License key must be in format: PENG-XXXX-XXXX-XXXX-XXXX-ABCD"
-            }), 400
+            return (
+                jsonify(
+                    {
+                        "error": "Invalid license key format",
+                        "message": "License key must be in format: PENG-XXXX-XXXX-XXXX-XXXX-ABCD",
+                    }
+                ),
+                400,
+            )
 
         # Additional format validation
         if not PenguinTechLicenseClient.is_valid_license_key(license_key):
-            return jsonify({
-                "error": "Invalid license key",
-                "message": "License key validation failed"
-            }), 400
+            return (
+                jsonify(
+                    {
+                        "error": "Invalid license key",
+                        "message": "License key validation failed",
+                    }
+                ),
+                400,
+            )
 
         # Store the license key
-        SystemSettingsService.set_setting("license_key", license_key, current_user["id"])
+        SystemSettingsService.set_setting(
+            "license_key", license_key, current_user["id"]
+        )
 
         # Re-initialize the licensing system with the new key
         try:
             success = reinitialize_licensing()
             if not success:
                 # Key saved but validation failed - still keep the key
-                logger.warning(f"License key saved but validation failed for user {current_user['id']}")
+                logger.warning(
+                    f"License key saved but validation failed for user {current_user['id']}"
+                )
         except Exception as e:
             logger.warning(f"License re-initialization warning: {e}")
 
@@ -181,10 +199,10 @@ def update_license_key():
 
         logger.info(f"License key updated by user {current_user['id']}")
 
-        return jsonify({
-            "message": "License key updated successfully",
-            "license": status
-        }), 200
+        return (
+            jsonify({"message": "License key updated successfully", "license": status}),
+            200,
+        )
 
     except Exception as e:
         logger.error(f"Failed to update license key: {e}")
@@ -211,10 +229,12 @@ def remove_license_key():
 
         logger.info(f"License key removed by user {current_user['id']}")
 
-        return jsonify({
-            "message": "License key removed",
-            "license": _get_license_status()
-        }), 200
+        return (
+            jsonify(
+                {"message": "License key removed", "license": _get_license_status()}
+            ),
+            200,
+        )
 
     except Exception as e:
         logger.error(f"Failed to remove license key: {e}")
@@ -248,14 +268,20 @@ def validate_license_key():
 
         # Validate format
         if not LICENSE_KEY_PATTERN.match(license_key):
-            return jsonify({
-                "valid": False,
-                "error": "Invalid license key format",
-                "message": "License key must be in format: PENG-XXXX-XXXX-XXXX-XXXX-ABCD"
-            }), 400
+            return (
+                jsonify(
+                    {
+                        "valid": False,
+                        "error": "Invalid license key format",
+                        "message": "License key must be in format: PENG-XXXX-XXXX-XXXX-XXXX-ABCD",
+                    }
+                ),
+                400,
+            )
 
         # Create a temporary client to validate
         import os
+
         product = os.getenv("PRODUCT_NAME", "icecharts")
         base_url = os.getenv("LICENSE_SERVER_URL")
 
@@ -268,27 +294,29 @@ def validate_license_key():
         try:
             validation = temp_client.validate()
 
-            return jsonify({
-                "valid": validation.get("valid", False),
-                "tier": validation.get("tier"),
-                "customer": validation.get("customer"),
-                "expires_at": validation.get("expires_at"),
-                "features": [
+            return (
+                jsonify(
                     {
-                        "name": f.get("name"),
-                        "entitled": f.get("entitled", False),
-                        "description": f.get("description"),
+                        "valid": validation.get("valid", False),
+                        "tier": validation.get("tier"),
+                        "customer": validation.get("customer"),
+                        "expires_at": validation.get("expires_at"),
+                        "features": [
+                            {
+                                "name": f.get("name"),
+                                "entitled": f.get("entitled", False),
+                                "description": f.get("description"),
+                            }
+                            for f in validation.get("features", [])
+                        ],
+                        "limits": validation.get("limits"),
                     }
-                    for f in validation.get("features", [])
-                ],
-                "limits": validation.get("limits"),
-            }), 200
+                ),
+                200,
+            )
 
         except LicenseValidationError as e:
-            return jsonify({
-                "valid": False,
-                "error": str(e)
-            }), 200
+            return jsonify({"valid": False, "error": str(e)}), 200
 
     except Exception as e:
         logger.error(f"Failed to validate license key: {e}")
@@ -353,13 +381,15 @@ def get_features():
             feature_name = kf["name"]
             entitled = features.get(feature_name, False) if features else False
 
-            result.append({
-                "name": feature_name,
-                "display_name": kf["display_name"],
-                "description": kf["description"],
-                "required_tier": kf["tier"],
-                "entitled": entitled,
-            })
+            result.append(
+                {
+                    "name": feature_name,
+                    "display_name": kf["display_name"],
+                    "description": kf["description"],
+                    "required_tier": kf["tier"],
+                    "entitled": entitled,
+                }
+            )
 
         return jsonify({"features": result}), 200
 
@@ -385,15 +415,25 @@ def refresh_license():
 
         if success:
             logger.info(f"License refreshed by user {current_user['id']}")
-            return jsonify({
-                "message": "License refreshed successfully",
-                "license": _get_license_status()
-            }), 200
+            return (
+                jsonify(
+                    {
+                        "message": "License refreshed successfully",
+                        "license": _get_license_status(),
+                    }
+                ),
+                200,
+            )
         else:
-            return jsonify({
-                "message": "License refresh completed with warnings",
-                "license": _get_license_status()
-            }), 200
+            return (
+                jsonify(
+                    {
+                        "message": "License refresh completed with warnings",
+                        "license": _get_license_status(),
+                    }
+                ),
+                200,
+            )
 
     except Exception as e:
         logger.error(f"Failed to refresh license: {e}")

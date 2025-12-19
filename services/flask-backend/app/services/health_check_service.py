@@ -2,8 +2,8 @@
 
 import logging
 import time
-from typing import Dict, Any, Optional
 from datetime import datetime
+from typing import Any, Dict, Optional
 
 import redis
 
@@ -73,6 +73,7 @@ class HealthCheckService:
         start_time = time.time()
         try:
             from flask import current_app
+
             from app.models import get_db
 
             db = get_db()
@@ -91,7 +92,7 @@ class HealthCheckService:
                     "host": current_app.config.get("DB_HOST", "unknown"),
                     "port": current_app.config.get("DB_PORT", "unknown"),
                     "database": current_app.config.get("DB_NAME", "unknown"),
-                }
+                },
             }
         except Exception as e:
             response_time_ms = (time.time() - start_time) * 1000
@@ -140,9 +141,11 @@ class HealthCheckService:
                     "details": {
                         "version": info.get("redis_version", "unknown"),
                         "connected_clients": info.get("connected_clients", 0),
-                        "memory_usage_mb": round(info.get("used_memory", 0) / (1024 * 1024), 2),
+                        "memory_usage_mb": round(
+                            info.get("used_memory", 0) / (1024 * 1024), 2
+                        ),
                         "uptime_seconds": info.get("uptime_in_seconds", 0),
-                    }
+                    },
                 }
             else:
                 return {
@@ -179,14 +182,15 @@ class HealthCheckService:
         start_time = time.time()
         try:
             from flask import current_app
+
             from app.models import get_db
 
             db = get_db()
 
             # Get active storage providers from database
             storage_configs = db(
-                (db.storage_providers.is_active == True) &
-                (db.storage_providers.is_system_default == True)
+                (db.storage_providers.is_active == True)
+                & (db.storage_providers.is_system_default == True)
             ).select()
 
             response_time_ms = (time.time() - start_time) * 1000
@@ -323,7 +327,7 @@ class HealthCheckService:
                 "details": {
                     "bucket": bucket,
                     "region": region,
-                }
+                },
             }
         except NoCredentialsError:
             return {
@@ -387,7 +391,7 @@ class HealthCheckService:
                     "details": {
                         "endpoint": endpoint,
                         "bucket": bucket,
-                    }
+                    },
                 }
             else:
                 return {
@@ -433,7 +437,7 @@ class HealthCheckService:
                     "version": current_app.config.get("APP_VERSION", "unknown"),
                     "environment": current_app.config.get("ENV", "unknown"),
                     "debug": current_app.config.get("DEBUG", False),
-                }
+                },
             }
         except Exception as e:
             logger.error(f"API service check failed: {str(e)}")
@@ -452,21 +456,26 @@ class HealthCheckService:
             Dictionary with system resource information
         """
         try:
-            import psutil
             import os
+
+            import psutil
 
             # Memory
             memory = psutil.virtual_memory()
             memory_percent = memory.percent
-            memory_status = "healthy" if memory_percent < 80 else (
-                "degraded" if memory_percent < 95 else "unhealthy"
+            memory_status = (
+                "healthy"
+                if memory_percent < 80
+                else ("degraded" if memory_percent < 95 else "unhealthy")
             )
 
             # Disk
             disk = psutil.disk_usage("/")
             disk_percent = disk.percent
-            disk_status = "healthy" if disk_percent < 80 else (
-                "degraded" if disk_percent < 95 else "unhealthy"
+            disk_status = (
+                "healthy"
+                if disk_percent < 80
+                else ("degraded" if disk_percent < 95 else "unhealthy")
             )
 
             # CPU
@@ -502,8 +511,8 @@ class HealthCheckService:
                         "used_gb": round(disk.used / (1024**3), 2),
                         "free_gb": round(disk.free / (1024**3), 2),
                         "status": disk_status,
-                    }
-                }
+                    },
+                },
             }
         except ImportError:
             return {

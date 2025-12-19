@@ -1,13 +1,13 @@
 """Unit tests for PenguinTech License Server client."""
 
 import unittest
-from unittest.mock import Mock, patch, MagicMock
 from datetime import datetime, timedelta
+from unittest.mock import MagicMock, Mock, patch
 
 from .client import (
-    PenguinTechLicenseClient,
-    LicenseValidationError,
     FeatureNotAvailableError,
+    LicenseValidationError,
+    PenguinTechLicenseClient,
 )
 
 
@@ -24,7 +24,7 @@ class TestLicenseKeyValidation(unittest.TestCase):
         for key in valid_keys:
             self.assertTrue(
                 PenguinTechLicenseClient.is_valid_license_key(key),
-                f"Expected {key} to be valid"
+                f"Expected {key} to be valid",
             )
 
     def test_invalid_license_key_format(self):
@@ -41,7 +41,7 @@ class TestLicenseKeyValidation(unittest.TestCase):
         for key in invalid_keys:
             self.assertFalse(
                 PenguinTechLicenseClient.is_valid_license_key(key),
-                f"Expected {key} to be invalid"
+                f"Expected {key} to be invalid",
             )
 
     def test_none_license_key(self):
@@ -58,7 +58,7 @@ class TestClientInitialization(unittest.TestCase):
             license_key="PENG-1234-5678-9012-3456-ABCD",
             product="test_product",
             base_url="https://custom.license.server",
-            timeout=60
+            timeout=60,
         )
 
         self.assertEqual(client.license_key, "PENG-1234-5678-9012-3456-ABCD")
@@ -69,19 +69,18 @@ class TestClientInitialization(unittest.TestCase):
     def test_client_with_default_server_url(self):
         """Test that default server URL is used when not specified."""
         client = PenguinTechLicenseClient(
-            license_key="PENG-1234-5678-9012-3456-ABCD",
-            product="test_product"
+            license_key="PENG-1234-5678-9012-3456-ABCD", product="test_product"
         )
 
-        self.assertEqual(
-            client.base_url,
-            "https://license.penguintech.io"
-        )
+        self.assertEqual(client.base_url, "https://license.penguintech.io")
 
-    @patch.dict("os.environ", {
-        "LICENSE_KEY": "PENG-1234-5678-9012-3456-ABCD",
-        "PRODUCT_NAME": "test_product"
-    })
+    @patch.dict(
+        "os.environ",
+        {
+            "LICENSE_KEY": "PENG-1234-5678-9012-3456-ABCD",
+            "PRODUCT_NAME": "test_product",
+        },
+    )
     def test_client_from_env_valid(self):
         """Test creating client from environment variables."""
         client = PenguinTechLicenseClient.from_env()
@@ -109,8 +108,7 @@ class TestLicenseValidation(unittest.TestCase):
     def setUp(self):
         """Set up test client."""
         self.client = PenguinTechLicenseClient(
-            license_key="PENG-1234-5678-9012-3456-ABCD",
-            product="test_product"
+            license_key="PENG-1234-5678-9012-3456-ABCD", product="test_product"
         )
 
     def test_validate_success(self):
@@ -124,7 +122,7 @@ class TestLicenseValidation(unittest.TestCase):
                 {"name": "saml_sso", "entitled": True},
                 {"name": "oidc_sso", "entitled": False},
             ],
-            "metadata": {"server_id": "test_server_id"}
+            "metadata": {"server_id": "test_server_id"},
         }
         mock_response.raise_for_status = Mock()
 
@@ -140,10 +138,7 @@ class TestLicenseValidation(unittest.TestCase):
     def test_validate_failure(self):
         """Test validation failure."""
         mock_response = Mock()
-        mock_response.json.return_value = {
-            "valid": False,
-            "message": "License expired"
-        }
+        mock_response.json.return_value = {"valid": False, "message": "License expired"}
         mock_response.raise_for_status = Mock()
 
         with patch.object(self.client.session, "post", return_value=mock_response):
@@ -175,8 +170,7 @@ class TestFeatureChecking(unittest.TestCase):
     def setUp(self):
         """Set up test client."""
         self.client = PenguinTechLicenseClient(
-            license_key="PENG-1234-5678-9012-3456-ABCD",
-            product="test_product"
+            license_key="PENG-1234-5678-9012-3456-ABCD", product="test_product"
         )
 
     def test_check_feature_enabled(self):
@@ -254,8 +248,7 @@ class TestKeepalive(unittest.TestCase):
     def setUp(self):
         """Set up test client."""
         self.client = PenguinTechLicenseClient(
-            license_key="PENG-1234-5678-9012-3456-ABCD",
-            product="test_product"
+            license_key="PENG-1234-5678-9012-3456-ABCD", product="test_product"
         )
         self.client.server_id = "test_server_id"
 
@@ -275,7 +268,9 @@ class TestKeepalive(unittest.TestCase):
         mock_response.json.return_value = {"status": "ok"}
         mock_response.raise_for_status = Mock()
 
-        with patch.object(self.client.session, "post", return_value=mock_response) as mock_post:
+        with patch.object(
+            self.client.session, "post", return_value=mock_response
+        ) as mock_post:
             usage_data = {"active_users": 42}
             self.client.keepalive(usage_data)
 
@@ -291,7 +286,7 @@ class TestKeepalive(unittest.TestCase):
         mock_validate_response = Mock()
         mock_validate_response.json.return_value = {
             "valid": True,
-            "metadata": {"server_id": "new_server_id"}
+            "metadata": {"server_id": "new_server_id"},
         }
         mock_validate_response.raise_for_status = Mock()
 
@@ -320,19 +315,20 @@ class TestGracePeriod(unittest.TestCase):
     def setUp(self):
         """Set up test client."""
         self.client = PenguinTechLicenseClient(
-            license_key="PENG-1234-5678-9012-3456-ABCD",
-            product="test_product"
+            license_key="PENG-1234-5678-9012-3456-ABCD", product="test_product"
         )
 
     def test_in_grace_period_recently_validated(self):
         """Test that recently validated license is in grace period."""
         import time
+
         self.client._validation_timestamp = time.time()
         self.assertTrue(self.client.is_in_grace_period())
 
     def test_outside_grace_period(self):
         """Test that old validation is outside grace period."""
         import time
+
         # Set validation timestamp to 8 days ago
         self.client._validation_timestamp = time.time() - (8 * 24 * 3600)
         self.assertFalse(self.client.is_in_grace_period())
@@ -349,8 +345,7 @@ class TestCaching(unittest.TestCase):
     def setUp(self):
         """Set up test client."""
         self.client = PenguinTechLicenseClient(
-            license_key="PENG-1234-5678-9012-3456-ABCD",
-            product="test_product"
+            license_key="PENG-1234-5678-9012-3456-ABCD", product="test_product"
         )
 
     def test_cache_validity(self):

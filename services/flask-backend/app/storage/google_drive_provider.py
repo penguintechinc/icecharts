@@ -6,24 +6,24 @@ sharing links, and comprehensive error handling using Google Drive API.
 
 import asyncio
 import io
-from datetime import datetime, timedelta
-from typing import Dict, Any, Optional, List
 import os.path
+from datetime import datetime, timedelta
+from typing import Any, Dict, List, Optional
 
 from google.auth.transport.requests import Request
 from google.oauth2.credentials import Credentials
 from google_auth_oauthlib.flow import InstalledAppFlow
 from googleapiclient.discovery import build
-from googleapiclient.http import MediaIoBaseDownload, MediaIoBaseUpload
 from googleapiclient.errors import HttpError
+from googleapiclient.http import MediaIoBaseDownload, MediaIoBaseUpload
 
 from .base import (
-    StorageProvider,
-    StorageFile,
-    StorageError,
+    StorageAuthenticationError,
     StorageConfigError,
     StorageConnectionError,
-    StorageAuthenticationError
+    StorageError,
+    StorageFile,
+    StorageProvider,
 )
 
 
@@ -34,7 +34,7 @@ class GoogleDriveProvider(StorageProvider):
     delete, sharing links, and file listing with async patterns.
     """
 
-    SCOPES = ['https://www.googleapis.com/auth/drive']
+    SCOPES = ["https://www.googleapis.com/auth/drive"]
 
     def _validate_config(self) -> None:
         """Validate Google Drive configuration.
@@ -42,7 +42,7 @@ class GoogleDriveProvider(StorageProvider):
         Raises:
             StorageConfigError: If required configuration is missing
         """
-        required = ['credentials_path', 'token_path']
+        required = ["credentials_path", "token_path"]
         missing = [key for key in required if key not in self.config]
 
         if missing:
@@ -50,7 +50,7 @@ class GoogleDriveProvider(StorageProvider):
                 f"Google Drive configuration missing required fields: {missing}"
             )
 
-        if not os.path.exists(self.config['credentials_path']):
+        if not os.path.exists(self.config["credentials_path"]):
             raise StorageConfigError(
                 f"Credentials file not found: {self.config['credentials_path']}"
             )
@@ -68,10 +68,10 @@ class GoogleDriveProvider(StorageProvider):
             self.creds = self._get_credentials()
 
             # Build Drive API service
-            self.service = build('drive', 'v3', credentials=self.creds)
+            self.service = build("drive", "v3", credentials=self.creds)
 
             # Optional root folder ID
-            self.folder_id = self.config.get('folder_id')
+            self.folder_id = self.config.get("folder_id")
 
             # Verify connection
             self._verify_connection()
@@ -91,20 +91,15 @@ class GoogleDriveProvider(StorageProvider):
             StorageAuthenticationError: If authentication fails
         """
         creds = None
-        token_path = self.config['token_path']
-        credentials_path = self.config['credentials_path']
+        token_path = self.config["token_path"]
+        credentials_path = self.config["credentials_path"]
 
         # Load existing token if available
         if os.path.exists(token_path):
             try:
-                creds = Credentials.from_authorized_user_file(
-                    token_path,
-                    self.SCOPES
-                )
+                creds = Credentials.from_authorized_user_file(token_path, self.SCOPES)
             except Exception as e:
-                raise StorageAuthenticationError(
-                    f"Failed to load credentials: {e}"
-                )
+                raise StorageAuthenticationError(f"Failed to load credentials: {e}")
 
         # Refresh or obtain new credentials
         if not creds or not creds.valid:
@@ -118,8 +113,7 @@ class GoogleDriveProvider(StorageProvider):
             else:
                 try:
                     flow = InstalledAppFlow.from_client_secrets_file(
-                        credentials_path,
-                        self.SCOPES
+                        credentials_path, self.SCOPES
                     )
                     creds = flow.run_local_server(port=0)
                 except Exception as e:
@@ -129,7 +123,7 @@ class GoogleDriveProvider(StorageProvider):
 
             # Save credentials for future use
             try:
-                with open(token_path, 'w') as token:
+                with open(token_path, "w") as token:
                     token.write(creds.to_json())
             except Exception as e:
                 # Non-fatal error, log but continue
@@ -149,9 +143,7 @@ class GoogleDriveProvider(StorageProvider):
                 raise StorageAuthenticationError(
                     "Authentication failed: Invalid credentials"
                 )
-            raise StorageConnectionError(
-                f"Failed to verify Drive connection: {e}"
-            )
+            raise StorageConnectionError(f"Failed to verify Drive connection: {e}")
 
     def _get_parent_folder(self) -> Optional[str]:
         """Get parent folder ID for file operations.
@@ -166,7 +158,7 @@ class GoogleDriveProvider(StorageProvider):
         key: str,
         data: bytes,
         content_type: str,
-        metadata: Optional[Dict[str, str]] = None
+        metadata: Optional[Dict[str, str]] = None,
     ) -> str:
         """Upload data to Google Drive.
 
@@ -183,37 +175,31 @@ class GoogleDriveProvider(StorageProvider):
             StorageError: If upload fails
         """
         try:
-            file_metadata = {
-                'name': key
-            }
+            file_metadata = {"name": key}
 
             # Set parent folder if configured
             parent_folder = self._get_parent_folder()
             if parent_folder:
-                file_metadata['parents'] = [parent_folder]
+                file_metadata["parents"] = [parent_folder]
 
             # Add custom properties if metadata provided
             if metadata:
-                file_metadata['properties'] = metadata
+                file_metadata["properties"] = metadata
 
             # Create media upload
             media = MediaIoBaseUpload(
-                io.BytesIO(data),
-                mimetype=content_type,
-                resumable=True
+                io.BytesIO(data), mimetype=content_type, resumable=True
             )
 
             # Upload file
             file = await asyncio.get_event_loop().run_in_executor(
                 None,
-                lambda: self.service.files().create(
-                    body=file_metadata,
-                    media_body=media,
-                    fields='id,name'
-                ).execute()
+                lambda: self.service.files()
+                .create(body=file_metadata, media_body=media, fields="id,name")
+                .execute(),
             )
 
-            return file.get('name', key)
+            return file.get("name", key)
 
         except HttpError as e:
             if e.resp.status == 401:
@@ -249,8 +235,7 @@ class GoogleDriveProvider(StorageProvider):
             done = False
             while not done:
                 _, done = await asyncio.get_event_loop().run_in_executor(
-                    None,
-                    downloader.next_chunk
+                    None, downloader.next_chunk
                 )
 
             return file_stream.getvalue()
@@ -286,8 +271,7 @@ class GoogleDriveProvider(StorageProvider):
 
             # Delete file
             await asyncio.get_event_loop().run_in_executor(
-                None,
-                lambda: self.service.files().delete(fileId=file_id).execute()
+                None, lambda: self.service.files().delete(fileId=file_id).execute()
             )
 
             return True
@@ -301,11 +285,7 @@ class GoogleDriveProvider(StorageProvider):
         except Exception as e:
             raise StorageError(f"Unexpected error during deletion: {e}")
 
-    async def get_url(
-        self,
-        key: str,
-        expires_in: int = 3600
-    ) -> str:
+    async def get_url(self, key: str, expires_in: int = 3600) -> str:
         """Generate a sharing link for file access.
 
         Args:
@@ -326,29 +306,24 @@ class GoogleDriveProvider(StorageProvider):
                 raise FileNotFoundError(f"File not found: {key}")
 
             # Create permission for anyone with link
-            permission = {
-                'type': 'anyone',
-                'role': 'reader'
-            }
+            permission = {"type": "anyone", "role": "reader"}
 
             await asyncio.get_event_loop().run_in_executor(
                 None,
-                lambda: self.service.permissions().create(
-                    fileId=file_id,
-                    body=permission
-                ).execute()
+                lambda: self.service.permissions()
+                .create(fileId=file_id, body=permission)
+                .execute(),
             )
 
             # Get shareable link
             file = await asyncio.get_event_loop().run_in_executor(
                 None,
-                lambda: self.service.files().get(
-                    fileId=file_id,
-                    fields='webViewLink'
-                ).execute()
+                lambda: self.service.files()
+                .get(fileId=file_id, fields="webViewLink")
+                .execute(),
             )
 
-            return file.get('webViewLink', '')
+            return file.get("webViewLink", "")
 
         except FileNotFoundError:
             raise
@@ -361,10 +336,7 @@ class GoogleDriveProvider(StorageProvider):
         except Exception as e:
             raise StorageError(f"Unexpected error during URL generation: {e}")
 
-    async def list_files(
-        self,
-        prefix: Optional[str] = None
-    ) -> List[StorageFile]:
+    async def list_files(self, prefix: Optional[str] = None) -> List[StorageFile]:
         """List files in Google Drive with optional prefix filter.
 
         Args:
@@ -392,33 +364,35 @@ class GoogleDriveProvider(StorageProvider):
             # List files
             results = await asyncio.get_event_loop().run_in_executor(
                 None,
-                lambda: self.service.files().list(
+                lambda: self.service.files()
+                .list(
                     q=query,
                     fields="files(id, name, size, mimeType, modifiedTime, md5Checksum, properties)",
-                    pageSize=100
-                ).execute()
+                    pageSize=100,
+                )
+                .execute(),
             )
 
-            files = results.get('files', [])
+            files = results.get("files", [])
             storage_files = []
 
             for file in files:
                 # Skip folders
-                if file['mimeType'] == 'application/vnd.google-apps.folder':
+                if file["mimeType"] == "application/vnd.google-apps.folder":
                     continue
 
                 # Parse modified time
                 modified_time = datetime.fromisoformat(
-                    file['modifiedTime'].replace('Z', '+00:00')
+                    file["modifiedTime"].replace("Z", "+00:00")
                 )
 
                 storage_file = StorageFile(
-                    key=file['name'],
-                    size=int(file.get('size', 0)),
-                    content_type=file.get('mimeType', 'application/octet-stream'),
+                    key=file["name"],
+                    size=int(file.get("size", 0)),
+                    content_type=file.get("mimeType", "application/octet-stream"),
                     last_modified=modified_time,
-                    etag=file.get('md5Checksum'),
-                    metadata=file.get('properties')
+                    etag=file.get("md5Checksum"),
+                    metadata=file.get("properties"),
                 )
                 storage_files.append(storage_file)
 
@@ -431,11 +405,7 @@ class GoogleDriveProvider(StorageProvider):
         except Exception as e:
             raise StorageError(f"Unexpected error during listing: {e}")
 
-    async def copy(
-        self,
-        source_key: str,
-        dest_key: str
-    ) -> bool:
+    async def copy(self, source_key: str, dest_key: str) -> bool:
         """Copy a file within Google Drive.
 
         Args:
@@ -456,18 +426,17 @@ class GoogleDriveProvider(StorageProvider):
                 raise FileNotFoundError(f"Source file not found: {source_key}")
 
             # Copy file
-            file_metadata = {'name': dest_key}
+            file_metadata = {"name": dest_key}
 
             parent_folder = self._get_parent_folder()
             if parent_folder:
-                file_metadata['parents'] = [parent_folder]
+                file_metadata["parents"] = [parent_folder]
 
             await asyncio.get_event_loop().run_in_executor(
                 None,
-                lambda: self.service.files().copy(
-                    fileId=source_id,
-                    body=file_metadata
-                ).execute()
+                lambda: self.service.files()
+                .copy(fileId=source_id, body=file_metadata)
+                .execute(),
             )
 
             return True
@@ -528,24 +497,26 @@ class GoogleDriveProvider(StorageProvider):
             # Get file metadata
             file = await asyncio.get_event_loop().run_in_executor(
                 None,
-                lambda: self.service.files().get(
+                lambda: self.service.files()
+                .get(
                     fileId=file_id,
-                    fields="name, size, mimeType, modifiedTime, md5Checksum, properties"
-                ).execute()
+                    fields="name, size, mimeType, modifiedTime, md5Checksum, properties",
+                )
+                .execute(),
             )
 
             # Parse modified time
             modified_time = datetime.fromisoformat(
-                file['modifiedTime'].replace('Z', '+00:00')
+                file["modifiedTime"].replace("Z", "+00:00")
             )
 
             return StorageFile(
-                key=file['name'],
-                size=int(file.get('size', 0)),
-                content_type=file.get('mimeType', 'application/octet-stream'),
+                key=file["name"],
+                size=int(file.get("size", 0)),
+                content_type=file.get("mimeType", "application/octet-stream"),
                 last_modified=modified_time,
-                etag=file.get('md5Checksum'),
-                metadata=file.get('properties')
+                etag=file.get("md5Checksum"),
+                metadata=file.get("properties"),
             )
 
         except FileNotFoundError:
@@ -570,10 +541,7 @@ class GoogleDriveProvider(StorageProvider):
         """
         try:
             # Build query to find file by name
-            query_parts = [
-                f"name = '{key}'",
-                "trashed = false"
-            ]
+            query_parts = [f"name = '{key}'", "trashed = false"]
 
             parent_folder = self._get_parent_folder()
             if parent_folder:
@@ -584,15 +552,13 @@ class GoogleDriveProvider(StorageProvider):
             # Search for file
             results = await asyncio.get_event_loop().run_in_executor(
                 None,
-                lambda: self.service.files().list(
-                    q=query,
-                    fields="files(id)",
-                    pageSize=1
-                ).execute()
+                lambda: self.service.files()
+                .list(q=query, fields="files(id)", pageSize=1)
+                .execute(),
             )
 
-            files = results.get('files', [])
-            return files[0]['id'] if files else None
+            files = results.get("files", [])
+            return files[0]["id"] if files else None
 
         except Exception:
             return None

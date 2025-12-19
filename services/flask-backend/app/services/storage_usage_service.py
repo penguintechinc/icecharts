@@ -5,10 +5,12 @@ from object storage and manage user/tenant storage quotas.
 """
 
 import json
-from typing import Optional, Dict, Any
+from typing import Any, Dict, Optional
+
 from flask import current_app
-from app.services.drawing_storage_service import DrawingStorageService
+
 from app.models import get_db
+from app.services.drawing_storage_service import DrawingStorageService
 
 
 class StorageUsageService:
@@ -56,7 +58,8 @@ class StorageUsageService:
 
             # Get all drawings owned by the user
             user_drawings = db(
-                (db.drawings.owner_id == user_id) | (db.drawings.created_by_id == user_id)
+                (db.drawings.owner_id == user_id)
+                | (db.drawings.created_by_id == user_id)
             ).select(db.drawings.id)
 
             drawing_ids = [d.id for d in user_drawings]
@@ -102,7 +105,9 @@ class StorageUsageService:
             }
 
         except Exception as e:
-            current_app.logger.error(f"Error calculating storage usage for user {user_id}: {e}")
+            current_app.logger.error(
+                f"Error calculating storage usage for user {user_id}: {e}"
+            )
             # Return minimal response with defaults
             return {
                 "user_id": user_id,
@@ -133,7 +138,9 @@ class StorageUsageService:
             db = get_db()
 
             # Get all drawings in the tenant
-            tenant_drawings = db(db.drawings.tenant_id == tenant_id).select(db.drawings.id)
+            tenant_drawings = db(db.drawings.tenant_id == tenant_id).select(
+                db.drawings.id
+            )
             drawing_ids = [d.id for d in tenant_drawings]
 
             # Calculate storage usage
@@ -174,7 +181,9 @@ class StorageUsageService:
             }
 
         except Exception as e:
-            current_app.logger.error(f"Error calculating storage usage for tenant {tenant_id}: {e}")
+            current_app.logger.error(
+                f"Error calculating storage usage for tenant {tenant_id}: {e}"
+            )
             return {
                 "tenant_id": tenant_id,
                 "total_size_bytes": 0,
@@ -331,14 +340,16 @@ class StorageUsageService:
             for provider_id, usage in providers.items():
                 provider = db(db.storage_providers.id == provider_id).select().first()
                 if provider:
-                    result.append({
-                        "provider_id": provider.id,
-                        "provider_name": provider.name,
-                        "provider_type": provider.provider_type,
-                        "size_bytes": usage["size_bytes"],
-                        "size_mb": round(usage["size_bytes"] / (1024 * 1024), 2),
-                        "file_count": usage["file_count"],
-                    })
+                    result.append(
+                        {
+                            "provider_id": provider.id,
+                            "provider_name": provider.name,
+                            "provider_type": provider.provider_type,
+                            "size_bytes": usage["size_bytes"],
+                            "size_mb": round(usage["size_bytes"] / (1024 * 1024), 2),
+                            "file_count": usage["file_count"],
+                        }
+                    )
 
             return result
 
@@ -424,7 +435,9 @@ class StorageUsageService:
             # db(db.identities.id == user_id).update(storage_quota_bytes=quota_mb * 1024 * 1024)
             # db.commit()
 
-            current_app.logger.info(f"Storage quota updated for user {user_id}: {quota_mb}MB")
+            current_app.logger.info(
+                f"Storage quota updated for user {user_id}: {quota_mb}MB"
+            )
             return True
 
         except Exception as e:
@@ -451,7 +464,9 @@ class StorageUsageService:
             db(db.tenants.id == tenant_id).update(storage_quota_gb=quota_gb)
             db.commit()
 
-            current_app.logger.info(f"Storage quota updated for tenant {tenant_id}: {quota_gb}GB")
+            current_app.logger.info(
+                f"Storage quota updated for tenant {tenant_id}: {quota_gb}GB"
+            )
             return True
 
         except Exception as e:

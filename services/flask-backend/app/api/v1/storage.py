@@ -4,9 +4,9 @@ import time
 from datetime import datetime
 from typing import Optional
 
-from flask import Blueprint, jsonify, request, current_app
+from flask import Blueprint, current_app, jsonify, request
 
-from ...middleware import auth_required, get_current_user, admin_required
+from ...middleware import admin_required, auth_required, get_current_user
 from ...models import get_db
 from ...services.storage_usage_service import StorageUsageService
 
@@ -32,14 +32,19 @@ def list_storage_providers():
         providers = db(db.storage_providers).select()
     else:
         providers = db(
-            (db.storage_providers.user_id == user["id"]) |
-            (db.storage_providers.is_system_default == True)
+            (db.storage_providers.user_id == user["id"])
+            | (db.storage_providers.is_system_default == True)
         ).select()
 
-    return jsonify({
-        "providers": [p.as_dict() for p in providers],
-        "total": len(providers),
-    }), 200
+    return (
+        jsonify(
+            {
+                "providers": [p.as_dict() for p in providers],
+                "total": len(providers),
+            }
+        ),
+        200,
+    )
 
 
 @storage_v1_bp.route("/providers", methods=["POST"])
@@ -59,10 +64,15 @@ def create_storage_provider():
     # Validation
     valid_types = ["local", "s3", "azure", "gcs", "webdav"]
     if provider_type not in valid_types:
-        return jsonify({
-            "error": "Invalid provider type",
-            "valid_types": valid_types,
-        }), 400
+        return (
+            jsonify(
+                {
+                    "error": "Invalid provider type",
+                    "valid_types": valid_types,
+                }
+            ),
+            400,
+        )
 
     if not name:
         return jsonify({"error": "Provider name is required"}), 400
@@ -72,28 +82,43 @@ def create_storage_provider():
         required_fields = ["bucket", "region", "access_key_id", "secret_access_key"]
         missing = [f for f in required_fields if f not in config]
         if missing:
-            return jsonify({
-                "error": "Missing required S3 configuration",
-                "missing_fields": missing,
-            }), 400
+            return (
+                jsonify(
+                    {
+                        "error": "Missing required S3 configuration",
+                        "missing_fields": missing,
+                    }
+                ),
+                400,
+            )
 
     elif provider_type == "azure":
         required_fields = ["account_name", "account_key", "container"]
         missing = [f for f in required_fields if f not in config]
         if missing:
-            return jsonify({
-                "error": "Missing required Azure configuration",
-                "missing_fields": missing,
-            }), 400
+            return (
+                jsonify(
+                    {
+                        "error": "Missing required Azure configuration",
+                        "missing_fields": missing,
+                    }
+                ),
+                400,
+            )
 
     elif provider_type == "gcs":
         required_fields = ["bucket", "credentials"]
         missing = [f for f in required_fields if f not in config]
         if missing:
-            return jsonify({
-                "error": "Missing required GCS configuration",
-                "missing_fields": missing,
-            }), 400
+            return (
+                jsonify(
+                    {
+                        "error": "Missing required GCS configuration",
+                        "missing_fields": missing,
+                    }
+                ),
+                400,
+            )
 
     db = get_db()
 
@@ -110,10 +135,15 @@ def create_storage_provider():
 
     provider = get_storage_provider_by_id(provider_id)
 
-    return jsonify({
-        "message": "Storage provider configured successfully",
-        "provider": provider,
-    }), 201
+    return (
+        jsonify(
+            {
+                "message": "Storage provider configured successfully",
+                "provider": provider,
+            }
+        ),
+        201,
+    )
 
 
 @storage_v1_bp.route("/providers/<int:provider_id>", methods=["GET"])
@@ -133,7 +163,12 @@ def get_storage_provider(provider_id: int):
     # Mask sensitive config fields
     if "config" in provider and isinstance(provider["config"], dict):
         masked_config = provider["config"].copy()
-        sensitive_fields = ["secret_access_key", "account_key", "credentials", "password"]
+        sensitive_fields = [
+            "secret_access_key",
+            "account_key",
+            "credentials",
+            "password",
+        ]
         for field in sensitive_fields:
             if field in masked_config:
                 masked_config[field] = "***MASKED***"
@@ -176,10 +211,15 @@ def update_storage_provider(provider_id: int):
 
     updated_provider = get_storage_provider_by_id(provider_id)
 
-    return jsonify({
-        "message": "Storage provider updated successfully",
-        "provider": updated_provider,
-    }), 200
+    return (
+        jsonify(
+            {
+                "message": "Storage provider updated successfully",
+                "provider": updated_provider,
+            }
+        ),
+        200,
+    )
 
 
 @storage_v1_bp.route("/providers/<int:provider_id>", methods=["DELETE"])
@@ -206,19 +246,24 @@ def delete_storage_provider(provider_id: int):
     db(db.storage_providers.id == provider_id).delete()
     db.commit()
 
-    return jsonify({
-        "message": "Storage provider deleted successfully",
-    }), 200
+    return (
+        jsonify(
+            {
+                "message": "Storage provider deleted successfully",
+            }
+        ),
+        200,
+    )
 
 
 @storage_v1_bp.route("/providers/<int:provider_id>/test", methods=["POST"])
 @auth_required
 def test_storage_provider(provider_id: int):
     """Test storage provider connection and permissions.
-    
+
     Performs comprehensive testing including:
     - Connection validation
-    - Credentials verification  
+    - Credentials verification
     - Bucket/container access
     - Read/write permissions
     - Test file operations
@@ -250,17 +295,27 @@ def test_storage_provider(provider_id: int):
         elif provider_type == "local":
             test_result = _test_local_provider(config)
         else:
-            return jsonify({
-                "error": f"Unsupported provider type: {provider_type}",
-                "status": "error"
-            }), 400
+            return (
+                jsonify(
+                    {
+                        "error": f"Unsupported provider type: {provider_type}",
+                        "status": "error",
+                    }
+                ),
+                400,
+            )
 
-        return jsonify({
-            "message": "Storage provider connection test successful",
-            "status": "ok",
-            "provider_type": provider_type,
-            **test_result
-        }), 200
+        return (
+            jsonify(
+                {
+                    "message": "Storage provider connection test successful",
+                    "status": "ok",
+                    "provider_type": provider_type,
+                    **test_result,
+                }
+            ),
+            200,
+        )
 
     except Exception as e:
         current_app.logger.error(f"Storage test failed for provider {provider_id}: {e}")
@@ -271,22 +326,34 @@ def test_storage_provider(provider_id: int):
         # Map error types to status codes
         if "Access denied" in error_message or "Unauthorized" in error_message:
             status_code = 401
-        elif "not found" in error_message.lower() or "does not exist" in error_message.lower():
+        elif (
+            "not found" in error_message.lower()
+            or "does not exist" in error_message.lower()
+        ):
             status_code = 404
         elif "Invalid" in error_message or "Missing" in error_message:
             status_code = 400
 
-        return jsonify({
-            "error": error_message,
-            "status": "error",
-            "provider_type": provider_type,
-        }), status_code
+        return (
+            jsonify(
+                {
+                    "error": error_message,
+                    "status": "error",
+                    "provider_type": provider_type,
+                }
+            ),
+            status_code,
+        )
 
 
 def _test_s3_provider(config: dict) -> dict:
     """Test AWS S3 provider connectivity."""
     import boto3
-    from botocore.exceptions import ClientError, NoCredentialsError, PartialCredentialsError
+    from botocore.exceptions import (
+        ClientError,
+        NoCredentialsError,
+        PartialCredentialsError,
+    )
 
     required = ["bucket", "access_key_id", "secret_access_key"]
     missing = [f for f in required if f not in config]
@@ -297,7 +364,7 @@ def _test_s3_provider(config: dict) -> dict:
         session = boto3.Session(
             aws_access_key_id=config["access_key_id"],
             aws_secret_access_key=config["secret_access_key"],
-            region_name=config.get("region", "us-east-1")
+            region_name=config.get("region", "us-east-1"),
         )
         s3_client = session.client("s3")
         bucket = config["bucket"]
@@ -317,10 +384,7 @@ def _test_s3_provider(config: dict) -> dict:
 
         try:
             s3_client.put_object(
-                Bucket=bucket,
-                Key=test_key,
-                Body=test_data,
-                Metadata={"test": "true"}
+                Bucket=bucket, Key=test_key, Body=test_data, Metadata={"test": "true"}
             )
             writeable = True
         except ClientError as e:
@@ -380,6 +444,7 @@ def _test_minio_provider(config: dict) -> dict:
         endpoint = config["endpoint"]
         if "://" in endpoint:
             from urllib.parse import urlparse
+
             parsed = urlparse(endpoint)
             endpoint = parsed.netloc
             secure = parsed.scheme == "https"
@@ -390,7 +455,7 @@ def _test_minio_provider(config: dict) -> dict:
             endpoint=endpoint,
             access_key=config["access_key"],
             secret_key=config["secret_key"],
-            secure=secure
+            secure=secure,
         )
 
         bucket = config["bucket"]
@@ -404,6 +469,7 @@ def _test_minio_provider(config: dict) -> dict:
             raise Exception(f"Failed to check bucket existence: {e}")
 
         from io import BytesIO
+
         test_key = f".icecharts-test-{int(time.time())}.txt"
         test_data = b"IceCharts connection test"
 
@@ -413,7 +479,7 @@ def _test_minio_provider(config: dict) -> dict:
                 object_name=test_key,
                 data=BytesIO(test_data),
                 length=len(test_data),
-                content_type="text/plain"
+                content_type="text/plain",
             )
             writeable = True
         except S3Error as e:
@@ -456,10 +522,12 @@ def _test_minio_provider(config: dict) -> dict:
 def _test_azure_provider(config: dict) -> dict:
     """Test Azure Blob Storage provider connectivity."""
     try:
+        from azure.core.exceptions import AuthenticationError, AzureError
         from azure.storage.blob import BlobServiceClient
-        from azure.core.exceptions import AzureError, AuthenticationError
     except ImportError:
-        raise Exception("Azure storage library not installed. Install 'azure-storage-blob'")
+        raise Exception(
+            "Azure storage library not installed. Install 'azure-storage-blob'"
+        )
 
     required = ["account_name", "account_key", "container"]
     missing = [f for f in required if f not in config]
@@ -472,7 +540,9 @@ def _test_azure_provider(config: dict) -> dict:
         container = config["container"]
 
         connection_string = f"DefaultEndpointsProtocol=https;AccountName={account_name};AccountKey={account_key};EndpointSuffix=core.windows.net"
-        blob_service_client = BlobServiceClient.from_connection_string(connection_string)
+        blob_service_client = BlobServiceClient.from_connection_string(
+            connection_string
+        )
         container_client = blob_service_client.get_container_client(container)
 
         try:
@@ -532,10 +602,12 @@ def _test_azure_provider(config: dict) -> dict:
 def _test_gcs_provider(config: dict) -> dict:
     """Test Google Cloud Storage provider connectivity."""
     try:
-        from google.cloud import storage
         from google.auth.exceptions import DefaultCredentialsError
+        from google.cloud import storage
     except ImportError:
-        raise Exception("Google Cloud Storage library not installed. Install 'google-cloud-storage'")
+        raise Exception(
+            "Google Cloud Storage library not installed. Install 'google-cloud-storage'"
+        )
 
     required = ["bucket"]
     missing = [f for f in required if f not in config]
@@ -547,6 +619,7 @@ def _test_gcs_provider(config: dict) -> dict:
 
         if "credentials_path" in config and config["credentials_path"]:
             import os
+
             os.environ["GOOGLE_APPLICATION_CREDENTIALS"] = config["credentials_path"]
 
         storage_client = storage.Client(project=config.get("project_id"))
@@ -724,11 +797,16 @@ def update_storage_quota():
     if quota_mb < 0:
         return jsonify({"error": "Quota must be non-negative"}), 400
 
-    return jsonify({
-        "message": "Storage quota updated successfully",
-        "user_id": target_user_id,
-        "quota_mb": quota_mb,
-    }), 200
+    return (
+        jsonify(
+            {
+                "message": "Storage quota updated successfully",
+                "user_id": target_user_id,
+                "quota_mb": quota_mb,
+            }
+        ),
+        200,
+    )
 
 
 @storage_v1_bp.route("/migrate", methods=["POST"])
@@ -746,7 +824,12 @@ def migrate_storage():
     drawing_ids = data.get("drawing_ids", [])
 
     if not source_provider_id or not target_provider_id:
-        return jsonify({"error": "source_provider_id and target_provider_id are required"}), 400
+        return (
+            jsonify(
+                {"error": "source_provider_id and target_provider_id are required"}
+            ),
+            400,
+        )
 
     source = get_storage_provider_by_id(source_provider_id)
     target = get_storage_provider_by_id(target_provider_id)
@@ -754,12 +837,19 @@ def migrate_storage():
     if not source or not target:
         return jsonify({"error": "Invalid provider ID"}), 404
 
-    if (source["user_id"] != user["id"] or target["user_id"] != user["id"]) and user["role"] != "admin":
+    if (source["user_id"] != user["id"] or target["user_id"] != user["id"]) and user[
+        "role"
+    ] != "admin":
         return jsonify({"error": "Access denied"}), 403
 
-    return jsonify({
-        "message": "Storage migration initiated",
-        "migration_id": "migration_placeholder_id",
-        "status": "pending",
-        "drawing_count": len(drawing_ids),
-    }), 202
+    return (
+        jsonify(
+            {
+                "message": "Storage migration initiated",
+                "migration_id": "migration_placeholder_id",
+                "status": "pending",
+                "drawing_count": len(drawing_ids),
+            }
+        ),
+        202,
+    )

@@ -1,7 +1,9 @@
 """Tests for health check service."""
 
+from unittest.mock import MagicMock, patch
+
 import pytest
-from unittest.mock import patch, MagicMock
+
 from app.services.health_check_service import HealthCheckService
 
 
@@ -17,7 +19,9 @@ class TestHealthCheckService:
     def test_check_all_returns_required_fields(self, health_service):
         """Test that check_all returns all required fields."""
         with patch("app.services.health_check_service.get_db") as mock_get_db:
-            with patch("app.services.health_check_service.redis.from_url") as mock_redis:
+            with patch(
+                "app.services.health_check_service.redis.from_url"
+            ) as mock_redis:
                 mock_get_db.return_value.executesql.return_value = True
                 mock_redis.return_value.ping.return_value = True
                 mock_redis.return_value.info.return_value = {
@@ -85,7 +89,9 @@ class TestHealthCheckService:
     def test_check_database_unhealthy(self, health_service):
         """Test database check when database connection fails."""
         with patch("app.services.health_check_service.get_db") as mock_get_db:
-            mock_get_db.return_value.executesql.side_effect = Exception("Connection failed")
+            mock_get_db.return_value.executesql.side_effect = Exception(
+                "Connection failed"
+            )
 
             result = health_service._check_database()
 
@@ -95,7 +101,9 @@ class TestHealthCheckService:
     def test_check_redis_healthy(self, health_service):
         """Test Redis check when Redis is healthy."""
         with patch("app.services.health_check_service.current_app") as mock_app:
-            with patch("app.services.health_check_service.redis.from_url") as mock_redis:
+            with patch(
+                "app.services.health_check_service.redis.from_url"
+            ) as mock_redis:
                 mock_app.config.get.return_value = "redis://localhost:6379/0"
                 mock_redis.return_value.ping.return_value = True
                 mock_redis.return_value.info.return_value = {
@@ -126,9 +134,13 @@ class TestHealthCheckService:
         import redis
 
         with patch("app.services.health_check_service.current_app") as mock_app:
-            with patch("app.services.health_check_service.redis.from_url") as mock_redis:
+            with patch(
+                "app.services.health_check_service.redis.from_url"
+            ) as mock_redis:
                 mock_app.config.get.return_value = "redis://localhost:6379/0"
-                mock_redis.return_value.ping.side_effect = redis.ConnectionError("Connection refused")
+                mock_redis.return_value.ping.side_effect = redis.ConnectionError(
+                    "Connection refused"
+                )
 
                 result = health_service._check_redis()
 

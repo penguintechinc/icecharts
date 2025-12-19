@@ -8,11 +8,11 @@ from flask import Blueprint, current_app, jsonify, request
 from pydantic import ValidationError
 
 from ...auth.scopes import AVAILABLE_SCOPES, SCOPE_GROUPS
-from ...middleware import auth_required, get_current_user, admin_required
+from ...middleware import admin_required, auth_required, get_current_user
 from ...schemas.service_account_schemas import (
     CreateServiceAccountRequest,
-    UpdateServiceAccountRequest,
     GenerateTokenRequest,
+    UpdateServiceAccountRequest,
 )
 from ...services.service_account_service import ServiceAccountService
 
@@ -46,11 +46,15 @@ def validate_json(schema_class):
             errors.append(f"{field}: {error['msg']}")
 
         return None, (
-            jsonify({
-                "error": "Validation failed",
-                "details": errors,
-                "available_scopes": list(AVAILABLE_SCOPES.keys()) if "scopes" in str(e) else None,
-            }),
+            jsonify(
+                {
+                    "error": "Validation failed",
+                    "details": errors,
+                    "available_scopes": (
+                        list(AVAILABLE_SCOPES.keys()) if "scopes" in str(e) else None
+                    ),
+                }
+            ),
             400,
         )
 
@@ -73,7 +77,9 @@ def list_service_accounts():
 
         page = request.args.get("page", 1, type=int)
         per_page = min(request.args.get("per_page", 20, type=int), 100)
-        include_inactive = request.args.get("include_inactive", "false").lower() == "true"
+        include_inactive = (
+            request.args.get("include_inactive", "false").lower() == "true"
+        )
 
         result = ServiceAccountService.list_service_accounts(
             tenant_id=tenant_id,
@@ -82,10 +88,15 @@ def list_service_accounts():
             include_inactive=include_inactive,
         )
 
-        return jsonify({
-            "success": True,
-            **result,
-        }), 200
+        return (
+            jsonify(
+                {
+                    "success": True,
+                    **result,
+                }
+            ),
+            200,
+        )
 
     except Exception as e:
         current_app.logger.error(f"Error listing service accounts: {e}")
@@ -122,11 +133,16 @@ def create_service_account():
             tenant_id=user.get("tenant_id", 1),
         )
 
-        return jsonify({
-            "success": True,
-            "message": "Service account created successfully",
-            "service_account": account,
-        }), 201
+        return (
+            jsonify(
+                {
+                    "success": True,
+                    "message": "Service account created successfully",
+                    "service_account": account,
+                }
+            ),
+            201,
+        )
 
     except ValueError as e:
         return jsonify({"error": str(e)}), 400
@@ -153,10 +169,15 @@ def get_service_account(account_id: int):
         if account.get("tenant_id") != tenant_id:
             return jsonify({"error": "Service account not found"}), 404
 
-        return jsonify({
-            "success": True,
-            "service_account": account,
-        }), 200
+        return (
+            jsonify(
+                {
+                    "success": True,
+                    "service_account": account,
+                }
+            ),
+            200,
+        )
 
     except Exception as e:
         current_app.logger.error(f"Error getting service account {account_id}: {e}")
@@ -206,10 +227,15 @@ def update_service_account(account_id: int):
         if not account:
             return jsonify({"error": "Service account not found"}), 404
 
-        return jsonify({
-            "success": True,
-            "service_account": account,
-        }), 200
+        return (
+            jsonify(
+                {
+                    "success": True,
+                    "service_account": account,
+                }
+            ),
+            200,
+        )
 
     except ValueError as e:
         return jsonify({"error": str(e)}), 400
@@ -240,10 +266,15 @@ def delete_service_account(account_id: int):
         if not deleted:
             return jsonify({"error": "Service account not found"}), 404
 
-        return jsonify({
-            "success": True,
-            "message": "Service account deleted successfully",
-        }), 200
+        return (
+            jsonify(
+                {
+                    "success": True,
+                    "message": "Service account deleted successfully",
+                }
+            ),
+            200,
+        )
 
     except ValueError as e:
         return jsonify({"error": str(e)}), 400
@@ -253,6 +284,7 @@ def delete_service_account(account_id: int):
 
 
 # Token management endpoints
+
 
 @service_accounts_v1_bp.route("/<int:account_id>/tokens", methods=["GET"])
 @auth_required
@@ -283,11 +315,16 @@ def list_tokens(account_id: int):
             include_revoked=include_revoked,
         )
 
-        return jsonify({
-            "success": True,
-            "count": len(tokens),
-            "tokens": tokens,
-        }), 200
+        return (
+            jsonify(
+                {
+                    "success": True,
+                    "count": len(tokens),
+                    "tokens": tokens,
+                }
+            ),
+            200,
+        )
 
     except Exception as e:
         current_app.logger.error(f"Error listing tokens for account {account_id}: {e}")
@@ -330,11 +367,16 @@ def generate_token(account_id: int):
                 errors.append(f"{field}: {error['msg']}")
 
             max_days = current_app.config.get("SERVICE_ACCOUNT_TOKEN_MAX_DAYS", 365)
-            return jsonify({
-                "error": "Validation failed",
-                "details": errors,
-                "max_expires_days": max_days,
-            }), 400
+            return (
+                jsonify(
+                    {
+                        "error": "Validation failed",
+                        "details": errors,
+                        "max_expires_days": max_days,
+                    }
+                ),
+                400,
+            )
 
         result = ServiceAccountService.generate_token(
             account_id=account_id,
@@ -342,21 +384,30 @@ def generate_token(account_id: int):
             expires_days=validated_data.expires_days,
         )
 
-        return jsonify({
-            "success": True,
-            "message": "Token generated successfully. Store it securely - it cannot be retrieved again.",
-            "token": result["token"],
-            "token_info": result["token_info"],
-        }), 201
+        return (
+            jsonify(
+                {
+                    "success": True,
+                    "message": "Token generated successfully. Store it securely - it cannot be retrieved again.",
+                    "token": result["token"],
+                    "token_info": result["token_info"],
+                }
+            ),
+            201,
+        )
 
     except ValueError as e:
         return jsonify({"error": str(e)}), 400
     except Exception as e:
-        current_app.logger.error(f"Error generating token for account {account_id}: {e}")
+        current_app.logger.error(
+            f"Error generating token for account {account_id}: {e}"
+        )
         return jsonify({"error": str(e)}), 500
 
 
-@service_accounts_v1_bp.route("/<int:account_id>/tokens/<token_jti>", methods=["DELETE"])
+@service_accounts_v1_bp.route(
+    "/<int:account_id>/tokens/<token_jti>", methods=["DELETE"]
+)
 @auth_required
 @admin_required
 def revoke_token(account_id: int, token_jti: str):
@@ -375,6 +426,7 @@ def revoke_token(account_id: int, token_jti: str):
 
         # Get the token to verify it belongs to this service account
         from app.models import get_db
+
         db = get_db()
         token = db(db.service_account_tokens.token_jti == token_jti).select().first()
 
@@ -392,10 +444,15 @@ def revoke_token(account_id: int, token_jti: str):
         if not revoked:
             return jsonify({"error": "Token not found"}), 404
 
-        return jsonify({
-            "success": True,
-            "message": "Token revoked successfully",
-        }), 200
+        return (
+            jsonify(
+                {
+                    "success": True,
+                    "message": "Token revoked successfully",
+                }
+            ),
+            200,
+        )
 
     except ValueError as e:
         return jsonify({"error": str(e)}), 400
@@ -426,28 +483,41 @@ def revoke_all_tokens(account_id: int):
             revoked_by_id=user["id"],
         )
 
-        return jsonify({
-            "success": True,
-            "message": f"Revoked {revoked_count} token(s)",
-            "revoked_count": revoked_count,
-        }), 200
+        return (
+            jsonify(
+                {
+                    "success": True,
+                    "message": f"Revoked {revoked_count} token(s)",
+                    "revoked_count": revoked_count,
+                }
+            ),
+            200,
+        )
 
     except ValueError as e:
         return jsonify({"error": str(e)}), 400
     except Exception as e:
-        current_app.logger.error(f"Error revoking all tokens for account {account_id}: {e}")
+        current_app.logger.error(
+            f"Error revoking all tokens for account {account_id}: {e}"
+        )
         return jsonify({"error": str(e)}), 500
 
 
 # Scope reference endpoint
+
 
 @service_accounts_v1_bp.route("/scopes", methods=["GET"])
 @auth_required
 @admin_required
 def list_available_scopes():
     """Get list of available scopes and scope groups."""
-    return jsonify({
-        "success": True,
-        "scopes": AVAILABLE_SCOPES,
-        "scope_groups": SCOPE_GROUPS,
-    }), 200
+    return (
+        jsonify(
+            {
+                "success": True,
+                "scopes": AVAILABLE_SCOPES,
+                "scope_groups": SCOPE_GROUPS,
+            }
+        ),
+        200,
+    )

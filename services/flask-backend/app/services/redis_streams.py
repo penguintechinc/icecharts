@@ -7,7 +7,7 @@ It handles task distribution between the Flask backend and worker services.
 import json
 import logging
 from datetime import datetime
-from typing import Dict, Optional, Any
+from typing import Any, Dict, Optional
 
 import redis
 
@@ -42,7 +42,10 @@ class RedisStreamsClient:
                 # Try to get from Flask app config
                 try:
                     from flask import current_app
-                    url = current_app.config.get("REDIS_URL", "redis://localhost:6379/0")
+
+                    url = current_app.config.get(
+                        "REDIS_URL", "redis://localhost:6379/0"
+                    )
                 except RuntimeError:
                     # Flask app context not available
                     url = "redis://localhost:6379/0"
@@ -313,7 +316,9 @@ class RedisStreamsClient:
             conn = self._get_redis_connection()
             conn.xack(STREAM_NAME, consumer_group, message_id)
 
-            logger.debug(f"Message acknowledged: consumer_group={consumer_group}, id={message_id}")
+            logger.debug(
+                f"Message acknowledged: consumer_group={consumer_group}, id={message_id}"
+            )
 
         except redis.RedisError as e:
             logger.error(f"Failed to acknowledge message: {str(e)}")

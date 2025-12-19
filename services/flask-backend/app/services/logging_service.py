@@ -52,7 +52,11 @@ class LoggingService:
                 resource_name=resource_name,
                 details=details,
                 ip_address=request.remote_addr if request else None,
-                user_agent=request.user_agent.string if request and request.user_agent else None,
+                user_agent=(
+                    request.user_agent.string
+                    if request and request.user_agent
+                    else None
+                ),
                 timestamp=datetime.now(timezone.utc),
             )
             db.commit()
@@ -111,7 +115,11 @@ class LoggingService:
                 changes=changes,
                 reason=reason,
                 ip_address=request.remote_addr if request else None,
-                user_agent=request.user_agent.string if request and request.user_agent else None,
+                user_agent=(
+                    request.user_agent.string
+                    if request and request.user_agent
+                    else None
+                ),
                 status=status,
                 error_message=error_message,
                 timestamp=datetime.now(timezone.utc),

@@ -37,8 +37,7 @@ def admin_list_users():
 
     if search:
         conditions.append(
-            (db.users.email.contains(search)) |
-            (db.users.full_name.contains(search))
+            (db.users.email.contains(search)) | (db.users.full_name.contains(search))
         )
 
     if role:
@@ -81,22 +80,29 @@ def admin_list_users():
         for m in memberships:
             group = db.groups(m.group_id)
             if group:
-                groups.append({
-                    "id": group.id,
-                    "name": group.name,
-                    "role": m.role,
-                })
+                groups.append(
+                    {
+                        "id": group.id,
+                        "name": group.name,
+                        "role": m.role,
+                    }
+                )
         user_dict["groups"] = groups
 
         user_list.append(user_dict)
 
-    return jsonify({
-        "users": user_list,
-        "total": total,
-        "page": page,
-        "per_page": per_page,
-        "pages": (total + per_page - 1) // per_page,
-    }), 200
+    return (
+        jsonify(
+            {
+                "users": user_list,
+                "total": total,
+                "page": page,
+                "per_page": per_page,
+                "pages": (total + per_page - 1) // per_page,
+            }
+        ),
+        200,
+    )
 
 
 @admin_v1_bp.route("/users/<int:user_id>", methods=["GET"])
@@ -143,10 +149,15 @@ def admin_create_user():
     # Validate role
     valid_roles = ["admin", "maintainer", "viewer"]
     if role not in valid_roles:
-        return jsonify({
-            "error": "Invalid role",
-            "valid_roles": valid_roles,
-        }), 400
+        return (
+            jsonify(
+                {
+                    "error": "Invalid role",
+                    "valid_roles": valid_roles,
+                }
+            ),
+            400,
+        )
 
     # Check if user exists
     existing = get_user_by_email(email)
@@ -183,10 +194,15 @@ def admin_create_user():
         },
     )
 
-    return jsonify({
-        "message": "User created successfully",
-        "user": user,
-    }), 201
+    return (
+        jsonify(
+            {
+                "message": "User created successfully",
+                "user": user,
+            }
+        ),
+        201,
+    )
 
 
 @admin_v1_bp.route("/users/<int:user_id>", methods=["PUT"])
@@ -232,10 +248,15 @@ def admin_update_user(user_id: int):
         role = data["role"].strip()
         valid_roles = ["admin", "maintainer", "viewer"]
         if role not in valid_roles:
-            return jsonify({
-                "error": "Invalid role",
-                "valid_roles": valid_roles,
-            }), 400
+            return (
+                jsonify(
+                    {
+                        "error": "Invalid role",
+                        "valid_roles": valid_roles,
+                    }
+                ),
+                400,
+            )
         update_data["role"] = role
         changes["role"] = {
             "old_value": user.get("role"),
@@ -283,10 +304,15 @@ def admin_update_user(user_id: int):
         changes=changes if changes else None,
     )
 
-    return jsonify({
-        "message": "User updated successfully",
-        "user": updated_user,
-    }), 200
+    return (
+        jsonify(
+            {
+                "message": "User updated successfully",
+                "user": updated_user,
+            }
+        ),
+        200,
+    )
 
 
 @admin_v1_bp.route("/users/<int:user_id>", methods=["DELETE"])
@@ -321,9 +347,14 @@ def admin_delete_user(user_id: int):
         user_id=current_user.get("id"),
     )
 
-    return jsonify({
-        "message": "User deleted successfully",
-    }), 200
+    return (
+        jsonify(
+            {
+                "message": "User deleted successfully",
+            }
+        ),
+        200,
+    )
 
 
 @admin_v1_bp.route("/users/<int:user_id>/activate", methods=["POST"])
@@ -356,9 +387,14 @@ def admin_activate_user(user_id: int):
         },
     )
 
-    return jsonify({
-        "message": "User activated successfully",
-    }), 200
+    return (
+        jsonify(
+            {
+                "message": "User activated successfully",
+            }
+        ),
+        200,
+    )
 
 
 @admin_v1_bp.route("/users/<int:user_id>/deactivate", methods=["POST"])
@@ -396,9 +432,14 @@ def admin_deactivate_user(user_id: int):
         },
     )
 
-    return jsonify({
-        "message": "User deactivated successfully",
-    }), 200
+    return (
+        jsonify(
+            {
+                "message": "User deactivated successfully",
+            }
+        ),
+        200,
+    )
 
 
 @admin_v1_bp.route("/stats", methods=["GET"])
@@ -426,7 +467,11 @@ def admin_get_stats():
             "total": db(db.groups).count() if hasattr(db, "groups") else 0,
         },
         "storage": {
-            "providers": db(db.storage_providers).count() if hasattr(db, "storage_providers") else 0,
+            "providers": (
+                db(db.storage_providers).count()
+                if hasattr(db, "storage_providers")
+                else 0
+            ),
         },
     }
 
@@ -486,13 +531,18 @@ def admin_get_activity():
         offset=offset,
     )
 
-    return jsonify({
-        "activities": activities,
-        "total": total,
-        "page": page,
-        "per_page": per_page,
-        "pages": (total + per_page - 1) // per_page,
-    }), 200
+    return (
+        jsonify(
+            {
+                "activities": activities,
+                "total": total,
+                "page": page,
+                "per_page": per_page,
+                "pages": (total + per_page - 1) // per_page,
+            }
+        ),
+        200,
+    )
 
 
 @admin_v1_bp.route("/audit-log", methods=["GET"])
@@ -548,13 +598,18 @@ def admin_get_audit_log():
         offset=offset,
     )
 
-    return jsonify({
-        "audit_logs": audit_logs,
-        "total": total,
-        "page": page,
-        "per_page": per_page,
-        "pages": (total + per_page - 1) // per_page,
-    }), 200
+    return (
+        jsonify(
+            {
+                "audit_logs": audit_logs,
+                "total": total,
+                "page": page,
+                "per_page": per_page,
+                "pages": (total + per_page - 1) // per_page,
+            }
+        ),
+        200,
+    )
 
 
 @admin_v1_bp.route("/system/health", methods=["GET"])
@@ -578,16 +633,22 @@ def admin_get_system_health():
         return jsonify({"health": health}), status_code
     except Exception as e:
         import logging
+
         logger = logging.getLogger(__name__)
         logger.error(f"Failed to perform health check: {str(e)}")
-        return jsonify({
-            "health": {
-                "status": "unhealthy",
-                "timestamp": datetime.utcnow().isoformat(),
-                "error": str(e),
-                "components": {}
-            }
-        }), 503
+        return (
+            jsonify(
+                {
+                    "health": {
+                        "status": "unhealthy",
+                        "timestamp": datetime.utcnow().isoformat(),
+                        "error": str(e),
+                        "components": {},
+                    }
+                }
+            ),
+            503,
+        )
 
 
 @admin_v1_bp.route("/system/config", methods=["GET"])
@@ -601,7 +662,9 @@ def admin_get_system_config():
     config = {
         "environment": current_app.config.get("ENV", "production"),
         "debug": current_app.config.get("DEBUG", False),
-        "jwt_expiry_seconds": int(current_app.config.get("JWT_ACCESS_TOKEN_EXPIRES").total_seconds()),
+        "jwt_expiry_seconds": int(
+            current_app.config.get("JWT_ACCESS_TOKEN_EXPIRES").total_seconds()
+        ),
         "db_type": current_app.config.get("DB_TYPE", "postgres"),
     }
 
@@ -622,8 +685,8 @@ def admin_list_storage_configs():
 
     # Get organization-level storage configs (where user_id is null or is_system_default is true)
     configs = db(
-        (db.storage_providers.is_system_default == True) |
-        (db.storage_providers.user_id == None)
+        (db.storage_providers.is_system_default == True)
+        | (db.storage_providers.user_id == None)
     ).select(orderby=~db.storage_providers.updated_at)
 
     items = []
@@ -632,7 +695,12 @@ def admin_list_storage_configs():
         # Mask sensitive config fields
         if item.get("config_json"):
             masked = item["config_json"].copy()
-            for key in ["client_secret", "secret_access_key", "account_key", "password"]:
+            for key in [
+                "client_secret",
+                "secret_access_key",
+                "account_key",
+                "password",
+            ]:
                 if key in masked:
                     masked[key] = "***"
             item["config_json"] = masked
@@ -660,7 +728,11 @@ def admin_create_storage_config():
         return jsonify({"error": f"Invalid provider. Valid: {valid_providers}"}), 400
 
     if not name:
-        name = {"gdrive": "Google Drive", "onedrive": "OneDrive", "s3": "External S3"}.get(provider, provider)
+        name = {
+            "gdrive": "Google Drive",
+            "onedrive": "OneDrive",
+            "s3": "External S3",
+        }.get(provider, provider)
 
     # Build config based on provider type
     config_json = {}
@@ -694,13 +766,20 @@ def admin_create_storage_config():
     db = get_db()
 
     # Check if provider already exists at org level
-    existing = db(
-        (db.storage_providers.provider_type == provider) &
-        (db.storage_providers.is_system_default == True)
-    ).select().first()
+    existing = (
+        db(
+            (db.storage_providers.provider_type == provider)
+            & (db.storage_providers.is_system_default == True)
+        )
+        .select()
+        .first()
+    )
 
     if existing:
-        return jsonify({"error": f"{name} is already configured. Edit it instead."}), 409
+        return (
+            jsonify({"error": f"{name} is already configured. Edit it instead."}),
+            409,
+        )
 
     # Create storage config
     config_id = db.storage_providers.insert(
@@ -716,10 +795,15 @@ def admin_create_storage_config():
 
     config = db.storage_providers(config_id)
 
-    return jsonify({
-        "message": f"{name} configured successfully",
-        "id": config_id,
-    }), 201
+    return (
+        jsonify(
+            {
+                "message": f"{name} configured successfully",
+                "id": config_id,
+            }
+        ),
+        201,
+    )
 
 
 @admin_v1_bp.route("/storage/<int:config_id>", methods=["PUT"])
@@ -855,7 +939,9 @@ def admin_bulk_import_users():
                 continue
 
             if not password or len(password) < 8:
-                errors.append({"index": idx, "error": "Password must be at least 8 characters"})
+                errors.append(
+                    {"index": idx, "error": "Password must be at least 8 characters"}
+                )
                 continue
 
             # Check if user exists
@@ -878,9 +964,11 @@ def admin_bulk_import_users():
         except Exception as e:
             errors.append({"index": idx, "error": str(e)})
 
-    return jsonify({
-        "message": f"Bulk import completed: {len(created)} created, {len(errors)} errors",
-        "created_count": len(created),
-        "error_count": len(errors),
-        "errors": errors,
-    }), 201 if created else 400
+    return jsonify(
+        {
+            "message": f"Bulk import completed: {len(created)} created, {len(errors)} errors",
+            "created_count": len(created),
+            "error_count": len(errors),
+            "errors": errors,
+        }
+    ), (201 if created else 400)

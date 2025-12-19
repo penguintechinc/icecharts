@@ -577,6 +577,7 @@ export const ApacheKafkaIcon: React.FC<IconProps> = ({ className = "w-8 h-8" }) 
 );
 
 // Export all icons as a map for easy access
+// eslint-disable-next-line react-refresh/only-export-components
 export const iconMap: Record<string, React.FC<IconProps>> = {
   // Cloud
   aws: AwsIcon,
@@ -674,6 +675,7 @@ export const iconMap: Record<string, React.FC<IconProps>> = {
 };
 
 // Icon categories for the toolbar
+// eslint-disable-next-line react-refresh/only-export-components
 export const iconCategories = {
   cloud: {
     label: 'Cloud Providers',

@@ -330,7 +330,6 @@ import { ArchitectureServiceReservedInstanceReporting } from 'aws-react-icons';
 import { ArchitectureServiceSavingsPlans } from 'aws-react-icons';
 import { ArchitectureServiceTensorFlowonAWS } from 'aws-react-icons';
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
 const createIconComponent = (IconComponent: any): IconComponent => {
   const WrappedIcon: FC<IconProps> = ({ className, size = 24 }) => {
     const sizeNum = typeof size === 'string' ? parseInt(size, 10) : size;

@@ -10,7 +10,7 @@ from typing import Optional
 from flask import Blueprint, current_app, jsonify, request
 
 from app.middleware import auth_required
-from app.services.elder_service import ElderClient, ElderEntity, ElderDependency
+from app.services.elder_service import ElderClient, ElderDependency, ElderEntity
 
 logger = logging.getLogger(__name__)
 
@@ -41,25 +41,32 @@ async def validate_elder_connection():
     api_key = data.get("api_key", "").strip()
 
     if not base_url or not api_key:
-        return jsonify({
-            "success": False,
-            "error": "base_url and api_key are required"
-        }), 400
+        return (
+            jsonify({"success": False, "error": "base_url and api_key are required"}),
+            400,
+        )
 
     try:
         client = ElderClient(base_url=base_url, api_key=api_key)
         # Try a simple request to validate
         entities = await client.get_entities(org_id=1, limit=1)
-        return jsonify({
-            "success": True,
-            "message": "Connection to Elder validated successfully",
-        }), 200
+        return (
+            jsonify(
+                {
+                    "success": True,
+                    "message": "Connection to Elder validated successfully",
+                }
+            ),
+            200,
+        )
     except Exception as e:
         logger.error(f"Failed to validate Elder connection: {e}")
-        return jsonify({
-            "success": False,
-            "error": f"Failed to connect to Elder: {str(e)}"
-        }), 503
+        return (
+            jsonify(
+                {"success": False, "error": f"Failed to connect to Elder: {str(e)}"}
+            ),
+            503,
+        )
 
 
 @elder_v1_bp.route("/entities", methods=["GET"])
@@ -88,10 +95,15 @@ async def get_entities():
     offset = request.args.get("offset", 0, type=int)
 
     if not base_url or not api_key or not org_id:
-        return jsonify({
-            "success": False,
-            "error": "base_url, api_key, and org_id are required"
-        }), 400
+        return (
+            jsonify(
+                {
+                    "success": False,
+                    "error": "base_url, api_key, and org_id are required",
+                }
+            ),
+            400,
+        )
 
     try:
         client = ElderClient(base_url=base_url, api_key=api_key)
@@ -102,19 +114,24 @@ async def get_entities():
             offset=offset,
         )
 
-        return jsonify({
-            "success": True,
-            "entities": [e.to_dict() for e in entities],
-            "total": len(entities),
-            "limit": limit,
-            "offset": offset,
-        }), 200
+        return (
+            jsonify(
+                {
+                    "success": True,
+                    "entities": [e.to_dict() for e in entities],
+                    "total": len(entities),
+                    "limit": limit,
+                    "offset": offset,
+                }
+            ),
+            200,
+        )
     except Exception as e:
         logger.error(f"Failed to fetch entities from Elder: {e}")
-        return jsonify({
-            "success": False,
-            "error": f"Failed to fetch entities: {str(e)}"
-        }), 503
+        return (
+            jsonify({"success": False, "error": f"Failed to fetch entities: {str(e)}"}),
+            503,
+        )
 
 
 @elder_v1_bp.route("/relationships", methods=["GET"])
@@ -141,10 +158,15 @@ async def get_relationships():
     target_entity_id = request.args.get("target_entity_id", type=int)
 
     if not base_url or not api_key or not org_id:
-        return jsonify({
-            "success": False,
-            "error": "base_url, api_key, and org_id are required"
-        }), 400
+        return (
+            jsonify(
+                {
+                    "success": False,
+                    "error": "base_url, api_key, and org_id are required",
+                }
+            ),
+            400,
+        )
 
     try:
         client = ElderClient(base_url=base_url, api_key=api_key)
@@ -154,17 +176,24 @@ async def get_relationships():
             target_entity_id=target_entity_id,
         )
 
-        return jsonify({
-            "success": True,
-            "relationships": [r.to_dict() for r in relationships],
-            "total": len(relationships),
-        }), 200
+        return (
+            jsonify(
+                {
+                    "success": True,
+                    "relationships": [r.to_dict() for r in relationships],
+                    "total": len(relationships),
+                }
+            ),
+            200,
+        )
     except Exception as e:
         logger.error(f"Failed to fetch relationships from Elder: {e}")
-        return jsonify({
-            "success": False,
-            "error": f"Failed to fetch relationships: {str(e)}"
-        }), 503
+        return (
+            jsonify(
+                {"success": False, "error": f"Failed to fetch relationships: {str(e)}"}
+            ),
+            503,
+        )
 
 
 @elder_v1_bp.route("/graph", methods=["GET"])
@@ -191,10 +220,15 @@ async def get_graph():
     depth = request.args.get("depth", 2, type=int)
 
     if not base_url or not api_key or not org_id:
-        return jsonify({
-            "success": False,
-            "error": "base_url, api_key, and org_id are required"
-        }), 400
+        return (
+            jsonify(
+                {
+                    "success": False,
+                    "error": "base_url, api_key, and org_id are required",
+                }
+            ),
+            400,
+        )
 
     try:
         client = ElderClient(base_url=base_url, api_key=api_key)
@@ -204,16 +238,21 @@ async def get_graph():
             depth=depth,
         )
 
-        return jsonify({
-            "success": True,
-            "graph": graph,
-        }), 200
+        return (
+            jsonify(
+                {
+                    "success": True,
+                    "graph": graph,
+                }
+            ),
+            200,
+        )
     except Exception as e:
         logger.error(f"Failed to fetch graph from Elder: {e}")
-        return jsonify({
-            "success": False,
-            "error": f"Failed to fetch graph: {str(e)}"
-        }), 503
+        return (
+            jsonify({"success": False, "error": f"Failed to fetch graph: {str(e)}"}),
+            503,
+        )
 
 
 @elder_v1_bp.route("/import", methods=["POST"])
@@ -250,10 +289,15 @@ async def import_entities():
     canvas_height = data.get("canvas_height", 900)
 
     if not all([drawing_id, base_url, api_key, org_id]):
-        return jsonify({
-            "success": False,
-            "error": "drawing_id, base_url, api_key, and org_id are required"
-        }), 400
+        return (
+            jsonify(
+                {
+                    "success": False,
+                    "error": "drawing_id, base_url, api_key, and org_id are required",
+                }
+            ),
+            400,
+        )
 
     try:
         client = ElderClient(base_url=base_url, api_key=api_key)
@@ -268,12 +312,17 @@ async def import_entities():
             entities = all_entities
 
         if not entities:
-            return jsonify({
-                "success": True,
-                "message": "No entities found to import",
-                "nodes": [],
-                "connectors": [],
-            }), 200
+            return (
+                jsonify(
+                    {
+                        "success": True,
+                        "message": "No entities found to import",
+                        "nodes": [],
+                        "connectors": [],
+                    }
+                ),
+                200,
+            )
 
         # Calculate layout positions
         positions = ElderClient.calculate_layout_positions(
@@ -302,19 +351,16 @@ async def import_entities():
                 # Filter dependencies to only include imported entities
                 entity_id_set = {e.id for e in entities}
                 filtered_deps = [
-                    d for d in dependencies
+                    d
+                    for d in dependencies
                     if d.source_entity_id in entity_id_set
                     and d.target_entity_id in entity_id_set
                 ]
 
                 # Map dependencies to connectors
                 for dep in filtered_deps:
-                    source_node_id = entity_id_to_node_id.get(
-                        dep.source_entity_id
-                    )
-                    target_node_id = entity_id_to_node_id.get(
-                        dep.target_entity_id
-                    )
+                    source_node_id = entity_id_to_node_id.get(dep.source_entity_id)
+                    target_node_id = entity_id_to_node_id.get(dep.target_entity_id)
 
                     if source_node_id and target_node_id:
                         connector = ElderClient.map_relationship_to_connector(
@@ -326,21 +372,23 @@ async def import_entities():
             except Exception as e:
                 logger.warning(f"Failed to fetch dependencies: {e}")
 
-        return jsonify({
-            "success": True,
-            "message": f"Imported {len(nodes)} entities and {len(connectors)} relationships",
-            "nodes": nodes,
-            "connectors": connectors,
-            "entity_count": len(nodes),
-            "relationship_count": len(connectors),
-        }), 200
+        return (
+            jsonify(
+                {
+                    "success": True,
+                    "message": f"Imported {len(nodes)} entities and {len(connectors)} relationships",
+                    "nodes": nodes,
+                    "connectors": connectors,
+                    "entity_count": len(nodes),
+                    "relationship_count": len(connectors),
+                }
+            ),
+            200,
+        )
 
     except Exception as e:
         logger.error(f"Failed to import from Elder: {e}")
-        return jsonify({
-            "success": False,
-            "error": f"Import failed: {str(e)}"
-        }), 503
+        return jsonify({"success": False, "error": f"Import failed: {str(e)}"}), 503
 
 
 @elder_v1_bp.route("/health", methods=["GET"])
@@ -350,7 +398,12 @@ async def health_check():
     Returns:
         200: Service is healthy
     """
-    return jsonify({
-        "status": "healthy",
-        "service": "elder-integration",
-    }), 200
+    return (
+        jsonify(
+            {
+                "status": "healthy",
+                "service": "elder-integration",
+            }
+        ),
+        200,
+    )

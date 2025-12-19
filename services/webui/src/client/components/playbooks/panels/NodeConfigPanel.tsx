@@ -154,6 +154,24 @@ const NodeConfigPanel: React.FC<NodeConfigPanelProps> = ({ node, onClose, onUpda
       );
     }
 
+    if (nodeType === 'trigger_mock_data') {
+      return (
+        <>
+          <TextAreaField
+            label="Mock Data (JSON)"
+            value={config.mockData}
+            onChange={(v) => updateConfig('mockData', v)}
+            placeholder='{"id": 1, "name": "Test User", "status": "active"}'
+            rows={8}
+            mono
+          />
+          <p className="text-xs text-ice-navy-400 mt-1">Enter JSON data to use as input for testing the workflow</p>
+          <Field label="Repeat Count" value={config.repeatCount || '1'} onChange={(v) => updateConfig('repeatCount', v)} placeholder="1" type="number" />
+          <p className="text-xs text-ice-navy-400 mt-1">Number of times to emit the mock data (for testing loops)</p>
+        </>
+      );
+    }
+
     // === TRANSFORMS ===
     if (nodeType === 'transform_filter' || nodeType === 'Filter') {
       return (
