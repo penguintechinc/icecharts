@@ -93,8 +93,10 @@ const PlaybookNode: React.FC<NodeProps> = ({ data, selected }) => {
   const borderColor = selected ? '#D4AF37' : styling.borderColor;
 
   // Get input and output handles from node configuration
-  const inputHandles = nodeData.handles?.inputs || ['default'];
-  const outputHandles = nodeData.handles?.outputs || ['default'];
+  const handles = nodeData.handles || { inputs: ['in'], outputs: ['out'] };
+  const inputs = handles.inputs;
+  const outputs = handles.outputs;
+  const handleColor = styling.handleColor;
 
   return (
     <div
@@ -102,7 +104,9 @@ const PlaybookNode: React.FC<NodeProps> = ({ data, selected }) => {
         background: styling.backgroundColor,
         border: `2px solid ${borderColor}`,
         borderRadius: '8px',
-        padding: '12px 16px',
+        padding: '24px 16px',
+        paddingTop: inputs.length > 1 ? '32px' : '24px',
+        paddingBottom: outputs.length > 1 ? '32px' : '24px',
         minWidth: '160px',
         color: styling.textColor,
         fontSize: '14px',
@@ -112,49 +116,29 @@ const PlaybookNode: React.FC<NodeProps> = ({ data, selected }) => {
       }}
     >
       {/* Input Handles (Top) - For nodes that receive data */}
-      {showTargetHandle && (
-        <>
-          {inputHandles.length === 1 ? (
-            // Single target handle - center position
+      {showTargetHandle && inputs.map((handleId, index) => {
+        const offset = inputs.length > 1
+          ? ((index + 1) / (inputs.length + 1)) * 100
+          : 50;
+        return (
+          <div key={handleId} style={{ position: 'absolute', top: -20, left: `${offset}%`, transform: 'translateX(-50%)', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+            <span style={{ fontSize: '9px', color: '#9CA3AF', marginBottom: '2px' }}>{handleId}</span>
             <Handle
               type="target"
               position={Position.Top}
-              id={inputHandles[0]}
+              id={handleId}
               style={{
-                background: styling.handleColor,
-                width: 12,
-                height: 12,
+                position: 'relative',
+                transform: 'none',
+                background: handleColor,
+                width: 10,
+                height: 10,
                 border: '2px solid #1e293b',
-                top: -6,
               }}
             />
-          ) : (
-            // Multiple target handles - distributed across top
-            inputHandles.map((handleId, index) => {
-              const totalHandles = inputHandles.length;
-              const leftPercentage = ((index + 1) / (totalHandles + 1)) * 100;
-
-              return (
-                <Handle
-                  key={`target-${handleId}`}
-                  type="target"
-                  position={Position.Top}
-                  id={handleId}
-                  style={{
-                    background: styling.handleColor,
-                    width: 10,
-                    height: 10,
-                    border: '2px solid #1e293b',
-                    top: -5,
-                    left: `${leftPercentage}%`,
-                    transform: 'translateX(-50%)',
-                  }}
-                />
-              );
-            })
-          )}
-        </>
-      )}
+          </div>
+        );
+      })}
 
       {/* Node Label */}
       <div
@@ -171,49 +155,29 @@ const PlaybookNode: React.FC<NodeProps> = ({ data, selected }) => {
       </div>
 
       {/* Output Handles (Bottom) - For nodes that emit data */}
-      {showSourceHandle && (
-        <>
-          {outputHandles.length === 1 ? (
-            // Single source handle - center position
+      {showSourceHandle && outputs.map((handleId, index) => {
+        const offset = outputs.length > 1
+          ? ((index + 1) / (outputs.length + 1)) * 100
+          : 50;
+        return (
+          <div key={handleId} style={{ position: 'absolute', bottom: -20, left: `${offset}%`, transform: 'translateX(-50%)', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
             <Handle
               type="source"
               position={Position.Bottom}
-              id={outputHandles[0]}
+              id={handleId}
               style={{
-                background: styling.handleColor,
-                width: 12,
-                height: 12,
+                position: 'relative',
+                transform: 'none',
+                background: handleColor,
+                width: 10,
+                height: 10,
                 border: '2px solid #1e293b',
-                bottom: -6,
               }}
             />
-          ) : (
-            // Multiple source handles - distributed across bottom
-            outputHandles.map((handleId, index) => {
-              const totalHandles = outputHandles.length;
-              const leftPercentage = ((index + 1) / (totalHandles + 1)) * 100;
-
-              return (
-                <Handle
-                  key={`source-${handleId}`}
-                  type="source"
-                  position={Position.Bottom}
-                  id={handleId}
-                  style={{
-                    background: styling.handleColor,
-                    width: 10,
-                    height: 10,
-                    border: '2px solid #1e293b',
-                    bottom: -5,
-                    left: `${leftPercentage}%`,
-                    transform: 'translateX(-50%)',
-                  }}
-                />
-              );
-            })
-          )}
-        </>
-      )}
+            <span style={{ fontSize: '9px', color: '#9CA3AF', marginTop: '2px' }}>{handleId}</span>
+          </div>
+        );
+      })}
     </div>
   );
 };

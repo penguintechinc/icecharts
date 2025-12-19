@@ -47,50 +47,44 @@ const getNodeHandles = (nodeType: string): NodeHandles => {
   switch (nodeType) {
     // Conditional branching - true/false branches
     case 'conditional_if_then':
-    case 'Filter':
-      return { inputs: ['default'], outputs: ['true', 'false'] };
+      return { inputs: ['in'], outputs: ['true', 'false'] };
 
-    // Switch statement - multiple case branches plus default
+    // Switch statement - multiple case branches
     case 'conditional_switch':
-      return { inputs: ['default'], outputs: ['case1', 'case2', 'case3', 'default'] };
+      return { inputs: ['in'], outputs: ['case1', 'case2', 'case3', 'default'] };
 
-    // Loop/iteration - item and completion branches
+    // Loops - item output and completion output
     case 'conditional_for_each':
-    case 'Split':
-      return { inputs: ['default'], outputs: ['item', 'complete'] };
-
-    // Three-way split
-    case 'transform_split':
-      return { inputs: ['default'], outputs: ['branch1', 'branch2', 'branch3'] };
-
-    // While loop - condition and completion branches
+      return { inputs: ['in'], outputs: ['item', 'done'] };
     case 'conditional_while':
-      return { inputs: ['default'], outputs: ['loop', 'complete'] };
+      return { inputs: ['in'], outputs: ['loop', 'done'] };
 
-    // Comparison nodes - output true/false
+    // Comparison nodes - true/false output
     case 'conditional_equals':
     case 'conditional_greater_than':
     case 'conditional_less_than':
     case 'conditional_contains':
     case 'conditional_regex':
-      return { inputs: ['default'], outputs: ['true', 'false'] };
+      return { inputs: ['in'], outputs: ['true', 'false'] };
 
-    // Logic gates - output true/false
+    // Logic gates - single boolean output
     case 'conditional_and':
     case 'conditional_or':
-      return { inputs: ['input1', 'input2'], outputs: ['true', 'false'] };
-
-    // NOT gate - single input/output
+      return { inputs: ['a', 'b'], outputs: ['out'] };
     case 'conditional_not':
-      return { inputs: ['default'], outputs: ['output'] };
+      return { inputs: ['in'], outputs: ['out'] };
 
-    // Merge operations - single output
-    case 'Merge':
-      return { inputs: ['input1', 'input2', 'input3'], outputs: ['default'] };
+    // Split transform - multiple outputs
+    case 'transform_split':
+      return { inputs: ['in'], outputs: ['out1', 'out2', 'out3'] };
 
-    // Default - single input/output
+    // Merge transform - multiple inputs
+    case 'transform_merge':
+      return { inputs: ['in1', 'in2', 'in3'], outputs: ['out'] };
+
+    // Default: single input, single output (most nodes)
     default:
-      return { inputs: ['default'], outputs: ['default'] };
+      return { inputs: ['in'], outputs: ['out'] };
   }
 };
 
