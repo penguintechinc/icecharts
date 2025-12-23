@@ -39,7 +39,7 @@ function CloudProviderNode({ data, selected }: { data: { label: string; provider
 
   return (
     <div className={`relative px-4 py-3 rounded-lg shadow-lg border-2 ${selected ? 'border-gold-400' : 'border-dark-600'}`}
-         style={{ backgroundColor: data.color || '#1F2937' }}>
+      style={{ backgroundColor: data.color || '#1F2937' }}>
       {/* Top - both source and target */}
       <Handle type="target" position={Position.Top} id="top-target" className={handleStyle} />
       <Handle type="source" position={Position.Top} id="top-source" className={handleStyle} style={{ top: -6 }} />
@@ -76,7 +76,7 @@ function InfrastructureNode({ data, selected }: { data: { label: string; type: s
 
   return (
     <div className={`relative px-4 py-3 rounded-lg shadow-lg border-2 ${selected ? 'border-gold-400' : 'border-dark-600'}`}
-         style={{ backgroundColor: data.color || '#1F2937' }}>
+      style={{ backgroundColor: data.color || '#1F2937' }}>
       {/* Top - both source and target */}
       <Handle type="target" position={Position.Top} id="top-target" className={handleStyle} />
       <Handle type="source" position={Position.Top} id="top-source" className={handleStyle} style={{ top: -6 }} />
@@ -726,6 +726,7 @@ export default function DrawingEditor() {
           {/* Edge Controls - appears when edge is selected */}
           {selectedEdge && (
             <EdgeControls
+              key={selectedEdge.id}
               selectedEdge={selectedEdge}
               onUpdateEdge={handleUpdateEdge}
               position={edgeControlsPosition}
