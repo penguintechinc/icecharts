@@ -29,8 +29,8 @@ def main():
     parser.add_argument(
         '--port',
         type=int,
-        default=int(os.getenv('FLASK_PORT', '5000')),
-        help='Port to bind to (default: 5000)'
+        default=int(os.getenv('PORT', os.getenv('FLASK_PORT', '5000'))),
+        help='Port to bind to (default: $PORT or 5000)'
     )
     parser.add_argument(
         '--debug',

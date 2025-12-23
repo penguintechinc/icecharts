@@ -140,9 +140,9 @@ cp .env.example .env
 docker-compose up -d
 
 # Access the application
-# Web UI: http://localhost:3000
-# API: http://localhost:5001
-# Default credentials: admin@localhost / admin123
+# Web UI: http://localhost:3003
+# API: http://localhost:5002
+# Default credentials: admin@icecharts.local / admin123
 ```
 
 ### Local Development Setup

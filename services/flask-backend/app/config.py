@@ -76,7 +76,7 @@ class Config:
             origins.append(f"{scheme}://{hostname}")
 
         if hostname in ("localhost", "127.0.0.1"):
-            for dev_port in [3000, 3001, 3002, 3005, 5001, 5173, 8080]:
+            for dev_port in [3000, 3001, 3002, 3003, 3005, 5001, 5173, 8080]:
                 origin = f"{scheme}://{hostname}:{dev_port}"
                 if origin not in origins:
                     origins.append(origin)

@@ -140,6 +140,9 @@ services:
     build:
       context: ./services/webui
       dockerfile: Dockerfile.static
+      args:
+        VITE_API_URL: ${VITE_API_URL:-http://localhost:${API_PORT:-5001}}
+        VITE_WS_URL: ${VITE_WS_URL:-http://localhost:${API_PORT:-5001}}
     container_name: icecharts-web
     environment:
       - NODE_ENV=${NODE_ENV:-production}
