@@ -758,6 +758,38 @@ def metrics():
     return generate_latest(), {'Content-Type': 'text/plain'}
 ```
 
+## Website Integration Requirements
+
+**Required websites**: Marketing/Sales (Node.js) + Documentation (Markdown)
+
+**Design**: Multi-page, modern aesthetic, subtle gradients, responsive, performance-focused
+
+**Repository**: Sparse checkout submodule from `github.com/penguintechinc/website` with `icecharts/` and `icecharts-docs/` folders
+
+**IceCharts-Specific Website Components:**
+
+**Marketing Site (icecharts folder):**
+- **Feature showcase**: Interactive diagrams and visualization demos
+- **Pricing page**: License tier information (Free, Professional, Enterprise)
+- **Use cases**: Infrastructure visualization, network diagramming, system architecture
+- **Demo/Sandbox**: Live IceCharts editor showing diagram creation capabilities
+- **API documentation**: Embed from docs site or link to API reference
+
+**Documentation Site (icecharts-docs folder):**
+- **Getting Started**: Installation, basic diagram creation, export options
+- **User Guide**: Drawing tools, shapes library, diagram templates, collaboration features
+- **API Reference**: REST endpoints, service account integration, webhook support
+- **Architecture Docs**: Multi-database setup, clustering, high-availability deployment
+- **Integration Guides**: Elder integration, external system connectors, data import/export
+- **FAQ**: Common diagramming questions, database selection, deployment options
+
+**Internationalization (i18n)**: Support English (primary) and additional languages as needed
+
+**Performance Requirements:**
+- Home page <2s load time (optimized images, lazy loading)
+- Demo sandbox <3s interactive
+- Docs search indexing (Algolia or similar)
+
 ## Troubleshooting & Support
 
 ### Common Issues

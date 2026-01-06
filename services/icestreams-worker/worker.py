@@ -11,11 +11,14 @@ import json
 import logging
 import os
 import sys
+import uuid
 from typing import Any, Dict, Optional
 
 import redis
 import redis.asyncio as aioredis
 from redis.exceptions import ConnectionError, RedisError
+
+from executor.playbook_executor import PlaybookExecutor, ExecutionResult
 
 # Configure logging
 logging.basicConfig(
@@ -154,8 +157,6 @@ class IceStreamsWorker:
         """
         Handle playbook execution task.
 
-        This is a placeholder for the actual playbook executor integration.
-
         Args:
             message_id: Redis stream message ID
             payload: Task payload containing playbook details
@@ -163,24 +164,67 @@ class IceStreamsWorker:
         logger.info(f"Executing playbook from message {message_id}")
         logger.debug(f"Playbook payload: {payload}")
 
-        # TODO: Integrate with playbook executor
-        # Example structure:
-        # - playbook_id: identifier for the playbook
-        # - parameters: playbook execution parameters
-        # - execution_context: context for execution
-        #
-        # Steps:
-        # 1. Load playbook definition
-        # 2. Validate parameters
-        # 3. Execute playbook asynchronously
-        # 4. Track execution status
-        # 5. Store results
-
         playbook_id = payload.get("playbook_id")
-        logger.info(f"Playbook execution scheduled for playbook_id: {playbook_id}")
+        if not playbook_id:
+            logger.error("Missing playbook_id in payload")
+            await self._publish_error(message_id, "Missing playbook_id")
+            return
 
-        # Simulate async work
-        await asyncio.sleep(0.1)
+        # Generate unique execution ID
+        execution_id = payload.get("execution_id") or str(uuid.uuid4())
+
+        try:
+            # Extract playbook data from payload
+            playbook_data = payload.get("playbook_data", {})
+            if not playbook_data:
+                logger.error("Missing playbook_data in payload")
+                await self._publish_error(message_id, "Missing playbook_data")
+                return
+
+            # Create executor instance
+            if not self.redis_client:
+                raise RuntimeError("Redis client not initialized")
+
+            executor = PlaybookExecutor(
+                redis_client=self.redis_client,
+                execution_id=execution_id,
+                playbook_id=playbook_id,
+                node_timeout_seconds=float(
+                    payload.get("node_timeout_seconds", 30.0)
+                ),
+            )
+
+            # Publish execution started status
+            await self._publish_status(
+                execution_id,
+                {
+                    "status": "running",
+                    "playbook_id": playbook_id,
+                    "message_id": message_id,
+                    "started_at": asyncio.get_event_loop().time(),
+                },
+            )
+
+            # Execute the playbook
+            result: ExecutionResult = await executor.execute(playbook_data)
+
+            # Publish execution result
+            await self._publish_result(execution_id, result)
+
+            logger.info(
+                f"Playbook execution completed: execution_id={execution_id}, "
+                f"success={result.success}, "
+                f"completed_nodes={len(result.completed_nodes)}, "
+                f"failed_nodes={len(result.failed_nodes)}"
+            )
+
+        except Exception as e:
+            logger.error(
+                f"Error executing playbook {playbook_id}: {e}", exc_info=True
+            )
+            await self._publish_error(
+                execution_id, f"Playbook execution error: {str(e)}"
+            )
 
     async def _handle_health_check(
         self, message_id: str, payload: Dict[str, Any]
@@ -280,6 +324,90 @@ class IceStreamsWorker:
         """Gracefully shutdown the worker."""
         logger.info("Shutting down worker...")
         self.running = False
+
+    async def _publish_status(
+        self, execution_id: str, status_data: Dict[str, Any]
+    ) -> None:
+        """
+        Publish execution status update to Redis Stream.
+
+        Args:
+            execution_id: Unique execution identifier
+            status_data: Status information to publish
+        """
+        if not self.redis_client:
+            return
+
+        try:
+            stream_name = f"icestreams:executions:{execution_id}:status"
+            await self.redis_client.xadd(
+                stream_name,
+                {
+                    "event": "status_update",
+                    "data": json.dumps(status_data),
+                },
+                maxlen=100,
+            )
+            logger.debug(f"Published status for execution {execution_id}")
+        except Exception as e:
+            logger.error(f"Failed to publish status: {e}")
+
+    async def _publish_result(
+        self, execution_id: str, result: ExecutionResult
+    ) -> None:
+        """
+        Publish execution result to Redis Stream.
+
+        Args:
+            execution_id: Unique execution identifier
+            result: Execution result to publish
+        """
+        if not self.redis_client:
+            return
+
+        try:
+            stream_name = f"icestreams:executions:{execution_id}:result"
+            await self.redis_client.xadd(
+                stream_name,
+                {
+                    "event": "execution_complete",
+                    "data": json.dumps(result.to_dict()),
+                },
+                maxlen=10,
+            )
+            logger.info(f"Published result for execution {execution_id}")
+        except Exception as e:
+            logger.error(f"Failed to publish result: {e}")
+
+    async def _publish_error(self, execution_id: str, error_message: str) -> None:
+        """
+        Publish execution error to Redis Stream.
+
+        Args:
+            execution_id: Unique execution identifier
+            error_message: Error message to publish
+        """
+        if not self.redis_client:
+            return
+
+        try:
+            stream_name = f"icestreams:executions:{execution_id}:status"
+            await self.redis_client.xadd(
+                stream_name,
+                {
+                    "event": "execution_error",
+                    "data": json.dumps(
+                        {
+                            "status": "failed",
+                            "error": error_message,
+                        }
+                    ),
+                },
+                maxlen=100,
+            )
+            logger.debug(f"Published error for execution {execution_id}")
+        except Exception as e:
+            logger.error(f"Failed to publish error: {e}")
 
 
 async def main():

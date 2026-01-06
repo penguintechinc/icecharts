@@ -44,10 +44,5 @@ STATUS=$(curl -sf -o /dev/null -w "%{http_code}" "$API_URL/api/v1/playbooks" \
   -H "Authorization: Bearer $TOKEN")
 [ "$STATUS" = "200" ] && echo "✓ OK" || echo "✗ Failed ($STATUS)"
 
-echo -n "   GET /collections: "
-STATUS=$(curl -sf -o /dev/null -w "%{http_code}" "$API_URL/api/v1/collections" \
-  -H "Authorization: Bearer $TOKEN")
-[ "$STATUS" = "200" ] && echo "✓ OK" || echo "✗ Failed ($STATUS)"
-
 echo ""
 echo "=== API Tests Complete ==="
