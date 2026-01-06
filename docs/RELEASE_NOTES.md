@@ -1,5 +1,85 @@
 # Release Notes
 
+## [0.3.0] - January 2025
+
+### Overview
+
+IceCharts v0.3.0 introduces the Connector Framework, enabling seamless integration with external services for workflow automation. This release brings WaddleBot integration, a visual workflow editor with connector support, and a modular architecture for adding future integrations.
+
+### New Features
+
+#### Connector Framework
+- **Modular plugin architecture** for external service integrations
+- **YAML manifest-based connectors** - add new integrations without code changes
+- **Dynamic node generation** from manifest definitions
+- **Schema-driven configuration** panels for easy node setup
+- **Variable interpolation** with `{{input.field}}` syntax
+- See [CONNECTORS.md](CONNECTORS.md) for complete documentation
+
+#### WaddleBot Integration
+- **4 Triggers**: Chat Command, Stream Event, Chat Message, Incoming Webhook
+- **15 Actions**: Send Chat, Reply, Whisper, Display Media, Update Ticker, Show Alert, Shoutout, AI Response, Spotify Play, YouTube Music, Inventory Add, Loyalty Give, Reputation Update, Timeout User, Ban User
+- **2 Transforms**: User Lookup, Permission Check
+- Full support for Twitch, Discord, Slack, and Kick platforms
+
+#### Elder Integration
+- **9 Triggers**: Entity Created/Updated/Deleted, Issue Created/Status Changed, Webhook Event, Discovery Completed, Vulnerability Detected, Dependency Changed
+- **18 Actions**: Create/Update/Delete Entity, Create/Remove Dependency, Create/Update Issue, Add Comment, Link Entity to Issue, Create Project/Milestone, Trigger Discovery, Run SBOM Scan, Add Identity, Send Notification, Allocate/Release IP, Create Webhook
+- **7 Transforms**: Entity Lookup, Search Entities, Get Dependencies, Graph Traversal, Impact Analysis, Issue Lookup, Check Vulnerabilities
+- Infrastructure discovery and dependency mapping integration
+
+#### Enhanced Playbook Editor
+- **Connector nodes** appear in left palette under "Connectors" section
+- **Collapsible subsections** for triggers, actions, and transforms
+- **Connector-colored nodes** for visual distinction
+- **Multi-handle support** for nodes with multiple outputs
+
+#### Connector Settings
+- New **Connectors** tab in Settings page
+- View all installed connectors with node counts
+- Expandable cards showing available triggers, actions, and transforms
+- Configuration status indicators (placeholder for future auth setup)
+
+### API Additions
+
+New connector endpoints:
+- `GET /api/v1/connectors` - List all connectors
+- `GET /api/v1/connectors/{id}` - Get specific connector
+- `GET /api/v1/connectors/{id}/nodes` - Get connector nodes
+- `GET /api/v1/connectors/nodes` - Get all nodes with optional category filter
+
+### Files Added
+
+**Backend:**
+- `services/icestreams-worker/connectors/` - Connector framework package
+- `services/flask-backend/app/api/v1/connectors.py` - REST API endpoints
+
+**Frontend:**
+- `services/webui/src/client/types/connector.ts` - TypeScript types
+- `services/webui/src/client/hooks/useConnectors.ts` - React hooks
+- `services/webui/src/client/components/playbooks/ConnectorSection.tsx`
+- `services/webui/src/client/components/playbooks/panels/ConnectorConfigPanel.tsx`
+
+**Documentation:**
+- `docs/CONNECTORS.md` - Complete connector framework documentation
+
+### Migration Guide
+
+No database migrations required for this release.
+
+#### New Environment Variables (Optional)
+```env
+# WaddleBot
+WADDLEBOT_URL=http://localhost:8060
+WADDLEBOT_API_KEY=your-api-key
+
+# Elder
+ELDER_URL=http://localhost:5000
+ELDER_API_KEY=your-api-key
+```
+
+---
+
 ## [0.2.0] - December 2024
 
 ### Overview

@@ -31,6 +31,7 @@ from .sso import sso_v1_bp
 from .storage import storage_v1_bp
 from .templates import templates_v1_bp
 from .users import users_v1_bp
+from .connectors import connectors_v1_bp
 
 # Register all blueprints
 api_v1_bp.register_blueprint(auth_v1_bp)
@@ -55,5 +56,6 @@ api_v1_bp.register_blueprint(admin_license_v1_bp)
 api_v1_bp.register_blueprint(service_accounts_v1_bp)
 api_v1_bp.register_blueprint(playbooks_v1_bp)
 api_v1_bp.register_blueprint(playbook_hooks_v1_bp)
+api_v1_bp.register_blueprint(connectors_v1_bp)
 
 __all__ = ["api_v1_bp"]

@@ -106,6 +106,13 @@ IceCharts is a modern, web-based collaborative diagramming platform designed for
 - **Dependency visualization** showing relationships between infrastructure elements
 - **Live sync** with infrastructure definitions
 
+### Workflow Automation (IceStreams)
+- **Visual workflow editor** with drag-and-drop node canvas
+- **Connector Framework** for integrating external services
+- **WaddleBot integration** for chat bot automation (Twitch, Discord, Slack, Kick)
+- **Triggers, Actions, and Transforms** for building automation pipelines
+- **Schema-driven configuration** for easy node setup
+
 ### Enterprise Security
 - **User authentication & authorization** with role-based access control (RBAC)
 - **OAuth/SSO integration** for enterprise identity management
@@ -174,6 +181,10 @@ Comprehensive documentation is available in the [docs/](docs/) directory:
   - [Comments System](docs/COMMENTS_SYSTEM.md)
   - [Export Functionality](docs/EXPORT_FUNCTIONALITY.md)
   - [Elder Integration](docs/ELDER_INTEGRATION.md)
+- **[Connector Framework](docs/CONNECTORS.md)** - External service integration guide
+  - [Creating Connectors](docs/CONNECTORS.md#creating-a-new-connector)
+  - [WaddleBot Integration](docs/CONNECTORS.md#waddlebot)
+  - [Manifest Schema Reference](docs/CONNECTORS.md#manifest-schema-reference)
 - **[Kubernetes Deployment](docs/KUBERNETES.md)** - Helm charts, Kustomize manifests, and cloud deployments (AWS/GCP/Azure)
 - **[Deployment](docs/DEPLOYMENT.md)** - Deployment guides and best practices
 - **[Contributing](docs/CONTRIBUTING.md)** - Development guidelines and workflow

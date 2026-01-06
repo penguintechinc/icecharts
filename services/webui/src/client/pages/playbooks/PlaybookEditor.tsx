@@ -33,6 +33,9 @@ import api from '../../lib/api';
 import { playbookEdgeTypes } from '../../components/playbooks/edges';
 import { PlaybookNode } from '../../components/playbooks/nodes';
 import { NodeConfigPanel } from '../../components/playbooks/panels';
+import { ConnectorSection } from '../../components/playbooks/ConnectorSection';
+import { useConnectors } from '../../hooks/useConnectors';
+import { isConnectorNode } from '../../types/connector';
 
 /**
  * Define node handles (input/output ports) for different node types
@@ -43,7 +46,27 @@ interface NodeHandles {
   outputs: string[];
 }
 
-const getNodeHandles = (nodeType: string): NodeHandles => {
+/**
+ * Get node handles configuration.
+ * For connector nodes, returns handles from the connectorHandles parameter.
+ * For built-in nodes, uses hardcoded configurations.
+ */
+const getNodeHandles = (nodeType: string, connectorHandles?: NodeHandles): NodeHandles => {
+  // If connector handles are provided (from manifest), use them
+  if (connectorHandles) {
+    return connectorHandles;
+  }
+
+  // Check if this is a connector node - default to single in/out
+  if (isConnectorNode(nodeType)) {
+    // Triggers have no inputs, only outputs
+    if (nodeType.startsWith('trigger_')) {
+      return { inputs: [], outputs: ['out'] };
+    }
+    // Actions and transforms have single in/out by default
+    return { inputs: ['in'], outputs: ['out'] };
+  }
+
   switch (nodeType) {
     // Conditional branching - true/false branches
     case 'conditional_if_then':
@@ -150,6 +173,12 @@ const PlaybookEditor: React.FC = () => {
     actions: true,
   });
 
+  // Connector subsection expansion state (e.g., "waddlebot-triggers": true)
+  const [expandedConnectorSubsections, setExpandedConnectorSubsections] = useState<Record<string, boolean>>({});
+
+  // Fetch available connectors
+  const { connectors, loading: connectorsLoading } = useConnectors();
+
   // ReactFlow state with proper typing
   const [nodes, setNodes, onNodesChange] = useNodesState<Node>([]);
   const [edges, setEdges, onEdgesChange] = useEdgesState<Edge>([]);
@@ -164,6 +193,14 @@ const PlaybookEditor: React.FC = () => {
     setExpandedCategories(prev => ({
       ...prev,
       [category]: !prev[category]
+    }));
+  };
+
+  // Toggle connector subsection expansion
+  const toggleConnectorSubsection = (key: string) => {
+    setExpandedConnectorSubsections(prev => ({
+      ...prev,
+      [key]: !prev[key]
     }));
   };
 
@@ -301,16 +338,63 @@ const PlaybookEditor: React.FC = () => {
         y: event.clientY - reactFlowBounds.top - 20,
       };
 
-      // Find the node label from the definition (nodeType is now the id)
+      // Find the node label from the definition
       let nodeLabel = nodeType;
-      const allNodes = [...triggers, ...transforms, ...conditionals, ...actions];
-      const nodeDef = allNodes.find(n => n.id === nodeType);
-      if (nodeDef) {
-        nodeLabel = nodeDef.label;
+      let connectorId: string | undefined;
+      let connectorColor: string | undefined;
+      let nodeHandles: NodeHandles | undefined;
+
+      // First check built-in nodes
+      const allBuiltInNodes = [...triggers, ...transforms, ...conditionals, ...actions];
+      const builtInDef = allBuiltInNodes.find(n => n.id === nodeType);
+      if (builtInDef) {
+        nodeLabel = builtInDef.label;
+      } else if (isConnectorNode(nodeType)) {
+        // Check connector nodes - parse node type: {category}_{connector}_{id}
+        const parts = nodeType.split('_');
+        if (parts.length >= 3) {
+          const connId = parts[1];
+          const actionId = parts.slice(2).join('_');
+          const connector = connectors.find(c => c.id === connId);
+          if (connector) {
+            connectorId = connector.id;
+            connectorColor = connector.color;
+            // Find the specific trigger/action/transform
+            let nodeDef;
+            if (category === 'triggers') {
+              nodeDef = connector.triggers.find(t => t.id === actionId);
+              if (nodeDef) {
+                nodeLabel = nodeDef.name;
+                nodeHandles = {
+                  inputs: [],
+                  outputs: nodeDef.outputs.map(o => o.name),
+                };
+              }
+            } else if (category === 'actions') {
+              nodeDef = connector.actions.find(a => a.id === actionId);
+              if (nodeDef) {
+                nodeLabel = nodeDef.name;
+                nodeHandles = {
+                  inputs: nodeDef.inputs.map(i => i.name),
+                  outputs: nodeDef.outputs.map(o => o.name),
+                };
+              }
+            } else if (category === 'transforms') {
+              nodeDef = connector.transforms.find(t => t.id === actionId);
+              if (nodeDef) {
+                nodeLabel = nodeDef.name;
+                nodeHandles = {
+                  inputs: nodeDef.inputs.map(i => i.name),
+                  outputs: nodeDef.outputs.map(o => o.name),
+                };
+              }
+            }
+          }
+        }
       }
 
       // Get handles configuration for this node type
-      const nodeHandles = getNodeHandles(nodeType);
+      const handles = getNodeHandles(nodeType, nodeHandles);
 
       const newNode: Node = {
         id: `${category}-${Date.now()}`,
@@ -320,13 +404,16 @@ const PlaybookEditor: React.FC = () => {
           label: nodeLabel,
           nodeType,
           category,
-          handles: nodeHandles,
+          handles,
+          // Additional data for connector nodes
+          ...(connectorId && { connectorId }),
+          ...(connectorColor && { connectorColor }),
         },
       };
 
       setNodes((nds) => nds.concat(newNode));
     },
-    [setNodes, triggers, transforms, conditionals, actions]
+    [setNodes, triggers, transforms, conditionals, actions, connectors]
   );
 
   useEffect(() => {
@@ -778,6 +865,34 @@ const PlaybookEditor: React.FC = () => {
                 </div>
               )}
             </div>
+
+            {/* Divider between built-in and connectors */}
+            {connectors.length > 0 && (
+              <div className="my-4 border-t border-ice-navy-700">
+                <span className="block text-xs text-ice-navy-500 uppercase tracking-wider mt-3 mb-2 px-1">
+                  Connectors
+                </span>
+              </div>
+            )}
+
+            {/* Connector sections */}
+            {connectorsLoading ? (
+              <div className="flex items-center justify-center py-4">
+                <div className="animate-pulse text-ice-navy-400 text-sm">Loading connectors...</div>
+              </div>
+            ) : (
+              connectors.map((connector) => (
+                <ConnectorSection
+                  key={connector.id}
+                  connector={connector}
+                  onDragStart={onDragStart}
+                  expandedSubsections={expandedConnectorSubsections}
+                  onToggleSubsection={toggleConnectorSubsection}
+                  expanded={expandedCategories[connector.id] ?? false}
+                  onToggle={() => toggleCategory(connector.id)}
+                />
+              ))
+            )}
           </div>
         </div>
 
