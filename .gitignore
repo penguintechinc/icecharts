@@ -68,8 +68,12 @@ develop-eggs/
 downloads/
 eggs/
 .eggs/
-lib/
-lib64/
+# Python virtualenv libs (not src/lib/)
+/lib/
+/lib64/
+# Exclude webui lib directories
+!services/webui/src/lib/
+!services/webui/src/client/lib/
 parts/
 sdist/
 var/
