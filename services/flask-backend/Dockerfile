@@ -18,7 +18,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     && rm -rf /var/lib/apt/lists/*
 
 # Copy requirements
-COPY requirements.txt .
+COPY services/flask-backend/requirements.txt .
 
 # Install Python dependencies
 RUN pip install --user --no-cache-dir -r requirements.txt
@@ -35,7 +35,7 @@ RUN pip install --user --no-cache-dir \
     pytest-mock==3.13.0
 
 # Copy test files and app code
-COPY . .
+COPY services/flask-backend . .
 
 # Set test environment
 ENV FLASK_ENV=testing
@@ -61,7 +61,7 @@ RUN pip install --user --no-cache-dir \
     isort==5.13.2
 
 # Copy source code
-COPY . .
+COPY services/flask-backend . .
 
 # Run linting
 RUN flake8 app/ tests/ --count --select=E9,F63,F7,F82 --show-source --statistics && \
@@ -105,8 +105,11 @@ USER icecharts
 ENV PATH=/home/icecharts/.local/bin:$PATH
 
 # Copy application code
-COPY --chown=icecharts:icecharts app /app/app
-COPY --chown=icecharts:icecharts requirements.txt /app/
+COPY --chown=icecharts:icecharts services/flask-backend/app /app/app
+COPY --chown=icecharts:icecharts services/flask-backend/requirements.txt /app/
+
+# Copy icestreams-worker for connector support
+COPY --chown=icecharts:icecharts services/icestreams-worker /app/icestreams-worker
 
 # Expose port
 EXPOSE 5000

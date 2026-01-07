@@ -63,8 +63,8 @@ services:
   # Flask API Backend
   api:
     build:
-      context: ./services/flask-backend
-      dockerfile: Dockerfile
+      context: .
+      dockerfile: services/flask-backend/Dockerfile
     container_name: icecharts-api
     environment:
       # Flask Configuration
@@ -104,6 +104,7 @@ services:
       # Application Configuration
       - DEFAULT_ADMIN_EMAIL=${DEFAULT_ADMIN_EMAIL:-admin@localhost}
       - DEFAULT_ADMIN_PASSWORD=${DEFAULT_ADMIN_PASSWORD:-admin123}
+      - WEBUI_PORT=${WEB_PORT:-3080}
       - CORS_ORIGINS=${CORS_ORIGINS:-http://localhost:3000}
 
       # License Configuration
@@ -146,7 +147,7 @@ services:
       - VITE_API_URL=${VITE_API_URL:-http://localhost:5001}
       - VITE_API_BASE_PATH=${VITE_API_BASE_PATH:-/api/v1}
     ports:
-      - "${WEB_PORT:-3000}:3000"
+      - "${WEB_PORT:-3080}:3000"
     depends_on:
       api:
         condition: service_started

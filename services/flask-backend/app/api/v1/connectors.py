@@ -14,12 +14,20 @@ from pathlib import Path
 from typing import Any, Dict, List, Optional
 
 from flask import Blueprint, current_app, jsonify, request
-from flask_security import auth_required, current_user
+
+from app.middleware import auth_required
 
 # Add icestreams-worker to path for connector imports
-worker_path = Path(__file__).parent.parent.parent.parent.parent / "icestreams-worker"
-if str(worker_path) not in sys.path:
-    sys.path.insert(0, str(worker_path))
+# In container: /app/icestreams-worker
+# Local dev: ../../../icestreams-worker from this file
+worker_paths = [
+    Path("/app/icestreams-worker"),  # Container path
+    Path(__file__).parent.parent.parent.parent.parent / "icestreams-worker",  # Local dev path
+]
+for worker_path in worker_paths:
+    if worker_path.exists() and str(worker_path) not in sys.path:
+        sys.path.insert(0, str(worker_path))
+        break
 
 logger = logging.getLogger(__name__)
 
@@ -56,7 +64,7 @@ def _get_connector_manifests() -> List[Dict[str, Any]]:
 
 @connectors_v1_bp.route("", methods=["GET"], strict_slashes=False)
 @connectors_v1_bp.route("/", methods=["GET"])
-@auth_required()
+@auth_required
 def list_connectors():
     """
     List all available connectors and their node definitions.
@@ -81,7 +89,7 @@ def list_connectors():
 
 
 @connectors_v1_bp.route("/<connector_id>", methods=["GET"])
-@auth_required()
+@auth_required
 def get_connector(connector_id: str):
     """
     Get a specific connector's definition.
@@ -102,7 +110,7 @@ def get_connector(connector_id: str):
 
 
 @connectors_v1_bp.route("/<connector_id>/nodes", methods=["GET"])
-@auth_required()
+@auth_required
 def get_connector_nodes(connector_id: str):
     """
     Get all nodes (triggers, actions, transforms) for a connector.
@@ -183,7 +191,7 @@ def get_connector_nodes(connector_id: str):
 
 
 @connectors_v1_bp.route("/nodes", methods=["GET"])
-@auth_required()
+@auth_required
 def get_all_connector_nodes():
     """
     Get all connector nodes across all connectors.
