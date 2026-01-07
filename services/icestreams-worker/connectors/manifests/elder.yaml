@@ -4,7 +4,7 @@ connector:
   id: elder
   name: Elder
   description: Infrastructure discovery, documentation, and dependency mapping platform
-  icon: "👴"
+  icon: "elder-logo"
   color: "#F59E0B"
   version: "1.0.0"
   vendor: penguintech

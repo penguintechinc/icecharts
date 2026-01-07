@@ -7,6 +7,7 @@
 
 import React, { DragEvent } from 'react';
 import type { Connector } from '../../types/connector';
+import { getConnectorLogo } from '../../../assets/logos';
 
 interface ConnectorSectionProps {
   /** Connector definition with triggers, actions, transforms */
@@ -107,7 +108,15 @@ const NodeItem: React.FC<NodeItemProps> = ({
       }}
     >
       <div className="flex items-center gap-2">
-        <span className="text-lg">{icon}</span>
+        {(() => {
+          if (!icon) return <span className="text-lg">•</span>;
+          const logoSrc = getConnectorLogo(icon);
+          return logoSrc.startsWith('/') || logoSrc.startsWith('http') || logoSrc.includes('data:') ? (
+            <img src={logoSrc} alt={label} className="w-5 h-5 object-contain flex-shrink-0" />
+          ) : (
+            <span className="text-lg">{icon}</span>
+          );
+        })()}
         <span className={`${colors.text} text-sm flex-1 truncate`}>{label}</span>
       </div>
       <p className="text-ice-navy-400 text-xs mt-1 opacity-0 group-hover:opacity-100 transition-opacity line-clamp-2">
@@ -224,7 +233,14 @@ export const ConnectorSection: React.FC<ConnectorSectionProps> = ({
         }}
       >
         <ChevronIcon expanded={expanded} />
-        <span className="text-base">{connector.icon}</span>
+        {(() => {
+          const logoSrc = getConnectorLogo(connector.icon);
+          return logoSrc.startsWith('/') || logoSrc.startsWith('http') || logoSrc.includes('data:') ? (
+            <img src={logoSrc} alt={connector.name} className="w-5 h-5 object-contain" />
+          ) : (
+            <span className="text-base">{connector.icon}</span>
+          );
+        })()}
         <span className="flex-1 text-left">{connector.name}</span>
         <span
           className="inline-flex items-center justify-center w-5 h-5 text-xs rounded-full"

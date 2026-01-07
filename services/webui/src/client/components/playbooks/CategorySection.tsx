@@ -6,6 +6,7 @@
  */
 
 import React from 'react';
+import { getConnectorLogo } from '../../../assets/logos';
 
 interface CategorySectionProps {
   /** Category name (e.g., "General", "PenguinTech", "External") */
@@ -65,7 +66,14 @@ export const CategorySection: React.FC<CategorySectionProps> = ({
         }}
       >
         <ChevronIcon expanded={expanded} />
-        <span className="text-lg">{icon}</span>
+        {(() => {
+          const logoSrc = getConnectorLogo(icon);
+          return logoSrc.startsWith('/') || logoSrc.startsWith('http') || logoSrc.includes('data:') ? (
+            <img src={logoSrc} alt={name} className="w-5 h-5 object-contain" />
+          ) : (
+            <span className="text-lg">{icon}</span>
+          );
+        })()}
         <span className="flex-1 text-left">{name}</span>
         <span
           className="inline-flex items-center justify-center min-w-6 h-6 px-1.5 text-xs font-bold rounded-full"

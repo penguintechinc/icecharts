@@ -4,7 +4,7 @@ connector:
   id: waddlebot
   name: WaddleBot
   description: Chat bot platform for Twitch, Discord, Slack, and Kick
-  icon: "🤖"
+  icon: "waddlebot-logo"
   color: "#6366F1"
   version: "1.0.0"
   vendor: penguintech
