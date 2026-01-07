@@ -19,6 +19,7 @@ import {
   addEdge,
   useNodesState,
   useEdgesState,
+  useReactFlow,
   type Node,
   type Edge,
   type Connection,
@@ -159,6 +160,7 @@ const PlaybookEditor: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const reactFlowWrapper = useRef<HTMLDivElement>(null);
+  const { screenToFlowPosition } = useReactFlow();
 
   const [playbook, setPlaybook] = useState<Playbook | null>(null);
   const [loading, setLoading] = useState(true);
@@ -325,19 +327,17 @@ const PlaybookEditor: React.FC = () => {
     (event: DragEvent<HTMLDivElement>) => {
       event.preventDefault();
 
-      const reactFlowBounds = reactFlowWrapper.current?.getBoundingClientRect();
-      if (!reactFlowBounds) return;
-
       const data = event.dataTransfer.getData('application/reactflow');
       if (!data) return;
 
       const { nodeType, category } = JSON.parse(data);
 
-      // Calculate position relative to ReactFlow canvas
-      const position = {
-        x: event.clientX - reactFlowBounds.left - 75,
-        y: event.clientY - reactFlowBounds.top - 20,
-      };
+      // Calculate position using ReactFlow's coordinate transformation
+      // This correctly handles zoom and pan transformations
+      const position = screenToFlowPosition({
+        x: event.clientX,
+        y: event.clientY,
+      });
 
       // Find the node label from the definition
       let nodeLabel = nodeType;
@@ -414,7 +414,7 @@ const PlaybookEditor: React.FC = () => {
 
       setNodes((nds) => nds.concat(newNode));
     },
-    [setNodes, triggers, transforms, conditionals, actions, connectors]
+    [screenToFlowPosition, setNodes, triggers, transforms, conditionals, actions, connectors]
   );
 
   useEffect(() => {
