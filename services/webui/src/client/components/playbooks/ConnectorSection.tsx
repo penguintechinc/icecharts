@@ -48,6 +48,13 @@ const categoryColors = {
     text: 'text-cyan-400',
     badge: 'bg-cyan-500/30',
   },
+  conditionals: {
+    bg: 'bg-purple-500/10',
+    border: 'border-purple-500/30',
+    hover: 'hover:bg-purple-500/20',
+    text: 'text-purple-400',
+    badge: 'bg-purple-500/30',
+  },
 } as const;
 
 /**
@@ -72,7 +79,7 @@ interface NodeItemProps {
   label: string;
   icon: string;
   description: string;
-  category: 'triggers' | 'actions' | 'transforms';
+  category: 'triggers' | 'actions' | 'transforms' | 'conditionals';
   connectorColor: string;
   onDragStart: (e: DragEvent<HTMLDivElement>, nodeType: string, category: string) => void;
 }
@@ -111,11 +118,11 @@ const NodeItem: React.FC<NodeItemProps> = ({
 };
 
 /**
- * Subsection for triggers, actions, or transforms within a connector
+ * Subsection for triggers, actions, transforms, or conditionals within a connector
  */
 interface SubsectionProps {
   title: string;
-  category: 'triggers' | 'actions' | 'transforms';
+  category: 'triggers' | 'actions' | 'transforms' | 'conditionals';
   items: Array<{
     id: string;
     name: string;
@@ -161,7 +168,13 @@ const Subsection: React.FC<SubsectionProps> = ({
         <div className="mt-1.5 space-y-1.5 pl-2">
           {items.map((item) => {
             // Build node type following the pattern: {category_singular}_{connector}_{id}
-            const categorySingular = category === 'triggers' ? 'trigger' : category === 'actions' ? 'action' : 'transform';
+            const categorySingularMap: Record<string, string> = {
+              triggers: 'trigger',
+              actions: 'action',
+              transforms: 'transform',
+              conditionals: 'conditional',
+            };
+            const categorySingular = categorySingularMap[category] || category;
             const nodeType = `${categorySingular}_${connectorId}_${item.id}`;
 
             return (
@@ -235,7 +248,7 @@ export const ConnectorSection: React.FC<ConnectorSectionProps> = ({
             connectorId={connector.id}
             connectorIcon={connector.icon}
             connectorColor={connector.color}
-            expanded={expandedSubsections[`${connector.id}-triggers`] ?? true}
+            expanded={expandedSubsections[`${connector.id}-triggers`] ?? false}
             onToggle={() => onToggleSubsection(`${connector.id}-triggers`)}
             onDragStart={onDragStart}
           />
@@ -248,7 +261,7 @@ export const ConnectorSection: React.FC<ConnectorSectionProps> = ({
             connectorId={connector.id}
             connectorIcon={connector.icon}
             connectorColor={connector.color}
-            expanded={expandedSubsections[`${connector.id}-actions`] ?? true}
+            expanded={expandedSubsections[`${connector.id}-actions`] ?? false}
             onToggle={() => onToggleSubsection(`${connector.id}-actions`)}
             onDragStart={onDragStart}
           />
@@ -271,4 +284,5 @@ export const ConnectorSection: React.FC<ConnectorSectionProps> = ({
   );
 };
 
+export { Subsection };
 export default ConnectorSection;

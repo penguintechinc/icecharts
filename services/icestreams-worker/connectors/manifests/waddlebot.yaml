@@ -7,6 +7,7 @@ connector:
   icon: "🤖"
   color: "#6366F1"
   version: "1.0.0"
+  vendor: penguintech
 
   auth:
     methods:

@@ -117,6 +117,8 @@ export interface Connector {
   color: string;
   /** Connector version */
   version: string;
+  /** Vendor category: 'penguintech' for internal products, 'external' for third-party */
+  vendor?: 'penguintech' | 'external';
   /** Trigger definitions */
   triggers: TriggerDefinition[];
   /** Action definitions */

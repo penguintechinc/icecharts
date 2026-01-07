@@ -336,6 +336,7 @@ class ConnectorManifest:
         icon: Emoji or icon identifier.
         color: UI color (hex code).
         version: Connector version.
+        vendor: Vendor category ('penguintech' for internal, 'external' for third-party).
         auth_methods: Available authentication methods.
         base_url_env: Environment variable for base URL.
         default_url: Default base URL.
@@ -351,6 +352,7 @@ class ConnectorManifest:
     icon: str = ""
     color: str = "#6366F1"
     version: str = "1.0.0"
+    vendor: str = "external"
     auth_methods: tuple = ()
     base_url_env: str = ""
     default_url: str = ""
@@ -396,6 +398,7 @@ class ConnectorManifest:
             icon=connector.get("icon", ""),
             color=connector.get("color", "#6366F1"),
             version=connector.get("version", "1.0.0"),
+            vendor=connector.get("vendor", "external"),
             auth_methods=auth_methods,
             base_url_env=connection.get("base_url_env", ""),
             default_url=connection.get("default_url", ""),
@@ -414,6 +417,7 @@ class ConnectorManifest:
             "icon": self.icon,
             "color": self.color,
             "version": self.version,
+            "vendor": self.vendor,
             "triggers": [
                 {
                     "id": t.id,

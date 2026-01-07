@@ -33,7 +33,8 @@ import api from '../../lib/api';
 import { playbookEdgeTypes } from '../../components/playbooks/edges';
 import { PlaybookNode } from '../../components/playbooks/nodes';
 import { NodeConfigPanel } from '../../components/playbooks/panels';
-import { ConnectorSection } from '../../components/playbooks/ConnectorSection';
+import { ConnectorSection, Subsection } from '../../components/playbooks/ConnectorSection';
+import { CategorySection } from '../../components/playbooks/CategorySection';
 import { useConnectors } from '../../hooks/useConnectors';
 import { isConnectorNode } from '../../types/connector';
 
@@ -166,11 +167,11 @@ const PlaybookEditor: React.FC = () => {
   const [editorLock, setEditorLock] = useState<EditorLock | null>(null);
   const [isLocked, setIsLocked] = useState(false);
   const [_selectedNode, setSelectedNode] = useState<string | null>(null);
+  // Top-level category expansion state (General, PenguinTech, External, and connectors)
   const [expandedCategories, setExpandedCategories] = useState<Record<string, boolean>>({
-    triggers: true,
-    transforms: true,
-    conditionals: true,
-    actions: true,
+    general: true,
+    penguintech: true,
+    external: false,
   });
 
   // Connector subsection expansion state (e.g., "waddlebot-triggers": true)
@@ -690,209 +691,155 @@ const PlaybookEditor: React.FC = () => {
         {/* Left panel - Node palette */}
         <div className="w-64 bg-ice-navy-800 border-r border-ice-navy-700 overflow-y-auto">
           <div className="p-4 space-y-2">
-            {/* Triggers Category */}
-            <div className="category-section">
-              <button
-                onClick={() => toggleCategory('triggers')}
-                className="w-full flex items-center gap-2 px-3 py-2 rounded-lg bg-ice-navy-700 hover:bg-ice-navy-600 text-ice-navy-200 hover:text-white transition-colors font-medium text-sm"
-              >
-                <svg
-                  className={`w-4 h-4 flex-shrink-0 transition-transform duration-200 ${
-                    expandedCategories.triggers ? 'rotate-90' : ''
-                  }`}
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
+            {/* ============================================================ */}
+            {/* GENERAL - Built-in nodes (Triggers, Transforms, etc.)        */}
+            {/* ============================================================ */}
+            <CategorySection
+              name="General"
+              icon="⚡"
+              color="#D4AF37"
+              count={triggers.length + transforms.length + conditionals.length + actions.length}
+              expanded={expandedCategories.general ?? true}
+              onToggle={() => toggleCategory('general')}
+            >
+              {/* Triggers subsection */}
+              <Subsection
+                title="Triggers"
+                category="triggers"
+                items={triggers.map(t => ({ id: t.id, name: t.label, icon: t.icon, description: t.description }))}
+                connectorId="general"
+                connectorIcon="⚡"
+                connectorColor="#D4AF37"
+                expanded={expandedConnectorSubsections['general-triggers'] ?? false}
+                onToggle={() => toggleConnectorSubsection('general-triggers')}
+                onDragStart={onDragStart}
+              />
+
+              {/* Transforms subsection */}
+              <Subsection
+                title="Transforms"
+                category="transforms"
+                items={transforms.map(t => ({ id: t.id, name: t.label, icon: t.icon, description: t.description }))}
+                connectorId="general"
+                connectorIcon="⚡"
+                connectorColor="#D4AF37"
+                expanded={expandedConnectorSubsections['general-transforms'] ?? false}
+                onToggle={() => toggleConnectorSubsection('general-transforms')}
+                onDragStart={onDragStart}
+              />
+
+              {/* Conditionals subsection */}
+              <Subsection
+                title="Conditionals"
+                category="conditionals"
+                items={conditionals.map(c => ({ id: c.id, name: c.label, icon: c.icon, description: c.description }))}
+                connectorId="general"
+                connectorIcon="⚡"
+                connectorColor="#D4AF37"
+                expanded={expandedConnectorSubsections['general-conditionals'] ?? false}
+                onToggle={() => toggleConnectorSubsection('general-conditionals')}
+                onDragStart={onDragStart}
+              />
+
+              {/* Actions subsection */}
+              <Subsection
+                title="Actions"
+                category="actions"
+                items={actions.map(a => ({ id: a.id, name: a.label, icon: a.icon, description: a.description }))}
+                connectorId="general"
+                connectorIcon="⚡"
+                connectorColor="#D4AF37"
+                expanded={expandedConnectorSubsections['general-actions'] ?? false}
+                onToggle={() => toggleConnectorSubsection('general-actions')}
+                onDragStart={onDragStart}
+              />
+            </CategorySection>
+
+            {/* ============================================================ */}
+            {/* PENGUINTECH - Internal products (WaddleBot, Elder, etc.)     */}
+            {/* ============================================================ */}
+            {(() => {
+              const penguintechConnectors = connectors.filter(c => c.vendor === 'penguintech');
+              const penguintechCount = penguintechConnectors.reduce(
+                (sum, c) => sum + c.triggers.length + c.actions.length + c.transforms.length,
+                0
+              );
+              return (
+                <CategorySection
+                  name="PenguinTech"
+                  icon="🐧"
+                  color="#6366F1"
+                  count={penguintechCount}
+                  expanded={expandedCategories.penguintech ?? true}
+                  onToggle={() => toggleCategory('penguintech')}
                 >
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                </svg>
-                <span className="flex-1 text-left">Triggers</span>
-                <span className="inline-flex items-center justify-center w-5 h-5 text-xs bg-green-500/30 text-green-400 rounded-full">
-                  {triggers.length}
-                </span>
-              </button>
-              {expandedCategories.triggers && (
-                <div className="mt-2 space-y-2 pl-2">
-                  {triggers.map((trigger) => (
-                    <div
-                      key={trigger.id}
-                      className="p-3 bg-green-500/10 border border-green-500/30 rounded-lg cursor-move hover:bg-green-500/20 transition-colors group"
-                      draggable
-                      onDragStart={(event) => onDragStart(event, trigger.id, 'triggers')}
-                      title={trigger.description}
-                    >
-                      <div className="flex items-center gap-2">
-                        <span className="text-lg">{trigger.icon}</span>
-                        <span className="text-green-400 text-sm flex-1">{trigger.label}</span>
-                      </div>
-                      <p className="text-ice-navy-400 text-xs mt-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                        {trigger.description}
-                      </p>
+                  {connectorsLoading ? (
+                    <div className="flex items-center justify-center py-4">
+                      <div className="animate-pulse text-ice-navy-400 text-sm">Loading...</div>
                     </div>
-                  ))}
-                </div>
-              )}
-            </div>
+                  ) : penguintechConnectors.length === 0 ? (
+                    <div className="text-ice-navy-500 text-xs px-2 py-2">
+                      No PenguinTech connectors available
+                    </div>
+                  ) : (
+                    penguintechConnectors.map((connector) => (
+                      <ConnectorSection
+                        key={connector.id}
+                        connector={connector}
+                        onDragStart={onDragStart}
+                        expandedSubsections={expandedConnectorSubsections}
+                        onToggleSubsection={toggleConnectorSubsection}
+                        expanded={expandedCategories[connector.id] ?? true}
+                        onToggle={() => toggleCategory(connector.id)}
+                      />
+                    ))
+                  )}
+                </CategorySection>
+              );
+            })()}
 
-            {/* Transforms Category */}
-            <div className="category-section">
-              <button
-                onClick={() => toggleCategory('transforms')}
-                className="w-full flex items-center gap-2 px-3 py-2 rounded-lg bg-ice-navy-700 hover:bg-ice-navy-600 text-ice-navy-200 hover:text-white transition-colors font-medium text-sm"
-              >
-                <svg
-                  className={`w-4 h-4 flex-shrink-0 transition-transform duration-200 ${
-                    expandedCategories.transforms ? 'rotate-90' : ''
-                  }`}
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
+            {/* ============================================================ */}
+            {/* EXTERNAL - Third-party integrations                          */}
+            {/* ============================================================ */}
+            {(() => {
+              const externalConnectors = connectors.filter(c => c.vendor !== 'penguintech');
+              const externalCount = externalConnectors.reduce(
+                (sum, c) => sum + c.triggers.length + c.actions.length + c.transforms.length,
+                0
+              );
+              return (
+                <CategorySection
+                  name="External"
+                  icon="🔌"
+                  color="#10B981"
+                  count={externalCount}
+                  expanded={expandedCategories.external ?? false}
+                  onToggle={() => toggleCategory('external')}
                 >
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                </svg>
-                <span className="flex-1 text-left">Transforms</span>
-                <span className="inline-flex items-center justify-center w-5 h-5 text-xs bg-blue-500/30 text-blue-400 rounded-full">
-                  {transforms.length}
-                </span>
-              </button>
-              {expandedCategories.transforms && (
-                <div className="mt-2 space-y-2 pl-2">
-                  {transforms.map((transform) => (
-                    <div
-                      key={transform.id}
-                      className="p-3 bg-blue-500/10 border border-blue-500/30 rounded-lg cursor-move hover:bg-blue-500/20 transition-colors group"
-                      draggable
-                      onDragStart={(event) => onDragStart(event, transform.id, 'transforms')}
-                      title={transform.description}
-                    >
-                      <div className="flex items-center gap-2">
-                        <span className="text-lg">{transform.icon}</span>
-                        <span className="text-blue-400 text-sm flex-1">{transform.label}</span>
-                      </div>
-                      <p className="text-ice-navy-400 text-xs mt-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                        {transform.description}
-                      </p>
+                  {connectorsLoading ? (
+                    <div className="flex items-center justify-center py-4">
+                      <div className="animate-pulse text-ice-navy-400 text-sm">Loading...</div>
                     </div>
-                  ))}
-                </div>
-              )}
-            </div>
-
-            {/* Conditionals Category */}
-            <div className="category-section">
-              <button
-                onClick={() => toggleCategory('conditionals')}
-                className="w-full flex items-center gap-2 px-3 py-2 rounded-lg bg-ice-navy-700 hover:bg-ice-navy-600 text-ice-navy-200 hover:text-white transition-colors font-medium text-sm"
-              >
-                <svg
-                  className={`w-4 h-4 flex-shrink-0 transition-transform duration-200 ${
-                    expandedCategories.conditionals ? 'rotate-90' : ''
-                  }`}
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                </svg>
-                <span className="flex-1 text-left">Conditionals</span>
-                <span className="inline-flex items-center justify-center w-5 h-5 text-xs bg-purple-500/30 text-purple-400 rounded-full">
-                  {conditionals.length}
-                </span>
-              </button>
-              {expandedCategories.conditionals && (
-                <div className="mt-2 space-y-2 pl-2">
-                  {conditionals.map((conditional) => (
-                    <div
-                      key={conditional.id}
-                      className="p-3 bg-purple-500/10 border border-purple-500/30 rounded-lg cursor-move hover:bg-purple-500/20 transition-colors group"
-                      draggable
-                      onDragStart={(event) => onDragStart(event, conditional.id, 'conditionals')}
-                      title={conditional.description}
-                    >
-                      <div className="flex items-center gap-2">
-                        <span className="text-lg">{conditional.icon}</span>
-                        <span className="text-purple-400 text-sm flex-1">{conditional.label}</span>
-                      </div>
-                      <p className="text-ice-navy-400 text-xs mt-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                        {conditional.description}
-                      </p>
+                  ) : externalConnectors.length === 0 ? (
+                    <div className="text-ice-navy-500 text-xs px-2 py-2">
+                      No external connectors available
                     </div>
-                  ))}
-                </div>
-              )}
-            </div>
-
-            {/* Actions Category */}
-            <div className="category-section">
-              <button
-                onClick={() => toggleCategory('actions')}
-                className="w-full flex items-center gap-2 px-3 py-2 rounded-lg bg-ice-navy-700 hover:bg-ice-navy-600 text-ice-navy-200 hover:text-white transition-colors font-medium text-sm"
-              >
-                <svg
-                  className={`w-4 h-4 flex-shrink-0 transition-transform duration-200 ${
-                    expandedCategories.actions ? 'rotate-90' : ''
-                  }`}
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                </svg>
-                <span className="flex-1 text-left">Actions</span>
-                <span className="inline-flex items-center justify-center w-5 h-5 text-xs bg-orange-500/30 text-orange-400 rounded-full">
-                  {actions.length}
-                </span>
-              </button>
-              {expandedCategories.actions && (
-                <div className="mt-2 space-y-2 pl-2">
-                  {actions.map((action) => (
-                    <div
-                      key={action.id}
-                      className="p-3 bg-orange-500/10 border border-orange-500/30 rounded-lg cursor-move hover:bg-orange-500/20 transition-colors group"
-                      draggable
-                      onDragStart={(event) => onDragStart(event, action.id, 'actions')}
-                      title={action.description}
-                    >
-                      <div className="flex items-center gap-2">
-                        <span className="text-lg">{action.icon}</span>
-                        <span className="text-orange-400 text-sm flex-1">{action.label}</span>
-                      </div>
-                      <p className="text-ice-navy-400 text-xs mt-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                        {action.description}
-                      </p>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
-
-            {/* Divider between built-in and connectors */}
-            {connectors.length > 0 && (
-              <div className="my-4 border-t border-ice-navy-700">
-                <span className="block text-xs text-ice-navy-500 uppercase tracking-wider mt-3 mb-2 px-1">
-                  Connectors
-                </span>
-              </div>
-            )}
-
-            {/* Connector sections */}
-            {connectorsLoading ? (
-              <div className="flex items-center justify-center py-4">
-                <div className="animate-pulse text-ice-navy-400 text-sm">Loading connectors...</div>
-              </div>
-            ) : (
-              connectors.map((connector) => (
-                <ConnectorSection
-                  key={connector.id}
-                  connector={connector}
-                  onDragStart={onDragStart}
-                  expandedSubsections={expandedConnectorSubsections}
-                  onToggleSubsection={toggleConnectorSubsection}
-                  expanded={expandedCategories[connector.id] ?? false}
-                  onToggle={() => toggleCategory(connector.id)}
-                />
-              ))
-            )}
+                  ) : (
+                    externalConnectors.map((connector) => (
+                      <ConnectorSection
+                        key={connector.id}
+                        connector={connector}
+                        onDragStart={onDragStart}
+                        expandedSubsections={expandedConnectorSubsections}
+                        onToggleSubsection={toggleConnectorSubsection}
+                        expanded={expandedCategories[connector.id] ?? false}
+                        onToggle={() => toggleCategory(connector.id)}
+                      />
+                    ))
+                  )}
+                </CategorySection>
+              );
+            })()}
           </div>
         </div>
 
