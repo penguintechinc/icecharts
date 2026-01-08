@@ -242,18 +242,18 @@ jobs:
 
       - name: Start test environment
         run: |
-          docker-compose -f docker-compose.test.yml up -d
+          docker compose -f docker-compose.test.yml up -d
           echo "Waiting for all services to be healthy..."
           sleep 30
 
       - name: Check service health
         run: |
-          docker-compose -f docker-compose.test.yml ps
+          docker compose -f docker-compose.test.yml ps
 
           # Verify all services are healthy
-          if ! docker-compose -f docker-compose.test.yml ps | grep -q "Up (healthy)"; then
+          if ! docker compose -f docker-compose.test.yml ps | grep -q "Up (healthy)"; then
             echo "Not all services are healthy"
-            docker-compose -f docker-compose.test.yml logs
+            docker compose -f docker-compose.test.yml logs
             exit 1
           fi
 
@@ -271,18 +271,18 @@ jobs:
         if: failure()
         run: |
           echo "=== API Logs ==="
-          docker-compose -f docker-compose.test.yml logs api
+          docker compose -f docker-compose.test.yml logs api
           echo "=== Web Logs ==="
-          docker-compose -f docker-compose.test.yml logs web
+          docker compose -f docker-compose.test.yml logs web
           echo "=== Database Logs ==="
-          docker-compose -f docker-compose.test.yml logs postgres
+          docker compose -f docker-compose.test.yml logs postgres
           echo "=== Redis Logs ==="
-          docker-compose -f docker-compose.test.yml logs redis
+          docker compose -f docker-compose.test.yml logs redis
 
       - name: Cleanup test environment
         if: always()
         run: |
-          docker-compose -f docker-compose.test.yml down -v
+          docker compose -f docker-compose.test.yml down -v
           docker system prune -f
 
   # Security scan with Trivy
