@@ -19,7 +19,6 @@ import {
   addEdge,
   useNodesState,
   useEdgesState,
-  useReactFlow,
   type Node,
   type Edge,
   type Connection,
@@ -160,7 +159,7 @@ const PlaybookEditor: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const reactFlowWrapper = useRef<HTMLDivElement>(null);
-  const { screenToFlowPosition } = useReactFlow();
+  const reactFlowInstance = useRef<any>(null);
 
   const [playbook, setPlaybook] = useState<Playbook | null>(null);
   const [loading, setLoading] = useState(true);
@@ -334,10 +333,13 @@ const PlaybookEditor: React.FC = () => {
 
       // Calculate position using ReactFlow's coordinate transformation
       // This correctly handles zoom and pan transformations
-      const position = screenToFlowPosition({
+      const position = reactFlowInstance.current?.screenToFlowPosition({
         x: event.clientX,
         y: event.clientY,
-      });
+      }) || {
+        x: event.clientX,
+        y: event.clientY,
+      };
 
       // Find the node label from the definition
       let nodeLabel = nodeType;
@@ -414,7 +416,7 @@ const PlaybookEditor: React.FC = () => {
 
       setNodes((nds) => nds.concat(newNode));
     },
-    [screenToFlowPosition, setNodes, triggers, transforms, conditionals, actions, connectors]
+    [setNodes, triggers, transforms, conditionals, actions, connectors]
   );
 
   useEffect(() => {
@@ -861,6 +863,7 @@ const PlaybookEditor: React.FC = () => {
               onConnect={onConnect}
               onNodeClick={onNodeClick}
               onPaneClick={onPaneClick}
+              onInit={(instance) => { reactFlowInstance.current = instance; }}
               edgeTypes={playbookEdgeTypes}
               defaultEdgeOptions={defaultEdgeOptions}
               connectionMode={ConnectionMode.Loose}
