@@ -73,10 +73,10 @@ jobs:
       matrix:
         service:
           - name: flask-backend
-            context: services/flask-backend
+            context: .
             dockerfile: services/flask-backend/Dockerfile
           - name: webui
-            context: services/webui
+            context: .
             dockerfile: services/webui/Dockerfile
 
     steps:
