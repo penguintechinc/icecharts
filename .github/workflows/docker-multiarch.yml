@@ -76,7 +76,7 @@ jobs:
             context: .
             dockerfile: services/flask-backend/Dockerfile
           - name: webui
-            context: .
+            context: services/webui
             dockerfile: services/webui/Dockerfile
 
     steps:
