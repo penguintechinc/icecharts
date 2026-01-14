@@ -55,7 +55,7 @@ trap cleanup EXIT
 # Configuration
 API_URL="${API_URL:-http://localhost:5001}"
 WEB_URL="${WEB_URL:-http://localhost:3000}"
-ADMIN_EMAIL="${ADMIN_EMAIL:-admin@localhost}"
+ADMIN_EMAIL="${ADMIN_EMAIL:-admin@localhost.local}"
 ADMIN_PASS="${ADMIN_PASS:-admin123}"
 MAX_WAIT="${MAX_WAIT:-180}"
 KEEP_RUNNING="${KEEP_RUNNING:-false}"

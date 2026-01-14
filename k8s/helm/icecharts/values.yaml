@@ -55,7 +55,7 @@ secrets:
     secretKey: "changeme-flask-secret-key-in-production"
     securityPasswordSalt: "changeme-salt-in-production"
     jwtSecretKey: "changeme-jwt-secret-in-production"
-    defaultAdminEmail: "admin@icecharts.local"
+    defaultAdminEmail: "admin@localhost.local"
     defaultAdminPassword: "admin123"
     licenseKey: ""
     googleClientId: ""

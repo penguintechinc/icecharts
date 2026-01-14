@@ -149,7 +149,7 @@ docker-compose up -d
 # Access the application
 # Web UI: http://localhost:3000
 # API: http://localhost:5001
-# Default credentials: admin@localhost / admin123
+# Default credentials: admin@localhost.local / admin123
 ```
 
 ### Local Development Setup

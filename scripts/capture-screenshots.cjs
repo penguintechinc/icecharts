@@ -52,7 +52,7 @@ async function captureScreenshots() {
   const inputs = await page.$$('input');
   console.log(`Found ${inputs.length} input fields`);
   if (inputs.length >= 2) {
-    await inputs[0].type('admin@localhost');  // Email field
+    await inputs[0].type('admin@localhost.local');  // Email field
     await inputs[1].type('admin123');                // Password field
   }
 

@@ -676,7 +676,7 @@ docker-compose exec api python -c "from app.models import init_db; init_db()"
 # Create default admin user
 docker-compose exec api python -c "
 from app.models import create_admin_user
-create_admin_user('admin@icecharts.local', 'SecurePassword123!')
+create_admin_user('admin@localhost.local', 'SecurePassword123!')
 "
 ```
 

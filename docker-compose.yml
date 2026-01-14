@@ -102,7 +102,7 @@ services:
       - MINIO_SECURE=${MINIO_SECURE:-false}
 
       # Application Configuration
-      - DEFAULT_ADMIN_EMAIL=${DEFAULT_ADMIN_EMAIL:-admin@localhost}
+      - DEFAULT_ADMIN_EMAIL=${DEFAULT_ADMIN_EMAIL:-admin@localhost.local}
       - DEFAULT_ADMIN_PASSWORD=${DEFAULT_ADMIN_PASSWORD:-admin123}
       - WEBUI_PORT=${WEB_PORT:-3080}
       - CORS_ORIGINS=${CORS_ORIGINS:-http://localhost:3000}

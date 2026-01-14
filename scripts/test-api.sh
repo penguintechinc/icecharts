@@ -3,7 +3,7 @@
 set -e
 
 API_URL="${API_URL:-http://localhost:5001}"
-ADMIN_EMAIL="${ADMIN_EMAIL:-admin@localhost}"
+ADMIN_EMAIL="${ADMIN_EMAIL:-admin@localhost.local}"
 ADMIN_PASS="${ADMIN_PASS:-admin123}"
 
 echo "=== API Tests ==="
