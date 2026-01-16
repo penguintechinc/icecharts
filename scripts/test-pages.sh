@@ -1,10 +1,20 @@
 #!/bin/bash
-# Test page/tab loads
+# Test page/tab loads for both alpha (local) and beta (k8s) environments
 set -e
 
-WEB_URL="${WEB_URL:-http://localhost:3000}"
+# Environment detection
+TEST_ENV="${TEST_ENV:-alpha}"
 
-echo "=== Page Load Tests ==="
+if [ "$TEST_ENV" = "beta" ]; then
+  # Beta environment (k8s cluster at icecharts.penguintech.io)
+  WEB_URL="${WEB_URL:-https://icecharts.penguintech.io}"
+else
+  # Alpha environment (local docker-compose)
+  WEB_URL="${WEB_URL:-http://localhost:3000}"
+fi
+
+echo "=== Page Load Smoke Tests ==="
+echo "Environment: $TEST_ENV"
 echo "Target: $WEB_URL"
 echo ""
 

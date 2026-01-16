@@ -1,12 +1,24 @@
 #!/bin/bash
-# Test API endpoints
+# Test API endpoints for both alpha (local) and beta (k8s) environments
 set -e
 
-API_URL="${API_URL:-http://localhost:5001}"
-ADMIN_EMAIL="${ADMIN_EMAIL:-admin@localhost.local}"
-ADMIN_PASS="${ADMIN_PASS:-admin123}"
+# Environment detection
+TEST_ENV="${TEST_ENV:-alpha}"
 
-echo "=== API Tests ==="
+if [ "$TEST_ENV" = "beta" ]; then
+  # Beta environment (k8s cluster at icecharts.penguintech.io)
+  API_URL="${API_URL:-https://icecharts.penguintech.io}"
+  ADMIN_EMAIL="${ADMIN_EMAIL:-admin@localhost.local}"
+  ADMIN_PASS="${ADMIN_PASS:-admin123}"
+else
+  # Alpha environment (local docker-compose)
+  API_URL="${API_URL:-http://localhost:5001}"
+  ADMIN_EMAIL="${ADMIN_EMAIL:-admin@localhost.local}"
+  ADMIN_PASS="${ADMIN_PASS:-admin123}"
+fi
+
+echo "=== API Smoke Tests ==="
+echo "Environment: $TEST_ENV"
 echo "Target: $API_URL"
 echo ""
 

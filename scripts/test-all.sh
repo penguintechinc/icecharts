@@ -53,32 +53,52 @@ cleanup() {
 trap cleanup EXIT
 
 # Configuration
-API_URL="${API_URL:-http://localhost:5001}"
-WEB_URL="${WEB_URL:-http://localhost:3000}"
-ADMIN_EMAIL="${ADMIN_EMAIL:-admin@localhost.local}"
-ADMIN_PASS="${ADMIN_PASS:-admin123}"
+TEST_ENV="${TEST_ENV:-alpha}"
+
+if [ "$TEST_ENV" = "beta" ]; then
+  # Beta environment (k8s cluster at icecharts.penguintech.io)
+  API_URL="${API_URL:-https://icecharts.penguintech.io}"
+  WEB_URL="${WEB_URL:-https://icecharts.penguintech.io}"
+  ADMIN_EMAIL="${ADMIN_EMAIL:-admin@localhost.local}"
+  ADMIN_PASS="${ADMIN_PASS:-admin123}"
+  SKIP_BUILD="${SKIP_BUILD:-true}"  # Skip docker builds for beta testing
+else
+  # Alpha environment (local docker-compose)
+  API_URL="${API_URL:-http://localhost:5001}"
+  WEB_URL="${WEB_URL:-http://localhost:3000}"
+  ADMIN_EMAIL="${ADMIN_EMAIL:-admin@localhost.local}"
+  ADMIN_PASS="${ADMIN_PASS:-admin123}"
+  SKIP_BUILD="${SKIP_BUILD:-false}"
+fi
+
 MAX_WAIT="${MAX_WAIT:-180}"
 KEEP_RUNNING="${KEEP_RUNNING:-false}"
 
 log_step "IceCharts Comprehensive Test Suite"
+echo "Environment: $TEST_ENV"
 echo "Timestamp: $(date)"
 echo "Logs: $LOG_DIR"
 echo ""
 
-# Step 1: Stop existing containers
-log_step "Step 1/7: Stopping existing containers..."
-cd "$PROJECT_ROOT"
-docker-compose down >> "${LOG_DIR}/docker-down.log" 2>&1 || true
-log_success "Containers stopped"
-
-# Step 2: Build containers
-log_step "Step 2/7: Building containers with docker-compose..."
-if docker-compose up -d --build > "${LOG_DIR}/docker-build.log" 2>&1; then
-    log_success "Container build completed"
+if [ "$SKIP_BUILD" = "true" ]; then
+    log_step "Skipping docker build (testing remote environment)"
+    log_warn "Testing against: API=$API_URL, WEB=$WEB_URL"
 else
-    log_error "Container build failed - see ${LOG_DIR}/docker-build.log"
-    cat "${LOG_DIR}/docker-build.log"
-    exit 1
+    # Step 1: Stop existing containers
+    log_step "Step 1/7: Stopping existing containers..."
+    cd "$PROJECT_ROOT"
+    docker-compose down >> "${LOG_DIR}/docker-down.log" 2>&1 || true
+    log_success "Containers stopped"
+
+    # Step 2: Build containers
+    log_step "Step 2/7: Building containers with docker-compose..."
+    if docker-compose up -d --build > "${LOG_DIR}/docker-build.log" 2>&1; then
+        log_success "Container build completed"
+    else
+        log_error "Container build failed - see ${LOG_DIR}/docker-build.log"
+        cat "${LOG_DIR}/docker-build.log"
+        exit 1
+    fi
 fi
 
 # Step 3: Wait for services to be healthy
@@ -111,19 +131,23 @@ wait_for_service "$WEB_URL" "WebUI" || exit 1
 log_step "Capturing container logs..."
 docker-compose logs > "${LOG_DIR}/docker-logs.log" 2>&1
 
-# Step 4: Run frontend build test
-log_step "Step 4/7: Running frontend build test..."
-if bash "$PROJECT_ROOT/scripts/test-build.sh" > "${LOG_DIR}/test-build.log" 2>&1; then
-    log_success "Frontend build test passed"
+# Step 4: Run frontend build test (skip for beta)
+if [ "$SKIP_BUILD" = "false" ]; then
+    log_step "Step 4/7: Running frontend build test..."
+    if bash "$PROJECT_ROOT/scripts/test-build.sh" > "${LOG_DIR}/test-build.log" 2>&1; then
+        log_success "Frontend build test passed"
+    else
+        log_error "Frontend build test failed - see ${LOG_DIR}/test-build.log"
+        cat "${LOG_DIR}/test-build.log"
+        exit 1
+    fi
 else
-    log_error "Frontend build test failed - see ${LOG_DIR}/test-build.log"
-    cat "${LOG_DIR}/test-build.log"
-    exit 1
+    log_step "Step 4/7: Skipping frontend build test (beta environment)"
 fi
 
 # Step 5: Run API tests
 log_step "Step 5/7: Running API endpoint tests..."
-export API_URL ADMIN_EMAIL ADMIN_PASS
+export TEST_ENV API_URL ADMIN_EMAIL ADMIN_PASS
 if bash "$PROJECT_ROOT/scripts/test-api.sh" > "${LOG_DIR}/test-api.log" 2>&1; then
     log_success "API tests passed"
     # Show summary
@@ -136,7 +160,7 @@ fi
 
 # Step 6: Run page load tests
 log_step "Step 6/7: Running page/tab load tests..."
-export WEB_URL
+export TEST_ENV WEB_URL
 if bash "$PROJECT_ROOT/scripts/test-pages.sh" > "${LOG_DIR}/test-pages.log" 2>&1; then
     log_success "Page load tests passed"
     # Show summary
