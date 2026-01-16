@@ -215,25 +215,8 @@ def _create_default_admin(app: Flask) -> None:
         try:
             db = get_db()
 
-            # Force table creation for lazy tables by accessing them
-            # This ensures the underlying database tables are created
-            _ = db.tenants
-            _ = db.identities
-
-            # Ensure default tenant exists (required for foreign key constraint)
-            tenant_count = db(db.tenants).count()
-            if tenant_count == 0:
-                logger.info("creating_default_tenant")
-                db.tenants.insert(
-                    name="Default Organization",
-                    slug="default",
-                    subscription_tier="community",
-                    is_active=True,
-                )
-                db.commit()
-                logger.info("default_tenant_created")
-
-            user_count = db(db.identities).count()
+            # Check if any users exist
+            user_count = db(db.users).count()
 
             if user_count == 0:
                 admin_email = os.getenv("DEFAULT_ADMIN_EMAIL", "admin@localhost.local")

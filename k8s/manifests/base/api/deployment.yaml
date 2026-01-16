@@ -42,8 +42,8 @@ spec:
 
       containers:
       - name: api
-        image: icecharts-api:latest  # Update to your actual image registry
-        imagePullPolicy: IfNotPresent
+        image: registry-dal2.penguintech.io/icecharts/api:v1.0.3
+        imagePullPolicy: Always
         ports:
         - name: http
           containerPort: 5000
