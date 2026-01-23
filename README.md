@@ -106,6 +106,7 @@ IceCharts is a modern, web-based collaborative diagramming platform designed for
 - **Dependency visualization** showing relationships between infrastructure elements
 - **Live sync** with infrastructure definitions
 
+<<<<<<< HEAD
 ### IceRuns - Serverless Functions
 - **Multi-language runtime support** (Python, Node.js, Go, Ruby, Bash, PowerShell, Rust)
 - **Function management** with versioning and rollback
@@ -113,6 +114,14 @@ IceCharts is a modern, web-based collaborative diagramming platform designed for
 - **Container isolation** with resource limits and security hardening
 - **Real-time execution tracking** with WebSocket support
 - **See [IceRuns Documentation](docs/iceruns/README.md) for complete guide**
+=======
+### Workflow Automation (IceStreams)
+- **Visual workflow editor** with drag-and-drop node canvas
+- **Connector Framework** for integrating external services
+- **WaddleBot integration** for chat bot automation (Twitch, Discord, Slack, Kick)
+- **Triggers, Actions, and Transforms** for building automation pipelines
+- **Schema-driven configuration** for easy node setup
+>>>>>>> origin/v1.0.X
 
 ### Enterprise Security
 - **User authentication & authorization** with role-based access control (RBAC)
@@ -150,7 +159,7 @@ docker-compose up -d
 # Access the application
 # Web UI: http://localhost:3000
 # API: http://localhost:5001
-# Default credentials: admin@localhost / admin123
+# Default credentials: admin@localhost.local / admin123
 ```
 
 ### Local Development Setup
@@ -182,6 +191,10 @@ Comprehensive documentation is available in the [docs/](docs/) directory:
   - [Comments System](docs/COMMENTS_SYSTEM.md)
   - [Export Functionality](docs/EXPORT_FUNCTIONALITY.md)
   - [Elder Integration](docs/ELDER_INTEGRATION.md)
+- **[Connector Framework](docs/CONNECTORS.md)** - External service integration guide
+  - [Creating Connectors](docs/CONNECTORS.md#creating-a-new-connector)
+  - [WaddleBot Integration](docs/CONNECTORS.md#waddlebot)
+  - [Manifest Schema Reference](docs/CONNECTORS.md#manifest-schema-reference)
 - **[Kubernetes Deployment](docs/KUBERNETES.md)** - Helm charts, Kustomize manifests, and cloud deployments (AWS/GCP/Azure)
 - **[Deployment](docs/DEPLOYMENT.md)** - Deployment guides and best practices
 - **[Contributing](docs/CONTRIBUTING.md)** - Development guidelines and workflow

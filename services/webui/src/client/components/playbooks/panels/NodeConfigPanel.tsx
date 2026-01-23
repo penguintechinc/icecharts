@@ -1,5 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import type { Node } from '@xyflow/react';
+import { ConnectorConfigPanel } from './ConnectorConfigPanel';
+import { useConnectorNodeSchema } from '../../../hooks/useConnectors';
+import { isConnectorNode } from '../../../types/connector';
 
 interface NodeConfigPanelProps {
   node: Node | null;
@@ -92,6 +95,14 @@ const CheckboxField: React.FC<CheckboxFieldProps> = ({ label, checked, onChange 
 const NodeConfigPanel: React.FC<NodeConfigPanelProps> = ({ node, onClose, onUpdate }) => {
   const [config, setConfig] = useState<Record<string, any>>({});
 
+  // Get node type from data
+  const nodeType = (node?.data as { nodeType?: string })?.nodeType || '';
+
+  // Fetch connector node schema if this is a connector node
+  const { configSchema, loading: schemaLoading } = useConnectorNodeSchema(
+    isConnectorNode(nodeType) ? nodeType : null
+  );
+
   useEffect(() => {
     if (node?.data) {
       setConfig(node.data.config || {});
@@ -100,16 +111,38 @@ const NodeConfigPanel: React.FC<NodeConfigPanelProps> = ({ node, onClose, onUpda
 
   if (!node) return null;
 
-  const nodeData = node.data as { label: string; nodeType: string; category: string };
+  const nodeData = node.data as {
+    label: string;
+    nodeType: string;
+    category: string;
+    connectorId?: string;
+    connectorColor?: string;
+  };
 
-  // Get category color
+  // Get category color - use connector color if available
   const getCategoryColor = () => {
+    // If it's a connector node with a custom color, use it
+    if (nodeData.connectorColor) {
+      return ''; // We'll use inline style instead
+    }
     switch (nodeData.category) {
       case 'triggers': return 'text-green-400 border-green-500';
       case 'conditionals': return 'text-purple-400 border-purple-500';
       case 'actions': return 'text-orange-400 border-orange-500';
       default: return 'text-blue-400 border-blue-500';
     }
+  };
+
+  // Get header style for connector nodes
+  const getHeaderStyle = () => {
+    if (nodeData.connectorColor) {
+      return {
+        borderLeftWidth: '4px',
+        borderLeftColor: nodeData.connectorColor,
+        color: nodeData.connectorColor,
+      };
+    }
+    return {};
   };
 
   const handleSave = () => {
@@ -125,6 +158,26 @@ const NodeConfigPanel: React.FC<NodeConfigPanelProps> = ({ node, onClose, onUpda
   // Render config fields based on node type
   const renderConfigFields = () => {
     const nodeType = nodeData.nodeType;
+
+    // === CONNECTOR NODES - Use schema-driven config panel ===
+    if (isConnectorNode(nodeType)) {
+      if (schemaLoading) {
+        return (
+          <div className="animate-pulse text-ice-navy-400 text-sm">
+            Loading configuration...
+          </div>
+        );
+      }
+
+      return (
+        <ConnectorConfigPanel
+          schema={configSchema}
+          config={config}
+          onConfigChange={updateConfig}
+          connectorColor={nodeData.connectorColor}
+        />
+      );
+    }
 
     // === TRIGGERS ===
     if (nodeType === 'trigger_webhook') {
@@ -299,9 +352,14 @@ const NodeConfigPanel: React.FC<NodeConfigPanelProps> = ({ node, onClose, onUpda
   return (
     <div className="w-80 bg-ice-navy-900 border-l border-ice-navy-700 h-full overflow-y-auto">
       {/* Header */}
-      <div className={`p-4 border-b border-ice-navy-700 ${getCategoryColor()}`}>
+      <div
+        className={`p-4 border-b border-ice-navy-700 ${getCategoryColor()}`}
+        style={getHeaderStyle()}
+      >
         <div className="flex items-center justify-between">
-          <h3 className="font-semibold">{nodeData.label}</h3>
+          <h3 className="font-semibold" style={nodeData.connectorColor ? { color: 'white' } : {}}>
+            {nodeData.label}
+          </h3>
           <button
             onClick={onClose}
             className="text-ice-navy-400 hover:text-white"
@@ -311,7 +369,9 @@ const NodeConfigPanel: React.FC<NodeConfigPanelProps> = ({ node, onClose, onUpda
             </svg>
           </button>
         </div>
-        <p className="text-xs text-ice-navy-400 mt-1 capitalize">{nodeData.category}</p>
+        <p className="text-xs text-ice-navy-400 mt-1 capitalize">
+          {nodeData.connectorId ? `${nodeData.connectorId} / ${nodeData.category}` : nodeData.category}
+        </p>
       </div>
 
       {/* Config Form */}

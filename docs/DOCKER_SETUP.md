@@ -213,7 +213,7 @@ curl http://localhost:4000/healthz
 ## Web Access
 
 - URL: http://localhost:3000
-- Default Admin: `admin@icecharts.local` / `admin123`
+- Default Admin: `admin@localhost.local` / `admin123`
 
 ## Environment Variables
 

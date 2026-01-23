@@ -275,11 +275,15 @@ def create_playbook(validated_data: CreatePlaybookRequest):
         db.commit()
 
         # Create initial version with canvas data
+        # Extract nodes and edges from canvas_data for database columns
+        canvas = validated_data.canvas_data or {"nodes": [], "edges": []}
         db.playbook_versions.insert(
             playbook_id=playbook_id,
             version_number=1,
             created_by_id=user_id,
-            canvas_json=validated_data.canvas_data,
+            nodes_json=canvas.get("nodes", []),
+            edges_json=canvas.get("edges", []),
+            canvas_json=canvas,
             change_summary="Initial version",
         )
         db.commit()
@@ -392,11 +396,15 @@ def update_playbook(playbook_id: str, validated_data: UpdatePlaybookRequest):
             )
 
             new_version = max_version + 1
+            # Extract nodes and edges from canvas_data for database columns
+            canvas = validated_data.canvas_data
             db.playbook_versions.insert(
                 playbook_id=playbook_id,
                 version_number=new_version,
                 created_by_id=user_id,
-                canvas_json=validated_data.canvas_data,
+                nodes_json=canvas.get("nodes", []),
+                edges_json=canvas.get("edges", []),
+                canvas_json=canvas,
                 change_summary="Updated",
             )
             db.commit()
@@ -534,11 +542,15 @@ def duplicate_playbook(playbook_id: str):
 
         # Copy version
         if version:
+            # Extract nodes and edges from canvas_json for database columns
+            canvas = version.canvas_json or {"nodes": [], "edges": []}
             db.playbook_versions.insert(
                 playbook_id=new_playbook_id,
                 version_number=1,
                 created_by_id=user_id,
-                canvas_json=version.canvas_json,
+                nodes_json=canvas.get("nodes", []),
+                edges_json=canvas.get("edges", []),
+                canvas_json=canvas,
                 change_summary="Duplicated from playbook",
             )
             db.commit()

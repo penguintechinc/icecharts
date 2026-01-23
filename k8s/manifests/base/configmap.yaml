@@ -65,7 +65,7 @@ data:
   JWT_REFRESH_TOKEN_EXPIRES: "2592000"
 
   # Default Admin User
-  DEFAULT_ADMIN_EMAIL: "admin@icecharts.local"
+  DEFAULT_ADMIN_EMAIL: "admin@localhost.local"
 
   # CORS Configuration
   CORS_ORIGINS: "http://localhost:3000"

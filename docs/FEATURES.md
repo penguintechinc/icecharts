@@ -8,6 +8,8 @@ Comprehensive guide to all features in IceCharts.
 - [Real-Time Collaboration](#real-time-collaboration)
 - [Comments System](#comments-system)
 - [Export & Sharing](#export--sharing)
+- [Workflow Automation](#workflow-automation)
+- [Connector Framework](#connector-framework)
 - [Elder Integration](#elder-integration)
 - [Team Management](#team-management)
 - [User Roles & Permissions](#user-roles--permissions)
@@ -321,6 +323,95 @@ The Comments System enables rich feedback and collaborative design review.
 - Kept for 30 days (or custom duration)
 - Labeled with timestamp and author
 - Automatic cleanup of old versions
+
+---
+
+## Workflow Automation
+
+IceCharts includes IceStreams, a visual workflow automation system for building data pipelines and automation flows.
+
+### Playbook Editor
+
+The Playbook Editor provides a drag-and-drop canvas for creating workflows:
+
+**Key Features**:
+- **Visual node-based editor** using ReactFlow
+- **Drag-and-drop** nodes from the left palette
+- **Smart connectors** with directional flow visualization
+- **Real-time save** with auto-save support
+- **Editor locking** to prevent concurrent editing conflicts
+
+**Node Categories**:
+
+| Category | Description | Examples |
+|----------|-------------|----------|
+| **Triggers** | Entry points that start workflows | Manual, Webhook, Schedule, gRPC |
+| **Transforms** | Data manipulation and processing | JSON Transform, Filter, Split, Merge, Ask AI |
+| **Conditionals** | Logic and control flow | If/Then, Switch, For Each, While, Equals |
+| **Actions** | Execute operations | HTTP Request, gRPC Call, Log, Lambda, MCP Call |
+
+**Creating a Workflow**:
+1. Navigate to **Playbooks** in the sidebar
+2. Click **New Playbook**
+3. Drag nodes from the left palette onto the canvas
+4. Connect nodes by dragging from output handles to input handles
+5. Click nodes to configure their settings
+6. Click **Save** to persist your workflow
+
+### Node Configuration
+
+Each node has configurable settings accessible via the right panel:
+
+**Common Configuration Options**:
+- **Trigger nodes**: Webhook paths, cron expressions, platforms
+- **Transform nodes**: Field mappings, filter conditions, expressions
+- **Conditional nodes**: Comparison operators, switch values
+- **Action nodes**: HTTP methods, URLs, headers, body templates
+
+**Variable Interpolation**:
+Use `{{...}}` syntax to reference data from previous nodes:
+- `{{input.field}}` - Access input data
+- `{{config.value}}` - Access configuration values
+
+---
+
+## Connector Framework
+
+The Connector Framework enables integration with external services through a modular, plugin-style architecture.
+
+See [CONNECTORS.md](CONNECTORS.md) for complete documentation.
+
+### Available Connectors
+
+**WaddleBot** - Chat bot platform for Twitch, Discord, Slack, Kick
+
+| Type | Count | Examples |
+|------|-------|----------|
+| Triggers | 4 | Chat Command, Stream Event, Chat Message, Webhook |
+| Actions | 15 | Send Chat, Display Media, AI Response, Shoutout |
+| Transforms | 2 | User Lookup, Check Permission |
+
+### Using Connectors
+
+**In the Playbook Editor**:
+1. Scroll down to the **Connectors** section in the left palette
+2. Expand a connector to see its nodes
+3. Drag connector nodes onto the canvas
+4. Configure using the schema-driven config panel
+
+**Viewing Available Connectors**:
+1. Go to **Settings** → **Connectors** tab
+2. View all installed connectors
+3. Expand to see node counts and available actions
+
+### Adding New Connectors
+
+Connectors are defined in YAML manifest files. Adding a new connector requires:
+1. Create a YAML manifest in `services/icestreams-worker/connectors/manifests/`
+2. Define triggers, actions, and transforms with config schemas
+3. Restart the service - connectors are auto-discovered
+
+No code changes required for basic integrations.
 
 ---
 

@@ -55,7 +55,7 @@ secrets:
     secretKey: "changeme-flask-secret-key-in-production"
     securityPasswordSalt: "changeme-salt-in-production"
     jwtSecretKey: "changeme-jwt-secret-in-production"
-    defaultAdminEmail: "admin@icecharts.local"
+    defaultAdminEmail: "admin@localhost.local"
     defaultAdminPassword: "admin123"
     licenseKey: ""
     googleClientId: ""
@@ -171,7 +171,7 @@ postgres:
   resources:
     requests:
       memory: "500Mi"
-      cpu: "250m"
+      cpu: "150m"
     limits:
       memory: "2Gi"
       cpu: "1000m"
@@ -225,7 +225,7 @@ redis:
   resources:
     requests:
       memory: "256Mi"
-      cpu: "100m"
+      cpu: "50m"
     limits:
       memory: "1Gi"
       cpu: "500m"
@@ -278,7 +278,7 @@ minio:
   resources:
     requests:
       memory: "512Mi"
-      cpu: "250m"
+      cpu: "150m"
     limits:
       memory: "2Gi"
       cpu: "1000m"
@@ -386,7 +386,7 @@ api:
   resources:
     requests:
       memory: "512Mi"
-      cpu: "250m"
+      cpu: "150m"
     limits:
       memory: "2Gi"
       cpu: "1000m"
@@ -467,7 +467,7 @@ web:
   resources:
     requests:
       memory: "256Mi"
-      cpu: "100m"
+      cpu: "75m"
     limits:
       memory: "1Gi"
       cpu: "500m"
@@ -604,7 +604,7 @@ monitoring:
     resources:
       requests:
         memory: "512Mi"
-        cpu: "250m"
+        cpu: "150m"
       limits:
         memory: "2Gi"
         cpu: "1000m"

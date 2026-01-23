@@ -1,5 +1,6 @@
 # Project Template - Claude Code Context
 
+<<<<<<< HEAD
 ## 🚫 DO NOT MODIFY THIS FILE OR `.claude/` STANDARDS
 
 **These are centralized template files that will be overwritten when standards are updated.**
@@ -55,6 +56,8 @@
 
 ---
 
+=======
+>>>>>>> origin/v1.0.X
 **⚠️ Important**: Application-specific context should be added to `docs/APP_STANDARDS.md` instead of this file. This allows the template CLAUDE.md to be updated across all projects without losing app-specific information. See `docs/APP_STANDARDS.md` for app-specific architecture, requirements, and context.
 
 ## Project Overview
@@ -102,7 +105,11 @@ This is a comprehensive project template incorporating best practices and patter
 - **JavaScript/TypeScript**: Modern ES2022+ standards
 
 **Go Stack (When Required):**
+<<<<<<< HEAD
 - **Go**: 1.24.x (latest patch version, minimum 1.24.2); Go 1.23.x acceptable as fallback if compatibility constraints exist
+=======
+- **Go**: 1.24.x (latest patch version, minimum 1.24.2)
+>>>>>>> origin/v1.0.X
 - **Database**: Use DAL with PostgreSQL/MySQL cross-support (e.g., GORM, sqlx)
 - Use only for traffic-intensive applications
 

@@ -35,13 +35,17 @@ RUN npm run test -- --run --coverage
 # Stage 4: Build
 FROM dependencies AS builder
 
+# Build arguments for Vite
+ARG VITE_API_URL=""
+ARG VITE_API_BASE_PATH="/api/v1"
+
 WORKDIR /app
 
 # Copy source code
 COPY . .
 
-# Build application
-RUN npm run build
+# Build application with environment variables
+RUN VITE_API_URL=${VITE_API_URL} VITE_API_BASE_PATH=${VITE_API_BASE_PATH} npm run build
 
 # Stage 5: Production
 FROM nginx:1.25 AS production
@@ -78,10 +82,10 @@ RUN chown -R nginx:nginx /usr/share/nginx/html && \
 
 # Add healthcheck
 HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
-    CMD curl -f http://localhost:80/health || exit 1
+    CMD curl -f http://localhost:8080/health || exit 1
 
 # Expose port
-EXPOSE 80
+EXPOSE 8080
 
 # Run as non-root user
 USER nginx

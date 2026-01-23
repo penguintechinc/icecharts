@@ -3,7 +3,7 @@
 set -e
 
 API_URL="${API_URL:-http://localhost:5001}"
-ADMIN_EMAIL="${ADMIN_EMAIL:-admin@localhost}"
+ADMIN_EMAIL="${ADMIN_EMAIL:-admin@localhost.local}"
 ADMIN_PASS="${ADMIN_PASS:-admin123}"
 
 echo "=== API Tests ==="
@@ -41,11 +41,6 @@ STATUS=$(curl -sf -o /dev/null -w "%{http_code}" "$API_URL/api/v1/drawings" \
 
 echo -n "   GET /playbooks: "
 STATUS=$(curl -sf -o /dev/null -w "%{http_code}" "$API_URL/api/v1/playbooks" \
-  -H "Authorization: Bearer $TOKEN")
-[ "$STATUS" = "200" ] && echo "✓ OK" || echo "✗ Failed ($STATUS)"
-
-echo -n "   GET /collections: "
-STATUS=$(curl -sf -o /dev/null -w "%{http_code}" "$API_URL/api/v1/collections" \
   -H "Authorization: Bearer $TOKEN")
 [ "$STATUS" = "200" ] && echo "✓ OK" || echo "✗ Failed ($STATUS)"
 

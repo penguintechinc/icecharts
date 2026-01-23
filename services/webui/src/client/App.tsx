@@ -19,6 +19,9 @@ import LicenseSettings from './pages/Admin/LicenseSettings';
 function App() {
   const { isAuthenticated, isLoading } = useAuth();
 
+  // Build timestamp for verification
+  console.log('IceCharts Build:', new Date().toISOString());
+
   if (isLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-dark-950">
