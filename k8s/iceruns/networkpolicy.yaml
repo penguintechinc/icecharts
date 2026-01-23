@@ -1,0 +1,89 @@
+# IceRuns Network Policy
+# Restricts network traffic to/from invoker pods for security
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: iceruns-invoker-network-policy
+  namespace: iceruns
+  labels:
+    app.kubernetes.io/name: iceruns
+    app.kubernetes.io/component: invoker
+spec:
+  podSelector:
+    matchLabels:
+      app: iceruns-invoker
+  policyTypes:
+  - Ingress
+  - Egress
+
+  ingress:
+  # Allow Prometheus scraping on metrics port
+  - from:
+    - namespaceSelector:
+        matchLabels:
+          name: prometheus
+    ports:
+    - protocol: TCP
+      port: 8080
+
+  # Allow from same namespace (inter-pod communication if needed)
+  - from:
+    - podSelector:
+        matchLabels:
+          app.kubernetes.io/name: iceruns
+
+  egress:
+  # Allow DNS queries
+  - to:
+    - namespaceSelector: {}
+      podSelector:
+        matchLabels:
+          k8s-app: kube-dns
+    ports:
+    - protocol: UDP
+      port: 53
+
+  # Allow outbound to Redis in icecharts namespace
+  - to:
+    - namespaceSelector:
+        matchLabels:
+          name: icecharts
+      podSelector:
+        matchLabels:
+          app: redis
+    ports:
+    - protocol: TCP
+      port: 6379
+
+  # Allow outbound to PostgreSQL in icecharts namespace
+  - to:
+    - namespaceSelector:
+        matchLabels:
+          name: icecharts
+      podSelector:
+        matchLabels:
+          app: postgres
+    ports:
+    - protocol: TCP
+      port: 5432
+
+  # Allow outbound to MinIO in icecharts namespace
+  - to:
+    - namespaceSelector:
+        matchLabels:
+          name: icecharts
+      podSelector:
+        matchLabels:
+          app: minio
+    ports:
+    - protocol: TCP
+      port: 9000
+
+  # Allow outbound to Docker daemon on host (localhost)
+  - to:
+    - podSelector: {}
+    ports:
+    - protocol: TCP
+      port: 2375
+    - protocol: TCP
+      port: 2376

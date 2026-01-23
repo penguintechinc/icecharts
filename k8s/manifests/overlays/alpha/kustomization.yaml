@@ -1,0 +1,93 @@
+# Alpha Environment Overlay for MicroK8s/Local Kubernetes
+# Optimized for alpha testing on local-alpha cluster
+# Usage: kubectl --context local-alpha apply -k overlays/alpha/
+
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+# Reference the base kustomization
+resources:
+  - ../../base
+
+# Override namespace for alpha
+namespace: icecharts-alpha
+
+# Apply patches for alpha environment using new syntax
+patches:
+  # Replica patches
+  - target:
+      kind: Deployment
+      name: api
+    patch: |-
+      - op: replace
+        path: /spec/replicas
+        value: 1
+  - target:
+      kind: Deployment
+      name: web
+    patch: |-
+      - op: replace
+        path: /spec/replicas
+        value: 1
+
+  # Image patches - use alpha tags
+  - target:
+      kind: Deployment
+      name: api
+    patch: |-
+      - op: replace
+        path: /spec/template/spec/containers/0/image
+        value: ghcr.io/penguintech/icecharts-api:alpha
+      - op: replace
+        path: /spec/template/spec/containers/0/imagePullPolicy
+        value: Always
+  - target:
+      kind: Deployment
+      name: web
+    patch: |-
+      - op: replace
+        path: /spec/template/spec/containers/0/image
+        value: ghcr.io/penguintech/icecharts-web:alpha
+      - op: replace
+        path: /spec/template/spec/containers/0/imagePullPolicy
+        value: Always
+
+  # Resource patches for API
+  - target:
+      kind: Deployment
+      name: api
+    patch: |-
+      - op: replace
+        path: /spec/template/spec/containers/0/resources
+        value:
+          requests:
+            memory: "512Mi"
+            cpu: "200m"
+          limits:
+            memory: "1Gi"
+            cpu: "500m"
+
+  # Resource patches for Web
+  - target:
+      kind: Deployment
+      name: web
+    patch: |-
+      - op: replace
+        path: /spec/template/spec/containers/0/resources
+        value:
+          requests:
+            memory: "256Mi"
+            cpu: "100m"
+          limits:
+            memory: "512Mi"
+            cpu: "250m"
+
+# Labels for all resources
+labels:
+  - pairs:
+      environment: alpha
+      managed-by: kustomize
+      cluster: local-alpha
+
+commonAnnotations:
+  description: "Alpha testing environment on local Kubernetes"

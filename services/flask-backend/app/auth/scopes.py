@@ -2,6 +2,12 @@
 
 This module defines available scopes for service accounts and provides
 utility functions for scope validation.
+
+Role-Based Scope Assignments:
+- Admin: All scopes including iceruns:admin, iceflows:admin
+- Maintainer: Standard scopes including iceruns:read, iceruns:write, iceruns:execute, iceruns:logs,
+             iceflows:read, iceflows:write, iceflows:execute, iceflows:approve
+- Viewer: Read-only scopes including iceruns:read, iceruns:logs, iceflows:read
 """
 
 from typing import List, Set
@@ -26,6 +32,20 @@ AVAILABLE_SCOPES = {
     "playbooks:write": "Create, update, and configure playbooks",
     "playbooks:delete": "Delete playbooks",
     "playbooks:execute": "Execute playbooks and manage executions",
+    # IceRuns
+    "iceruns:read": "View IceRuns function definitions and configurations",
+    "iceruns:write": "Create and update IceRuns functions",
+    "iceruns:delete": "Delete IceRuns functions",
+    "iceruns:execute": "Execute IceRuns functions via API or webhook",
+    "iceruns:logs": "View IceRuns execution logs and outputs",
+    "iceruns:admin": "Full administrative access to IceRuns",
+    # IceFlows (CI/CD Pipelines)
+    "iceflows:read": "Read IceFlows pipelines, stages, and execution history",
+    "iceflows:write": "Create and modify IceFlows pipelines and stages",
+    "iceflows:delete": "Delete IceFlows pipelines and related resources",
+    "iceflows:execute": "Trigger IceFlows pipeline executions and promotions",
+    "iceflows:approve": "Approve or reject stage promotion requests",
+    "iceflows:admin": "Full administrative access to IceFlows",
 }
 
 # Convenience scope groups for common use cases
@@ -57,6 +77,38 @@ SCOPE_GROUPS = {
         "templates:read",
         "collections:read",
         "playbooks:read",
+    ],
+    "iceruns_full": [
+        "iceruns:read",
+        "iceruns:write",
+        "iceruns:delete",
+        "iceruns:execute",
+        "iceruns:logs",
+    ],
+    "iceruns_readonly": [
+        "iceruns:read",
+        "iceruns:logs",
+    ],
+    "iceruns_execute_only": [
+        "iceruns:execute",
+    ],
+    "iceflows_full": [
+        "iceflows:read",
+        "iceflows:write",
+        "iceflows:delete",
+        "iceflows:execute",
+        "iceflows:approve",
+    ],
+    "iceflows_admin": [
+        "iceflows:admin",
+    ],
+    "iceflows_operator": [
+        "iceflows:read",
+        "iceflows:execute",
+        "iceflows:approve",
+    ],
+    "iceflows_readonly": [
+        "iceflows:read",
     ],
 }
 

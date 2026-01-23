@@ -78,4 +78,15 @@ def create_app(config_class=None):
             logger.error(f"Readiness check failed: {e}")
             return {"status": "not_ready", "error": str(e)}, 503
 
+    @app.route("/metrics")
+    def metrics_endpoint():
+        """Prometheus metrics endpoint."""
+        try:
+            from prometheus_client import generate_latest
+            from flask import Response
+            return Response(generate_latest(), mimetype='text/plain; version=0.0.4')
+        except Exception as e:
+            logger.error(f"Metrics endpoint error: {e}")
+            return {"error": "Unable to generate metrics"}, 500
+
     return app

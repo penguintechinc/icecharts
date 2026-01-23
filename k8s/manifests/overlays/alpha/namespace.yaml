@@ -1,0 +1,7 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: icecharts-alpha
+  labels:
+    environment: alpha
+    app.kubernetes.io/name: icecharts

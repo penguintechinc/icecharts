@@ -194,6 +194,106 @@ services:
     deploy:
       replicas: ${WORKER_REPLICAS:-1}
 
+  # IceFlows Worker (headless task processor)
+  iceflows-worker:
+    build:
+      context: ./services/iceflows-worker
+      dockerfile: Dockerfile
+    container_name: icecharts-iceflows-worker
+    environment:
+      # Redis Configuration
+      - REDIS_URL=redis://:${REDIS_PASSWORD:-changeme}@redis:6379/0
+
+      # Worker Configuration
+      - ICEFLOWS_WORKER_ID=${ICEFLOWS_WORKER_ID:-iceflows-worker-1}
+      - WORKER_CONCURRENCY=${WORKER_CONCURRENCY:-4}
+
+      # Database Configuration (PyDAL)
+      - DB_TYPE=${DB_TYPE:-postgres}
+      - DB_HOST=postgres
+      - DB_PORT=5432
+      - DB_NAME=${POSTGRES_DB:-icecharts}
+      - DB_USER=${POSTGRES_USER:-icecharts_user}
+      - DB_PASSWORD=${POSTGRES_PASSWORD:-changeme}
+      - DB_POOL_SIZE=${DB_POOL_SIZE:-10}
+
+      # MinIO/S3 Storage Configuration
+      - STORAGE_PROVIDER=${STORAGE_PROVIDER:-minio}
+      - MINIO_ENDPOINT=minio:9000
+      - MINIO_ACCESS_KEY=${MINIO_ROOT_USER:-minioadmin}
+      - MINIO_SECRET_KEY=${MINIO_ROOT_PASSWORD:-minioadmin}
+      - MINIO_BUCKET=${MINIO_BUCKET:-icecharts}
+      - MINIO_SECURE=${MINIO_SECURE:-false}
+
+      # Logging
+      - LOG_LEVEL=${LOG_LEVEL:-info}
+
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    restart: unless-stopped
+    networks:
+      - icecharts-network
+
+  # IceRuns Invoker (serverless function execution)
+  iceruns-invoker:
+    build:
+      context: ./services/iceruns-invoker
+      dockerfile: Dockerfile
+    container_name: icecharts-invoker
+    environment:
+      # Redis Configuration
+      - REDIS_URL=redis://:${REDIS_PASSWORD:-changeme}@redis:6379/0
+
+      # Invoker Configuration
+      - INVOKER_ID=${INVOKER_ID:-invoker-1}
+      - INVOKER_CONCURRENCY=${ICERUNS_INVOKER_CONCURRENCY:-5}
+
+      # Database Configuration (PyDAL)
+      - DB_TYPE=${DB_TYPE:-postgres}
+      - DB_HOST=postgres
+      - DB_PORT=5432
+      - DB_NAME=${POSTGRES_DB:-icecharts}
+      - DB_USER=${POSTGRES_USER:-icecharts_user}
+      - DB_PASSWORD=${POSTGRES_PASSWORD:-changeme}
+      - DB_POOL_SIZE=${DB_POOL_SIZE:-10}
+
+      # MinIO/S3 Storage Configuration
+      - STORAGE_PROVIDER=${STORAGE_PROVIDER:-minio}
+      - MINIO_ENDPOINT=minio:9000
+      - MINIO_ACCESS_KEY=${MINIO_ROOT_USER:-minioadmin}
+      - MINIO_SECRET_KEY=${MINIO_ROOT_PASSWORD:-minioadmin}
+      - MINIO_BUCKET=${MINIO_BUCKET:-icecharts}
+      - MINIO_SECURE=${MINIO_SECURE:-false}
+
+      # Container Execution
+      - WARM_CONTAINER_TTL=${WARM_CONTAINER_TTL:-600}
+      - LOG_LEVEL=${LOG_LEVEL:-info}
+
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      minio:
+        condition: service_healthy
+    restart: unless-stopped
+    networks:
+      - icecharts-network
+    deploy:
+      replicas: ${INVOKER_REPLICAS:-1}
+      resources:
+        limits:
+          cpus: '4.0'
+          memory: 8G
+        reservations:
+          cpus: '1.0'
+          memory: 2G
+
   # Prometheus Monitoring (Optional - disabled by default)
   prometheus:
     image: prom/prometheus:latest

@@ -26,15 +26,7 @@ FROM dependencies AS test
 
 WORKDIR /app
 
-# Install test dependencies
-RUN npm install --save-dev \
-    vitest \
-    @vitest/ui \
-    jsdom \
-    @testing-library/react \
-    @testing-library/user-event
-
-# Copy source code and tests
+# Copy source code and tests (test deps already installed via npm ci)
 COPY . .
 
 # Run tests

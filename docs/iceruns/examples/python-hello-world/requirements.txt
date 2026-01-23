@@ -1,0 +1,2 @@
+# No external dependencies for this simple example
+# Add dependencies here as needed for your function

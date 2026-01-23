@@ -219,8 +219,8 @@ body {
   animation-direction: reverse;
 }
 
-/* Custom animation for edges */
-.react-flow__edge-path {
+/* Custom animation for edges - only animate when animated prop is true */
+.react-flow__edge.animated .react-flow__edge-path {
   stroke-dasharray: 5;
   animation: dashdraw 0.5s linear infinite;
 }
@@ -234,6 +234,6 @@ body {
   }
 }
 
-.animated-reverse .react-flow__edge-path {
+.react-flow__edge.animated.animated-reverse .react-flow__edge-path {
   animation-direction: reverse;
 }

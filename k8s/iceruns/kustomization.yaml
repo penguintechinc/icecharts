@@ -1,0 +1,34 @@
+# IceRuns Kustomization
+# Entry point for deploying IceRuns invoker to Kubernetes
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+namespace: iceruns
+
+# Resources to include
+resources:
+- configmap.yaml
+- secrets.yaml
+- serviceaccount.yaml
+- invoker-deployment.yaml
+- invoker-hpa.yaml
+- service.yaml
+- servicemonitor.yaml
+- poddisruptionbudget.yaml
+- networkpolicy.yaml
+
+# Labels applied to all resources
+commonLabels:
+  app.kubernetes.io/name: iceruns
+  app.kubernetes.io/instance: production
+  app.kubernetes.io/managed-by: kustomize
+
+# Annotations applied to all resources
+commonAnnotations:
+  description: "IceRuns serverless function execution platform"
+  version: "1.0.0"
+
+# Image replacements (for different registries)
+images:
+- name: icecharts/iceruns-invoker
+  newTag: latest

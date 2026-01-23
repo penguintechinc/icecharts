@@ -355,6 +355,49 @@ deploy-production: ## Deploy - Deploy to production environment
 	@$(MAKE) docker-push
 	# Add production deployment commands here
 
+# Alpha Deployment Commands (Local Kubernetes - local-alpha)
+KUBE_CONTEXT ?= local-alpha
+
+deploy-alpha: ## Deploy - Deploy to alpha environment (local-alpha context)
+	@echo "$(BLUE)Deploying to alpha ($(KUBE_CONTEXT))...$(RESET)"
+	@KUBE_CONTEXT=$(KUBE_CONTEXT) ./scripts/deploy-alpha.sh
+
+deploy-alpha-build: ## Deploy - Build and deploy to alpha environment
+	@echo "$(BLUE)Building and deploying to alpha ($(KUBE_CONTEXT))...$(RESET)"
+	@KUBE_CONTEXT=$(KUBE_CONTEXT) ./scripts/deploy-alpha.sh --build
+
+deploy-alpha-test: ## Deploy - Deploy to alpha and run smoke tests
+	@echo "$(BLUE)Deploying to alpha with smoke tests...$(RESET)"
+	@KUBE_CONTEXT=$(KUBE_CONTEXT) ./scripts/deploy-alpha.sh --test
+
+deploy-alpha-full: ## Deploy - Build, deploy and test alpha environment
+	@echo "$(BLUE)Full alpha deployment (build + deploy + test)...$(RESET)"
+	@KUBE_CONTEXT=$(KUBE_CONTEXT) ./scripts/deploy-alpha.sh --build --test
+
+deploy-alpha-local: ## Deploy - Build and deploy alpha locally (no push)
+	@echo "$(BLUE)Local alpha deployment (build only, no push)...$(RESET)"
+	@KUBE_CONTEXT=$(KUBE_CONTEXT) ./scripts/deploy-alpha.sh --build --no-push
+
+test-alpha: ## Testing - Run alpha smoke tests
+	@echo "$(BLUE)Running alpha smoke tests...$(RESET)"
+	@KUBE_CONTEXT=$(KUBE_CONTEXT) ./scripts/test-alpha-smoke.sh
+
+test-alpha-verbose: ## Testing - Run alpha smoke tests (verbose)
+	@echo "$(BLUE)Running alpha smoke tests (verbose)...$(RESET)"
+	@KUBE_CONTEXT=$(KUBE_CONTEXT) ./scripts/test-alpha-smoke.sh --verbose
+
+alpha-status: ## Alpha - Show alpha deployment status
+	@echo "$(BLUE)Alpha deployment status...$(RESET)"
+	@kubectl --context $(KUBE_CONTEXT) get pods -n icecharts-alpha
+	@echo ""
+	@kubectl --context $(KUBE_CONTEXT) get svc -n icecharts-alpha
+
+alpha-logs: ## Alpha - Show alpha deployment logs
+	@kubectl --context $(KUBE_CONTEXT) logs -n icecharts-alpha -l app=api --tail=100 -f
+
+alpha-logs-web: ## Alpha - Show alpha web logs
+	@kubectl --context $(KUBE_CONTEXT) logs -n icecharts-alpha -l app=web --tail=100 -f
+
 # Health Check Commands
 health: ## Health - Check service health
 	@echo "$(BLUE)Checking service health...$(RESET)"

@@ -1,0 +1,27 @@
+# Image patch for alpha environment
+# Uses :alpha tag for testing latest builds
+
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: api
+spec:
+  template:
+    spec:
+      containers:
+      - name: api
+        image: ghcr.io/penguintech/icecharts-api:alpha
+        imagePullPolicy: Always
+
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: web
+spec:
+  template:
+    spec:
+      containers:
+      - name: web
+        image: ghcr.io/penguintech/icecharts-web:alpha
+        imagePullPolicy: Always

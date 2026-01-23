@@ -1,0 +1,28 @@
+# Ingress patch for alpha environment
+# Uses microk8s ingress controller
+
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: icecharts-alpha
+  annotations:
+    kubernetes.io/ingress.class: nginx
+spec:
+  rules:
+    - host: icecharts-alpha.local
+      http:
+        paths:
+          - path: /api
+            pathType: Prefix
+            backend:
+              service:
+                name: api
+                port:
+                  number: 5000
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: web
+                port:
+                  number: 3000

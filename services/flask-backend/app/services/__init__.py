@@ -4,6 +4,7 @@ from .comment_service import CommentService
 from .content_service import ContentService
 from .drawing_service import DrawingService
 from .group_service import GroupService
+from .iceflows_notification_service import IceFlowsNotificationService
 from .permission_service import PermissionService
 from .share_service import ShareService
 
@@ -19,6 +20,7 @@ __all__ = [
     "DrawingService",
     "ExportService",
     "GroupService",
+    "IceFlowsNotificationService",
     "PermissionService",
     "ShareService",
 ]

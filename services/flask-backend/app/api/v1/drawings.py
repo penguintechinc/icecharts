@@ -184,7 +184,7 @@ def create_drawing(validated_data: CreateDrawingRequest):
             user_id=user_id,
             is_public=is_public,
             is_template=is_template,
-            tags=tags,
+            tags=tags if tags else [],  # Ensure tags is always a list, never None
             status="draft",
         )
         db.commit()
@@ -284,7 +284,7 @@ def update_drawing(drawing_id: str, validated_data: UpdateDrawingRequest):
         if validated_data.is_template is not None:
             update_data["is_template"] = validated_data.is_template
         if validated_data.tags is not None:
-            update_data["tags"] = validated_data.tags
+            update_data["tags"] = validated_data.tags if validated_data.tags else []
         if validated_data.status is not None:
             update_data["status"] = validated_data.status
 

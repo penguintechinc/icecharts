@@ -12,7 +12,7 @@ def define_all_tables(db):
 
     Tables are defined in dependency order to satisfy foreign key references.
 
-    IceCharts Tables (23 total):
+    IceCharts Tables (27 total):
     Core Tables:
     1. tenants - Multi-tenant organizations
     2. identities - User accounts (updated: email_verified fields)
@@ -42,6 +42,28 @@ def define_all_tables(db):
     22. email_verifications - Email verification tracking
     23. system_settings - System-wide configuration
     24. share_analytics - Access tracking for shares
+
+    IceRuns Tables (v1.4.0 - Serverless Function Platform):
+    25. iceruns - Function definitions and configurations
+    26. iceruns_executions - Execution history and results
+    27. iceruns_schedules - Cron scheduling for functions
+    28. iceruns_versions - Function versioning and rollback support
+
+    IceFlows Tables (v1.5.0 - CI/CD Pipeline Orchestration):
+    29. iceflows - Pipeline definitions
+    30. iceflows_stages - Ordered branch stages
+    31. iceflows_stage_approvers - Approval authority per stage
+    32. iceflows_stage_tests - Test execution per stage
+    33. iceflows_stage_calls - IceStreams/IceRuns triggers
+    34. iceflows_stage_reviews - Darwin code review config
+    35. iceflows_darwin_config - Darwin API settings per flow
+    36. iceflows_promotions - Promotion requests between stages
+    37. iceflows_approvals - Individual approval votes
+    38. iceflows_executions - Pipeline execution runs
+    39. iceflows_execution_steps - Individual step results
+    40. iceflows_webhooks - Registered git webhooks
+    41. iceflows_notifications - Notification channel configs
+    42. iceflows_notification_log - Sent notification history
     """
 
     # ==========================================
@@ -1468,11 +1490,702 @@ def define_all_tables(db):
     )
 
     # ==========================================
-    # Create indexes for performance
+    # IceRuns: Serverless Function Platform Tables (v1.4.0)
     # ==========================================
-    # Note: PyDAL will create these indexes automatically after tables are created
-    # Explicitly creating indexes here would cause errors if tables don't exist yet
-    # The indexes will be created when the tables are first accessed
+
+    # IceRuns function definitions
+    db.define_table(
+        "iceruns",
+        Field(
+            "tenant_id",
+            "reference tenants",
+            default=1,
+            notnull=True,
+            ondelete="CASCADE",
+        ),
+        Field("function_id", "string", length=36, unique=True, notnull=True),  # UUID
+        Field("name", "string", length=255, notnull=True, requires=IS_NOT_EMPTY()),
+        Field("description", "text"),
+        Field(
+            "runtime",
+            "string",
+            length=50,
+            notnull=True,
+            requires=IS_IN_SET(
+                [
+                    "python3.13",
+                    "nodejs",
+                    "go",
+                    "ruby",
+                    "bash",
+                    "powershell",
+                    "rust",
+                ]
+            ),
+        ),
+        Field("entrypoint", "string", length=500),  # main.py|index.js|main.go|etc
+        Field("handler", "string", length=255),  # Function name to invoke
+        Field("package_key", "string", length=1024),  # S3 key: iceruns/{id}/package.zip
+        Field("package_size", "integer"),  # Bytes
+        Field("package_hash", "string", length=64),  # SHA256 for integrity
+        Field("env_vars", "json"),  # Environment variables (encrypted)
+        Field("secrets", "json"),  # Encrypted secrets
+        Field("memory_limit_mb", "integer", default=128),  # 128-4096 MB
+        Field("timeout_seconds", "integer", default=60),  # 1-900 seconds
+        Field("cpu_limit", "double", default=0.5),  # 0.1-4.0 CPUs
+        Field(
+            "status",
+            "string",
+            length=50,
+            default="draft",
+            requires=IS_IN_SET(["draft", "active", "paused", "archived"]),
+        ),
+        Field("is_public", "boolean", default=False),
+        Field("webhook_token", "string", length=64, unique=True),  # Bearer token
+        Field("webhook_secret", "string", length=128),  # HMAC signature secret
+        Field("validate_signature", "boolean", default=False),
+        Field("allowed_methods", "list:string"),  # GET, POST, PUT, etc.
+        Field("ip_whitelist", "list:string"),  # CIDR blocks
+        Field("rate_limit", "integer", default=100),  # Requests per hour
+        Field("tags", "list:string"),
+        Field(
+            "created_by_id", "reference identities", notnull=True, ondelete="CASCADE"
+        ),
+        Field(
+            "created_at",
+            "datetime",
+            default=lambda: datetime.datetime.now(datetime.timezone.utc),
+        ),
+        Field(
+            "updated_at",
+            "datetime",
+            update=lambda: datetime.datetime.now(datetime.timezone.utc),
+        ),
+        Field("last_executed_at", "datetime"),
+        Field("execution_count", "integer", default=0),
+        migrate=True,
+    )
+
+    # IceRuns execution history
+    db.define_table(
+        "iceruns_executions",
+        Field(
+            "tenant_id",
+            "reference tenants",
+            default=1,
+            notnull=True,
+            ondelete="CASCADE",
+        ),
+        Field("execution_id", "string", length=36, unique=True, notnull=True),  # UUID
+        Field("function_id", "reference iceruns", notnull=True, ondelete="CASCADE"),
+        Field(
+            "status",
+            "string",
+            length=50,
+            requires=IS_IN_SET(
+                ["queued", "running", "completed", "failed", "timeout", "cancelled"]
+            ),
+        ),
+        Field(
+            "trigger_type",
+            "string",
+            length=50,
+            requires=IS_IN_SET(["webhook", "api", "schedule", "manual"]),
+        ),
+        Field("triggered_by", "string", length=255),  # User ID, service account, or IP
+        Field("input_json", "json"),  # Request payload
+        Field("output_json", "json"),  # Response data
+        Field("stdout", "text"),  # Captured stdout
+        Field("stderr", "text"),  # Captured stderr
+        Field("exit_code", "integer"),
+        Field("error_message", "text"),
+        Field("error_details", "json"),
+        Field("worker_id", "string", length=255),  # Which worker processed it
+        Field("container_id", "string", length=255),  # Docker container ID
+        Field("started_at", "datetime"),
+        Field("completed_at", "datetime"),
+        Field("duration_ms", "integer"),
+        Field("memory_used_mb", "integer"),  # Peak memory usage
+        Field("cpu_time_ms", "integer"),  # CPU time consumed
+        Field("retry_count", "integer", default=0),
+        Field("parent_execution_id", "string", length=36),  # For retries
+        Field("webhook_headers", "json"),  # For debugging
+        Field("webhook_ip", "string", length=45),  # IPv4/IPv6
+        Field("logs_key", "string", length=1024),  # S3 key for full logs
+        Field("artifacts_key", "string", length=1024),  # S3 key for output files
+        Field(
+            "created_at",
+            "datetime",
+            default=lambda: datetime.datetime.now(datetime.timezone.utc),
+        ),
+        migrate=True,
+    )
+
+    # IceRuns cron scheduling
+    db.define_table(
+        "iceruns_schedules",
+        Field(
+            "tenant_id",
+            "reference tenants",
+            default=1,
+            notnull=True,
+            ondelete="CASCADE",
+        ),
+        Field("schedule_id", "string", length=36, unique=True, notnull=True),
+        Field("function_id", "reference iceruns", notnull=True, ondelete="CASCADE"),
+        Field("cron_expression", "string", length=255, notnull=True),
+        Field("timezone", "string", length=100, default="UTC"),
+        Field("is_active", "boolean", default=True),
+        Field("next_run_at", "datetime"),
+        Field("last_run_at", "datetime"),
+        Field("run_count", "integer", default=0),
+        Field("static_input", "json"),  # Payload for scheduled runs
+        Field(
+            "created_at",
+            "datetime",
+            default=lambda: datetime.datetime.now(datetime.timezone.utc),
+        ),
+        migrate=True,
+    )
+
+    # IceRuns function versioning
+    db.define_table(
+        "iceruns_versions",
+        Field(
+            "tenant_id",
+            "reference tenants",
+            default=1,
+            notnull=True,
+            ondelete="CASCADE",
+        ),
+        Field("version_id", "string", length=36, unique=True, notnull=True),
+        Field("function_id", "reference iceruns", notnull=True, ondelete="CASCADE"),
+        Field("version_number", "integer", notnull=True),
+        Field("package_key", "string", length=1024),
+        Field("package_hash", "string", length=64),
+        Field("entrypoint", "string", length=500),
+        Field("handler", "string", length=255),
+        Field("env_vars", "json"),
+        Field("change_summary", "text"),
+        Field("is_active", "boolean", default=False),  # Current version flag
+        Field(
+            "created_by_id", "reference identities", notnull=True, ondelete="CASCADE"
+        ),
+        Field(
+            "created_at",
+            "datetime",
+            default=lambda: datetime.datetime.now(datetime.timezone.utc),
+        ),
+        migrate=True,
+    )
+
+    # ==========================================
+    # IceRuns Indexes for Performance Optimization
+    # ==========================================
+    # Note: Indexes are created via safe_create_index helper which uses
+    # raw SQL with IF NOT EXISTS to handle idempotent index creation.
+    # PyDAL automatically creates indexes for reference fields and unique fields.
+    # Additional performance indexes are optional and created below.
+
+    # ==========================================
+    # IceFlows: CI/CD Pipeline Orchestration (Phase 1)
+    # ==========================================
+
+    # Main IceFlows pipeline definitions
+    db.define_table(
+        "iceflows",
+        Field(
+            "tenant_id",
+            "reference tenants",
+            default=1,
+            notnull=True,
+            ondelete="CASCADE",
+        ),
+        Field("flow_id", "string", length=36, unique=True, notnull=True),  # UUID
+        Field("name", "string", length=255, notnull=True, requires=IS_NOT_EMPTY()),
+        Field("description", "text"),
+        Field(
+            "repository_url", "string", length=1024, notnull=True, requires=IS_NOT_EMPTY()
+        ),
+        Field(
+            "repository_provider",
+            "string",
+            length=50,
+            requires=IS_IN_SET(["github", "gitlab"]),
+        ),
+        Field("repository_name", "string", length=255),
+        Field("default_branch", "string", length=255, default="main"),
+        Field("gitops_enabled", "boolean", default=False),
+        Field("gitops_repo_url", "string", length=1024),
+        Field("gitops_branch", "string", length=255, default="main"),
+        Field("gitops_path", "string", length=1024),
+        Field("webhook_secret", "string", length=128),
+        Field(
+            "status",
+            "string",
+            length=50,
+            default="draft",
+            requires=IS_IN_SET(["draft", "active", "paused", "archived"]),
+        ),
+        Field("is_enabled", "boolean", default=True),
+        Field("created_by_id", "reference identities", notnull=True, ondelete="CASCADE"),
+        Field("tags", "list:string"),
+        Field(
+            "created_at",
+            "datetime",
+            default=lambda: datetime.datetime.now(datetime.timezone.utc),
+        ),
+        Field(
+            "updated_at",
+            "datetime",
+            update=lambda: datetime.datetime.now(datetime.timezone.utc),
+        ),
+        migrate=True,
+    )
+
+    # IceFlows stages (ordered branch stages)
+    db.define_table(
+        "iceflows_stages",
+        Field("stage_id", "string", length=36, unique=True, notnull=True),  # UUID
+        Field(
+            "flow_id", "reference iceflows", notnull=True, ondelete="CASCADE"
+        ),
+        Field("stage_order", "integer", notnull=True),
+        Field("branch_name", "string", length=255, notnull=True),
+        Field("display_name", "string", length=255),
+        Field("description", "text"),
+        Field("is_production", "boolean", default=False),
+        Field("auto_promote", "boolean", default=False),
+        Field("require_approval", "boolean", default=True),
+        Field("min_approvers", "integer", default=1),
+        Field("override_min_approvers", "integer", default=2),
+        Field("day_restrictions", "json"),  # {"blocked_days": [5, 6, 0]}
+        Field("time_restrictions", "json"),  # {"start_hour": 9, "end_hour": 17, ...}
+        Field("notification_config", "json"),
+        Field("is_enabled", "boolean", default=True),
+        Field(
+            "created_at",
+            "datetime",
+            default=lambda: datetime.datetime.now(datetime.timezone.utc),
+        ),
+        Field(
+            "updated_at",
+            "datetime",
+            update=lambda: datetime.datetime.now(datetime.timezone.utc),
+        ),
+        migrate=True,
+    )
+
+    # IceFlows stage approvers (users/groups who can approve promotions)
+    db.define_table(
+        "iceflows_stage_approvers",
+        Field("approver_id", "string", length=36, unique=True, notnull=True),  # UUID
+        Field(
+            "stage_id", "reference iceflows_stages", notnull=True, ondelete="CASCADE"
+        ),
+        Field("identity_id", "reference identities", ondelete="CASCADE"),
+        Field("group_id", "reference groups", ondelete="CASCADE"),
+        Field(
+            "role",
+            "string",
+            length=50,
+            default="approver",
+            requires=IS_IN_SET(["approver", "admin", "reviewer"]),
+        ),
+        Field("can_override", "boolean", default=False),
+        Field(
+            "created_at",
+            "datetime",
+            default=lambda: datetime.datetime.now(datetime.timezone.utc),
+        ),
+        migrate=True,
+    )
+
+    # IceFlows stage tests (unit, integration, e2e, custom tests)
+    db.define_table(
+        "iceflows_stage_tests",
+        Field("test_id", "string", length=36, unique=True, notnull=True),  # UUID
+        Field(
+            "stage_id", "reference iceflows_stages", notnull=True, ondelete="CASCADE"
+        ),
+        Field("name", "string", length=255, notnull=True, requires=IS_NOT_EMPTY()),
+        Field(
+            "test_type",
+            "string",
+            length=50,
+            notnull=True,
+            requires=IS_IN_SET(["unit", "integration", "e2e", "custom"]),
+        ),
+        Field(
+            "path_mode",
+            "string",
+            length=50,
+            default="repo_relative",
+            requires=IS_IN_SET(["centralized", "repo_relative"]),
+        ),
+        Field("centralized_path", "string", length=1024),
+        Field("repo_relative_path", "string", length=1024),
+        Field("command", "string", length=1024),
+        Field("timeout_seconds", "integer", default=600),
+        Field("is_blocking", "boolean", default=True),
+        Field("is_required", "boolean", default=True),
+        Field("execution_order", "integer", default=0),
+        Field("env_vars", "json"),
+        Field(
+            "created_at",
+            "datetime",
+            default=lambda: datetime.datetime.now(datetime.timezone.utc),
+        ),
+        migrate=True,
+    )
+
+    # IceFlows stage calls (IceStreams/IceRuns triggers)
+    db.define_table(
+        "iceflows_stage_calls",
+        Field("call_id", "string", length=36, unique=True, notnull=True),  # UUID
+        Field(
+            "stage_id", "reference iceflows_stages", notnull=True, ondelete="CASCADE"
+        ),
+        Field("name", "string", length=255, notnull=True, requires=IS_NOT_EMPTY()),
+        Field(
+            "call_type",
+            "string",
+            length=50,
+            notnull=True,
+            requires=IS_IN_SET(["icestreams", "iceruns"]),
+        ),
+        Field("target_id", "string", length=36),
+        Field(
+            "trigger_on",
+            "string",
+            length=50,
+            requires=IS_IN_SET(
+                ["pre_merge", "post_merge", "on_approval", "on_promotion"]
+            ),
+        ),
+        Field("input_template", "json"),
+        Field("timeout_seconds", "integer", default=300),
+        Field("is_blocking", "boolean", default=True),
+        Field("retry_count", "integer", default=0),
+        Field("execution_order", "integer", default=0),
+        Field(
+            "created_at",
+            "datetime",
+            default=lambda: datetime.datetime.now(datetime.timezone.utc),
+        ),
+        migrate=True,
+    )
+
+    # IceFlows stage reviews (Darwin code review requirements)
+    db.define_table(
+        "iceflows_stage_reviews",
+        Field("review_id", "string", length=36, unique=True, notnull=True),  # UUID
+        Field(
+            "stage_id", "reference iceflows_stages", notnull=True, ondelete="CASCADE"
+        ),
+        Field("is_required", "boolean", default=True),
+        Field(
+            "review_type",
+            "string",
+            default="inherit",
+            requires=IS_IN_SET(
+                ["inherit", "standard", "security", "performance", "full"]
+            ),
+        ),
+        Field("min_score", "integer", default=70),
+        Field("block_on_critical", "boolean", default=True),
+        Field("allowed_issue_types", "list:string"),
+        Field("reviewers_notified", "boolean", default=True),
+        Field(
+            "created_at",
+            "datetime",
+            default=lambda: datetime.datetime.now(datetime.timezone.utc),
+        ),
+        migrate=True,
+    )
+
+    # IceFlows Darwin API configuration per flow
+    db.define_table(
+        "iceflows_darwin_config",
+        Field("config_id", "string", length=36, unique=True, notnull=True),  # UUID
+        Field(
+            "flow_id", "reference iceflows", notnull=True, ondelete="CASCADE"
+        ),
+        Field("darwin_api_url", "string", length=1024),
+        Field("darwin_api_key", "password"),
+        Field("default_review_type", "string", default="standard"),
+        Field("auto_approve_threshold", "integer", default=0),
+        Field("block_on_critical", "boolean", default=True),
+        Field("is_enabled", "boolean", default=True),
+        Field(
+            "created_at",
+            "datetime",
+            default=lambda: datetime.datetime.now(datetime.timezone.utc),
+        ),
+        Field(
+            "updated_at",
+            "datetime",
+            update=lambda: datetime.datetime.now(datetime.timezone.utc),
+        ),
+        migrate=True,
+    )
+
+    # IceFlows promotion requests (between stages)
+    db.define_table(
+        "iceflows_promotions",
+        Field("promotion_id", "string", length=36, unique=True, notnull=True),  # UUID
+        Field(
+            "flow_id", "reference iceflows", notnull=True, ondelete="CASCADE"
+        ),
+        Field(
+            "source_stage_id", "reference iceflows_stages", notnull=True
+        ),
+        Field(
+            "target_stage_id", "reference iceflows_stages", notnull=True
+        ),
+        Field("source_branch", "string", length=255, notnull=True),
+        Field("target_branch", "string", length=255, notnull=True),
+        Field("source_commit", "string", length=40),
+        Field("target_commit", "string", length=40),
+        Field(
+            "status",
+            "string",
+            length=50,
+            default="pending",
+            requires=IS_IN_SET(
+                ["pending", "approved", "rejected", "merged", "failed"]
+            ),
+        ),
+        Field("requested_by_id", "reference identities", ondelete="SET NULL"),
+        Field("git_pr_url", "string", length=1024),
+        Field("git_pr_number", "integer"),
+        Field("override_reason", "text"),
+        Field("override_by_id", "reference identities", ondelete="SET NULL"),
+        Field("merged_by_id", "reference identities", ondelete="SET NULL"),
+        Field("merged_at", "datetime"),
+        Field(
+            "created_at",
+            "datetime",
+            default=lambda: datetime.datetime.now(datetime.timezone.utc),
+        ),
+        Field(
+            "updated_at",
+            "datetime",
+            update=lambda: datetime.datetime.now(datetime.timezone.utc),
+        ),
+        migrate=True,
+    )
+
+    # IceFlows individual approval votes
+    db.define_table(
+        "iceflows_approvals",
+        Field("approval_id", "string", length=36, unique=True, notnull=True),  # UUID
+        Field(
+            "promotion_id",
+            "reference iceflows_promotions",
+            notnull=True,
+            ondelete="CASCADE",
+        ),
+        Field("approver_id", "reference identities", notnull=True, ondelete="CASCADE"),
+        Field(
+            "decision",
+            "string",
+            length=50,
+            notnull=True,
+            requires=IS_IN_SET(["approve", "reject", "request_changes"]),
+        ),
+        Field("comment", "text"),
+        Field("is_override", "boolean", default=False),
+        Field(
+            "created_at",
+            "datetime",
+            default=lambda: datetime.datetime.now(datetime.timezone.utc),
+        ),
+        migrate=True,
+    )
+
+    # IceFlows execution runs
+    db.define_table(
+        "iceflows_executions",
+        Field("execution_id", "string", length=36, unique=True, notnull=True),  # UUID
+        Field("promotion_id", "reference iceflows_promotions", ondelete="CASCADE"),
+        Field(
+            "flow_id", "reference iceflows", notnull=True, ondelete="CASCADE"
+        ),
+        Field(
+            "stage_id", "reference iceflows_stages", notnull=True
+        ),
+        Field(
+            "trigger_type",
+            "string",
+            length=50,
+            requires=IS_IN_SET(
+                ["git_push", "promotion", "manual", "webhook"]
+            ),
+        ),
+        Field("git_event_type", "string", length=50),
+        Field("git_ref", "string", length=255),
+        Field("git_commit", "string", length=40),
+        Field("git_commit_message", "text"),
+        Field("git_author", "string", length=255),
+        Field(
+            "status",
+            "string",
+            length=50,
+            default="pending",
+            requires=IS_IN_SET(
+                ["pending", "running", "completed", "failed", "cancelled"]
+            ),
+        ),
+        Field("started_at", "datetime"),
+        Field("completed_at", "datetime"),
+        Field("duration_ms", "integer"),
+        Field("error_message", "text"),
+        Field("result_json", "json"),
+        Field(
+            "created_at",
+            "datetime",
+            default=lambda: datetime.datetime.now(datetime.timezone.utc),
+        ),
+        migrate=True,
+    )
+
+    # IceFlows execution steps (individual step results)
+    db.define_table(
+        "iceflows_execution_steps",
+        Field("step_id", "string", length=36, unique=True, notnull=True),  # UUID
+        Field(
+            "execution_id",
+            "reference iceflows_executions",
+            notnull=True,
+            ondelete="CASCADE",
+        ),
+        Field(
+            "step_type",
+            "string",
+            length=50,
+            requires=IS_IN_SET(
+                ["test", "call", "approval_check", "merge", "darwin_review"]
+            ),
+        ),
+        Field("step_name", "string", length=255),
+        Field("reference_id", "string", length=36),
+        Field(
+            "status",
+            "string",
+            length=50,
+            default="pending",
+            requires=IS_IN_SET(
+                ["pending", "running", "completed", "failed", "skipped"]
+            ),
+        ),
+        Field("input_json", "json"),
+        Field("output_json", "json"),
+        Field("logs", "text"),
+        Field("logs_key", "string", length=1024),
+        Field("started_at", "datetime"),
+        Field("completed_at", "datetime"),
+        Field("duration_ms", "integer"),
+        Field("error_message", "text"),
+        Field("retry_count", "integer", default=0),
+        migrate=True,
+    )
+
+    # IceFlows registered git webhooks
+    db.define_table(
+        "iceflows_webhooks",
+        Field("webhook_id", "string", length=36, unique=True, notnull=True),  # UUID
+        Field(
+            "flow_id", "reference iceflows", notnull=True, ondelete="CASCADE"
+        ),
+        Field(
+            "provider",
+            "string",
+            length=50,
+            requires=IS_IN_SET(["github", "gitlab"]),
+        ),
+        Field("webhook_url", "string", length=1024),
+        Field("webhook_secret", "string", length=128),
+        Field("events", "list:string"),
+        Field("is_active", "boolean", default=True),
+        Field("last_received_at", "datetime"),
+        Field("last_status", "string", length=50),
+        Field(
+            "created_at",
+            "datetime",
+            default=lambda: datetime.datetime.now(datetime.timezone.utc),
+        ),
+        migrate=True,
+    )
+
+    # IceFlows notification channel configurations
+    db.define_table(
+        "iceflows_notifications",
+        Field("notification_id", "string", length=36, unique=True, notnull=True),  # UUID
+        Field(
+            "flow_id", "reference iceflows", notnull=True, ondelete="CASCADE"
+        ),
+        Field(
+            "channel_type",
+            "string",
+            length=50,
+            notnull=True,
+            requires=IS_IN_SET(["email", "slack", "webhook"]),
+        ),
+        Field("name", "string", length=255),
+        Field("config", "json"),
+        Field("events", "list:string"),
+        Field("is_enabled", "boolean", default=True),
+        Field(
+            "created_at",
+            "datetime",
+            default=lambda: datetime.datetime.now(datetime.timezone.utc),
+        ),
+        migrate=True,
+    )
+
+    # IceFlows sent notification history
+    db.define_table(
+        "iceflows_notification_log",
+        Field("log_id", "string", length=36, unique=True, notnull=True),  # UUID
+        Field(
+            "notification_id",
+            "reference iceflows_notifications",
+            ondelete="SET NULL",
+        ),
+        Field(
+            "flow_id", "reference iceflows", notnull=True, ondelete="CASCADE"
+        ),
+        Field("event_type", "string", length=100),
+        Field("channel_type", "string", length=50),
+        Field("recipient", "string", length=500),
+        Field("subject", "string", length=500),
+        Field("body", "text"),
+        Field(
+            "status",
+            "string",
+            length=50,
+            requires=IS_IN_SET(["sent", "failed", "pending"]),
+        ),
+        Field("error_message", "text"),
+        Field("sent_at", "datetime"),
+        Field(
+            "created_at",
+            "datetime",
+            default=lambda: datetime.datetime.now(datetime.timezone.utc),
+        ),
+        migrate=True,
+    )
+
+    # ==========================================
+    # IceFlows Indexes for Performance Optimization
+    # ==========================================
+    # Note: Indexes are automatically created by PyDAL for:
+    # - Primary keys (id field)
+    # - Foreign key references (reference fields)
+    # - Unique fields (unique=True)
+    # Additional performance indexes can be added via database migrations
+    # or by using executesql with CREATE INDEX IF NOT EXISTS syntax.
 
     # ==========================================
     # Note: Default system settings initialization moved to get_db() function

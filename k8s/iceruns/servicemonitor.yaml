@@ -1,0 +1,21 @@
+# IceRuns ServiceMonitor
+# Prometheus Operator resource for scraping invoker metrics
+# Requires prometheus-operator to be installed
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: iceruns-invoker
+  namespace: iceruns
+  labels:
+    app.kubernetes.io/name: iceruns
+    app.kubernetes.io/component: invoker
+spec:
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: iceruns
+      app.kubernetes.io/component: invoker
+  endpoints:
+  - port: metrics
+    interval: 30s
+    path: /metrics
+    scheme: http

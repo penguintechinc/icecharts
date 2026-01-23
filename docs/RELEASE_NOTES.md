@@ -1,5 +1,184 @@
 # Release Notes
 
+## [1.4.0] - January 2026
+
+### Overview
+
+IceCharts v1.4.0 introduces **IceRuns**, a production-ready serverless function execution platform. Execute custom functions in 7 programming languages via webhooks, API calls, scheduled cron jobs, or IceStreams playbooks. Complete container isolation with warm/cold start optimization, real-time execution tracking, and multi-language support.
+
+### New Features
+
+#### IceRuns Platform
+- **Multi-language serverless execution**: Python 3.13, Node.js 20, Go 1.23, Ruby 3.3, Bash 5.2, PowerShell 7.4, Rust 1.75
+- **Function management**: Upload, version, configure, and manage functions via WebUI or API
+- **Multiple trigger types**:
+  - Webhooks: Public token-based triggers with optional HMAC signing
+  - API: Authenticated REST endpoints
+  - Scheduled: Cron expressions with timezone support
+  - IceStreams: Execute functions as playbook nodes
+- **Container isolation**: Docker-based sandboxing with resource limits (memory, CPU, timeout)
+- **Warm/cold start optimization**: Reuse containers for fast subsequent executions
+- **Real-time execution tracking**: WebSocket support for live status updates
+- **Execution history**: Full logs, metrics, and artifacts for each execution
+
+#### OpenWhisk-Inspired Architecture
+- **Controller pattern**: Flask backend REST API + function management
+- **Invoker pattern**: Worker service pool for parallel execution
+- **Redis Streams**: Async task queue with consumer groups for decoupled processing
+- **Horizontal scaling**: Add invokers dynamically with auto-scaling support
+
+#### Webhook Features
+- Token-based authentication
+- HMAC SHA256 signature validation
+- Rate limiting (configurable per function)
+- IP whitelisting (CIDR blocks)
+- HTTP method restrictions (GET, POST, PUT, etc.)
+- Webhook metadata injection (__webhook__ object)
+
+#### Scheduling
+- Standard Unix cron expressions
+- Timezone support (300+ IANA timezones)
+- Static input for scheduled runs
+- Next run prediction
+- Execution history tracking
+
+#### IceStreams Integration
+- IceRun Execute node: Execute functions with input mapping
+- IceRun Wait node: Async execution polling
+- Function selector dropdown
+- Data flow integration
+- Parallel execution support
+
+#### Security
+- JWT authentication with scope-based authorization
+- Secrets encryption at rest (AES-256-GCM)
+- Service account tokens (long-lived, scoped)
+- Network isolation (no outbound by default)
+- Read-only filesystem with writable /tmp
+- Non-root container execution
+- Security policy: no privilege escalation
+- HMAC request signing for webhooks
+- Audit logging of all operations
+
+#### Deployment Options
+- Docker Compose (development/small)
+- Kubernetes with namespace isolation
+- Horizontal Pod Autoscaler (HPA) support
+- Multi-architecture builds (AMD64 + ARM64)
+- Health check endpoints
+
+#### Documentation
+- 11 comprehensive guides (README, quickstart, architecture, API reference, etc.)
+- 7 complete working examples (one per language)
+- Security best practices guide
+- Deployment guide (Docker + Kubernetes)
+- Troubleshooting guide
+- IceStreams integration guide
+
+### API Endpoints (IceRuns)
+
+**Function Management:**
+- `GET /api/v1/iceruns` - List all functions
+- `POST /api/v1/iceruns` - Create function
+- `GET /api/v1/iceruns/{id}` - Get function details
+- `PUT /api/v1/iceruns/{id}` - Update function
+- `DELETE /api/v1/iceruns/{id}` - Delete function
+- `POST /api/v1/iceruns/{id}/package` - Upload package
+- `GET /api/v1/iceruns/{id}/package` - Download package
+
+**Execution:**
+- `POST /api/v1/iceruns/{id}/execute` - Execute function
+- `GET /api/v1/iceruns/executions/{id}` - Get execution details
+- `GET /api/v1/iceruns/executions/{id}/logs` - Get execution logs
+- `GET /api/v1/iceruns/{id}/stats` - Get function statistics
+
+**Webhooks:**
+- `POST /api/v1/iceruns/hook/{token}` - Public webhook trigger
+- `GET /api/v1/iceruns/{id}/webhook` - Get webhook config
+- `PUT /api/v1/iceruns/{id}/webhook/config` - Update webhook settings
+- `POST /api/v1/iceruns/{id}/webhook/regenerate` - Regenerate token
+
+### Scopes (IceRuns)
+
+- `iceruns:read` - View functions and executions
+- `iceruns:write` - Create and update functions
+- `iceruns:delete` - Delete functions
+- `iceruns:execute` - Trigger function executions
+- `iceruns:logs` - View execution logs
+- `iceruns:admin` - Full administrative access
+
+### Performance
+
+- **Cold start**: 500ms - 2 seconds (language dependent)
+- **Warm start**: 50-200 ms (container reuse)
+- **Concurrency**: Unlimited with horizontal scaling
+- **Throughput**: 10-50 functions/second per invoker
+- **Memory overhead**: 50MB (Python) to 3MB (Rust/Go)
+
+### Files Added
+
+**Invoker Service:**
+- `services/iceruns-invoker/` - Complete invoker implementation
+- `services/iceruns-invoker/app/invoker.py` - Main worker loop
+- `services/iceruns-invoker/app/runtimes/` - 7 runtime implementations
+- `services/iceruns-invoker/Dockerfile` - Multi-arch containerization
+
+**Flask Backend:**
+- `services/flask-backend/app/api/v1/iceruns.py` - Function management API
+- `services/flask-backend/app/api/v1/iceruns_executions.py` - Execution tracking
+- `services/flask-backend/app/api/v1/iceruns_hooks.py` - Webhook endpoints
+- `services/flask-backend/app/services/iceruns_storage_service.py` - S3/MinIO integration
+
+**Documentation:**
+- `docs/iceruns/README.md` - Overview and features
+- `docs/iceruns/quickstart.md` - 5-minute getting started
+- `docs/iceruns/architecture.md` - Deep dive into design
+- `docs/iceruns/runtimes.md` - Language-specific guides
+- `docs/iceruns/api-reference.md` - Complete REST API
+- `docs/iceruns/webhook-guide.md` - Webhook usage
+- `docs/iceruns/scheduling.md` - Cron scheduling
+- `docs/iceruns/icestreams-integration.md` - Playbook integration
+- `docs/iceruns/deployment.md` - Docker & K8s deployment
+- `docs/iceruns/security.md` - Security best practices
+- `docs/iceruns/troubleshooting.md` - Common issues
+- `docs/iceruns/examples/` - 7 language examples
+
+### Breaking Changes
+
+None. IceRuns is a new feature and does not affect existing functionality.
+
+### Migration Guide
+
+No migration required. Existing IceCharts and IceStreams functionality unchanged.
+
+### Upgrading
+
+```bash
+# Update to v1.4.0
+docker-compose pull
+docker-compose up -d
+
+# Or with Kubernetes
+kubectl apply -f k8s/iceruns/
+
+# Run migrations if needed
+docker exec flask-backend python -m flask db upgrade
+```
+
+### Known Issues
+
+None at this time.
+
+### Deprecations
+
+None.
+
+### Contributors
+
+Built with Penguin Tech Inc's enterprise template and community feedback.
+
+---
+
 ## [0.2.0] - December 2024
 
 ### Overview

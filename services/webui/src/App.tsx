@@ -32,6 +32,23 @@ const PlaybookTemplates = React.lazy(() => import('./client/pages/playbooks/Play
 const PlaybookCollections = React.lazy(() => import('./client/pages/playbooks/PlaybookCollections'));
 const DiagramCollections = React.lazy(() => import('./client/pages/collections/DiagramCollections'));
 
+// IceRuns - Serverless Functions
+const IceRunsList = React.lazy(() => import('./client/pages/iceruns/IceRunsList'));
+const IceRunCreate = React.lazy(() => import('./client/pages/iceruns/IceRunCreate'));
+const IceRunEdit = React.lazy(() => import('./client/pages/iceruns/IceRunEdit'));
+const IceRunDetail = React.lazy(() => import('./client/pages/iceruns/IceRunDetail'));
+const IceRunExecutions = React.lazy(() => import('./client/pages/iceruns/IceRunExecutions'));
+const IceRunExecutionDetail = React.lazy(() => import('./client/pages/iceruns/IceRunExecutionDetail'));
+const IceRunTest = React.lazy(() => import('./client/pages/iceruns/IceRunTest'));
+const IceRunSchedules = React.lazy(() => import('./client/pages/iceruns/IceRunSchedules'));
+
+// IceFlows - CI/CD Pipelines
+const IceFlowsList = React.lazy(() => import('./client/pages/iceflows/IceFlowsList'));
+const IceFlowDetail = React.lazy(() => import('./client/pages/iceflows/IceFlowDetail'));
+const IceFlowEditor = React.lazy(() => import('./client/pages/iceflows/IceFlowEditor'));
+const IceFlowPromotions = React.lazy(() => import('./client/pages/iceflows/IceFlowPromotions'));
+const MyApprovals = React.lazy(() => import('./client/pages/iceflows/MyApprovals'));
+
 // Protected route wrapper
 interface ProtectedRouteProps {
   children: React.ReactNode;
@@ -114,6 +131,25 @@ const App: React.FC = () => {
             <Route path="/playbooks/templates" element={<PlaybookTemplates />} />
             <Route path="/playbooks/:id" element={<PlaybookDetail />} />
             <Route path="/playbooks/:id/edit" element={<PlaybookEditor />} />
+
+            {/* IceRuns - Serverless Functions */}
+            <Route path="/iceruns" element={<IceRunsList />} />
+            <Route path="/iceruns/create" element={<IceRunCreate />} />
+            <Route path="/iceruns/:id" element={<IceRunDetail />} />
+            <Route path="/iceruns/:id/edit" element={<IceRunEdit />} />
+            <Route path="/iceruns/:id/test" element={<IceRunTest />} />
+            <Route path="/iceruns/:id/executions" element={<IceRunExecutions />} />
+            <Route path="/iceruns/:id/schedules" element={<IceRunSchedules />} />
+            <Route path="/iceruns/executions/:executionId" element={<IceRunExecutionDetail />} />
+
+            {/* IceFlows - CI/CD Pipelines */}
+            <Route path="/iceflows" element={<IceFlowsList />} />
+            <Route path="/iceflows/my-approvals" element={<MyApprovals />} />
+            <Route path="/iceflows/create" element={<IceFlowEditor />} />
+            <Route path="/iceflows/:id" element={<IceFlowDetail />} />
+            <Route path="/iceflows/:id/edit" element={<IceFlowEditor />} />
+            <Route path="/iceflows/:id/promotions" element={<IceFlowPromotions />} />
+
             <Route path="/settings" element={<Settings />} />
             <Route path="/admin/users" element={<AdminUsers />} />
             <Route path="/admin/dashboard" element={<ProtectedRoute requiredRole="admin"><AdminDashboard /></ProtectedRoute>} />

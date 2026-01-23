@@ -21,6 +21,11 @@ const streamsItems = [
   { path: '/playbooks/templates', label: 'Templates', icon: 'M8 7v8a2 2 0 002 2h6M8 7V5a2 2 0 012-2h4.586a1 1 0 01.707.293l4.414 4.414a1 1 0 01.293.707V15a2 2 0 01-2 2h-2M8 7H6a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2v-2' },
 ];
 
+// Runs section (IceRuns - serverless functions)
+const runsItems = [
+  { path: '/iceruns', label: 'Functions', icon: 'M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4' },
+];
+
 // Other items
 const otherItems = [
   { path: '/groups', label: 'Groups', icon: 'M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z' },
@@ -103,6 +108,31 @@ export const Sidebar: React.FC = () => {
           </p>
         </div>
         {streamsItems.map((item) => (
+          <NavLink
+            key={item.path}
+            to={item.path}
+            className={({ isActive }) =>
+              `flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium transition-colors ${
+                isActive
+                  ? 'bg-ice-gold-500/20 text-ice-gold-400'
+                  : 'text-ice-navy-200 hover:bg-ice-navy-700 hover:text-white'
+              }`
+            }
+          >
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d={item.icon} />
+            </svg>
+            {item.label}
+          </NavLink>
+        ))}
+
+        {/* Runs section */}
+        <div className="pt-4 pb-2">
+          <p className="px-4 text-xs font-semibold text-ice-navy-400 uppercase tracking-wider">
+            Runs
+          </p>
+        </div>
+        {runsItems.map((item) => (
           <NavLink
             key={item.path}
             to={item.path}

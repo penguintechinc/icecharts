@@ -14,6 +14,7 @@ from .base import (
     NodeOutput,
     NodeResult,
 )
+from .iceruns_nodes import IceRunExecuteNode, IceRunWaitNode
 
 __all__ = [
     "NodeInput",
@@ -23,4 +24,6 @@ __all__ = [
     "BaseNode",
     "BaseTrigger",
     "CloudAuth",
+    "IceRunExecuteNode",
+    "IceRunWaitNode",
 ]

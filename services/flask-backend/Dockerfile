@@ -46,7 +46,7 @@ ENV JWT_SECRET_KEY=test-secret-key
 ENV SECRET_KEY=test-secret-key
 
 # Run tests with coverage
-RUN python -m pytest tests/ --cov=app --cov-report=html --cov-report=term-summary -v
+RUN python -m pytest tests/ --cov=app --cov-report=html --cov-report=term -v
 
 # Lint stage
 FROM builder AS lint

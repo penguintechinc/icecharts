@@ -1,0 +1,21 @@
+# IceRuns Invoker Service
+# Exposes metrics endpoint for Prometheus scraping
+# Internal service - no external traffic
+apiVersion: v1
+kind: Service
+metadata:
+  name: iceruns-invoker
+  namespace: iceruns
+  labels:
+    app.kubernetes.io/name: iceruns
+    app.kubernetes.io/component: invoker
+spec:
+  type: ClusterIP
+  clusterIP: None
+  selector:
+    app: iceruns-invoker
+  ports:
+  - name: metrics
+    port: 8080
+    targetPort: metrics
+    protocol: TCP
