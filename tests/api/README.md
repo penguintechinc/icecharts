@@ -1,49 +1,124 @@
 # API Test Scripts
 
-Standalone API test scripts for validating IceCharts Flask backend and WebUI containers.
+Comprehensive smoke tests for validating IceCharts Flask backend and WebUI containers.
 
 ## Overview
 
-This directory contains bash-based API tests that validate:
-- **Flask Backend API**: Health checks, authentication, protected endpoints
-- **WebUI/Nginx**: Static file serving, API proxy, security headers
+This directory contains bash-based API tests that validate all API endpoints and frontend pages:
+- **Flask Backend API**: Health checks, authentication, CRUD operations for all resources
+- **WebUI**: Static file serving, API proxy, SPA routing, security headers
+- **Frontend Pages**: Page load verification, authentication flows
 
 ## Test Scripts
 
-### 1. `test_flask_api.sh`
-Tests the Flask backend REST API endpoints.
+### Core API Tests
 
-**Endpoints tested:**
+#### `test_flask_api.sh`
+Tests core Flask backend REST API endpoints.
 - Health & readiness checks
 - User registration & login
 - JWT token refresh
 - Protected endpoints (profile, drawings)
 - Error cases (invalid credentials, missing auth)
 
-### 2. `test_webui.sh`
+#### `test_flask_api_v0.2.0.sh`
+Tests v0.2.0 API features including enhanced authentication and versioning.
+
+### Feature API Tests
+
+#### `test_drawings_api.sh`
+Tests Drawings CRUD operations and exports.
+- Create, read, update, delete drawings
+- Export to JSON, SVG, PNG, PDF formats
+- Async export job handling
+- Drawing versioning
+
+#### `test_groups_api.sh`
+Tests Groups and team management.
+- Create, read, update, delete groups
+- Add/remove group members
+- Member role management
+- Group permissions
+
+#### `test_templates_api.sh`
+Tests Template management.
+- Create, read, delete templates
+- Use templates to create new drawings
+- Template listing and filtering
+
+#### `test_libraries_api.sh`
+Tests Shape Libraries management.
+- Create, read, update, delete libraries
+- Add/remove shapes from libraries
+- Library duplication
+- Public/private library access
+
+#### `test_profile_api.sh`
+Tests User Profile operations.
+- Get and update profile
+- Avatar upload and removal
+- Password change
+- User preferences
+
+#### `test_comments_shares_api.sh`
+Tests Comments and Sharing functionality.
+- Create, read, update, delete comments
+- Comment replies and threading
+- Resolve/unresolve comments
+- Drawing shares management
+- Public link generation
+
+### Admin Tests
+
+#### `test_admin_api.sh`
+Tests Admin API endpoints.
+- User management (list, create, update, delete)
+- User activation/deactivation
+- Dashboard statistics
+- System settings management
+- SSO configuration
+- Audit logs
+
+#### `test_service_accounts.sh`
+Tests Service Account management.
+- Create service accounts
+- Token generation and rotation
+- Scope management
+- Service account authentication
+
+### UI Tests
+
+#### `test_webui.sh`
 Tests the WebUI/Nginx configuration.
-
-**Tests include:**
 - Health endpoint
-- Static file serving (index.html)
-- SPA routing (fallback to index.html)
+- Static file serving
+- SPA routing fallback
 - API proxy configuration
-- Security headers (CSP, X-Frame-Options, etc.)
-- Cache headers
+- Security headers
 
-### 3. `run_all_tests.sh`
+#### `test_frontend_pages.sh`
+Tests frontend page loads.
+- Public pages (login, register)
+- Authenticated pages (dashboard, drawings, settings)
+- Admin pages (users, statistics)
+- Error handling (404, unauthorized)
+
+### Test Runner
+
+#### `run_all_tests.sh`
 Master test runner that orchestrates the full test suite.
 
 **Features:**
-- Starts containers via docker-compose
+- Supports both `docker compose` (v2) and `docker-compose` (v1)
+- Starts containers or uses existing running containers
 - Waits for health checks
-- Runs all API tests sequentially
+- Runs all 12 test suites sequentially
 - Provides comprehensive test summary
-- Cleans up containers after tests
+- Optional cleanup after tests
 
 ## Prerequisites
 
-- Docker and docker-compose installed
+- Docker and docker compose installed
 - `curl` command-line tool
 - `jq` (optional, for better JSON parsing)
 
@@ -52,72 +127,95 @@ Master test runner that orchestrates the full test suite.
 ### Run All Tests (Recommended)
 
 ```bash
-# From project root
-cd tests/api
+# From tests/api directory
 ./run_all_tests.sh
+
+# Skip container startup (use existing containers)
+./run_all_tests.sh --skip-containers
+
+# Keep containers running after tests
+./run_all_tests.sh --no-cleanup
 ```
 
 ### Run Specific Test Suite
 
 ```bash
-# Flask API tests only (requires running containers)
-API_HOST=http://localhost:5001 ./test_flask_api.sh
+# Set environment variables
+export API_HOST=http://localhost:5001
+export WEBUI_HOST=http://localhost:3000
 
-# WebUI tests only (requires running containers)
-WEBUI_HOST=http://localhost:3000 ./test_webui.sh
+# Run individual test scripts
+./test_flask_api.sh
+./test_drawings_api.sh
+./test_groups_api.sh
+./test_admin_api.sh
+./test_frontend_pages.sh
 ```
 
 ### Verbose Mode
 
 ```bash
 # Enable verbose output for debugging
-./run_all_tests.sh --verbose
+./run_all_tests.sh -v
 
 # Or set environment variable
 VERBOSE=1 ./test_flask_api.sh
 ```
 
-### Keep Containers Running After Tests
-
-```bash
-# Don't cleanup containers (useful for debugging)
-./run_all_tests.sh --no-cleanup
-```
-
 ### Use Custom Docker Compose File
 
 ```bash
-# Use a specific compose file
 ./run_all_tests.sh --file docker-compose.test.yml
 ```
 
 ## Environment Variables
 
 ### `run_all_tests.sh`
-- `COMPOSE_FILE`: Docker compose file to use (default: `docker-compose.yml`)
-- `VERBOSE`: Enable verbose output (default: `0`)
-- `CLEANUP`: Cleanup containers after tests (default: `1`)
+| Variable | Default | Description |
+|----------|---------|-------------|
+| `COMPOSE_FILE` | `docker-compose.yml` | Docker compose file to use |
+| `VERBOSE` | `0` | Enable verbose output |
+| `CLEANUP` | `1` | Cleanup containers after tests |
+| `SKIP_CONTAINERS` | `0` | Skip container startup |
 
-### `test_flask_api.sh`
-- `API_HOST`: Flask backend URL (default: `http://localhost:5001`)
-- `VERBOSE`: Enable verbose output (default: `0`)
+### Individual Test Scripts
+| Variable | Default | Description |
+|----------|---------|-------------|
+| `API_HOST` | `http://localhost:5001` | Flask backend URL |
+| `WEBUI_HOST` | `http://localhost:3000` | WebUI URL |
+| `VERBOSE` | `0` | Enable verbose output |
 
-### `test_webui.sh`
-- `WEBUI_HOST`: WebUI URL (default: `http://localhost:3000`)
-- `API_HOST`: Backend API URL (default: `http://localhost:5001`)
-- `VERBOSE`: Enable verbose output (default: `0`)
+## Test Coverage
+
+| Test Suite | Tests | Coverage |
+|------------|-------|----------|
+| Flask API | 9 | Health, auth, protected endpoints |
+| v0.2.0 API | 15+ | Enhanced auth, versioning |
+| Drawings API | 20+ | CRUD, exports, versions |
+| Groups API | 20+ | CRUD, members, permissions |
+| Templates API | 18+ | CRUD, template usage |
+| Libraries API | 25+ | CRUD, shapes, duplication |
+| Profile API | 22+ | Profile, avatar, preferences |
+| Comments & Shares | 25+ | Comments, replies, shares |
+| Admin API | 35+ | Users, stats, settings, SSO |
+| Service Accounts | 15+ | CRUD, tokens, scopes |
+| WebUI | 10+ | Static files, proxy, headers |
+| Frontend Pages | 25+ | Page loads, auth flows |
+
+**Total: 200+ test cases**
 
 ## Test Output
 
 Tests use colored output for easy reading:
-- 🟢 Green: Passed tests and info messages
-- 🔴 Red: Failed tests and error messages
+- 🟢 Green (`✓`): Passed tests
+- 🔴 Red (`✗`): Failed tests
 - 🟡 Yellow: Warnings
+- 🔵 Blue: Section headers
 
 Example output:
 ```
 ========================================
-Starting Flask Backend API Tests
+Running Flask API Tests
 ========================================
 
 === Health Check Tests ===
@@ -127,42 +225,39 @@ Starting Flask Backend API Tests
 === Authentication Tests ===
 ✓ User registration (HTTP 201)
 ✓ User login (HTTP 200)
-✓ Token refresh (HTTP 200)
-
-=== Protected Endpoint Tests ===
-✓ Get user profile (authenticated) (HTTP 200)
-✓ List user drawings (authenticated) (HTTP 200)
-
-=== Error Case Tests ===
-✓ Get profile without auth (HTTP 401)
-✓ Login with invalid credentials (HTTP 401)
 
 =========================================
-Test Summary
+Final Test Summary
 =========================================
-Passed: 10
-Failed: 0
-Total:  10
+✓ Flask API Tests: PASSED
+✓ Drawings API Tests: PASSED
+✓ Groups API Tests: PASSED
+...
+
+Total: 12 passed, 0 failed
 =========================================
 ```
 
 ## CI/CD Integration
 
-These tests are designed to run in GitHub Actions. See `.github/workflows/docker-multiarch.yml` for integration example.
+These tests run in GitHub Actions after building Docker images. See `.github/workflows/docker-multiarch.yml`.
 
-The tests are executed after building multi-arch Docker images to validate that containers are functioning correctly.
+```yaml
+- name: Run API Tests
+  run: |
+    cd tests/api
+    ./run_all_tests.sh --skip-containers
+```
 
 ## Troubleshooting
 
 ### Tests Fail with "Connection Refused"
 
-Ensure containers are running:
 ```bash
-docker-compose ps
-```
+# Check container status
+docker compose ps
 
-Check health status:
-```bash
+# Check health endpoints
 curl http://localhost:5001/api/v1/health
 curl http://localhost:3000/health
 ```
@@ -170,52 +265,50 @@ curl http://localhost:3000/health
 ### View Container Logs
 
 ```bash
-# Flask backend
-docker-compose logs -f api
-
-# WebUI
-docker-compose logs -f web
-
-# All services
-docker-compose logs -f
+docker compose logs -f api   # Flask backend
+docker compose logs -f web   # WebUI
+docker compose logs -f       # All services
 ```
 
-### Tests Timeout During Startup
+### Database Errors
 
-Increase the wait time by editing the scripts or check for resource constraints:
 ```bash
-# Check Docker resources
-docker stats
+# Check PostgreSQL logs
+docker compose logs postgres
+
+# Verify database connection
+docker compose exec api python -c "from app.models import get_db; print('OK')"
 ```
 
 ### Authentication Tests Fail
 
-Ensure PostgreSQL and Redis are healthy:
 ```bash
-docker-compose ps postgres redis
-```
+# Ensure dependent services are healthy
+docker compose ps postgres redis
 
-Check database connectivity:
-```bash
-docker-compose exec api python -c "from app.models import get_db; print(get_db())"
+# Reset database if needed
+docker compose down -v
+docker compose up -d
 ```
 
 ## Extending Tests
 
 To add new tests:
 
-1. Add test functions to the appropriate script
+1. Create a new test script or add to existing one
 2. Follow the existing pattern:
    ```bash
-   test_get "/api/v1/new-endpoint" 200 "Test description"
+   test_get "/api/v1/endpoint" 200 "Description"
+   test_post "/api/v1/endpoint" '{"data":"value"}' 201 "Description"
    ```
-3. Update the test counters for proper summary
+3. Add the script to `run_all_tests.sh` if it's a new file
+4. Update this README with the new coverage
 
 ## Contributing
 
 When modifying tests:
 - Keep tests idempotent (can run multiple times)
-- Use unique identifiers for test data (e.g., timestamps)
-- Ensure proper cleanup
+- Use unique identifiers with timestamps
 - Test both success and error cases
-- Update this README with any new functionality
+- Ensure proper cleanup of test data
+- Update documentation for new functionality

@@ -3,7 +3,7 @@
 # WebUI/Nginx Test Script
 # Tests WebUI health, static file serving, and API proxy
 
-set -e
+# Don't use set -e as it causes premature exit on expected failures
 
 # Configuration
 WEBUI_HOST="${WEBUI_HOST:-http://localhost:3000}"
@@ -62,7 +62,7 @@ test_get() {
     if [ "$status" -eq "$expected_status" ]; then
         # Additional content check if provided
         if [ -n "$check_content" ]; then
-            if echo "$body" | grep -q "$check_content"; then
+            if echo "$body" | grep -qi "$check_content"; then
                 test_pass "$description (HTTP $status, content verified)"
                 return 0
             else

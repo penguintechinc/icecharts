@@ -4,7 +4,7 @@
 # Tests new Collections API, Admin Statistics, Health Checks, and Email Verification
 # Validates API compatibility between releases
 
-set -e
+# Don't use set -e as it causes premature exit on expected failures
 
 # Configuration
 API_HOST="${API_HOST:-http://localhost:5001}"
@@ -253,7 +253,7 @@ main() {
     # Generate unique email for this test run
     TIMESTAMP=$(date +%s)
     TEST_EMAIL="test-v0.2.0-${TIMESTAMP}@example.com"
-    TEST_PASSWORD="TestPassword123!"
+    TEST_PASSWORD="Admin123"
 
     # Register test user
     log_info "Registering test user: $TEST_EMAIL"
@@ -294,13 +294,13 @@ main() {
 
     if [ -n "$ACCESS_TOKEN" ]; then
         drawing_response=$(test_post "/api/v1/drawings" \
-            "{\"title\":\"Test Drawing for Collections\",\"description\":\"Created for v0.2.0 collection tests\",\"content\":\"{}\"}" \
+            "{\"name\":\"Test Drawing for Collections\",\"description\":\"Created for v0.2.0 collection tests\",\"content\":{\"nodes\":[],\"edges\":[]}}" \
             201 \
             "POST /api/v1/drawings - Create test drawing" \
             "$ACCESS_TOKEN")
 
         if [ $? -eq 0 ]; then
-            DRAWING_ID=$(extract_json_field "$drawing_response" "id")
+            DRAWING_ID=$(echo "$drawing_response" | grep -o '{.*}' | python3 -c "import sys,json; d=json.load(sys.stdin); print(d.get('drawing',{}).get('id', d.get('id','')))" 2>/dev/null)
             log_info "Created test drawing with ID: $DRAWING_ID"
         else
             log_warn "Failed to create test drawing - some collection tests may fail"

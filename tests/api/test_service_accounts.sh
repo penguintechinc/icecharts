@@ -4,7 +4,7 @@
 # Tests service account management, token generation, and scoped access
 # Part of the External App Integration feature
 
-set -e
+# Don't use set -e as it causes premature exit on expected failures
 
 # Configuration
 API_HOST="${API_HOST:-http://localhost:5001}"
@@ -214,7 +214,7 @@ extract_json_field() {
 extract_nested_json_field() {
     local json="$1"
     local field="$2"
-    echo "$json" | python3 -c "import sys,json; d=json.load(sys.stdin); print(d.get('$field', d.get('service_account',{}).get('$field','')))" 2>/dev/null || echo ""
+    echo "$json" | grep -o '{.*}' | python3 -c "import sys,json; d=json.load(sys.stdin); print(d.get('$field', d.get('service_account',{}).get('$field','')))" 2>/dev/null || echo ""
 }
 
 # Main Test Suite
@@ -248,7 +248,7 @@ main() {
     # Generate unique email for this test run
     TIMESTAMP=$(date +%s)
     ADMIN_EMAIL="admin-sa-test-${TIMESTAMP}@example.com"
-    ADMIN_PASSWORD="AdminPassword123!"
+    ADMIN_PASSWORD="Admin123"
 
     # Register admin user
     log_info "Registering admin user: $ADMIN_EMAIL"
@@ -299,7 +299,7 @@ main() {
             "$ADMIN_TOKEN")
 
         if [ $? -eq 0 ]; then
-            SERVICE_ACCOUNT_ID=$(echo "$create_sa_response" | python3 -c "import sys,json; d=json.load(sys.stdin); print(d.get('service_account',{}).get('id',''))" 2>/dev/null)
+            SERVICE_ACCOUNT_ID=$(echo "$create_sa_response" | grep -o '{.*}' | python3 -c "import sys,json; d=json.load(sys.stdin); print(d.get('service_account',{}).get('id',''))" 2>/dev/null)
             log_info "Created service account with ID: $SERVICE_ACCOUNT_ID"
         fi
 
@@ -343,8 +343,8 @@ main() {
             "$ADMIN_TOKEN")
 
         if [ $? -eq 0 ]; then
-            SERVICE_TOKEN=$(echo "$token_response" | python3 -c "import sys,json; d=json.load(sys.stdin); print(d.get('token',''))" 2>/dev/null)
-            TOKEN_JTI=$(echo "$token_response" | python3 -c "import sys,json; d=json.load(sys.stdin); print(d.get('token_info',{}).get('token_jti',''))" 2>/dev/null)
+            SERVICE_TOKEN=$(echo "$token_response" | grep -o '{.*}' | python3 -c "import sys,json; d=json.load(sys.stdin); print(d.get('token',''))" 2>/dev/null)
+            TOKEN_JTI=$(echo "$token_response" | grep -o '{.*}' | python3 -c "import sys,json; d=json.load(sys.stdin); print(d.get('token_info',{}).get('token_jti',''))" 2>/dev/null)
             log_info "Generated service token (JTI: $TOKEN_JTI)"
         fi
 
@@ -378,7 +378,7 @@ main() {
             "$SERVICE_TOKEN")
 
         if [ $? -eq 0 ]; then
-            DRAWING_ID=$(echo "$drawing_response" | python3 -c "import sys,json; d=json.load(sys.stdin); print(d.get('drawing',{}).get('id',''))" 2>/dev/null)
+            DRAWING_ID=$(echo "$drawing_response" | grep -o '{.*}' | python3 -c "import sys,json; d=json.load(sys.stdin); print(d.get('drawing',{}).get('id',''))" 2>/dev/null)
             log_info "Created drawing with ID: $DRAWING_ID"
         fi
 

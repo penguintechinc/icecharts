@@ -265,7 +265,7 @@ def define_all_tables(db):
             default="draft",
             requires=IS_IN_SET(["draft", "published", "archived"]),
         ),
-        Field("tags", "list:string"),
+        Field("tags", "json"),  # Store as JSON array for PostgreSQL compatibility
         Field("thumbnail_url", "string", length=1024),
         Field(
             "created_at",
@@ -511,7 +511,7 @@ def define_all_tables(db):
         ),
         Field("name", "string", length=255, notnull=True, requires=IS_NOT_EMPTY()),
         Field("description", "text"),
-        Field("owner_id", "reference identities", notnull=True, ondelete="CASCADE"),
+        Field("created_by_id", "reference identities", notnull=True, ondelete="CASCADE"),
         Field("is_public", "boolean", default=False, notnull=True),
         Field(
             "created_at",

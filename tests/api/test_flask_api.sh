@@ -3,7 +3,7 @@
 # Flask Backend API Test Script
 # Tests Flask backend API endpoints with expected responses
 
-set -e
+# Don't use set -e as it causes premature exit on expected failures
 
 # Configuration
 API_HOST="${API_HOST:-http://localhost:5001}"
@@ -151,7 +151,7 @@ main() {
     # Generate unique email for this test run
     TIMESTAMP=$(date +%s)
     TEST_EMAIL="test-${TIMESTAMP}@example.com"
-    TEST_PASSWORD="TestPassword123!"
+    TEST_PASSWORD="Admin123"
 
     # Test user registration
     log_info "Registering test user: $TEST_EMAIL"
