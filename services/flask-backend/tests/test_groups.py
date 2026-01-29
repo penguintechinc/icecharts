@@ -8,11 +8,11 @@ import pytest
 class TestGroupCreate:
     """Test group creation."""
 
-    def test_create_group_success(self, client, auth_headers):
-        """Test successful group creation."""
+    def test_create_group_success(self, client, admin_auth_headers):
+        """Test successful group creation (requires admin/maintainer role)."""
         response = client.post(
             "/api/v1/groups",
-            headers=auth_headers,
+            headers=admin_auth_headers,
             json={
                 "name": "Test Group",
                 "description": "A test group",
@@ -20,9 +20,10 @@ class TestGroupCreate:
         )
         assert response.status_code == 201
         data = json.loads(response.data)
-        assert "id" in data
-        assert data["name"] == "Test Group"
-        assert data["description"] == "A test group"
+        assert "group" in data
+        assert "id" in data["group"]
+        assert data["group"]["name"] == "Test Group"
+        assert data["group"]["description"] == "A test group"
 
     def test_create_group_without_auth(self, client):
         """Test group creation without authentication."""
@@ -35,20 +36,32 @@ class TestGroupCreate:
         )
         assert response.status_code == 401
 
-    def test_create_group_missing_name(self, client, auth_headers):
-        """Test group creation without name."""
+    def test_create_group_viewer_forbidden(self, client, auth_headers):
+        """Test group creation with viewer role is forbidden."""
         response = client.post(
             "/api/v1/groups",
             headers=auth_headers,
+            json={
+                "name": "Test Group",
+                "description": "A test group",
+            },
+        )
+        assert response.status_code == 403
+
+    def test_create_group_missing_name(self, client, admin_auth_headers):
+        """Test group creation without name."""
+        response = client.post(
+            "/api/v1/groups",
+            headers=admin_auth_headers,
             json={"description": "A test group"},
         )
         assert response.status_code == 400
 
-    def test_create_group_empty_name(self, client, auth_headers):
+    def test_create_group_empty_name(self, client, admin_auth_headers):
         """Test group creation with empty name."""
         response = client.post(
             "/api/v1/groups",
-            headers=auth_headers,
+            headers=admin_auth_headers,
             json={
                 "name": "",
                 "description": "A test group",
@@ -56,12 +69,12 @@ class TestGroupCreate:
         )
         assert response.status_code == 400
 
-    def test_create_duplicate_group_name(self, client, auth_headers):
+    def test_create_duplicate_group_name(self, client, admin_auth_headers):
         """Test creating group with duplicate name."""
         # Create first group
         client.post(
             "/api/v1/groups",
-            headers=auth_headers,
+            headers=admin_auth_headers,
             json={
                 "name": "Test Group",
                 "description": "First group",
@@ -71,7 +84,7 @@ class TestGroupCreate:
         # Try to create duplicate
         response = client.post(
             "/api/v1/groups",
-            headers=auth_headers,
+            headers=admin_auth_headers,
             json={
                 "name": "Test Group",
                 "description": "Second group",
@@ -84,58 +97,83 @@ class TestGroupCreate:
 class TestGroupRead:
     """Test group retrieval."""
 
-    def test_get_group_by_id(self, client, auth_headers):
+    def test_get_group_by_id(self, client, admin_auth_headers):
         """Test retrieving a group by ID."""
-        # Create a group
+        # Create a group (requires admin/maintainer)
         create_response = client.post(
             "/api/v1/groups",
-            headers=auth_headers,
+            headers=admin_auth_headers,
             json={
                 "name": "Test Group",
                 "description": "A test group",
             },
         )
-        group_id = json.loads(create_response.data)["id"]
+        group_id = json.loads(create_response.data)["group"]["id"]
 
-        # Retrieve the group
-        response = client.get(f"/api/v1/groups/{group_id}", headers=auth_headers)
+        # Retrieve the group (admin can see all groups)
+        response = client.get(
+            f"/api/v1/groups/{group_id}", headers=admin_auth_headers
+        )
         assert response.status_code == 200
         data = json.loads(response.data)
-        assert data["id"] == group_id
-        assert data["name"] == "Test Group"
+        assert "group" in data
+        assert data["group"]["id"] == group_id
+        assert data["group"]["name"] == "Test Group"
 
-    def test_get_group_not_found(self, client, auth_headers):
+    def test_get_group_not_found(self, client, admin_auth_headers):
         """Test retrieving non-existent group."""
-        response = client.get("/api/v1/groups/99999", headers=auth_headers)
+        response = client.get(
+            "/api/v1/groups/99999", headers=admin_auth_headers
+        )
         assert response.status_code == 404
 
-    def test_list_user_groups(self, client, auth_headers):
-        """Test listing user's groups."""
+    def test_get_group_viewer_not_member_forbidden(self, client, auth_headers,
+                                                   admin_auth_headers):
+        """Test that a viewer who is not a group member cannot access it."""
+        # Create a group as admin
+        create_response = client.post(
+            "/api/v1/groups",
+            headers=admin_auth_headers,
+            json={
+                "name": "Private Group",
+                "description": "A private group",
+            },
+        )
+        group_id = json.loads(create_response.data)["group"]["id"]
+
+        # Viewer (not a member) tries to access
+        response = client.get(
+            f"/api/v1/groups/{group_id}", headers=auth_headers
+        )
+        assert response.status_code == 403
+
+    def test_list_groups_as_admin(self, client, admin_auth_headers):
+        """Test listing groups as admin (admin sees all groups)."""
         # Create multiple groups
         for i in range(3):
             client.post(
                 "/api/v1/groups",
-                headers=auth_headers,
+                headers=admin_auth_headers,
                 json={
                     "name": f"Group {i}",
                     "description": f"Test group {i}",
                 },
             )
 
-        # List groups
-        response = client.get("/api/v1/groups", headers=auth_headers)
+        # List groups as admin
+        response = client.get("/api/v1/groups", headers=admin_auth_headers)
         assert response.status_code == 200
         data = json.loads(response.data)
-        assert "items" in data
-        assert len(data["items"]) == 3
+        assert "groups" in data
+        assert len(data["groups"]) == 3
 
-    def test_list_groups_pagination(self, client, auth_headers):
+    def test_list_groups_pagination(self, client, admin_auth_headers):
         """Test group list pagination."""
         # Create 15 groups
         for i in range(15):
             client.post(
                 "/api/v1/groups",
-                headers=auth_headers,
+                headers=admin_auth_headers,
                 json={
                     "name": f"Group {i}",
                     "description": f"Test group {i}",
@@ -145,62 +183,62 @@ class TestGroupRead:
         # Get first page
         response = client.get(
             "/api/v1/groups?page=1&per_page=10",
-            headers=auth_headers,
+            headers=admin_auth_headers,
         )
         assert response.status_code == 200
         data = json.loads(response.data)
-        assert len(data["items"]) == 10
+        assert len(data["groups"]) == 10
         assert data["total"] == 15
 
 
 class TestGroupUpdate:
     """Test group updates."""
 
-    def test_update_group_name(self, client, auth_headers):
+    def test_update_group_name(self, client, admin_auth_headers):
         """Test updating group name."""
         # Create a group
         create_response = client.post(
             "/api/v1/groups",
-            headers=auth_headers,
+            headers=admin_auth_headers,
             json={
                 "name": "Original Name",
                 "description": "A test group",
             },
         )
-        group_id = json.loads(create_response.data)["id"]
+        group_id = json.loads(create_response.data)["group"]["id"]
 
-        # Update the group
+        # Update the group (admin or group admin can update)
         response = client.put(
             f"/api/v1/groups/{group_id}",
-            headers=auth_headers,
+            headers=admin_auth_headers,
             json={"name": "Updated Name"},
         )
         assert response.status_code == 200
         data = json.loads(response.data)
-        assert data["name"] == "Updated Name"
+        assert data["group"]["name"] == "Updated Name"
 
-    def test_update_group_description(self, client, auth_headers):
+    def test_update_group_description(self, client, admin_auth_headers):
         """Test updating group description."""
         # Create a group
         create_response = client.post(
             "/api/v1/groups",
-            headers=auth_headers,
+            headers=admin_auth_headers,
             json={
                 "name": "Test Group",
                 "description": "Original description",
             },
         )
-        group_id = json.loads(create_response.data)["id"]
+        group_id = json.loads(create_response.data)["group"]["id"]
 
         # Update the description
         response = client.put(
             f"/api/v1/groups/{group_id}",
-            headers=auth_headers,
+            headers=admin_auth_headers,
             json={"description": "Updated description"},
         )
         assert response.status_code == 200
         data = json.loads(response.data)
-        assert data["description"] == "Updated description"
+        assert data["group"]["description"] == "Updated description"
 
     def test_update_group_without_auth(self, client):
         """Test updating group without authentication."""
@@ -210,11 +248,33 @@ class TestGroupUpdate:
         )
         assert response.status_code == 401
 
-    def test_update_nonexistent_group(self, client, auth_headers):
+    def test_update_group_viewer_forbidden(self, client, auth_headers,
+                                           admin_auth_headers):
+        """Test that a viewer cannot update a group."""
+        # Create a group as admin
+        create_response = client.post(
+            "/api/v1/groups",
+            headers=admin_auth_headers,
+            json={
+                "name": "Test Group",
+                "description": "A test group",
+            },
+        )
+        group_id = json.loads(create_response.data)["group"]["id"]
+
+        # Viewer tries to update
+        response = client.put(
+            f"/api/v1/groups/{group_id}",
+            headers=auth_headers,
+            json={"name": "Updated Name"},
+        )
+        assert response.status_code == 403
+
+    def test_update_nonexistent_group(self, client, admin_auth_headers):
         """Test updating non-existent group."""
         response = client.put(
             "/api/v1/groups/99999",
-            headers=auth_headers,
+            headers=admin_auth_headers,
             json={"name": "Updated Name"},
         )
         assert response.status_code == 404
@@ -223,38 +283,40 @@ class TestGroupUpdate:
 class TestGroupDelete:
     """Test group deletion."""
 
-    def test_delete_group_success(self, client, auth_headers):
+    def test_delete_group_success(self, client, admin_auth_headers):
         """Test successful group deletion."""
         # Create a group
         create_response = client.post(
             "/api/v1/groups",
-            headers=auth_headers,
+            headers=admin_auth_headers,
             json={
                 "name": "Test Group",
                 "description": "A test group",
             },
         )
-        group_id = json.loads(create_response.data)["id"]
+        group_id = json.loads(create_response.data)["group"]["id"]
 
-        # Delete the group
+        # Delete the group (returns 200, not 204)
         response = client.delete(
             f"/api/v1/groups/{group_id}",
-            headers=auth_headers,
+            headers=admin_auth_headers,
         )
-        assert response.status_code == 204
+        assert response.status_code == 200
+        data = json.loads(response.data)
+        assert "message" in data
 
         # Verify it's deleted
         get_response = client.get(
             f"/api/v1/groups/{group_id}",
-            headers=auth_headers,
+            headers=admin_auth_headers,
         )
         assert get_response.status_code == 404
 
-    def test_delete_group_not_found(self, client, auth_headers):
+    def test_delete_group_not_found(self, client, admin_auth_headers):
         """Test deleting non-existent group."""
         response = client.delete(
             "/api/v1/groups/99999",
-            headers=auth_headers,
+            headers=admin_auth_headers,
         )
         assert response.status_code == 404
 
@@ -263,148 +325,158 @@ class TestGroupDelete:
         response = client.delete("/api/v1/groups/1")
         assert response.status_code == 401
 
-
-class TestGroupMembers:
-    """Test group member management."""
-
-    def test_add_member_to_group(self, client, auth_headers, create_test_user):
-        """Test adding a member to a group."""
-        # Create a group
-        group_response = client.post(
+    def test_delete_group_viewer_forbidden(self, client, auth_headers,
+                                           admin_auth_headers):
+        """Test that a viewer cannot delete a group."""
+        # Create a group as admin
+        create_response = client.post(
             "/api/v1/groups",
-            headers=auth_headers,
+            headers=admin_auth_headers,
             json={
                 "name": "Test Group",
                 "description": "A test group",
             },
         )
-        group_id = json.loads(group_response.data)["id"]
+        group_id = json.loads(create_response.data)["group"]["id"]
+
+        # Viewer tries to delete
+        response = client.delete(
+            f"/api/v1/groups/{group_id}",
+            headers=auth_headers,
+        )
+        assert response.status_code == 403
+
+
+class TestGroupMembers:
+    """Test group member management."""
+
+    def test_add_member_to_group(self, client, admin_auth_headers,
+                                 create_test_user):
+        """Test adding a member to a group."""
+        # Create a group as admin (admin becomes group admin member)
+        group_response = client.post(
+            "/api/v1/groups",
+            headers=admin_auth_headers,
+            json={
+                "name": "Test Group",
+                "description": "A test group",
+            },
+        )
+        group_id = json.loads(group_response.data)["group"]["id"]
 
         # Create another user
         other_user = create_test_user("member@example.com")
 
-        # Add member to group
+        # Add member to group (admin auth has permissions)
+        response = client.post(
+            f"/api/v1/groups/{group_id}/members",
+            headers=admin_auth_headers,
+            json={"user_id": other_user["id"], "role": "member"},
+        )
+        assert response.status_code == 201
+        data = json.loads(response.data)
+        assert "message" in data
+
+    def test_add_member_viewer_forbidden(self, client, auth_headers,
+                                         admin_auth_headers,
+                                         create_test_user):
+        """Test that a viewer cannot add members to a group."""
+        # Create a group as admin
+        group_response = client.post(
+            "/api/v1/groups",
+            headers=admin_auth_headers,
+            json={
+                "name": "Test Group",
+                "description": "A test group",
+            },
+        )
+        group_id = json.loads(group_response.data)["group"]["id"]
+
+        # Create another user
+        other_user = create_test_user("member@example.com")
+
+        # Viewer tries to add member
         response = client.post(
             f"/api/v1/groups/{group_id}/members",
             headers=auth_headers,
             json={"user_id": other_user["id"], "role": "member"},
         )
-        assert response.status_code in [200, 201, 404]
+        assert response.status_code == 403
 
-    def test_list_group_members(self, client, auth_headers):
+    def test_list_group_members(self, client, admin_auth_headers):
         """Test listing group members."""
-        # Create a group
+        # Create a group (creator becomes admin member automatically)
         group_response = client.post(
             "/api/v1/groups",
-            headers=auth_headers,
+            headers=admin_auth_headers,
             json={
                 "name": "Test Group",
                 "description": "A test group",
             },
         )
-        group_id = json.loads(group_response.data)["id"]
+        group_id = json.loads(group_response.data)["group"]["id"]
 
-        # List members
+        # List members (admin can access)
+        response = client.get(
+            f"/api/v1/groups/{group_id}/members",
+            headers=admin_auth_headers,
+        )
+        assert response.status_code == 200
+        data = json.loads(response.data)
+        assert "members" in data
+        assert "total" in data
+        # Creator is automatically added as admin member
+        assert data["total"] >= 1
+
+    def test_list_group_members_viewer_not_member_forbidden(
+        self, client, auth_headers, admin_auth_headers
+    ):
+        """Test that a viewer not in the group cannot list members."""
+        # Create a group as admin
+        group_response = client.post(
+            "/api/v1/groups",
+            headers=admin_auth_headers,
+            json={
+                "name": "Test Group",
+                "description": "A test group",
+            },
+        )
+        group_id = json.loads(group_response.data)["group"]["id"]
+
+        # Viewer (not a member) tries to list members
         response = client.get(
             f"/api/v1/groups/{group_id}/members",
             headers=auth_headers,
         )
-        assert response.status_code in [200, 404]
+        assert response.status_code == 403
 
-    def test_remove_member_from_group(self, client, auth_headers, create_test_user):
+    def test_remove_member_from_group(self, client, admin_auth_headers,
+                                      create_test_user):
         """Test removing a member from a group."""
-        # Create a group
+        # Create a group as admin
         group_response = client.post(
             "/api/v1/groups",
-            headers=auth_headers,
+            headers=admin_auth_headers,
             json={
                 "name": "Test Group",
                 "description": "A test group",
             },
         )
-        group_id = json.loads(group_response.data)["id"]
+        group_id = json.loads(group_response.data)["group"]["id"]
 
         # Create and add a user
         other_user = create_test_user("member@example.com")
+        client.post(
+            f"/api/v1/groups/{group_id}/members",
+            headers=admin_auth_headers,
+            json={"user_id": other_user["id"], "role": "member"},
+        )
 
-        # Remove member
+        # Remove member (returns 200 with JSON, not 204)
         response = client.delete(
             f"/api/v1/groups/{group_id}/members/{other_user['id']}",
-            headers=auth_headers,
+            headers=admin_auth_headers,
         )
-        assert response.status_code in [204, 404]
-
-
-class TestGroupDrawings:
-    """Test group and drawing relationships."""
-
-    def test_get_group_drawings(self, client, auth_headers):
-        """Test retrieving all drawings in a group."""
-        # Create a group
-        group_response = client.post(
-            "/api/v1/groups",
-            headers=auth_headers,
-            json={
-                "name": "Test Group",
-                "description": "A test group",
-            },
-        )
-        group_id = json.loads(group_response.data)["id"]
-
-        # Create drawings in the group
-        for i in range(3):
-            client.post(
-                "/api/v1/drawings",
-                headers=auth_headers,
-                json={
-                    "name": f"Drawing {i}",
-                    "description": f"Test drawing {i}",
-                    "group_id": group_id,
-                    "canvas_data": {"nodes": [], "edges": []},
-                },
-            )
-
-        # Get group drawings
-        response = client.get(
-            f"/api/v1/groups/{group_id}/drawings",
-            headers=auth_headers,
-        )
-        assert response.status_code in [200, 404]
-
-    def test_move_drawing_to_group(self, client, auth_headers):
-        """Test moving a drawing to a different group."""
-        # Create two groups
-        group1_response = client.post(
-            "/api/v1/groups",
-            headers=auth_headers,
-            json={"name": "Group 1", "description": "First group"},
-        )
-        group1_id = json.loads(group1_response.data)["id"]
-
-        group2_response = client.post(
-            "/api/v1/groups",
-            headers=auth_headers,
-            json={"name": "Group 2", "description": "Second group"},
-        )
-        group2_id = json.loads(group2_response.data)["id"]
-
-        # Create drawing in group 1
-        drawing_response = client.post(
-            "/api/v1/drawings",
-            headers=auth_headers,
-            json={
-                "name": "Test Drawing",
-                "description": "A test drawing",
-                "group_id": group1_id,
-                "canvas_data": {"nodes": [], "edges": []},
-            },
-        )
-        drawing_id = json.loads(drawing_response.data)["id"]
-
-        # Move to group 2
-        response = client.put(
-            f"/api/v1/drawings/{drawing_id}",
-            headers=auth_headers,
-            json={"group_id": group2_id},
-        )
-        assert response.status_code in [200, 404]
+        assert response.status_code == 200
+        data = json.loads(response.data)
+        assert "message" in data

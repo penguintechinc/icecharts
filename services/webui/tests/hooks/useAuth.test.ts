@@ -10,9 +10,9 @@ import { renderHook, act } from '@testing-library/react';
  * Replace with actual import when hook exists
  */
 const useAuth = () => {
-  const [isAuthenticated, setIsAuthenticated] = vi.fn();
-  const [user, setUser] = vi.fn();
-  const [token, setToken] = vi.fn();
+  const setIsAuthenticated = vi.fn();
+  const setUser = vi.fn();
+  const setToken = vi.fn();
 
   const login = vi.fn(async (email: string, password: string) => {
     setIsAuthenticated(true);

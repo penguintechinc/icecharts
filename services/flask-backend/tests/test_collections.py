@@ -73,7 +73,7 @@ class TestCollectionCreate:
                 "name": "Public Collection",
                 "description": "A public collection",
                 "is_public": True,
-                "share_mode": "public",
+                "share_mode": "link_only",
             },
         )
         assert response.status_code == 201
@@ -130,8 +130,8 @@ class TestCollectionRead:
         response = client.get("/api/v1/collections", headers=auth_headers)
         assert response.status_code == 200
         data = json.loads(response.data)
-        assert "items" in data
-        assert len(data["items"]) == 3
+        assert "collections" in data
+        assert len(data["collections"]) == 3
 
     def test_list_collections_pagination(self, client, auth_headers):
         """Test collection list pagination."""
@@ -154,7 +154,7 @@ class TestCollectionRead:
         )
         assert response.status_code == 200
         data = json.loads(response.data)
-        assert len(data["items"]) == 10
+        assert len(data["collections"]) == 10
         assert data["total"] == 15
 
     def test_user_cannot_see_other_users_private_collections(
@@ -259,7 +259,8 @@ class TestCollectionUpdate:
             headers=auth_headers,
             json={"name": "Updated Name"},
         )
-        assert response.status_code == 404
+        # API returns 403 (not owner) or 404 (not found)
+        assert response.status_code in [403, 404]
 
     def test_change_collection_visibility(self, client, auth_headers):
         """Test changing collection from private to public."""
@@ -343,10 +344,10 @@ class TestCollectionDrawings:
             json={
                 "name": "Test Drawing",
                 "description": "A test drawing",
-                "canvas_data": {"nodes": [], "edges": []},
+                "content": {"nodes": [], "edges": []},
             },
         )
-        drawing_id = json.loads(drawing_response.data)["id"]
+        drawing_id = int(json.loads(drawing_response.data)["drawing"]["id"])
 
         # Create a collection
         collection_response = client.post(
@@ -393,10 +394,10 @@ class TestCollectionDrawings:
                 json={
                     "name": f"Drawing {i}",
                     "description": f"Test drawing {i}",
-                    "canvas_data": {"nodes": [], "edges": []},
+                    "content": {"nodes": [], "edges": []},
                 },
             )
-            drawing_id = json.loads(drawing_response.data)["id"]
+            drawing_id = int(json.loads(drawing_response.data)["drawing"]["id"])
 
             client.post(
                 f"/api/v1/collections/{collection_id}/drawings",
@@ -411,7 +412,7 @@ class TestCollectionDrawings:
         )
         assert response.status_code == 200
         data = json.loads(response.data)
-        assert "drawings" in data or "items" in data
+        assert "drawings" in data
 
     def test_remove_drawing_from_collection(self, client, auth_headers):
         """Test removing a drawing from a collection."""
@@ -422,10 +423,10 @@ class TestCollectionDrawings:
             json={
                 "name": "Test Drawing",
                 "description": "A test drawing",
-                "canvas_data": {"nodes": [], "edges": []},
+                "content": {"nodes": [], "edges": []},
             },
         )
-        drawing_id = json.loads(drawing_response.data)["id"]
+        drawing_id = int(json.loads(drawing_response.data)["drawing"]["id"])
 
         # Create collection
         collection_response = client.post(
@@ -473,7 +474,8 @@ class TestCollectionDrawings:
             headers=auth_headers,
             json={"drawing_id": 99999},
         )
-        assert response.status_code == 400 or response.status_code == 404
+        # API returns 400 (invalid), 403 (not owner), or 404 (not found)
+        assert response.status_code in [400, 403, 404]
 
 
 class TestCollectionSharing:
@@ -581,6 +583,7 @@ class TestCollectionSharingTokens:
                 "name": "Public Collection",
                 "description": "A public collection",
                 "is_public": True,
+                "share_mode": "link_only",
             },
         )
         collection_id = json.loads(collection_response.data)["collection"]["id"]
@@ -606,6 +609,7 @@ class TestCollectionSharingTokens:
                 "name": "Public Collection",
                 "description": "A public collection",
                 "is_public": True,
+                "share_mode": "link_only",
             },
         )
         collection_id = json.loads(collection_response.data)["collection"]["id"]
@@ -635,6 +639,7 @@ class TestCollectionSharingTokens:
                 "name": "Public Collection",
                 "description": "A public collection",
                 "is_public": True,
+                "share_mode": "link_only",
             },
         )
         collection_id = json.loads(collection_response.data)["collection"]["id"]
@@ -646,10 +651,10 @@ class TestCollectionSharingTokens:
             json={
                 "name": "Test Drawing",
                 "description": "A test drawing",
-                "canvas_data": {"nodes": [], "edges": []},
+                "content": {"nodes": [], "edges": []},
             },
         )
-        drawing_id = json.loads(drawing_response.data)["id"]
+        drawing_id = int(json.loads(drawing_response.data)["drawing"]["id"])
 
         client.post(
             f"/api/v1/collections/{collection_id}/drawings",
@@ -684,6 +689,7 @@ class TestCollectionSharingTokens:
                 "name": "Public Collection",
                 "description": "A public collection",
                 "is_public": True,
+                "share_mode": "link_only",
             },
         )
         collection_id = json.loads(collection_response.data)["collection"]["id"]

@@ -161,6 +161,32 @@ def auth_required(f: Callable) -> Callable:
     return decorated
 
 
+def optional_auth(f: Callable) -> Callable:
+    """Decorator for optional authentication.
+
+    Sets g.current_user if a valid token is present, otherwise sets it
+    to None and continues without returning an error.
+    """
+    @wraps(f)
+    def decorated(*args, **kwargs):
+        g.current_user = None
+        g.is_service_account = False
+
+        token = get_token_from_header()
+        if token:
+            payload = decode_token(token)
+            if payload and payload.get("type") == "access":
+                user_id = payload.get("sub")
+                if user_id:
+                    user = get_user_by_id(int(user_id))
+                    if user and user.get("is_active"):
+                        g.current_user = user
+
+        return f(*args, **kwargs)
+
+    return decorated
+
+
 def user_auth_required(f: Callable) -> Callable:
     """Decorator to require user authentication only (no service accounts)."""
     @wraps(f)

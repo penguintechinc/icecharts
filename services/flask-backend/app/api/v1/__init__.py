@@ -25,6 +25,7 @@ from .users import users_v1_bp
 from .admin_stats import admin_stats_v1_bp
 from .admin_sso import admin_sso_v1_bp
 from .service_accounts import service_accounts_v1_bp
+from .collections import collections_v1_bp
 
 # Import collaboration socket handlers (WebSocket events, not a blueprint)
 from . import collaboration_socket  # noqa: F401
@@ -49,5 +50,6 @@ api_v1_bp.register_blueprint(users_v1_bp)
 api_v1_bp.register_blueprint(admin_stats_v1_bp)
 api_v1_bp.register_blueprint(admin_sso_v1_bp)
 api_v1_bp.register_blueprint(service_accounts_v1_bp)
+api_v1_bp.register_blueprint(collections_v1_bp)
 
 __all__ = ["api_v1_bp"]

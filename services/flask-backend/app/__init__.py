@@ -21,13 +21,14 @@ def create_app(config_class=None):
     Create and configure Flask application.
 
     Args:
-        config_class: Configuration class to use (defaults to Config)
+        config_class: Configuration class to use (defaults based on FLASK_ENV)
 
     Returns:
         Configured Flask app instance
     """
     if config_class is None:
-        config_class = Config
+        from .config import get_config
+        config_class = get_config(os.getenv("FLASK_ENV", "development"))
 
     app = Flask(__name__)
     app.config.from_object(config_class)

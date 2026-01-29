@@ -1,8 +1,11 @@
 """Pytest Configuration and Fixtures for Flask Backend Tests."""
 
 import os
+import shutil
 import sys
+import tempfile
 from datetime import datetime, timedelta
+from unittest.mock import patch
 
 import pytest
 from flask import Flask
@@ -24,24 +27,37 @@ from app.models import (
 @pytest.fixture
 def app() -> Flask:
     """Create and configure a test Flask application."""
-    # Create app with testing config
     os.environ["FLASK_ENV"] = "testing"
     os.environ["TESTING"] = "true"
     os.environ["DB_TYPE"] = "sqlite"
-    os.environ["DATABASE_URL"] = "sqlite:///:memory:"
+    os.environ["DATABASE_URL"] = "sqlite:memory"
     os.environ["RATELIMIT_ENABLED"] = "false"
     os.environ["JWT_SECRET_KEY"] = "test-secret-key"
 
-    app = create_app()
-    app.config.from_object(TestingConfig)
+    app = create_app(config_class=TestingConfig)
 
-    # Create application context
+    # Prevent teardown from closing the in-memory DB connection between requests.
+    # With in-memory SQLite, closing the connection destroys all tables and data.
+    import app.models as models_pkg
+    _original_close = models_pkg.close_db
+    models_pkg.close_db = lambda: None
+
     with app.app_context():
-        from app.models import init_db
+        # Seed a default tenant so foreign key constraints are satisfied
+        db = get_db()
+        if db(db.tenants).count() == 0:
+            db.tenants.insert(
+                name="Test Tenant",
+                slug="test-tenant",
+                is_active=True,
+            )
+            db.commit()
 
-        # Initialize database
-        init_db(app)
         yield app
+
+    # Restore original close_db and clean up
+    models_pkg.close_db = _original_close
+    _original_close()
 
 
 @pytest.fixture
@@ -105,7 +121,7 @@ def create_test_user(app: Flask):
                 role=role,
             )
             return {
-                "id": user.id,
+                "id": user["id"],
                 "email": email,
                 "password": password,
                 "full_name": full_name,

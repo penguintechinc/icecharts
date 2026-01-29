@@ -11,6 +11,17 @@ from app.services.email_service import EmailService
 logger = logging.getLogger(__name__)
 
 
+def _ensure_utc_aware(dt: datetime.datetime) -> datetime.datetime:
+    """Ensure a datetime is timezone-aware (UTC).
+
+    PyDAL+SQLite returns naive datetimes. This normalizes them to
+    UTC-aware so comparisons with datetime.now(timezone.utc) work.
+    """
+    if dt is not None and dt.tzinfo is None:
+        return dt.replace(tzinfo=datetime.timezone.utc)
+    return dt
+
+
 class EmailVerificationService:
     """Service for managing email verification."""
 
@@ -107,7 +118,8 @@ class EmailVerificationService:
 
             # Check if token has expired
             now = datetime.datetime.now(datetime.timezone.utc)
-            if verification.expires_at < now:
+            expires_at = _ensure_utc_aware(verification.expires_at)
+            if expires_at < now:
                 logger.warning(f"Verification token expired for user {verification.user_id}")
                 return None
 
@@ -218,7 +230,7 @@ class EmailVerificationService:
 
             if verification:
                 now = datetime.datetime.now(datetime.timezone.utc)
-                is_expired = verification.expires_at < now
+                is_expired = _ensure_utc_aware(verification.expires_at) < now
 
                 return {
                     "verified": False,
@@ -245,7 +257,9 @@ class EmailVerificationService:
             db = get_db()
 
             # Delete expired, unverified records
-            now = datetime.datetime.now(datetime.timezone.utc)
+            # Note: For SQLite, PyDAL stores naive datetimes, so the
+            # DB-level comparison works correctly with naive values.
+            now = datetime.datetime.utcnow()
             deleted = db(
                 (db.email_verifications.expires_at < now)
                 & (db.email_verifications.is_verified == False)

@@ -213,9 +213,12 @@ class TestingConfig(Config):
     TESTING = True
     WTF_CSRF_ENABLED = False
     DB_TYPE = "sqlite"
-    DATABASE_URL = "sqlite:///:memory:"
+    DATABASE_URL = "sqlite:memory"
+    DB_POOL_SIZE = 0
     RATELIMIT_ENABLED = False
+    JWT_SECRET_KEY = "test-secret-key-for-pytest"
     LICENSE_KEY = "PENG-TEST-TEST-TEST-TEST-TEST"
+    SOCKETIO_ENABLED = False
 
 
 config_by_name = {
