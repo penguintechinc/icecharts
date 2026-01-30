@@ -16,7 +16,7 @@ data:
   STORAGE_PROVIDER: "minio"
   MINIO_BUCKET: "icecharts"
   MINIO_SECURE: "false"
-  CORS_ORIGINS: "https://dal2.penguintech.io"
+  CORS_ORIGINS: "https://icecharts.penguintech.io"
   LICENSE_SERVER_URL: "https://license.penguintech.io"
   PRODUCT_NAME: "icecharts"
   RELEASE_MODE: "false"

@@ -120,7 +120,7 @@ kubectl -n icecharts-beta create secret generic icecharts-secret \
 | Environment | Namespace       | Host                        | Replicas (web/api) |
 |-------------|-----------------|-----------------------------|--------------------|
 | dev         | icecharts-dev   | (port-forward)              | 1/1                |
-| beta        | icecharts-beta  | dal2.penguintech.io         | 2/2                |
+| beta        | icecharts-beta  | icecharts.penguintech.io    | 2/2                |
 | prod        | icecharts-prod  | icecharts.penguincloud.io   | 3/3                |
 
 ### Resource Limits
@@ -146,10 +146,10 @@ kubectl -n icecharts-beta get svc
 kubectl -n icecharts-beta get ingress
 
 # Test web UI
-curl -I https://dal2.penguintech.io/
+curl -I https://icecharts.penguintech.io/
 
 # Test API health
-curl https://dal2.penguintech.io/api/v1/health
+curl https://icecharts.penguintech.io/api/v1/health
 
 # View logs
 kubectl -n icecharts-beta logs -l app=web --tail=50
