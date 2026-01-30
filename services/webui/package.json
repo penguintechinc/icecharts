@@ -29,7 +29,8 @@
     "react-router-dom": "^6.28.0",
     "recharts": "^2.10.0",
     "socket.io-client": "^4.7.4",
-    "zustand": "^5.0.2"
+    "zustand": "^5.0.2",
+    "@penguin/react_libs": "file:../../shared/react_libs"
   },
   "devDependencies": {
     "@svgr/cli": "^8.1.0",

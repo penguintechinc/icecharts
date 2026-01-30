@@ -1,4 +1,5 @@
 import { Routes, Route, Navigate } from 'react-router-dom';
+import { AppConsoleVersion } from '@penguin/react_libs';
 import { useAuth } from './hooks/useAuth';
 import Layout from './components/Layout';
 import ProtectedRoute from './components/ProtectedRoute';
@@ -22,7 +23,20 @@ function App() {
   }
 
   return (
-    <Routes>
+    <>
+      <AppConsoleVersion
+        appName="IceCharts"
+        webuiVersion={import.meta.env.VITE_VERSION || '0.2.0'}
+        webuiBuildEpoch={Number(import.meta.env.VITE_BUILD_TIME) || 0}
+        environment={import.meta.env.MODE}
+        webuiEmoji="🧊"
+        apiEmoji="📊"
+        metadata={{
+          'API URL': import.meta.env.VITE_API_URL || '(relative)',
+          'WebSocket': 'Socket.IO',
+        }}
+      />
+      <Routes>
       {/* Public routes */}
       <Route
         path="/login"
@@ -79,6 +93,7 @@ function App() {
         element={<Navigate to={isAuthenticated ? '/' : '/login'} replace />}
       />
     </Routes>
+    </>
   );
 }
 
