@@ -1,0 +1,21 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: postgres
+  namespace: icecharts-beta
+  labels:
+    app: postgres
+    app.kubernetes.io/name: icecharts
+    app.kubernetes.io/component: postgres
+    app.kubernetes.io/version: "1.0.2"
+    app.kubernetes.io/managed-by: kubectl
+spec:
+  type: ClusterIP
+  clusterIP: None
+  selector:
+    app: postgres
+  ports:
+  - port: 5432
+    targetPort: 5432
+    protocol: TCP
+    name: postgres

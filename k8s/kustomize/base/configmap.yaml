@@ -1,0 +1,27 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: icecharts-config
+data:
+  FLASK_ENV: "production"
+  FLASK_APP: "app.main:create_app"
+  DB_TYPE: "postgres"
+  DB_HOST: "postgres.icecharts-beta.svc.cluster.local"
+  DB_PORT: "5432"
+  DB_NAME: "icecharts"
+  DB_POOL_SIZE: "10"
+  REDIS_HOST: "redis.icecharts-beta.svc.cluster.local"
+  REDIS_PORT: "6379"
+  MINIO_ENDPOINT: "minio.icecharts-beta.svc.cluster.local:9000"
+  STORAGE_PROVIDER: "minio"
+  MINIO_BUCKET: "icecharts"
+  MINIO_SECURE: "false"
+  CORS_ORIGINS: "https://dal2.penguintech.io"
+  LICENSE_SERVER_URL: "https://license.penguintech.io"
+  PRODUCT_NAME: "icecharts"
+  RELEASE_MODE: "false"
+  LOG_LEVEL: "info"
+  LOG_FORMAT: "json"
+  NODE_ENV: "production"
+  VITE_API_URL: "/api/v1"
+  VITE_API_BASE_PATH: "/api/v1"

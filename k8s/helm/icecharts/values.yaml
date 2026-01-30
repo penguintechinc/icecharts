@@ -1,0 +1,166 @@
+# IceCharts Helm Chart Default Values
+
+nameOverride: ""
+fullnameOverride: ""
+
+namespace: icecharts
+
+image:
+  registry: registry-dal2.penguintech.io
+  pullPolicy: IfNotPresent
+  tag: "v1.0.2-beta"
+
+web:
+  replicaCount: 2
+  image:
+    repository: icecharts-web
+    tag: ""  # defaults to .Values.image.tag
+  port: 8080
+  resources:
+    requests:
+      cpu: 100m
+      memory: 256Mi
+    limits:
+      cpu: 500m
+      memory: 512Mi
+  livenessProbe:
+    httpGet:
+      path: /health
+      port: 8080
+    initialDelaySeconds: 10
+    periodSeconds: 10
+    timeoutSeconds: 3
+    failureThreshold: 3
+  readinessProbe:
+    httpGet:
+      path: /health
+      port: 8080
+    initialDelaySeconds: 5
+    periodSeconds: 5
+    timeoutSeconds: 3
+    failureThreshold: 3
+
+api:
+  replicaCount: 2
+  image:
+    repository: icecharts-api
+    tag: ""
+  port: 5000
+  resources:
+    requests:
+      cpu: 200m
+      memory: 512Mi
+    limits:
+      cpu: "1"
+      memory: 1Gi
+  livenessProbe:
+    httpGet:
+      path: /healthz
+      port: 5000
+    initialDelaySeconds: 40
+    periodSeconds: 30
+    timeoutSeconds: 5
+    failureThreshold: 3
+  readinessProbe:
+    httpGet:
+      path: /api/v1/health
+      port: 5000
+    initialDelaySeconds: 20
+    periodSeconds: 10
+    timeoutSeconds: 5
+    failureThreshold: 3
+
+postgres:
+  enabled: true
+  image:
+    repository: postgres
+    tag: "17-alpine"
+  port: 5432
+  storage: 10Gi
+  resources:
+    requests:
+      cpu: 200m
+      memory: 512Mi
+    limits:
+      cpu: "1"
+      memory: 2Gi
+
+redis:
+  enabled: true
+  image:
+    repository: redis
+    tag: "7-alpine"
+  port: 6379
+  storage: 5Gi
+  resources:
+    requests:
+      cpu: 50m
+      memory: 128Mi
+    limits:
+      cpu: 200m
+      memory: 256Mi
+
+minio:
+  enabled: true
+  image:
+    repository: minio/minio
+    tag: "latest"
+  ports:
+    api: 9000
+    console: 9001
+  storage: 20Gi
+  resources:
+    requests:
+      cpu: 100m
+      memory: 256Mi
+    limits:
+      cpu: 500m
+      memory: 1Gi
+
+ingress:
+  enabled: true
+  className: nginx
+  annotations:
+    nginx.ingress.kubernetes.io/proxy-body-size: "50m"
+    nginx.ingress.kubernetes.io/ssl-redirect: "true"
+    cert-manager.io/cluster-issuer: "letsencrypt-prod"
+  host: dal2.penguintech.io
+  tls:
+    enabled: true
+    secretName: icecharts-tls
+
+config:
+  FLASK_ENV: "production"
+  FLASK_APP: "app.main:create_app"
+  DB_TYPE: "postgres"
+  DB_PORT: "5432"
+  DB_NAME: "icecharts"
+  DB_POOL_SIZE: "10"
+  REDIS_PORT: "6379"
+  STORAGE_PROVIDER: "minio"
+  MINIO_BUCKET: "icecharts"
+  MINIO_SECURE: "false"
+  CORS_ORIGINS: "https://dal2.penguintech.io"
+  LICENSE_SERVER_URL: "https://license.penguintech.io"
+  PRODUCT_NAME: "icecharts"
+  RELEASE_MODE: "false"
+  LOG_LEVEL: "info"
+  LOG_FORMAT: "json"
+  NODE_ENV: "production"
+  VITE_API_URL: "/api/v1"
+  VITE_API_BASE_PATH: "/api/v1"
+
+secrets:
+  SECRET_KEY: "CHANGE-ME-generate-a-random-secret-key"
+  SECURITY_PASSWORD_SALT: "CHANGE-ME-generate-a-random-salt"
+  JWT_SECRET_KEY: "CHANGE-ME-generate-a-jwt-secret"
+  JWT_ACCESS_TOKEN_EXPIRES: "3600"
+  JWT_REFRESH_TOKEN_EXPIRES: "2592000"
+  DB_USER: "icecharts_user"
+  DB_PASSWORD: "CHANGE-ME-database-password"
+  REDIS_PASSWORD: "CHANGE-ME-redis-password"
+  MINIO_ACCESS_KEY: "CHANGE-ME-minio-access-key"
+  MINIO_SECRET_KEY: "CHANGE-ME-minio-secret-key"
+  DEFAULT_ADMIN_EMAIL: "admin@penguintech.io"
+  DEFAULT_ADMIN_PASSWORD: "CHANGE-ME-admin-password"
+  LICENSE_KEY: ""

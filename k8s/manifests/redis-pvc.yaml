@@ -1,0 +1,18 @@
+# NOTE: This PVC is not needed when using the StatefulSet with volumeClaimTemplates.
+# The StatefulSet (redis-statefulset.yaml) automatically creates PVCs.
+# Use this file only if you need a standalone Redis deployment without StatefulSet.
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: redis-data
+  namespace: icecharts-beta
+  labels:
+    app: redis
+    app.kubernetes.io/name: icecharts
+    app.kubernetes.io/component: redis
+spec:
+  accessModes:
+  - ReadWriteOnce
+  resources:
+    requests:
+      storage: 5Gi

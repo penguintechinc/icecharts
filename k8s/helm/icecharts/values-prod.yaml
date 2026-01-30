@@ -1,0 +1,68 @@
+# Production environment overrides
+namespace: icecharts-prod
+
+image:
+  registry: registry-dal2.penguintech.io
+  tag: "v1.0.2"
+
+web:
+  replicaCount: 3
+  resources:
+    requests:
+      cpu: 200m
+      memory: 512Mi
+    limits:
+      cpu: "1"
+      memory: 1Gi
+
+api:
+  replicaCount: 3
+  resources:
+    requests:
+      cpu: 500m
+      memory: 1Gi
+    limits:
+      cpu: "2"
+      memory: 2Gi
+
+postgres:
+  storage: 50Gi
+  resources:
+    requests:
+      cpu: 500m
+      memory: 1Gi
+    limits:
+      cpu: "2"
+      memory: 4Gi
+
+redis:
+  storage: 10Gi
+  resources:
+    requests:
+      cpu: 100m
+      memory: 256Mi
+    limits:
+      cpu: 500m
+      memory: 512Mi
+
+minio:
+  storage: 100Gi
+  resources:
+    requests:
+      cpu: 200m
+      memory: 512Mi
+    limits:
+      cpu: "1"
+      memory: 2Gi
+
+ingress:
+  host: icecharts.penguincloud.io
+  tls:
+    enabled: true
+    secretName: icecharts-prod-tls
+
+config:
+  FLASK_ENV: "production"
+  LOG_LEVEL: "warning"
+  RELEASE_MODE: "true"
+  CORS_ORIGINS: "https://icecharts.penguincloud.io"

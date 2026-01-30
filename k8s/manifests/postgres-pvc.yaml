@@ -1,0 +1,18 @@
+# NOTE: This PVC is not needed when using the StatefulSet with volumeClaimTemplates.
+# The StatefulSet (postgres-statefulset.yaml) automatically creates PVCs.
+# Use this file only if you need a standalone PostgreSQL deployment without StatefulSet.
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: postgres-data
+  namespace: icecharts-beta
+  labels:
+    app: postgres
+    app.kubernetes.io/name: icecharts
+    app.kubernetes.io/component: postgres
+spec:
+  accessModes:
+  - ReadWriteOnce
+  resources:
+    requests:
+      storage: 10Gi

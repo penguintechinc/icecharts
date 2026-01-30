@@ -1,0 +1,18 @@
+# Beta/staging environment overrides (dal2.penguintech.io)
+namespace: icecharts-beta
+
+image:
+  registry: registry-dal2.penguintech.io
+  tag: "v1.0.2-beta"
+
+ingress:
+  host: dal2.penguintech.io
+  tls:
+    enabled: true
+    secretName: icecharts-tls
+
+config:
+  FLASK_ENV: "production"
+  LOG_LEVEL: "info"
+  RELEASE_MODE: "false"
+  CORS_ORIGINS: "https://dal2.penguintech.io"

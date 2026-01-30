@@ -1,0 +1,12 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: icecharts-config
+data:
+  FLASK_ENV: "production"
+  LOG_LEVEL: "info"
+  RELEASE_MODE: "false"
+  CORS_ORIGINS: "https://dal2.penguintech.io"
+  DB_HOST: "postgres.icecharts-beta.svc.cluster.local"
+  REDIS_HOST: "redis.icecharts-beta.svc.cluster.local"
+  MINIO_ENDPOINT: "minio.icecharts-beta.svc.cluster.local:9000"
