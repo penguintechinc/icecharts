@@ -167,6 +167,14 @@ test-webui-cov: ## Testing - Run WebUI tests with coverage
 	@echo "$(BLUE)Running WebUI tests with coverage...$(RESET)"
 	@cd services/webui && npm test -- --run --coverage
 
+test-alpha: ## Testing - Run local alpha smoke tests (build, run, API, unit, pages)
+	@./scripts/test-alpha.sh
+
+test-beta: ## Testing - Run beta cluster smoke tests (pods, services, ingress, access)
+	@./scripts/test-beta.sh
+
+smoke-test: test-alpha ## Testing - Alias for test-alpha (local smoke tests)
+
 test-integration: ## Testing - Run integration tests
 	@echo "$(BLUE)Running integration tests...$(RESET)"
 	@docker-compose -f docker-compose.test.yml up --build --abort-on-container-exit
@@ -348,6 +356,9 @@ deploy-staging: ## Deploy - Deploy to staging environment
 	@$(MAKE) docker-build
 	@$(MAKE) docker-push
 	# Add staging deployment commands here
+
+deploy-beta: ## Deploy - Deploy to beta K8s cluster via Helm
+	@./scripts/deploy-beta.sh
 
 deploy-production: ## Deploy - Deploy to production environment
 	@echo "$(BLUE)Deploying to production...$(RESET)"
