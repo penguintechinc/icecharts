@@ -1,0 +1,8 @@
+node_modules/
+dist/
+services/
+shared/
+app-skeleton/
+*.md
+*.yml
+*.yaml
