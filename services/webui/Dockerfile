@@ -67,29 +67,22 @@ COPY nginx.conf /etc/nginx/conf.d/default.conf
 # Copy built assets from builder
 COPY --from=builder /app/dist /usr/share/nginx/html
 
-# Create nginx user and set permissions for static files
-RUN chown -R nginx:nginx /usr/share/nginx/html && \
-    chmod -R 755 /usr/share/nginx/html && \
-    # Set proper permissions for conf.d directory and files
-    chown -R nginx:nginx /etc/nginx/conf.d && \
-    chmod -R 755 /etc/nginx/conf.d && \
-    # Ensure nginx can write to log directories
-    chown -R nginx:nginx /var/log/nginx && \
-    chmod -R 755 /var/log/nginx && \
-    # Ensure nginx can write to cache directories
-    chown -R nginx:nginx /var/cache/nginx && \
-    chmod -R 755 /var/cache/nginx && \
-    # Create pid file directory with correct permissions
+# Set permissions for non-root operation (k8s runs as UID 1000)
+RUN chmod -R 755 /usr/share/nginx/html && \
+    chmod -R 777 /etc/nginx/conf.d && \
+    chmod -R 777 /var/log/nginx && \
+    chmod -R 777 /var/cache/nginx && \
     mkdir -p /run && \
-    chown -R nginx:nginx /run && \
-    chmod -R 755 /run
+    chmod -R 777 /run && \
+    mkdir -p /tmp/nginx && \
+    chmod -R 777 /tmp/nginx
 
 # Add healthcheck
 HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
-    CMD curl -f http://localhost:80/health || exit 1
+    CMD curl -f http://localhost:8080/health || exit 1
 
 # Expose port
-EXPOSE 80
+EXPOSE 8080
 
 # Run as non-root user
 USER nginx
