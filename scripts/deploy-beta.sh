@@ -25,6 +25,8 @@ DRY_RUN=0
 ROLLBACK=0
 SHOW_LOGS=0
 VERBOSE=0
+FORCE_CONFLICTS=0
+BUILD_IMAGES=1
 SERVICE=""
 IMAGE_TAG=""
 
@@ -65,16 +67,17 @@ check_prerequisites() {
         log_error "kubectl is not installed or not in PATH"
         return 1
     fi
-    log_info "kubectl: $(kubectl version --client --short 2>/dev/null | grep -oP 'v[0-9]+\.[0-9]+\.[0-9]+')"
+    log_info "kubectl: $(kubectl version --client -o yaml 2>/dev/null | grep gitVersion | awk '{print $2}')"
 
-    # Check helm v3
+    # Check helm v3+
     if ! command -v helm &> /dev/null; then
         log_error "helm is not installed or not in PATH"
         return 1
     fi
-    local helm_version=$(helm version --short 2>/dev/null | grep -oP 'v[0-9]+')
-    if [ "$helm_version" != "v3" ]; then
-        log_error "helm v3 is required (found: $helm_version)"
+    local helm_major
+    helm_major=$(helm version --short 2>/dev/null | grep -oP '(?<=v)\d+')
+    if [ -z "$helm_major" ] || [ "$helm_major" -lt 3 ]; then
+        log_error "helm v3+ is required (found: $(helm version --short 2>/dev/null))"
         return 1
     fi
     log_info "helm: $(helm version --short)"
@@ -164,6 +167,12 @@ do_deploy() {
 
     local helm_cmd_args=("upgrade")
 
+    # Check if namespace already exists to avoid --create-namespace conflicts
+    local ns_flag=""
+    if ! kubectl --context="$KUBE_CONTEXT" get namespace "$NAMESPACE" &> /dev/null; then
+        ns_flag="--create-namespace"
+    fi
+
     if [ -z "$SERVICE" ]; then
         # Deploy all services - use --install to create if not exists
         helm_cmd_args+=(
@@ -172,12 +181,17 @@ do_deploy() {
             "$CHART_PATH"
             "--kube-context=$KUBE_CONTEXT"
             "--namespace=$NAMESPACE"
-            "--create-namespace"
             "--values=$VALUES_FILE"
             "--set=image.tag=$IMAGE_TAG"
             "--wait"
             "--timeout=10m"
         )
+        if [ -n "$ns_flag" ]; then
+            helm_cmd_args+=("$ns_flag")
+        fi
+        if [ "$FORCE_CONFLICTS" -eq 1 ]; then
+            helm_cmd_args+=("--force-conflicts")
+        fi
     else
         # Deploy single service - reuse existing values, update only one image
         helm_cmd_args+=(
@@ -306,6 +320,112 @@ show_deployment_logs() {
     fi
 }
 
+# Build and push images with epoch64 tag
+build_and_push_images() {
+    log_section "Building and Pushing Docker Images"
+
+    local EPOCH
+    EPOCH=$(date +%s)
+    local TAG_WITH_EPOCH="beta-${EPOCH}"
+
+    # Update IMAGE_TAG to include epoch if not explicitly set
+    if [ -z "$IMAGE_TAG" ] || [ "$IMAGE_TAG" = "beta" ]; then
+        IMAGE_TAG="$TAG_WITH_EPOCH"
+        log_info "Generated build tag with epoch: $IMAGE_TAG"
+    fi
+
+    # Web image
+    log_info "Building web image: $IMAGE_REGISTRY/icecharts-web:$IMAGE_TAG"
+
+    # Copy react_libs into webui context temporarily
+    cp -r "$PROJECT_ROOT/shared/react_libs" "$PROJECT_ROOT/services/webui/_react_libs_build" || {
+        log_error "Failed to copy react_libs"
+        return 1
+    }
+
+    # Modify package.json temporarily to use local react_libs path
+    local orig_package="$PROJECT_ROOT/services/webui/package.json"
+    cp "$orig_package" "$orig_package.bak"
+
+    python3 -c "
+import json
+with open('$orig_package', 'r') as f:
+    data = json.load(f)
+if '@penguin/react_libs' in data.get('dependencies', {}):
+    data['dependencies']['@penguin/react_libs'] = 'file:./_react_libs_build'
+with open('$orig_package', 'w') as f:
+    json.dump(data, f, indent=2)
+" || {
+        log_error "Failed to update package.json"
+        mv "$orig_package.bak" "$orig_package"
+        rm -rf "$PROJECT_ROOT/services/webui/_react_libs_build"
+        return 1
+    }
+
+    # Regenerate lock file
+    cd "$PROJECT_ROOT/services/webui" || return 1
+    rm -f package-lock.json
+    if ! npm install 2>&1 | tail -3; then
+        log_warn "npm install may have warnings (proceeding)"
+    fi
+    cd "$PROJECT_ROOT" || return 1
+
+    # Build web image (using sed to replace npm ci with npm install for dependency resolution)
+    local docker_file_tmp="$PROJECT_ROOT/services/webui/Dockerfile.static.tmp"
+    sed 's/npm ci/npm install/g' "$PROJECT_ROOT/services/webui/Dockerfile.static" > "$docker_file_tmp"
+
+    if ! docker build \
+        -t "$IMAGE_REGISTRY/icecharts-web:$IMAGE_TAG" \
+        -t "$IMAGE_REGISTRY/icecharts-web:beta" \
+        -f "$docker_file_tmp" \
+        "$PROJECT_ROOT/services/webui" 2>&1 | tail -5 | grep -E "Successfully tagged|Error|error"; then
+        log_error "Web image build failed"
+        mv "$orig_package.bak" "$orig_package"
+        rm -rf "$PROJECT_ROOT/services/webui/_react_libs_build" "$docker_file_tmp"
+        return 1
+    fi
+
+    rm -f "$docker_file_tmp"
+
+    # Restore package.json
+    mv "$orig_package.bak" "$orig_package"
+    rm -rf "$PROJECT_ROOT/services/webui/_react_libs_build"
+
+    # API image
+    log_info "Building API image: $IMAGE_REGISTRY/icecharts-api:$IMAGE_TAG"
+    if ! docker build \
+        -t "$IMAGE_REGISTRY/icecharts-api:$IMAGE_TAG" \
+        -t "$IMAGE_REGISTRY/icecharts-api:beta" \
+        -f "$PROJECT_ROOT/services/flask-backend/Dockerfile" \
+        "$PROJECT_ROOT/services/flask-backend" 2>&1 | grep -E "Successfully tagged|Error|error"; then
+        log_error "API image build failed"
+        return 1
+    fi
+
+    # Push images
+    log_info "Pushing images to registry"
+    if ! docker push "$IMAGE_REGISTRY/icecharts-web:$IMAGE_TAG" 2>&1 | tail -3; then
+        log_error "Failed to push web image"
+        return 1
+    fi
+    if ! docker push "$IMAGE_REGISTRY/icecharts-web:beta" 2>&1 | tail -3; then
+        log_error "Failed to push web:beta tag"
+        return 1
+    fi
+
+    if ! docker push "$IMAGE_REGISTRY/icecharts-api:$IMAGE_TAG" 2>&1 | tail -3; then
+        log_error "Failed to push API image"
+        return 1
+    fi
+    if ! docker push "$IMAGE_REGISTRY/icecharts-api:beta" 2>&1 | tail -3; then
+        log_error "Failed to push api:beta tag"
+        return 1
+    fi
+
+    log_info "Images built and pushed successfully: $IMAGE_TAG (and beta tag)"
+    return 0
+}
+
 # Main execution
 main() {
     log_section "Beta Deployment Script"
@@ -323,6 +443,14 @@ main() {
         fi
         log_info "Rollback completed successfully"
         exit 0
+    fi
+
+    # Build and push images (unless --skip-build)
+    if [ "$BUILD_IMAGES" -eq 1 ]; then
+        if ! build_and_push_images; then
+            log_error "Image build/push failed"
+            exit 2
+        fi
     fi
 
     # Verify images
@@ -394,8 +522,16 @@ while [[ $# -gt 0 ]]; do
             SERVICE="$2"
             shift 2
             ;;
+        --skip-build)
+            BUILD_IMAGES=0
+            shift
+            ;;
         --dry-run)
             DRY_RUN=1
+            shift
+            ;;
+        --force-conflicts)
+            FORCE_CONFLICTS=1
             shift
             ;;
         --rollback)
@@ -432,9 +568,11 @@ while [[ $# -gt 0 ]]; do
             echo "Deploy to beta K8s cluster using Helm"
             echo ""
             echo "Options:"
-            echo "  --tag=TAG           Image tag to deploy (default: v{VERSION}-beta from .version)"
+            echo "  --tag=TAG           Image tag to deploy (default: beta-{EPOCH} timestamp)"
             echo "  --service=SERVICE   Deploy only a specific service: web or api (default: all services)"
+            echo "  --skip-build        Skip building and pushing images (use existing tags)"
             echo "  --dry-run           Helm dry-run only, no actual deployment"
+            echo "  --force-conflicts   Force adoption of resources with ownership conflicts (Helm v4)"
             echo "  --rollback          Rollback to previous Helm release"
             echo "  --logs              Show pod logs after deployment"
             echo "  --context=CONTEXT   Override kube context (default: dal2-beta)"
