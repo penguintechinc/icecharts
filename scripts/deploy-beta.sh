@@ -233,22 +233,22 @@ verify_deployment() {
     log_section "Verifying Deployment"
 
     if [ -z "$SERVICE" ]; then
-        # Check both services
+        # Check both services (with release name prefix from Helm)
         log_info "Checking rollout status for 'web'..."
-        if ! kubectl --context="$KUBE_CONTEXT" -n "$NAMESPACE" rollout status deployment/web --timeout=300s; then
+        if ! kubectl --context="$KUBE_CONTEXT" -n "$NAMESPACE" rollout status deployment/"$RELEASE_NAME"-web --timeout=300s 2>&1; then
             log_error "Web service rollout failed"
             return 1
         fi
 
         log_info "Checking rollout status for 'api'..."
-        if ! kubectl --context="$KUBE_CONTEXT" -n "$NAMESPACE" rollout status deployment/api --timeout=300s; then
+        if ! kubectl --context="$KUBE_CONTEXT" -n "$NAMESPACE" rollout status deployment/"$RELEASE_NAME"-api --timeout=300s 2>&1; then
             log_error "API service rollout failed"
             return 1
         fi
     else
-        # Check single service
+        # Check single service (with release name prefix)
         log_info "Checking rollout status for '$SERVICE'..."
-        if ! kubectl --context="$KUBE_CONTEXT" -n "$NAMESPACE" rollout status deployment/"$SERVICE" --timeout=300s; then
+        if ! kubectl --context="$KUBE_CONTEXT" -n "$NAMESPACE" rollout status deployment/"$RELEASE_NAME"-"$SERVICE" --timeout=300s 2>&1; then
             log_error "$SERVICE service rollout failed"
             return 1
         fi
