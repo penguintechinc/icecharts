@@ -375,6 +375,9 @@ with open('$orig_package', 'w') as f:
     sed 's/npm ci/npm install/g' "$PROJECT_ROOT/services/webui/Dockerfile.static" > "$docker_file_tmp"
 
     if ! docker build \
+        --build-arg VITE_API_URL=/api/v1 \
+        --build-arg VITE_API_BASE_PATH=/api/v1 \
+        --build-arg VITE_WS_URL=/api/v1 \
         -t "$IMAGE_REGISTRY/icecharts-web:$IMAGE_TAG" \
         -t "$IMAGE_REGISTRY/icecharts-web:beta" \
         -f "$docker_file_tmp" \
