@@ -161,6 +161,6 @@ secrets:
   REDIS_PASSWORD: "CHANGE-ME-redis-password"
   MINIO_ACCESS_KEY: "CHANGE-ME-minio-access-key"
   MINIO_SECRET_KEY: "CHANGE-ME-minio-secret-key"
-  DEFAULT_ADMIN_EMAIL: "admin@penguintech.io"
-  DEFAULT_ADMIN_PASSWORD: "CHANGE-ME-admin-password"
+  DEFAULT_ADMIN_EMAIL: "admin@localhost.local"
+  DEFAULT_ADMIN_PASSWORD: "admin123"
   LICENSE_KEY: ""
