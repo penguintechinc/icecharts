@@ -155,6 +155,45 @@ Before committing changes to container services:
 - **Run before commit**: Each test script should be executable and pass completely
 - **Test coverage**: Health checks, authentication, CRUD operations, error cases
 
+## Smoke Tests
+
+Before committing, run smoke tests to verify basic functionality:
+
+```bash
+# Run all smoke tests
+./scripts/test-alpha.sh
+
+# Quick smoke test with minimal edge cases (faster iteration)
+./scripts/test-alpha.sh --skip-concurrent-tests --skip-security-tests --skip-database-resilience
+```
+
+Smoke tests verify:
+- Build success for all containers
+- Runtime health checks for all services
+- API health endpoint validation
+- Web UI page and tab load verification
+
+**Edge Case Tests**: The smoke test scripts now include 12 categories of edge case tests (database resilience, auth edge cases, data persistence, CORS, error handling, service dependencies, file operations, concurrent operations, resource cleanup, API versioning, security validation, and session management). All are enabled by default but can be skipped individually with `--skip-*` flags.
+
+For faster pre-commit checks during development iteration, you can selectively skip non-critical edge case tests:
+
+```bash
+# Quick smoke test with minimal edge cases - good for rapid iteration
+./scripts/test-alpha.sh --skip-concurrent-tests --skip-security-tests --skip-database-resilience
+```
+
+For comprehensive validation before important commits (e.g., merging to main, releases), run all tests:
+
+```bash
+# Full smoke test with all edge cases - run before important commits
+./scripts/test-alpha.sh
+```
+
+**Recommended Workflow**:
+- During feature development: Use quick smoke test (`--skip-*` flags) for rapid feedback
+- Before pull requests: Run full smoke test with all edge cases
+- Before releases: Run full smoke test to ensure robustness
+
 ## Screenshot Requirements
 
 For UI changes:

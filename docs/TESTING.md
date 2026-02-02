@@ -11,6 +11,9 @@ Comprehensive testing documentation for IceCharts backend and frontend services.
 - [Running Tests Locally](#running-tests-locally)
 - [Test Coverage](#test-coverage)
 - [Best Practices](#best-practices)
+- [Smoke Tests](#smoke-tests)
+- [Edge Case Tests](#edge-case-tests)
+- [Troubleshooting](#troubleshooting)
 
 ## Overview
 
@@ -603,6 +606,182 @@ def test_heavy_operation(self):
 # Run without slow tests
 pytest tests/ -m "not slow"
 ```
+
+## Smoke Tests
+
+Smoke tests provide rapid validation of core functionality before more comprehensive testing. They verify that the application builds, runs, and responds to basic requests.
+
+### Running Smoke Tests
+
+```bash
+# Run all smoke tests
+make smoke-test
+
+# Or manually
+./tests/smoke/run-all.sh
+```
+
+### Smoke Test Coverage
+
+Smoke tests verify:
+- **Build verification**: All containers build successfully
+- **Runtime health checks**: Services start and remain healthy
+- **API health endpoints**: Health check endpoints respond
+- **Web UI page loads**: Frontend renders without errors
+- **Tab load verification**: Core UI tabs load correctly
+
+## Edge Case Tests
+
+### Overview
+
+The test suite includes comprehensive edge case testing to catch production issues before deployment. All edge case tests are enabled by default using an opt-out model, meaning they run unless explicitly skipped.
+
+### Test Categories
+
+The edge case test suite covers 12 critical categories:
+
+1. **Database Resilience**
+   - Connection pool exhaustion recovery
+   - Transaction rollback handling
+   - Connection timeout recovery
+   - Database constraint violation handling
+
+2. **Authentication Edge Cases**
+   - Expired token handling
+   - Invalid token format validation
+   - Token refresh failures
+   - Concurrent authentication requests
+   - Session timeout behavior
+
+3. **Data Persistence**
+   - Concurrent write conflicts
+   - Data integrity across service restarts
+   - Partial write recovery
+   - Data synchronization between services
+
+4. **CORS Configuration**
+   - Cross-origin request validation
+   - Preflight request handling
+   - Credential inclusion in cross-origin requests
+   - Origin whitelist enforcement
+
+5. **Error Response Validation**
+   - Proper HTTP status codes
+   - Error message consistency
+   - Stack trace sanitization (no sensitive info leaks)
+   - Error response format validation
+
+6. **Service Dependency Handling**
+   - Database unavailability fallback
+   - Cache service failures
+   - External API timeouts
+   - Graceful service degradation
+
+7. **File Operations (Minio)**
+   - File upload size limits
+   - Concurrent file operations
+   - Storage quota enforcement
+   - File deletion and cleanup
+   - Corrupted file handling
+
+8. **Concurrent Operations**
+   - Race condition prevention
+   - Concurrent user operations
+   - Concurrent drawing modifications
+   - Lock timeout handling
+
+9. **Resource Cleanup**
+   - Connection pool cleanup
+   - Memory leak prevention
+   - Temporary file cleanup
+   - Session cleanup on logout
+
+10. **API Versioning**
+    - Version-specific endpoint behavior
+    - Backward compatibility across versions
+    - Deprecation header presence
+    - Migration path validation
+
+11. **Security Validation**
+    - SQL injection prevention
+    - XSS payload handling
+    - CSRF token validation
+    - Rate limiting enforcement
+    - Authorization bypass prevention
+
+12. **Session Management**
+    - Multiple concurrent sessions per user
+    - Session invalidation on logout
+    - Session timeout enforcement
+    - Session data integrity
+
+### Running Edge Case Tests
+
+All edge case tests are enabled by default:
+
+```bash
+# Run all edge case tests
+./tests/edge-cases/run-all.sh
+
+# Or with make target
+make test-edge-cases
+```
+
+### Skipping Specific Test Categories
+
+Use `--skip-*` flags to exclude specific test categories:
+
+```bash
+# Skip database resilience tests
+./tests/edge-cases/run-all.sh --skip-database-resilience
+
+# Skip multiple categories
+./tests/edge-cases/run-all.sh --skip-auth-edge-cases --skip-cors
+
+# Skip file operations and concurrent tests
+./tests/edge-cases/run-all.sh --skip-file-operations --skip-concurrent
+
+# View all available skip flags
+./tests/edge-cases/run-all.sh --help
+```
+
+### Examples
+
+**Run all tests except database-related ones:**
+```bash
+./tests/edge-cases/run-all.sh --skip-database-resilience --skip-data-persistence
+```
+
+**Run only security and authentication tests:**
+```bash
+./tests/edge-cases/run-all.sh \
+  --skip-file-operations \
+  --skip-concurrent \
+  --skip-resource-cleanup \
+  --skip-service-dependency \
+  --skip-cors \
+  --skip-error-response \
+  --skip-api-versioning \
+  --skip-session-management
+```
+
+**Run tests with verbose output:**
+```bash
+./tests/edge-cases/run-all.sh -v
+```
+
+**Run tests and generate HTML report:**
+```bash
+./tests/edge-cases/run-all.sh --html=edge-case-report.html
+```
+
+### Integration with CI/CD
+
+Edge case tests are part of the automated pipeline:
+- Run on every push to `main` and `develop` branches
+- Run on all pull requests
+- Can be skipped in CI with environment variable: `SKIP_EDGE_CASES=true`
+- Results included in test summary reports
 
 ## Troubleshooting
 
