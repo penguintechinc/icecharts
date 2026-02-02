@@ -1,0 +1,15 @@
+# Kustomization for Redis StatefulSet
+# Manages the in-memory cache layer for IceCharts
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+namespace: icecharts
+
+resources:
+  - statefulset.yaml
+  - service.yaml
+  - pvc.yaml
+
+commonLabels:
+  app.kubernetes.io/name: icecharts
+  app.kubernetes.io/component: redis

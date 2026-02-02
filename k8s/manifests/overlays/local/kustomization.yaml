@@ -1,0 +1,23 @@
+# Local Development Overlay for Kustomize
+# Optimized for local development and testing
+# Usage: kubectl apply -k overlays/local/
+
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+# Reference the base kustomization
+resources:
+  - ../../base
+
+# Apply patches for local environment
+patchesStrategicMerge:
+  - replica-patch.yaml
+  - resources-patch.yaml
+
+# Common labels and annotations
+commonLabels:
+  environment: local
+  managed-by: kustomize
+
+commonAnnotations:
+  description: "Local development environment"

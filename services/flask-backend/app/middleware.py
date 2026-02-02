@@ -55,52 +55,22 @@ def _authenticate_service_account(payload: dict) -> tuple:
     Returns:
         Tuple of (success: bool, error_response or None)
     """
-    from .models import get_db
+    from .auth.jwt_handler import verify_service_token_with_db_check
+    from .services.service_account_service import ServiceAccountService
 
-    db = get_db()
+    # Use centralized validation logic
+    validation_result = verify_service_token_with_db_check(payload)
 
-    # Get service account ID from payload
-    service_account_id = payload.get("service_account_id")
-    if not service_account_id:
-        return False, (jsonify({"error": "Invalid service token payload"}), 401)
+    if not validation_result["valid"]:
+        return False, (jsonify({"error": validation_result["error"]}), 401)
 
-    # Check if token is revoked
+    service_account = validation_result["service_account"]
     token_jti = payload.get("jti")
-    if not token_jti:
-        return False, (jsonify({"error": "Invalid service token: missing jti"}), 401)
 
-    token_record = db(
-        db.service_account_tokens.token_jti == token_jti
-    ).select().first()
-
-    if not token_record:
-        return False, (jsonify({"error": "Service token not found"}), 401)
-
-    if token_record.revoked_at is not None:
-        return False, (jsonify({"error": "Service token has been revoked"}), 401)
-
-    # Load service account
-    service_account = db(
-        db.service_accounts.id == service_account_id
-    ).select().first()
-
-    if not service_account:
-        return False, (jsonify({"error": "Service account not found"}), 401)
-
-    if not service_account.is_active:
-        return False, (jsonify({"error": "Service account is deactivated"}), 401)
-
-    # Update last used timestamp on token
-    db(db.service_account_tokens.token_jti == token_jti).update(
-        last_used_at=datetime.datetime.now(datetime.timezone.utc),
-        last_used_ip=request.remote_addr,
+    # Update last used timestamps through service layer
+    ServiceAccountService.record_token_usage(
+        token_jti=token_jti, ip_address=request.remote_addr
     )
-
-    # Update last used timestamp on service account
-    db(db.service_accounts.id == service_account_id).update(
-        last_used_at=datetime.datetime.now(datetime.timezone.utc),
-    )
-    db.commit()
 
     # Store service account info in request context
     sa_dict = service_account.as_dict()
@@ -116,6 +86,7 @@ def _authenticate_service_account(payload: dict) -> tuple:
 
 def auth_required(f: Callable) -> Callable:
     """Decorator to require authentication (user or service account)."""
+
     @wraps(f)
     def decorated(*args, **kwargs):
         token = get_token_from_header()
@@ -189,6 +160,7 @@ def optional_auth(f: Callable) -> Callable:
 
 def user_auth_required(f: Callable) -> Callable:
     """Decorator to require user authentication only (no service accounts)."""
+
     @wraps(f)
     def decorated(*args, **kwargs):
         token = get_token_from_header()
@@ -241,6 +213,7 @@ def scopes_required(*required_scopes: str) -> Callable:
         def my_endpoint():
             ...
     """
+
     def decorator(f: Callable) -> Callable:
         @wraps(f)
         def decorated(*args, **kwargs):
@@ -253,11 +226,16 @@ def scopes_required(*required_scopes: str) -> Callable:
             missing = set(required_scopes) - set(token_scopes)
 
             if missing:
-                return jsonify({
-                    "error": "Insufficient scope",
-                    "required_scopes": list(required_scopes),
-                    "missing_scopes": list(missing),
-                }), 403
+                return (
+                    jsonify(
+                        {
+                            "error": "Insufficient scope",
+                            "required_scopes": list(required_scopes),
+                            "missing_scopes": list(missing),
+                        }
+                    ),
+                    403,
+                )
 
             return f(*args, **kwargs)
 
@@ -268,6 +246,7 @@ def scopes_required(*required_scopes: str) -> Callable:
 
 def role_required(*allowed_roles: str) -> Callable:
     """Decorator to require specific roles."""
+
     def decorator(f: Callable) -> Callable:
         @wraps(f)
         def decorated(*args, **kwargs):
@@ -278,11 +257,16 @@ def role_required(*allowed_roles: str) -> Callable:
 
             user_role = user.get("role", "")
             if user_role not in allowed_roles:
-                return jsonify({
-                    "error": "Insufficient permissions",
-                    "required_roles": list(allowed_roles),
-                    "your_role": user_role,
-                }), 403
+                return (
+                    jsonify(
+                        {
+                            "error": "Insufficient permissions",
+                            "required_roles": list(allowed_roles),
+                            "your_role": user_role,
+                        }
+                    ),
+                    403,
+                )
 
             return f(*args, **kwargs)
 

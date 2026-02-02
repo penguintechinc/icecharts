@@ -5,20 +5,20 @@ sharing links, and comprehensive error handling using Microsoft Graph API.
 """
 
 import asyncio
-from datetime import datetime, timedelta
-from typing import Dict, Any, Optional, List
 import json
+from datetime import datetime, timedelta
+from typing import Any, Dict, List, Optional
 
 import msal
 import requests
 
 from .base import (
-    StorageProvider,
-    StorageFile,
-    StorageError,
+    StorageAuthenticationError,
     StorageConfigError,
     StorageConnectionError,
-    StorageAuthenticationError
+    StorageError,
+    StorageFile,
+    StorageProvider,
 )
 
 
@@ -29,7 +29,7 @@ class OneDriveProvider(StorageProvider):
     download, delete, sharing links, and file listing with async patterns.
     """
 
-    GRAPH_API_ENDPOINT = 'https://graph.microsoft.com/v1.0'
+    GRAPH_API_ENDPOINT = "https://graph.microsoft.com/v1.0"
 
     def _validate_config(self) -> None:
         """Validate OneDrive configuration.
@@ -37,7 +37,7 @@ class OneDriveProvider(StorageProvider):
         Raises:
             StorageConfigError: If required configuration is missing
         """
-        required = ['client_id', 'client_secret', 'tenant_id']
+        required = ["client_id", "client_secret", "tenant_id"]
         missing = [key for key in required if key not in self.config]
 
         if missing:
@@ -56,12 +56,12 @@ class OneDriveProvider(StorageProvider):
         try:
             # Initialize MSAL confidential client for service authentication
             self.msal_app = msal.ConfidentialClientApplication(
-                client_id=self.config['client_id'],
-                client_credential=self.config['client_secret'],
-                authority=f"https://login.microsoftonline.com/{self.config['tenant_id']}"
+                client_id=self.config["client_id"],
+                client_credential=self.config["client_secret"],
+                authority=f"https://login.microsoftonline.com/{self.config['tenant_id']}",
             )
 
-            self.folder_path = self.config.get('folder_path', '/')
+            self.folder_path = self.config.get("folder_path", "/")
             self.access_token = None
             self.token_expires = None
 
@@ -69,9 +69,7 @@ class OneDriveProvider(StorageProvider):
             self._acquire_token()
 
         except Exception as e:
-            raise StorageConnectionError(
-                f"Failed to initialize OneDrive client: {e}"
-            )
+            raise StorageConnectionError(f"Failed to initialize OneDrive client: {e}")
 
     def _acquire_token(self) -> None:
         """Acquire or refresh access token for Microsoft Graph API.
@@ -82,24 +80,22 @@ class OneDriveProvider(StorageProvider):
         try:
             # Request token with required scopes
             result = self.msal_app.acquire_token_for_client(
-                scopes=['https://graph.microsoft.com/.default']
+                scopes=["https://graph.microsoft.com/.default"]
             )
 
-            if 'access_token' in result:
-                self.access_token = result['access_token']
+            if "access_token" in result:
+                self.access_token = result["access_token"]
                 # Token typically expires in 3600 seconds
-                expires_in = result.get('expires_in', 3600)
+                expires_in = result.get("expires_in", 3600)
                 self.token_expires = datetime.now() + timedelta(seconds=expires_in - 60)
             else:
-                error_desc = result.get('error_description', 'Unknown error')
+                error_desc = result.get("error_description", "Unknown error")
                 raise StorageAuthenticationError(
                     f"Failed to acquire access token: {error_desc}"
                 )
 
         except Exception as e:
-            raise StorageAuthenticationError(
-                f"Token acquisition failed: {e}"
-            )
+            raise StorageAuthenticationError(f"Token acquisition failed: {e}")
 
     def _ensure_valid_token(self) -> None:
         """Ensure access token is valid, refresh if necessary."""
@@ -114,8 +110,8 @@ class OneDriveProvider(StorageProvider):
         """
         self._ensure_valid_token()
         return {
-            'Authorization': f'Bearer {self.access_token}',
-            'Content-Type': 'application/json'
+            "Authorization": f"Bearer {self.access_token}",
+            "Content-Type": "application/json",
         }
 
     def _build_path(self, key: str) -> str:
@@ -127,8 +123,8 @@ class OneDriveProvider(StorageProvider):
         Returns:
             Full OneDrive path
         """
-        if self.folder_path == '/':
-            return f'/me/drive/root:/{key}'
+        if self.folder_path == "/":
+            return f"/me/drive/root:/{key}"
         return f'/me/drive/root:/{self.folder_path.strip("/")}/{key}'
 
     async def upload(
@@ -136,7 +132,7 @@ class OneDriveProvider(StorageProvider):
         key: str,
         data: bytes,
         content_type: str,
-        metadata: Optional[Dict[str, str]] = None
+        metadata: Optional[Dict[str, str]] = None,
     ) -> str:
         """Upload data to OneDrive.
 
@@ -157,14 +153,13 @@ class OneDriveProvider(StorageProvider):
             url = f"{self.GRAPH_API_ENDPOINT}{path}:/content"
 
             headers = {
-                'Authorization': f'Bearer {self.access_token}',
-                'Content-Type': content_type
+                "Authorization": f"Bearer {self.access_token}",
+                "Content-Type": content_type,
             }
 
             # Upload file (use simple upload for files < 4MB)
             response = await asyncio.get_event_loop().run_in_executor(
-                None,
-                lambda: requests.put(url, headers=headers, data=data)
+                None, lambda: requests.put(url, headers=headers, data=data)
             )
 
             if response.status_code in (200, 201):
@@ -199,8 +194,7 @@ class OneDriveProvider(StorageProvider):
             url = f"{self.GRAPH_API_ENDPOINT}{path}:/content"
 
             response = await asyncio.get_event_loop().run_in_executor(
-                None,
-                lambda: requests.get(url, headers=self._get_headers())
+                None, lambda: requests.get(url, headers=self._get_headers())
             )
 
             if response.status_code == 200:
@@ -238,8 +232,7 @@ class OneDriveProvider(StorageProvider):
             url = f"{self.GRAPH_API_ENDPOINT}{path}"
 
             response = await asyncio.get_event_loop().run_in_executor(
-                None,
-                lambda: requests.delete(url, headers=self._get_headers())
+                None, lambda: requests.delete(url, headers=self._get_headers())
             )
 
             if response.status_code == 204:
@@ -258,11 +251,7 @@ class OneDriveProvider(StorageProvider):
         except Exception as e:
             raise StorageError(f"Unexpected error during deletion: {e}")
 
-    async def get_url(
-        self,
-        key: str,
-        expires_in: int = 3600
-    ) -> str:
+    async def get_url(self, key: str, expires_in: int = 3600) -> str:
         """Generate a sharing link for file access.
 
         Args:
@@ -285,23 +274,15 @@ class OneDriveProvider(StorageProvider):
             url = f"{self.GRAPH_API_ENDPOINT}{path}:/createLink"
 
             # Create anonymous view-only sharing link
-            data = {
-                'type': 'view',
-                'scope': 'anonymous'
-            }
+            data = {"type": "view", "scope": "anonymous"}
 
             response = await asyncio.get_event_loop().run_in_executor(
-                None,
-                lambda: requests.post(
-                    url,
-                    headers=self._get_headers(),
-                    json=data
-                )
+                None, lambda: requests.post(url, headers=self._get_headers(), json=data)
             )
 
             if response.status_code == 201:
                 result = response.json()
-                return result['link']['webUrl']
+                return result["link"]["webUrl"]
             elif response.status_code == 401:
                 raise StorageAuthenticationError("Access token expired or invalid")
             else:
@@ -316,10 +297,7 @@ class OneDriveProvider(StorageProvider):
         except Exception as e:
             raise StorageError(f"Unexpected error during URL generation: {e}")
 
-    async def list_files(
-        self,
-        prefix: Optional[str] = None
-    ) -> List[StorageFile]:
+    async def list_files(self, prefix: Optional[str] = None) -> List[StorageFile]:
         """List files in OneDrive with optional prefix filter.
 
         Args:
@@ -336,38 +314,39 @@ class OneDriveProvider(StorageProvider):
                 path = self._build_path(prefix)
                 url = f"{self.GRAPH_API_ENDPOINT}{path}:/children"
             else:
-                folder = self.folder_path.strip('/')
+                folder = self.folder_path.strip("/")
                 if folder:
                     url = f"{self.GRAPH_API_ENDPOINT}/me/drive/root:/{folder}:/children"
                 else:
                     url = f"{self.GRAPH_API_ENDPOINT}/me/drive/root/children"
 
             response = await asyncio.get_event_loop().run_in_executor(
-                None,
-                lambda: requests.get(url, headers=self._get_headers())
+                None, lambda: requests.get(url, headers=self._get_headers())
             )
 
             if response.status_code == 200:
                 result = response.json()
                 storage_files = []
 
-                for item in result.get('value', []):
+                for item in result.get("value", []):
                     # Skip folders
-                    if 'folder' in item:
+                    if "folder" in item:
                         continue
 
                     # Parse last modified time
                     last_modified = datetime.fromisoformat(
-                        item['lastModifiedDateTime'].replace('Z', '+00:00')
+                        item["lastModifiedDateTime"].replace("Z", "+00:00")
                     )
 
                     storage_file = StorageFile(
-                        key=item['name'],
-                        size=item.get('size', 0),
-                        content_type=item.get('file', {}).get('mimeType', 'application/octet-stream'),
+                        key=item["name"],
+                        size=item.get("size", 0),
+                        content_type=item.get("file", {}).get(
+                            "mimeType", "application/octet-stream"
+                        ),
                         last_modified=last_modified,
-                        etag=item.get('eTag'),
-                        metadata={'id': item['id']}
+                        etag=item.get("eTag"),
+                        metadata={"id": item["id"]},
                     )
                     storage_files.append(storage_file)
 
@@ -385,11 +364,7 @@ class OneDriveProvider(StorageProvider):
         except Exception as e:
             raise StorageError(f"Unexpected error during listing: {e}")
 
-    async def copy(
-        self,
-        source_key: str,
-        dest_key: str
-    ) -> bool:
+    async def copy(self, source_key: str, dest_key: str) -> bool:
         """Copy a file within OneDrive.
 
         Args:
@@ -412,20 +387,13 @@ class OneDriveProvider(StorageProvider):
             url = f"{self.GRAPH_API_ENDPOINT}{source_path}:/copy"
 
             # Determine parent reference for destination
-            dest_parts = dest_key.rsplit('/', 1)
+            dest_parts = dest_key.rsplit("/", 1)
             dest_name = dest_parts[-1]
 
-            data = {
-                'name': dest_name
-            }
+            data = {"name": dest_name}
 
             response = await asyncio.get_event_loop().run_in_executor(
-                None,
-                lambda: requests.post(
-                    url,
-                    headers=self._get_headers(),
-                    json=data
-                )
+                None, lambda: requests.post(url, headers=self._get_headers(), json=data)
             )
 
             # Copy operation is asynchronous, returns 202 Accepted
@@ -462,8 +430,7 @@ class OneDriveProvider(StorageProvider):
             url = f"{self.GRAPH_API_ENDPOINT}{path}"
 
             response = await asyncio.get_event_loop().run_in_executor(
-                None,
-                lambda: requests.get(url, headers=self._get_headers())
+                None, lambda: requests.get(url, headers=self._get_headers())
             )
 
             return response.status_code == 200
@@ -491,8 +458,7 @@ class OneDriveProvider(StorageProvider):
             url = f"{self.GRAPH_API_ENDPOINT}{path}"
 
             response = await asyncio.get_event_loop().run_in_executor(
-                None,
-                lambda: requests.get(url, headers=self._get_headers())
+                None, lambda: requests.get(url, headers=self._get_headers())
             )
 
             if response.status_code == 200:
@@ -500,16 +466,18 @@ class OneDriveProvider(StorageProvider):
 
                 # Parse last modified time
                 last_modified = datetime.fromisoformat(
-                    item['lastModifiedDateTime'].replace('Z', '+00:00')
+                    item["lastModifiedDateTime"].replace("Z", "+00:00")
                 )
 
                 return StorageFile(
                     key=key,
-                    size=item.get('size', 0),
-                    content_type=item.get('file', {}).get('mimeType', 'application/octet-stream'),
+                    size=item.get("size", 0),
+                    content_type=item.get("file", {}).get(
+                        "mimeType", "application/octet-stream"
+                    ),
                     last_modified=last_modified,
-                    etag=item.get('eTag'),
-                    metadata={'id': item['id']}
+                    etag=item.get("eTag"),
+                    metadata={"id": item["id"]},
                 )
 
             elif response.status_code == 404:

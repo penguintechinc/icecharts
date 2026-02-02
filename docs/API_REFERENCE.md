@@ -15,6 +15,7 @@ Complete API documentation for IceCharts REST API.
 - [Sharing](#sharing)
 - [Users](#users)
 - [Groups](#groups)
+- [Connectors](#connectors)
 - [Elder Integration](#elder-integration)
 - [Health & Status](#health--status)
 
@@ -750,6 +751,137 @@ Get all users (requires admin role).
   "total": 25,
   "skip": 0,
   "limit": 20
+}
+```
+
+---
+
+## Connectors
+
+The Connector Framework provides endpoints for managing external service integrations.
+See [CONNECTORS.md](CONNECTORS.md) for complete documentation.
+
+### List Connectors
+
+**GET** `/connectors`
+
+Get all available connectors and their node definitions.
+
+**Response** (200 OK):
+```json
+{
+  "connectors": [
+    {
+      "id": "waddlebot",
+      "name": "WaddleBot",
+      "description": "Chat bot platform for Twitch, Discord, Slack, Kick",
+      "icon": "🤖",
+      "color": "#6366F1",
+      "version": "1.0.0",
+      "triggers": [
+        {
+          "id": "command",
+          "name": "Chat Command",
+          "description": "Triggered when a chat command is executed",
+          "icon": "💬",
+          "outputs": [{"name": "out", "type": "object"}],
+          "config_schema": [...]
+        }
+      ],
+      "actions": [...],
+      "transforms": [...]
+    }
+  ]
+}
+```
+
+---
+
+### Get Connector
+
+**GET** `/connectors/{connector_id}`
+
+Get a specific connector's definition.
+
+**Path Parameters**:
+- `connector_id` (string): Connector identifier (e.g., "waddlebot")
+
+**Response** (200 OK):
+```json
+{
+  "connector": {
+    "id": "waddlebot",
+    "name": "WaddleBot",
+    ...
+  }
+}
+```
+
+**Error Responses**:
+- `404 Not Found`: Connector not found
+
+---
+
+### Get Connector Nodes
+
+**GET** `/connectors/{connector_id}/nodes`
+
+Get all nodes (triggers, actions, transforms) for a specific connector.
+
+**Path Parameters**:
+- `connector_id` (string): Connector identifier
+
+**Response** (200 OK):
+```json
+{
+  "nodes": [
+    {
+      "node_type": "trigger_waddlebot_command",
+      "category": "triggers",
+      "name": "WaddleBot: Chat Command",
+      "description": "Triggered when a chat command is executed",
+      "icon": "💬",
+      "inputs": [],
+      "outputs": [{"name": "out", "type": "object"}],
+      "config_schema": [...],
+      "connector_id": "waddlebot",
+      "connector_color": "#6366F1"
+    }
+  ]
+}
+```
+
+---
+
+### Get All Connector Nodes
+
+**GET** `/connectors/nodes`
+
+Get all connector nodes across all connectors.
+
+**Query Parameters**:
+- `category` (optional): Filter by category (`triggers`, `actions`, `transforms`)
+
+**Response** (200 OK):
+```json
+{
+  "nodes": [
+    {
+      "node_type": "trigger_waddlebot_command",
+      "category": "triggers",
+      "name": "WaddleBot: Chat Command",
+      "connector_id": "waddlebot",
+      "connector_name": "WaddleBot",
+      "connector_color": "#6366F1",
+      ...
+    },
+    {
+      "node_type": "action_waddlebot_send_chat",
+      "category": "actions",
+      "name": "WaddleBot: Send Chat",
+      ...
+    }
+  ]
 }
 ```
 

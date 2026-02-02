@@ -1,0 +1,185 @@
+{{- /*
+Grafana Deployment Template
+- Deploys Grafana visualization and dashboarding server
+- Configures Prometheus as a data source
+- Stores dashboards and configuration in persistent volume
+- Exposes web UI on port 3000
+- Manages admin credentials from secrets
+*/ -}}
+{{- if .Values.monitoring.grafana.enabled }}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "icecharts.grafana.fullname" . }}-datasources
+  namespace: {{ include "icecharts.namespace" . }}
+  labels:
+    {{- include "icecharts.labels" . | nindent 4 }}
+data:
+  prometheus.yaml: |
+    apiVersion: 1
+    datasources:
+      - name: Prometheus
+        type: prometheus
+        access: proxy
+        url: http://{{ include "icecharts.prometheus.fullname" . }}:9090
+        isDefault: true
+        editable: true
+
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "icecharts.grafana.fullname" . }}-dashboards-provider
+  namespace: {{ include "icecharts.namespace" . }}
+  labels:
+    {{- include "icecharts.labels" . | nindent 4 }}
+data:
+  dashboards.yaml: |
+    apiVersion: 1
+    providers:
+      - name: 'Default'
+        orgId: 1
+        folder: ''
+        type: file
+        disableDeletion: false
+        updateIntervalSeconds: 10
+        allowUiUpdates: true
+        options:
+          path: /var/lib/grafana/dashboards
+
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "icecharts.grafana.fullname" . }}
+  namespace: {{ include "icecharts.namespace" . }}
+  labels:
+    {{- include "icecharts.labels" . | nindent 4 }}
+  annotations:
+    description: "Grafana visualization server for IceCharts"
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      {{- include "icecharts.selectorLabels" . | nindent 6 }}
+      app.kubernetes.io/component: monitoring
+      app.kubernetes.io/name: {{ include "icecharts.name" . }}-grafana
+  template:
+    metadata:
+      labels:
+        {{- include "icecharts.labels" . | nindent 8 }}
+        app.kubernetes.io/component: monitoring
+        app.kubernetes.io/name: {{ include "icecharts.name" . }}-grafana
+      annotations:
+        prometheus.io/scrape: "true"
+        prometheus.io/port: "3000"
+        prometheus.io/path: "/metrics"
+    spec:
+      {{- with .Values.global.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      serviceAccountName: {{ include "icecharts.serviceAccountName" . }}
+      securityContext:
+        runAsUser: 472
+        runAsGroup: 472
+        fsGroup: 472
+        runAsNonRoot: true
+      containers:
+        - name: grafana
+          image: {{ .Values.monitoring.grafana.image.registry }}/{{ .Values.monitoring.grafana.image.repository }}:{{ .Values.monitoring.grafana.image.tag }}
+          imagePullPolicy: {{ .Values.monitoring.grafana.image.pullPolicy }}
+          ports:
+            - name: http
+              containerPort: 3000
+              protocol: TCP
+          env:
+            - name: GF_SECURITY_ADMIN_USER
+              value: {{ .Values.monitoring.grafana.adminUser | quote }}
+            - name: GF_SECURITY_ADMIN_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "icecharts.secretName" . }}
+                  key: grafana-admin-password
+            - name: GF_USERS_ALLOW_SIGN_UP
+              value: "false"
+            - name: GF_SERVER_ROOT_URL
+              {{- if .Values.ingress.enabled }}
+              value: "http{{ if .Values.ingress.tls.enabled }}s{{ end }}://{{ .Values.ingress.host }}/grafana"
+              {{- else }}
+              value: "http://localhost:3000"
+              {{- end }}
+            - name: GF_INSTALL_PLUGINS
+              value: ""
+          volumeMounts:
+            - name: storage
+              mountPath: /var/lib/grafana
+            - name: datasources
+              mountPath: /etc/grafana/provisioning/datasources
+            - name: dashboards-provider
+              mountPath: /etc/grafana/provisioning/dashboards
+          resources:
+            {{- toYaml .Values.monitoring.grafana.resources | nindent 12 }}
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop:
+                - ALL
+          livenessProbe:
+            httpGet:
+              path: /api/health
+              port: http
+              scheme: HTTP
+            initialDelaySeconds: 30
+            periodSeconds: 10
+            timeoutSeconds: 5
+            failureThreshold: 3
+          readinessProbe:
+            httpGet:
+              path: /api/health
+              port: http
+              scheme: HTTP
+            initialDelaySeconds: 10
+            periodSeconds: 5
+            timeoutSeconds: 3
+            failureThreshold: 3
+      volumes:
+        - name: storage
+          {{- if .Values.monitoring.grafana.persistence.enabled }}
+          persistentVolumeClaim:
+            claimName: {{ include "icecharts.grafana.fullname" . }}-data
+          {{- else }}
+          emptyDir: {}
+          {{- end }}
+        - name: datasources
+          configMap:
+            name: {{ include "icecharts.grafana.fullname" . }}-datasources
+        - name: dashboards-provider
+          configMap:
+            name: {{ include "icecharts.grafana.fullname" . }}-dashboards-provider
+      terminationGracePeriodSeconds: 30
+
+---
+{{- if .Values.monitoring.grafana.persistence.enabled }}
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: {{ include "icecharts.grafana.fullname" . }}-data
+  namespace: {{ include "icecharts.namespace" . }}
+  labels:
+    {{- include "icecharts.labels" . | nindent 4 }}
+spec:
+  accessModes:
+    - {{ .Values.monitoring.grafana.persistence.accessMode }}
+  resources:
+    requests:
+      storage: {{ .Values.monitoring.grafana.persistence.size }}
+  {{- if .Values.monitoring.grafana.persistence.storageClass }}
+  storageClassName: {{ .Values.monitoring.grafana.persistence.storageClass }}
+  {{- else if .Values.global.storageClass }}
+  storageClassName: {{ .Values.global.storageClass }}
+  {{- end }}
+{{- end }}
+
+{{- end }}

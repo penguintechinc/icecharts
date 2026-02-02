@@ -1,0 +1,9 @@
+# Kubernetes Namespace for IceCharts application
+# This namespace isolates all IceCharts resources from other applications
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: icecharts
+  labels:
+    app.kubernetes.io/name: icecharts
+    name: icecharts

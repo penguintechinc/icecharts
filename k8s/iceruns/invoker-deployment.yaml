@@ -1,0 +1,226 @@
+# IceRuns Invoker Deployment
+# Manages worker instances that consume tasks from Redis Streams and execute functions
+# Requires Docker socket for container execution
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: iceruns-invoker
+  namespace: iceruns
+  labels:
+    app.kubernetes.io/name: iceruns
+    app.kubernetes.io/component: invoker
+    app.kubernetes.io/version: "1.0.0"
+spec:
+  replicas: 3
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 1
+  selector:
+    matchLabels:
+      app: iceruns-invoker
+  template:
+    metadata:
+      labels:
+        app: iceruns-invoker
+        app.kubernetes.io/name: iceruns
+        app.kubernetes.io/component: invoker
+      annotations:
+        prometheus.io/scrape: "true"
+        prometheus.io/port: "8080"
+        prometheus.io/path: "/metrics"
+    spec:
+      serviceAccountName: iceruns-invoker
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1000
+        fsGroup: 1000
+
+      initContainers:
+      # Wait for Redis to be ready
+      - name: wait-for-redis
+        image: busybox:1.28
+        command: ['sh', '-c', 'until nc -z redis.icecharts.svc.cluster.local 6379; do echo waiting for redis; sleep 2; done;']
+        securityContext:
+          allowPrivilegeEscalation: false
+          capabilities:
+            drop:
+            - ALL
+          readOnlyRootFilesystem: true
+
+      # Wait for PostgreSQL to be ready
+      - name: wait-for-db
+        image: busybox:1.28
+        command: ['sh', '-c', 'until nc -z postgres.icecharts.svc.cluster.local 5432; do echo waiting for postgres; sleep 2; done;']
+        securityContext:
+          allowPrivilegeEscalation: false
+          capabilities:
+            drop:
+            - ALL
+          readOnlyRootFilesystem: true
+
+      containers:
+      - name: invoker
+        image: icecharts/iceruns-invoker:latest
+        imagePullPolicy: IfNotPresent
+
+        ports:
+        - name: metrics
+          containerPort: 8080
+          protocol: TCP
+
+        # Configuration from ConfigMap
+        envFrom:
+        - configMapRef:
+            name: iceruns-config
+        - secretRef:
+            name: iceruns-secrets
+
+        # Explicit environment variables
+        env:
+        - name: INVOKER_ID
+          valueFrom:
+            fieldRef:
+              fieldPath: metadata.name
+        - name: INVOKER_POD_IP
+          valueFrom:
+            fieldRef:
+              fieldPath: status.podIP
+        - name: INVOKER_NAMESPACE
+          valueFrom:
+            fieldRef:
+              fieldPath: metadata.namespace
+        - name: DB_USER
+          valueFrom:
+            secretKeyRef:
+              name: iceruns-secrets
+              key: db-user
+        - name: DB_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: iceruns-secrets
+              key: db-password
+        - name: REDIS_URL
+          valueFrom:
+            secretKeyRef:
+              name: iceruns-secrets
+              key: redis-url
+        - name: STORAGE_ACCESS_KEY
+          valueFrom:
+            secretKeyRef:
+              name: iceruns-secrets
+              key: storage-access-key
+        - name: STORAGE_SECRET_KEY
+          valueFrom:
+            secretKeyRef:
+              name: iceruns-secrets
+              key: storage-secret-key
+
+        resources:
+          requests:
+            memory: "2Gi"
+            cpu: "1000m"
+          limits:
+            memory: "8Gi"
+            cpu: "4000m"
+
+        # Liveness probe - restart if invoker stops consuming tasks
+        livenessProbe:
+          httpGet:
+            path: /health
+            port: metrics
+          initialDelaySeconds: 60
+          periodSeconds: 15
+          timeoutSeconds: 5
+          failureThreshold: 3
+
+        # Readiness probe - exclude from load if not ready
+        readinessProbe:
+          httpGet:
+            path: /ready
+            port: metrics
+          initialDelaySeconds: 30
+          periodSeconds: 10
+          timeoutSeconds: 5
+          failureThreshold: 2
+
+        # Security context
+        securityContext:
+          allowPrivilegeEscalation: true
+          capabilities:
+            add:
+            - SYS_ADMIN
+            drop:
+            - NET_RAW
+          readOnlyRootFilesystem: false
+
+        volumeMounts:
+        # Docker socket for container management
+        - name: docker-socket
+          mountPath: /var/run/docker.sock
+          readOnly: false
+        # Temp directory for package extraction
+        - name: tmp
+          mountPath: /tmp
+        # Cache directory for warm containers
+        - name: invoker-cache
+          mountPath: /var/cache/iceruns
+        # Runtime directory
+        - name: var-run
+          mountPath: /var/run
+
+      # Pod disruption budget maintains availability during maintenance
+      affinity:
+        podAntiAffinity:
+          preferredDuringSchedulingIgnoredDuringExecution:
+          - weight: 100
+            podAffinityTerm:
+              labelSelector:
+                matchExpressions:
+                - key: app
+                  operator: In
+                  values:
+                  - iceruns-invoker
+              topologyKey: kubernetes.io/hostname
+
+        # Prefer nodes with Docker daemon
+        nodeAffinity:
+          preferredDuringSchedulingIgnoredDuringExecution:
+          - weight: 50
+            preference:
+              matchExpressions:
+              - key: node.kubernetes.io/instance-type
+                operator: In
+                values:
+                - "standard"
+                - "compute-optimized"
+
+      # Volumes for invoker
+      volumes:
+      # Docker socket (required for container execution)
+      - name: docker-socket
+        hostPath:
+          path: /var/run/docker.sock
+          type: Socket
+
+      # Temporary directory (ephemeral)
+      - name: tmp
+        emptyDir:
+          sizeLimit: 10Gi
+
+      # Invoker cache (persistent per node)
+      - name: invoker-cache
+        emptyDir:
+          sizeLimit: 5Gi
+
+      # Runtime directory (ephemeral)
+      - name: var-run
+        emptyDir:
+          sizeLimit: 1Gi
+
+      # Termination grace period for cleanup
+      terminationGracePeriodSeconds: 30
+
+      # DNS policy
+      dnsPolicy: ClusterFirst

@@ -43,7 +43,6 @@ export default function GroupDetail() {
       setGroup(groupData);
       // Normalize member data - API may return different field names
       const rawMembers = membersRes.data.items || membersRes.data.members || [];
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const normalizedMembers = (rawMembers as any[]).map((m, index: number) => ({
         id: m.id || m.user_id || index,
         group_id: Number(id),

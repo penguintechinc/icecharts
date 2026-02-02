@@ -1,5 +1,6 @@
 # Project Template - Claude Code Context
 
+<<<<<<< HEAD
 ## 🚫 DO NOT MODIFY THIS FILE OR `.claude/` STANDARDS
 
 **These are centralized template files that will be overwritten when standards are updated.**
@@ -51,19 +52,12 @@
 - Always set resource limits (cpu/memory) and health checks (liveness/readiness)
 - Environment overlays: dev, staging, prod with appropriate resource scaling
 
-**Orchestration Model Rules (MANDATORY):**
-- **The main model (Opus or Sonnet) NEVER does the work directly** — it plans, orchestrates, and validates
-- **ALL implementation work MUST be delegated to task agents** — file edits, searches, code writing, builds, tests, linting
-- **Builds and tests MUST be run by task agents** — agents report pass/fail summary back to the main model, not raw output
-- **Default to Haiku task agents** for all work; only escalate to Sonnet agents if Haiku fails or the task requires complex reasoning
-- **Task agent output MUST be minimal** — errors and brief completion summaries only, never full file contents or raw command output
-- **Every plan MUST explicitly note this orchestration pattern** to prevent token waste
-- 📚 See [`.claude/orchestration.md`](.claude/orchestration.md) for full details
-
 📚 **Detailed Standards**: See `.claude/` directory for language and service-specific rules
 
 ---
 
+=======
+>>>>>>> origin/v1.0.X
 **⚠️ Important**: Application-specific context should be added to `docs/APP_STANDARDS.md` instead of this file. This allows the template CLAUDE.md to be updated across all projects without losing app-specific information. See `docs/APP_STANDARDS.md` for app-specific architecture, requirements, and context.
 
 ## Project Overview
@@ -111,7 +105,11 @@ This is a comprehensive project template incorporating best practices and patter
 - **JavaScript/TypeScript**: Modern ES2022+ standards
 
 **Go Stack (When Required):**
+<<<<<<< HEAD
 - **Go**: 1.24.x (latest patch version, minimum 1.24.2); Go 1.23.x acceptable as fallback if compatibility constraints exist
+=======
+- **Go**: 1.24.x (latest patch version, minimum 1.24.2)
+>>>>>>> origin/v1.0.X
 - **Database**: Use DAL with PostgreSQL/MySQL cross-support (e.g., GORM, sqlx)
 - Use only for traffic-intensive applications
 
@@ -489,27 +487,18 @@ make license-check-features  # Check available features
 - **Use Task Agents**: Utilize task agents (subagents) to be more expedient and efficient when making changes to large files, updating or reviewing multiple files, or performing complex multi-step operations
 - **Avoid sed/cat**: Use sed and cat commands only when necessary; prefer dedicated Read/Edit/Write tools for file operations
 
-### Task Agent Orchestration (MANDATORY)
-
-**The main model (Opus or Sonnet) is the orchestrator, NOT the worker.** This applies regardless of which model is running as the main model. The main model:
-- **Plans** what needs to be done
-- **Delegates** all implementation work to task agents
-- **Validates** task agent output
-- **Never writes code, edits files, or performs searches directly** — always delegate to task agents
-
-**Every plan MUST call out this pattern explicitly** to prevent accidentally burning expensive orchestrator tokens on work that task agents should handle.
+### Task Agent Usage Guidelines
 
 **Model Selection:**
-- **Haiku model (DEFAULT)**: Use for ALL task agent work — file searches, edits, code writing, routine operations, most implementation tasks
-- **Sonnet model (ESCALATION ONLY)**: Use ONLY when Haiku fails, produces incorrect results, or the task genuinely requires complex reasoning (architectural decisions, intricate refactoring, multi-file coordination with complex dependencies)
-- **Never start with Sonnet** — always try Haiku first, escalate to Sonnet only on failure or proven complexity
+- **Haiku model**: Use for the majority of task agent work (file searches, simple edits, routine operations)
+- **Sonnet model**: Use for more complex jobs requiring deeper reasoning (architectural decisions, complex refactoring, multi-file coordination)
+- Default to haiku unless the task explicitly requires complex analysis
 
-**Response Size Requirements (CRITICAL — prevents context overruns):**
-- Task agents MUST return **errors and brief completion summaries ONLY**
-- **Never return** full file contents, verbose explanations, or raw command output
-- Agent prompts MUST explicitly instruct: "Return only errors and a brief summary of what was done"
-- Acceptable responses: file paths changed, line numbers, error messages, 1-2 sentence summary
-- Unacceptable responses: full file dumps, lengthy explanations, unchanged file contents
+**Response Size Requirements:**
+- **CRITICAL**: Task agents MUST return minimal responses to avoid context overload of the orchestration model
+- Agents should return only essential information: file paths, line numbers, brief summaries
+- Avoid returning full file contents or verbose explanations in agent responses
+- Use bullet points and concise formatting in agent outputs
 
 **Concurrency Limits:**
 - **Maximum 10 task agents** running concurrently at any time
@@ -522,9 +511,6 @@ make license-check-features  # Check available features
 - Request only the information needed, not comprehensive analysis
 - Use agents for parallelizable work (searching multiple directories, checking multiple files)
 - Combine related small tasks into single agent calls when possible
-- If a Haiku agent fails, retry once before escalating to Sonnet
-
-📚 **Full orchestration rules**: See [`.claude/orchestration.md`](.claude/orchestration.md)
 
 ## Development Standards
 

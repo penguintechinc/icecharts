@@ -2,13 +2,16 @@ import { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import api from '../client/lib/api';
 import Button from '../client/components/Button';
-import type { Collection, CollectionItem } from '../client/types';
+import { AnalyticsCard } from '../client/components/common/AnalyticsCard';
+import type { Collection, CollectionItem, CollectionAnalytics } from '../client/types';
 
 export default function SharedCollectionView() {
   const { token } = useParams<{ token: string }>();
   const [collection, setCollection] = useState<Collection | null>(null);
   const [items, setItems] = useState<CollectionItem[]>([]);
+  const [analytics, setAnalytics] = useState<CollectionAnalytics | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [analyticsLoading, setAnalyticsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
@@ -34,6 +37,20 @@ export default function SharedCollectionView() {
 
       setCollection(collectionRes.data);
       setItems(itemsRes.data.items || itemsRes.data.drawings || []);
+
+      // Try to fetch analytics for the shared collection
+      try {
+        setAnalyticsLoading(true);
+        const analyticsRes = await api.get<CollectionAnalytics>(
+          `/collections/${collectionRes.data.id}/analytics`
+        );
+        setAnalytics(analyticsRes.data);
+      } catch (err) {
+        console.error('Failed to fetch analytics:', err);
+        // Analytics fetch failure is not critical for shared view
+      } finally {
+        setAnalyticsLoading(false);
+      }
     } catch (err: any) {
       console.error('Failed to fetch shared collection:', err);
       if (err.response?.status === 404) {
@@ -116,6 +133,15 @@ export default function SharedCollectionView() {
             </span>
           </div>
         </div>
+      </div>
+
+      {/* Analytics Section */}
+      <div className="max-w-7xl mx-auto px-4 pt-4">
+        <AnalyticsCard
+          analytics={analytics}
+          isLoading={analyticsLoading}
+          title="Collection Analytics"
+        />
       </div>
 
       {/* Collection Content */}

@@ -31,21 +31,33 @@ def user_can_access_drawing(user_id: int, drawing_id: int) -> bool:
         return True
 
     # Check if shared with user
-    share = db(
-        (db.drawing_shares.drawing_id == drawing_id) &
-        (db.drawing_shares.user_id == user_id)
-    ).select().first()
+    share = (
+        db(
+            (db.drawing_shares.drawing_id == drawing_id)
+            & (db.drawing_shares.user_id == user_id)
+        )
+        .select()
+        .first()
+    )
 
     if share:
         return True
 
     # Check if shared with user's group
-    group_share = db(
-        (db.drawing_shares.drawing_id == drawing_id) &
-        (db.drawing_shares.group_id.belongs(
-            db(db.group_members.user_id == user_id)._select(db.group_members.group_id)
-        ))
-    ).select().first()
+    group_share = (
+        db(
+            (db.drawing_shares.drawing_id == drawing_id)
+            & (
+                db.drawing_shares.group_id.belongs(
+                    db(db.group_members.user_id == user_id)._select(
+                        db.group_members.group_id
+                    )
+                )
+            )
+        )
+        .select()
+        .first()
+    )
 
     return group_share is not None
 
@@ -75,8 +87,7 @@ def list_comments(drawing_id: int):
 
     # Get comments with user details
     comments = db(
-        (db.comments.drawing_id == drawing_id) &
-        (db.comments.user_id == db.users.id)
+        (db.comments.drawing_id == drawing_id) & (db.comments.user_id == db.users.id)
     ).select(
         db.comments.ALL,
         db.users.id,
@@ -87,27 +98,42 @@ def list_comments(drawing_id: int):
 
     comment_list = []
     for c in comments:
-        comment_list.append({
-            "id": c.comments.id,
-            "content": c.comments.content,
-            "x_position": c.comments.x_position,
-            "y_position": c.comments.y_position,
-            "is_resolved": c.comments.is_resolved,
-            "resolved_by": c.comments.resolved_by,
-            "resolved_at": c.comments.resolved_at.isoformat() if c.comments.resolved_at else None,
-            "created_at": c.comments.created_at.isoformat() if c.comments.created_at else None,
-            "updated_at": c.comments.updated_at.isoformat() if c.comments.updated_at else None,
-            "user": {
-                "id": c.users.id,
-                "email": c.users.email,
-                "full_name": c.users.full_name,
-            },
-        })
+        comment_list.append(
+            {
+                "id": c.comments.id,
+                "content": c.comments.content,
+                "x_position": c.comments.x_position,
+                "y_position": c.comments.y_position,
+                "is_resolved": c.comments.is_resolved,
+                "resolved_by": c.comments.resolved_by,
+                "resolved_at": (
+                    c.comments.resolved_at.isoformat()
+                    if c.comments.resolved_at
+                    else None
+                ),
+                "created_at": (
+                    c.comments.created_at.isoformat() if c.comments.created_at else None
+                ),
+                "updated_at": (
+                    c.comments.updated_at.isoformat() if c.comments.updated_at else None
+                ),
+                "user": {
+                    "id": c.users.id,
+                    "email": c.users.email,
+                    "full_name": c.users.full_name,
+                },
+            }
+        )
 
-    return jsonify({
-        "comments": comment_list,
-        "total": len(comment_list),
-    }), 200
+    return (
+        jsonify(
+            {
+                "comments": comment_list,
+                "total": len(comment_list),
+            }
+        ),
+        200,
+    )
 
 
 @comments_v1_bp.route("/<int:drawing_id>/comments", methods=["POST"])
@@ -151,10 +177,15 @@ def create_comment(drawing_id: int):
 
     comment = get_comment_by_id(comment_id)
 
-    return jsonify({
-        "message": "Comment created successfully",
-        "comment": comment,
-    }), 201
+    return (
+        jsonify(
+            {
+                "message": "Comment created successfully",
+                "comment": comment,
+            }
+        ),
+        201,
+    )
 
 
 @comments_v1_bp.route("/<int:drawing_id>/comments/<int:comment_id>", methods=["GET"])
@@ -219,10 +250,15 @@ def update_comment(drawing_id: int, comment_id: int):
 
     updated_comment = get_comment_by_id(comment_id)
 
-    return jsonify({
-        "message": "Comment updated successfully",
-        "comment": updated_comment,
-    }), 200
+    return (
+        jsonify(
+            {
+                "message": "Comment updated successfully",
+                "comment": updated_comment,
+            }
+        ),
+        200,
+    )
 
 
 @comments_v1_bp.route("/<int:drawing_id>/comments/<int:comment_id>", methods=["DELETE"])
@@ -253,12 +289,19 @@ def delete_comment(drawing_id: int, comment_id: int):
     db(db.comments.id == comment_id).delete()
     db.commit()
 
-    return jsonify({
-        "message": "Comment deleted successfully",
-    }), 200
+    return (
+        jsonify(
+            {
+                "message": "Comment deleted successfully",
+            }
+        ),
+        200,
+    )
 
 
-@comments_v1_bp.route("/<int:drawing_id>/comments/<int:comment_id>/resolve", methods=["POST"])
+@comments_v1_bp.route(
+    "/<int:drawing_id>/comments/<int:comment_id>/resolve", methods=["POST"]
+)
 @auth_required
 def resolve_comment(drawing_id: int, comment_id: int):
     """Mark a comment as resolved."""
@@ -296,13 +339,20 @@ def resolve_comment(drawing_id: int, comment_id: int):
 
     updated_comment = get_comment_by_id(comment_id)
 
-    return jsonify({
-        "message": f"Comment {'resolved' if is_resolved else 'unresolved'} successfully",
-        "comment": updated_comment,
-    }), 200
+    return (
+        jsonify(
+            {
+                "message": f"Comment {'resolved' if is_resolved else 'unresolved'} successfully",
+                "comment": updated_comment,
+            }
+        ),
+        200,
+    )
 
 
-@comments_v1_bp.route("/<int:drawing_id>/comments/<int:comment_id>/replies", methods=["GET"])
+@comments_v1_bp.route(
+    "/<int:drawing_id>/comments/<int:comment_id>/replies", methods=["GET"]
+)
 @auth_required
 def list_comment_replies(drawing_id: int, comment_id: int):
     """List replies to a comment."""
@@ -324,8 +374,8 @@ def list_comment_replies(drawing_id: int, comment_id: int):
 
     # Get replies
     replies = db(
-        (db.comment_replies.comment_id == comment_id) &
-        (db.comment_replies.user_id == db.users.id)
+        (db.comment_replies.comment_id == comment_id)
+        & (db.comment_replies.user_id == db.users.id)
     ).select(
         db.comment_replies.ALL,
         db.users.id,
@@ -336,24 +386,37 @@ def list_comment_replies(drawing_id: int, comment_id: int):
 
     reply_list = []
     for r in replies:
-        reply_list.append({
-            "id": r.comment_replies.id,
-            "content": r.comment_replies.content,
-            "created_at": r.comment_replies.created_at.isoformat() if r.comment_replies.created_at else None,
-            "user": {
-                "id": r.users.id,
-                "email": r.users.email,
-                "full_name": r.users.full_name,
-            },
-        })
+        reply_list.append(
+            {
+                "id": r.comment_replies.id,
+                "content": r.comment_replies.content,
+                "created_at": (
+                    r.comment_replies.created_at.isoformat()
+                    if r.comment_replies.created_at
+                    else None
+                ),
+                "user": {
+                    "id": r.users.id,
+                    "email": r.users.email,
+                    "full_name": r.users.full_name,
+                },
+            }
+        )
 
-    return jsonify({
-        "replies": reply_list,
-        "total": len(reply_list),
-    }), 200
+    return (
+        jsonify(
+            {
+                "replies": reply_list,
+                "total": len(reply_list),
+            }
+        ),
+        200,
+    )
 
 
-@comments_v1_bp.route("/<int:drawing_id>/comments/<int:comment_id>/replies", methods=["POST"])
+@comments_v1_bp.route(
+    "/<int:drawing_id>/comments/<int:comment_id>/replies", methods=["POST"]
+)
 @auth_required
 def create_comment_reply(drawing_id: int, comment_id: int):
     """Reply to a comment."""
@@ -391,7 +454,12 @@ def create_comment_reply(drawing_id: int, comment_id: int):
 
     reply = db(db.comment_replies.id == reply_id).select().first()
 
-    return jsonify({
-        "message": "Reply created successfully",
-        "reply": reply.as_dict() if reply else None,
-    }), 201
+    return (
+        jsonify(
+            {
+                "message": "Reply created successfully",
+                "reply": reply.as_dict() if reply else None,
+            }
+        ),
+        201,
+    )

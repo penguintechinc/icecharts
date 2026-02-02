@@ -1,0 +1,75 @@
+{{- /*
+AWS ALB (Application Load Balancer) Ingress Template
+- Standard Kubernetes Ingress with AWS ALB controller annotations
+- Configures health checks and SSL/TLS termination via certificate ARN
+- Routes traffic to web and API services based on paths
+- Supports session stickiness for WebSocket connections
+*/ -}}
+{{- if and .Values.ingress.enabled (eq .Values.ingress.className "alb") }}
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: {{ include "icecharts.fullname" . }}-alb
+  namespace: {{ include "icecharts.namespace" . }}
+  labels:
+    {{- include "icecharts.labels" . | nindent 4 }}
+  annotations:
+    kubernetes.io/ingress.class: alb
+    alb.ingress.kubernetes.io/scheme: internet-facing
+    alb.ingress.kubernetes.io/target-type: ip
+    {{- if .Values.ingress.tls.enabled }}
+    alb.ingress.kubernetes.io/listen-ports: '[{"HTTP": 80}, {"HTTPS": 443}]'
+    alb.ingress.kubernetes.io/ssl-redirect: '443'
+    alb.ingress.kubernetes.io/certificate-arn: {{ .Values.ingress.tls.certificateArn | quote }}
+    {{- else }}
+    alb.ingress.kubernetes.io/listen-ports: '[{"HTTP": 80}]'
+    {{- end }}
+    alb.ingress.kubernetes.io/healthcheck-path: /health
+    alb.ingress.kubernetes.io/healthcheck-protocol: HTTP
+    alb.ingress.kubernetes.io/healthcheck-interval-seconds: '30'
+    alb.ingress.kubernetes.io/healthcheck-timeout-seconds: '5'
+    alb.ingress.kubernetes.io/healthy-threshold-count: '2'
+    alb.ingress.kubernetes.io/unhealthy-threshold-count: '3'
+    {{- with .Values.ingress.annotations }}
+    {{- toYaml . | nindent 4 }}
+    {{- end }}
+spec:
+  rules:
+    - host: {{ .Values.ingress.host }}
+      http:
+        paths:
+          # Root path - serves the web frontend
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: {{ include "icecharts.web.fullname" . }}-service
+                port:
+                  number: 80
+
+          # API routes
+          - path: /api
+            pathType: Prefix
+            backend:
+              service:
+                name: {{ include "icecharts.api.fullname" . }}-service
+                port:
+                  number: 80
+
+          # WebSocket routes
+          - path: /socket.io
+            pathType: Prefix
+            backend:
+              service:
+                name: {{ include "icecharts.api.fullname" . }}-service
+                port:
+                  number: 80
+
+  {{- if .Values.ingress.tls.enabled }}
+  tls:
+    - hosts:
+        - {{ .Values.ingress.host }}
+      secretName: {{ .Values.ingress.tls.secretName }}
+  {{- end }}
+
+{{- end }}

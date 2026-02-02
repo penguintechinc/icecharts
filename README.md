@@ -6,7 +6,7 @@
   <a href="https://github.com/penguintechinc/IceCharts/actions/workflows/ci.yml"><img src="https://github.com/penguintechinc/IceCharts/actions/workflows/ci.yml/badge.svg" alt="CI"></a>
   <a href="https://github.com/penguintechinc/IceCharts/actions/workflows/docker-multiarch.yml"><img src="https://github.com/penguintechinc/IceCharts/actions/workflows/docker-multiarch.yml/badge.svg" alt="Docker Build"></a>
   <a href="https://github.com/penguintechinc/IceCharts/actions/workflows/test-and-lint.yml"><img src="https://github.com/penguintechinc/IceCharts/actions/workflows/test-and-lint.yml/badge.svg" alt="Tests"></a>
-  <a href="https://semver.org"><img src="https://img.shields.io/badge/version-1.0.2-blue.svg" alt="version"></a>
+  <a href="https://semver.org"><img src="https://img.shields.io/badge/version-1.0.3-blue.svg" alt="version"></a>
   <a href="LICENSE.md"><img src="https://img.shields.io/badge/License-Limited%20AGPL3-blue.svg" alt="License"></a>
 </p>
 
@@ -106,6 +106,23 @@ IceCharts is a modern, web-based collaborative diagramming platform designed for
 - **Dependency visualization** showing relationships between infrastructure elements
 - **Live sync** with infrastructure definitions
 
+<<<<<<< HEAD
+### IceRuns - Serverless Functions
+- **Multi-language runtime support** (Python, Node.js, Go, Ruby, Bash, PowerShell, Rust)
+- **Function management** with versioning and rollback
+- **Multiple trigger types** (webhooks, API, scheduled, IceStreams playbooks)
+- **Container isolation** with resource limits and security hardening
+- **Real-time execution tracking** with WebSocket support
+- **See [IceRuns Documentation](docs/iceruns/README.md) for complete guide**
+=======
+### Workflow Automation (IceStreams)
+- **Visual workflow editor** with drag-and-drop node canvas
+- **Connector Framework** for integrating external services
+- **WaddleBot integration** for chat bot automation (Twitch, Discord, Slack, Kick)
+- **Triggers, Actions, and Transforms** for building automation pipelines
+- **Schema-driven configuration** for easy node setup
+>>>>>>> origin/v1.0.X
+
 ### Enterprise Security
 - **User authentication & authorization** with role-based access control (RBAC)
 - **OAuth/SSO integration** for enterprise identity management
@@ -140,9 +157,9 @@ cp .env.example .env
 docker-compose up -d
 
 # Access the application
-# Web UI: http://localhost:3003
-# API: http://localhost:5002
-# Default credentials: admin@icecharts.local / admin123
+# Web UI: http://localhost:3000
+# API: http://localhost:5001
+# Default credentials: admin@localhost.local / admin123
 ```
 
 ### Local Development Setup
@@ -174,6 +191,11 @@ Comprehensive documentation is available in the [docs/](docs/) directory:
   - [Comments System](docs/COMMENTS_SYSTEM.md)
   - [Export Functionality](docs/EXPORT_FUNCTIONALITY.md)
   - [Elder Integration](docs/ELDER_INTEGRATION.md)
+- **[Connector Framework](docs/CONNECTORS.md)** - External service integration guide
+  - [Creating Connectors](docs/CONNECTORS.md#creating-a-new-connector)
+  - [WaddleBot Integration](docs/CONNECTORS.md#waddlebot)
+  - [Manifest Schema Reference](docs/CONNECTORS.md#manifest-schema-reference)
+- **[Kubernetes Deployment](docs/KUBERNETES.md)** - Helm charts, Kustomize manifests, and cloud deployments (AWS/GCP/Azure)
 - **[Deployment](docs/DEPLOYMENT.md)** - Deployment guides and best practices
 - **[Contributing](docs/CONTRIBUTING.md)** - Development guidelines and workflow
 - **[License Integration](docs/licensing/license-server-integration.md)** - License management

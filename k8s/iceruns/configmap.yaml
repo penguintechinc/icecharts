@@ -1,0 +1,29 @@
+# IceRuns Invoker ConfigMap
+# Contains non-sensitive configuration for the invoker service
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: iceruns-config
+  namespace: iceruns
+  labels:
+    app.kubernetes.io/name: iceruns
+    app.kubernetes.io/component: invoker
+data:
+  LOG_LEVEL: "INFO"
+  INVOKER_CONCURRENCY: "5"
+  WARM_CONTAINER_TTL: "600"
+  DOCKER_SOCKET: "/var/run/docker.sock"
+  DB_TYPE: "postgres"
+  DB_PORT: "5432"
+  DB_HOST: "postgres.icecharts.svc.cluster.local"
+  DB_NAME: "icecharts"
+  REDIS_HOST: "redis.icecharts.svc.cluster.local"
+  REDIS_PORT: "6379"
+  REDIS_DB: "0"
+  STORAGE_PROVIDER: "minio"
+  STORAGE_ENDPOINT: "minio.icecharts.svc.cluster.local:9000"
+  STORAGE_BUCKET: "icecharts"
+  STORAGE_USE_SSL: "false"
+  CONTAINER_TIMEOUT_BUFFER: "5"
+  MAX_PACKAGE_SIZE: "52428800"
+  MAX_OUTPUT_SIZE: "10485760"

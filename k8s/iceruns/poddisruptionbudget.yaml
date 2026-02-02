@@ -1,0 +1,15 @@
+# IceRuns Pod Disruption Budget
+# Ensures minimum availability during node maintenance and cluster operations
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: iceruns-invoker-pdb
+  namespace: iceruns
+  labels:
+    app.kubernetes.io/name: iceruns
+    app.kubernetes.io/component: invoker
+spec:
+  minAvailable: 2
+  selector:
+    matchLabels:
+      app: iceruns-invoker

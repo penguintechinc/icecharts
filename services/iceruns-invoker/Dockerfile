@@ -1,0 +1,31 @@
+# Multi-arch Dockerfile for IceRuns Invoker (ARM64 + AMD64)
+FROM debian:12-slim
+
+ARG TARGETPLATFORM
+ARG BUILDPLATFORM
+
+# Install Python 3.13, Docker CLI, and build tools
+RUN apt-get update && apt-get install -y \
+    python3 \
+    python3-pip \
+    python3-venv \
+    docker.io \
+    curl \
+    ca-certificates \
+    && rm -rf /var/lib/apt/lists/*
+
+WORKDIR /app
+
+# Python dependencies
+COPY requirements.txt .
+RUN pip3 install --no-cache-dir --break-system-packages -r requirements.txt
+
+# Copy application code
+COPY app/ ./app/
+
+# Health check
+HEALTHCHECK --interval=30s --timeout=5s --start-period=10s --retries=3 \
+    CMD python3 -c "import redis; redis.from_url('redis://localhost:6379/0').ping()" || exit 1
+
+# Run invoker
+CMD ["python3", "-m", "app.invoker"]

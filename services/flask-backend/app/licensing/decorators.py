@@ -6,9 +6,8 @@ from typing import Callable, Optional
 
 from flask import jsonify
 
-from .client import FeatureNotAvailableError
 from . import get_client
-
+from .client import FeatureNotAvailableError
 
 logger = logging.getLogger(__name__)
 
@@ -27,6 +26,7 @@ def license_required(minimum_tier: Optional[str] = None) -> Callable:
     Raises:
         FeatureNotAvailableError: If license requirement not met
     """
+
     def decorator(func: Callable) -> Callable:
         @wraps(func)
         def wrapper(*args, **kwargs):
@@ -36,10 +36,15 @@ def license_required(minimum_tier: Optional[str] = None) -> Callable:
                 logger.warning(
                     f"License required for {func.__name__} but client not initialized"
                 )
-                return jsonify({
-                    "error": "License not configured",
-                    "message": "Feature requires valid license"
-                }), 403
+                return (
+                    jsonify(
+                        {
+                            "error": "License not configured",
+                            "message": "Feature requires valid license",
+                        }
+                    ),
+                    403,
+                )
 
             try:
                 # If minimum tier is specified, check it
@@ -55,12 +60,15 @@ def license_required(minimum_tier: Optional[str] = None) -> Callable:
 
             except FeatureNotAvailableError as e:
                 logger.warning(f"License requirement failed for {func.__name__}: {e}")
-                return jsonify({
-                    "error": "License requirement not met",
-                    "message": str(e)
-                }), 403
+                return (
+                    jsonify(
+                        {"error": "License requirement not met", "message": str(e)}
+                    ),
+                    403,
+                )
 
         return wrapper
+
     return decorator
 
 
@@ -77,6 +85,7 @@ def feature_required(feature_name: str) -> Callable:
     Raises:
         FeatureNotAvailableError: If feature is not available
     """
+
     def decorator(func: Callable) -> Callable:
         @wraps(func)
         def wrapper(*args, **kwargs):
@@ -87,10 +96,15 @@ def feature_required(feature_name: str) -> Callable:
                     f"Feature '{feature_name}' required for {func.__name__} "
                     f"but license client not initialized"
                 )
-                return jsonify({
-                    "error": "License not configured",
-                    "message": f"Feature '{feature_name}' requires license"
-                }), 403
+                return (
+                    jsonify(
+                        {
+                            "error": "License not configured",
+                            "message": f"Feature '{feature_name}' requires license",
+                        }
+                    ),
+                    403,
+                )
 
             try:
                 if not client.check_feature(feature_name):
@@ -103,12 +117,18 @@ def feature_required(feature_name: str) -> Callable:
                 logger.warning(
                     f"Feature '{feature_name}' not available for {func.__name__}: {e}"
                 )
-                return jsonify({
-                    "error": "Feature not available",
-                    "message": f"Feature '{feature_name}' requires license upgrade"
-                }), 403
+                return (
+                    jsonify(
+                        {
+                            "error": "Feature not available",
+                            "message": f"Feature '{feature_name}' requires license upgrade",
+                        }
+                    ),
+                    403,
+                )
 
         return wrapper
+
     return decorator
 
 

@@ -139,7 +139,7 @@ After starting IceCharts, complete these steps:
 1. **Access the Admin Panel**
    - Navigate to http://localhost:3000
    - Login with default credentials:
-     - Email: `admin@icecharts.local`
+     - Email: `admin@localhost.local`
      - Password: `admin123`
    - **Change these credentials immediately in production**
 
@@ -308,7 +308,7 @@ docker-compose up -d postgres
 
 - **Forgot password**: Use admin reset:
   ```bash
-  docker-compose exec api python -c "from app.models import reset_password; reset_password('admin@icecharts.local')"
+  docker-compose exec api python -c "from app.models import reset_password; reset_password('admin@localhost.local')"
   ```
 - **Can't log in**: Check credentials in admin panel
 - **Token expired**: Log out and log back in

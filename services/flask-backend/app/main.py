@@ -138,6 +138,7 @@ def _init_socketio(app: Flask) -> None:
 
     # Register WebSocket handlers after SocketIO is initialized
     from app.api.v1.collaboration_socket import register_handlers
+
     register_handlers(socketio)
 
     logger.info("socketio_initialized")
@@ -198,9 +199,7 @@ def _register_error_handlers(app: Flask) -> None:
         """Handle 500 Internal Server Error."""
         logger.error("internal_server_error", error=str(error))
         return (
-            jsonify(
-                {"error": "Internal Server Error", "message": "An error occurred"}
-            ),
+            jsonify({"error": "Internal Server Error", "message": "An error occurred"}),
             500,
         )
 
@@ -209,8 +208,8 @@ def _register_error_handlers(app: Flask) -> None:
 
 def _create_default_admin(app: Flask) -> None:
     """Create default admin user if no users exist."""
-    from app.models import create_user, get_db, get_user_by_email
     from app.auth import hash_password
+    from app.models import create_user, get_db, get_user_by_email
 
     with app.app_context():
         try:
@@ -237,7 +236,7 @@ def _create_default_admin(app: Flask) -> None:
             user_count = db(db.identities).count()
 
             if user_count == 0:
-                admin_email = os.getenv("DEFAULT_ADMIN_EMAIL", "admin@localhost")
+                admin_email = os.getenv("DEFAULT_ADMIN_EMAIL", "admin@localhost.local")
                 admin_password = os.getenv("DEFAULT_ADMIN_PASSWORD", "admin123")
 
                 # Check if admin already exists
@@ -250,9 +249,11 @@ def _create_default_admin(app: Flask) -> None:
                         full_name="System Administrator",
                         role="admin",
                     )
-                    logger.warning("default_admin_created",
-                                 email=admin_email,
-                                 message="Change the default password immediately!")
+                    logger.warning(
+                        "default_admin_created",
+                        email=admin_email,
+                        message="Change the default password immediately!",
+                    )
                 else:
                     logger.info("admin_already_exists")
             else:

@@ -20,31 +20,30 @@ Usage:
 """
 
 import os
-from typing import Dict, Any, Optional
+from typing import Any, Dict, Optional
 
 from .base import (
-    StorageProvider,
-    StorageFile,
-    StorageError,
+    StorageAuthenticationError,
     StorageConfigError,
     StorageConnectionError,
-    StorageAuthenticationError
+    StorageError,
+    StorageFile,
+    StorageProvider,
 )
 
 __all__ = [
-    'get_storage_provider',
-    'StorageProvider',
-    'StorageFile',
-    'StorageError',
-    'StorageConfigError',
-    'StorageConnectionError',
-    'StorageAuthenticationError'
+    "get_storage_provider",
+    "StorageProvider",
+    "StorageFile",
+    "StorageError",
+    "StorageConfigError",
+    "StorageConnectionError",
+    "StorageAuthenticationError",
 ]
 
 
 def get_storage_provider(
-    provider_type: Optional[str] = None,
-    config: Optional[Dict[str, Any]] = None
+    provider_type: Optional[str] = None, config: Optional[Dict[str, Any]] = None
 ) -> StorageProvider:
     """Factory function to create storage provider instances.
 
@@ -91,7 +90,7 @@ def get_storage_provider(
     """
     # Determine provider type
     if provider_type is None:
-        provider_type = os.getenv('STORAGE_PROVIDER', '').lower()
+        provider_type = os.getenv("STORAGE_PROVIDER", "").lower()
 
     if not provider_type:
         raise StorageConfigError(
@@ -105,24 +104,29 @@ def get_storage_provider(
 
     # Import and instantiate appropriate provider
     try:
-        if provider_type == 'minio':
+        if provider_type == "minio":
             from .minio_provider import MinIOProvider
+
             return MinIOProvider(config)
 
-        elif provider_type == 's3':
+        elif provider_type == "s3":
             from .s3_provider import S3Provider
+
             return S3Provider(config)
 
-        elif provider_type == 'gcs':
+        elif provider_type == "gcs":
             from .gcs_provider import GCSProvider
+
             return GCSProvider(config)
 
-        elif provider_type == 'onedrive':
+        elif provider_type == "onedrive":
             from .onedrive_provider import OneDriveProvider
+
             return OneDriveProvider(config)
 
-        elif provider_type == 'googledrive':
+        elif provider_type == "googledrive":
             from .google_drive_provider import GoogleDriveProvider
+
             return GoogleDriveProvider(config)
 
         else:
@@ -150,11 +154,11 @@ def _build_config_from_env(provider_type: str) -> Dict[str, Any]:
     Raises:
         StorageConfigError: If required environment variables are missing
     """
-    if provider_type in ('minio', 's3'):
-        endpoint = os.getenv('STORAGE_ENDPOINT')
-        access_key = os.getenv('STORAGE_ACCESS_KEY')
-        secret_key = os.getenv('STORAGE_SECRET_KEY')
-        bucket = os.getenv('STORAGE_BUCKET')
+    if provider_type in ("minio", "s3"):
+        endpoint = os.getenv("STORAGE_ENDPOINT")
+        access_key = os.getenv("STORAGE_ACCESS_KEY")
+        secret_key = os.getenv("STORAGE_SECRET_KEY")
+        bucket = os.getenv("STORAGE_BUCKET")
 
         if not all([access_key, secret_key, bucket]):
             raise StorageConfigError(
@@ -163,22 +167,22 @@ def _build_config_from_env(provider_type: str) -> Dict[str, Any]:
             )
 
         config = {
-            'endpoint': endpoint,
-            'access_key': access_key,
-            'secret_key': secret_key,
-            'bucket': bucket,
-            'secure': os.getenv('STORAGE_SECURE', 'true').lower() == 'true'
+            "endpoint": endpoint,
+            "access_key": access_key,
+            "secret_key": secret_key,
+            "bucket": bucket,
+            "secure": os.getenv("STORAGE_SECURE", "true").lower() == "true",
         }
 
-        if provider_type == 's3':
-            config['region'] = os.getenv('STORAGE_REGION', 'us-east-1')
+        if provider_type == "s3":
+            config["region"] = os.getenv("STORAGE_REGION", "us-east-1")
 
         return config
 
-    elif provider_type == 'gcs':
-        bucket = os.getenv('STORAGE_BUCKET')
-        project_id = os.getenv('STORAGE_PROJECT_ID')
-        credentials_path = os.getenv('GCS_CREDENTIALS_PATH')
+    elif provider_type == "gcs":
+        bucket = os.getenv("STORAGE_BUCKET")
+        project_id = os.getenv("STORAGE_PROJECT_ID")
+        credentials_path = os.getenv("GCS_CREDENTIALS_PATH")
 
         if not all([bucket, project_id]):
             raise StorageConfigError(
@@ -187,15 +191,15 @@ def _build_config_from_env(provider_type: str) -> Dict[str, Any]:
             )
 
         return {
-            'bucket': bucket,
-            'project_id': project_id,
-            'credentials_path': credentials_path
+            "bucket": bucket,
+            "project_id": project_id,
+            "credentials_path": credentials_path,
         }
 
-    elif provider_type == 'onedrive':
-        client_id = os.getenv('ONEDRIVE_CLIENT_ID')
-        client_secret = os.getenv('ONEDRIVE_CLIENT_SECRET')
-        tenant_id = os.getenv('ONEDRIVE_TENANT_ID')
+    elif provider_type == "onedrive":
+        client_id = os.getenv("ONEDRIVE_CLIENT_ID")
+        client_secret = os.getenv("ONEDRIVE_CLIENT_SECRET")
+        tenant_id = os.getenv("ONEDRIVE_TENANT_ID")
 
         if not all([client_id, client_secret, tenant_id]):
             raise StorageConfigError(
@@ -204,15 +208,15 @@ def _build_config_from_env(provider_type: str) -> Dict[str, Any]:
             )
 
         return {
-            'client_id': client_id,
-            'client_secret': client_secret,
-            'tenant_id': tenant_id,
-            'folder_path': os.getenv('ONEDRIVE_FOLDER_PATH', '/')
+            "client_id": client_id,
+            "client_secret": client_secret,
+            "tenant_id": tenant_id,
+            "folder_path": os.getenv("ONEDRIVE_FOLDER_PATH", "/"),
         }
 
-    elif provider_type == 'googledrive':
-        credentials_path = os.getenv('GDRIVE_CREDENTIALS_PATH')
-        token_path = os.getenv('GDRIVE_TOKEN_PATH', 'token.json')
+    elif provider_type == "googledrive":
+        credentials_path = os.getenv("GDRIVE_CREDENTIALS_PATH")
+        token_path = os.getenv("GDRIVE_TOKEN_PATH", "token.json")
 
         if not credentials_path:
             raise StorageConfigError(
@@ -221,9 +225,9 @@ def _build_config_from_env(provider_type: str) -> Dict[str, Any]:
             )
 
         return {
-            'credentials_path': credentials_path,
-            'token_path': token_path,
-            'folder_id': os.getenv('GDRIVE_FOLDER_ID')
+            "credentials_path": credentials_path,
+            "token_path": token_path,
+            "folder_id": os.getenv("GDRIVE_FOLDER_ID"),
         }
 
     else:

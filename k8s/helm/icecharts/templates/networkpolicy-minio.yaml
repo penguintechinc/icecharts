@@ -1,0 +1,54 @@
+{{- /*
+NetworkPolicy for MinIO
+- Allows ingress from API pods on port 9000
+- Allows ingress from Web pods on port 9001 (console)
+- Allows DNS egress for external resolution
+- Denies all other traffic
+*/ -}}
+{{- if .Values.networkPolicies.enabled }}
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: icecharts-minio-policy
+  namespace: {{ include "icecharts.namespace" . }}
+  labels:
+    {{- include "icecharts.labels" . | nindent 4 }}
+    app.kubernetes.io/component: storage
+  annotations:
+    description: "NetworkPolicy for MinIO storage - allows ingress from API and Web pods"
+spec:
+  podSelector:
+    matchLabels:
+      {{- include "icecharts.minio.selectorLabels" . | nindent 6 }}
+  policyTypes:
+    {{- toYaml .Values.networkPolicies.policyTypes | nindent 4 }}
+  ingress:
+    # Allow ingress from API pods on port 9000 (API)
+    - from:
+        - podSelector:
+            matchLabels:
+              app.kubernetes.io/component: backend
+      ports:
+        - protocol: TCP
+          port: 9000
+    # Allow ingress from Web pods on port 9001 (Console)
+    - from:
+        - podSelector:
+            matchLabels:
+              app.kubernetes.io/component: frontend
+      ports:
+        - protocol: TCP
+          port: 9001
+  egress:
+    # Allow DNS egress for name resolution
+    - to:
+        - namespaceSelector: {}
+          podSelector:
+            matchLabels:
+              k8s-app: kube-dns
+      ports:
+        - protocol: UDP
+          port: 53
+        - protocol: TCP
+          port: 53
+{{- end }}

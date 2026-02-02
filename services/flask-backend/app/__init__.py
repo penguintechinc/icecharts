@@ -9,7 +9,6 @@ from flask_cors import CORS
 from .config import Config
 from .models import init_db
 
-
 __version__ = "0.1.0"
 
 
@@ -41,12 +40,14 @@ def create_app(config_class=None):
 
     # Initialize WebSocket support
     from .websocket import init_socketio
+
     socketio = init_socketio(app)
     app.socketio = socketio
 
     # Initialize licensing
     try:
         from .licensing import initialize_licensing
+
         if initialize_licensing():
             logger.info("License server integration enabled")
         else:
@@ -56,6 +57,7 @@ def create_app(config_class=None):
 
     # Register blueprints
     from .api import api_v1_bp
+
     app.register_blueprint(api_v1_bp)
 
     # Health check endpoint
@@ -69,11 +71,23 @@ def create_app(config_class=None):
         """Readiness check endpoint."""
         try:
             from .models import get_db
+
             db = get_db()
             db.executesql("SELECT 1")
             return {"status": "ready"}, 200
         except Exception as e:
             logger.error(f"Readiness check failed: {e}")
             return {"status": "not_ready", "error": str(e)}, 503
+
+    @app.route("/metrics")
+    def metrics_endpoint():
+        """Prometheus metrics endpoint."""
+        try:
+            from prometheus_client import generate_latest
+            from flask import Response
+            return Response(generate_latest(), mimetype='text/plain; version=0.0.4')
+        except Exception as e:
+            logger.error(f"Metrics endpoint error: {e}")
+            return {"error": "Unable to generate metrics"}, 500
 
     return app

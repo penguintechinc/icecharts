@@ -29,8 +29,8 @@ def user_can_access_library(user_id: int, library_id: int) -> bool:
     if library.get("is_public"):
         return True
 
-    # Owner can always access
-    if library["created_by_id"] == user_id:
+    # Creator can always access
+    if library["owner_id"] == user_id:
         return True
 
     return False
@@ -53,17 +53,17 @@ def list_libraries():
     # Build query: user's libraries or public libraries
     if show_public:
         query = db(
-            (db.shape_libraries.created_by_id == user["id"]) |
-            (db.shape_libraries.is_public == True)
+            (db.shape_libraries.owner_id == user["id"])
+            | (db.shape_libraries.is_public == True)
         )
     else:
-        query = db(db.shape_libraries.created_by_id == user["id"])
+        query = db(db.shape_libraries.owner_id == user["id"])
 
     # Apply search filter
     if search:
         query = query & (
-            db.shape_libraries.name.contains(search) |
-            db.shape_libraries.description.contains(search)
+            db.shape_libraries.name.contains(search)
+            | db.shape_libraries.description.contains(search)
         )
 
     libraries = query.select(
@@ -72,13 +72,18 @@ def list_libraries():
     )
     total = query.count()
 
-    return jsonify({
-        "libraries": [lib.as_dict() for lib in libraries],
-        "total": total,
-        "page": page,
-        "per_page": per_page,
-        "pages": (total + per_page - 1) // per_page,
-    }), 200
+    return (
+        jsonify(
+            {
+                "libraries": [lib.as_dict() for lib in libraries],
+                "total": total,
+                "page": page,
+                "per_page": per_page,
+                "pages": (total + per_page - 1) // per_page,
+            }
+        ),
+        200,
+    )
 
 
 @libraries_v1_bp.route("", methods=["POST"])
@@ -105,17 +110,22 @@ def create_library():
     library_id = db.shape_libraries.insert(
         name=name,
         description=description,
-        created_by_id=user["id"],
+        owner_id=user["id"],
         is_public=is_public,
     )
     db.commit()
 
     library = get_library_by_id(library_id)
 
-    return jsonify({
-        "message": "Library created successfully",
-        "library": library,
-    }), 201
+    return (
+        jsonify(
+            {
+                "message": "Library created successfully",
+                "library": library,
+            }
+        ),
+        201,
+    )
 
 
 @libraries_v1_bp.route("/<int:library_id>", methods=["GET"])
@@ -157,7 +167,7 @@ def update_library(library_id: int):
         return jsonify({"error": "Library not found"}), 404
 
     # Only owner can update
-    if library["created_by_id"] != user["id"]:
+    if library["owner_id"] != user["id"]:
         return jsonify({"error": "Only the owner can update this library"}), 403
 
     db = get_db()
@@ -176,10 +186,15 @@ def update_library(library_id: int):
 
     updated_library = get_library_by_id(library_id)
 
-    return jsonify({
-        "message": "Library updated successfully",
-        "library": updated_library,
-    }), 200
+    return (
+        jsonify(
+            {
+                "message": "Library updated successfully",
+                "library": updated_library,
+            }
+        ),
+        200,
+    )
 
 
 @libraries_v1_bp.route("/<int:library_id>", methods=["DELETE"])
@@ -193,7 +208,7 @@ def delete_library(library_id: int):
         return jsonify({"error": "Library not found"}), 404
 
     # Only owner can delete
-    if library["created_by_id"] != user["id"]:
+    if library["owner_id"] != user["id"]:
         return jsonify({"error": "Only the owner can delete this library"}), 403
 
     db = get_db()
@@ -205,9 +220,14 @@ def delete_library(library_id: int):
     db(db.shape_libraries.id == library_id).delete()
     db.commit()
 
-    return jsonify({
-        "message": "Library deleted successfully",
-    }), 200
+    return (
+        jsonify(
+            {
+                "message": "Library deleted successfully",
+            }
+        ),
+        200,
+    )
 
 
 @libraries_v1_bp.route("/<int:library_id>/shapes", methods=["GET"])
@@ -226,10 +246,15 @@ def list_library_shapes(library_id: int):
         orderby=db.library_shapes.name,
     )
 
-    return jsonify({
-        "shapes": [s.as_dict() for s in shapes],
-        "total": len(shapes),
-    }), 200
+    return (
+        jsonify(
+            {
+                "shapes": [s.as_dict() for s in shapes],
+                "total": len(shapes),
+            }
+        ),
+        200,
+    )
 
 
 @libraries_v1_bp.route("/<int:library_id>/shapes", methods=["POST"])
@@ -247,7 +272,7 @@ def add_library_shape(library_id: int):
         return jsonify({"error": "Library not found"}), 404
 
     # Only owner can add shapes
-    if library["created_by_id"] != user["id"]:
+    if library["owner_id"] != user["id"]:
         return jsonify({"error": "Only the owner can add shapes to this library"}), 403
 
     name = data.get("name", "").strip()
@@ -274,10 +299,15 @@ def add_library_shape(library_id: int):
 
     shape = db(db.library_shapes.id == shape_id).select().first()
 
-    return jsonify({
-        "message": "Shape added to library successfully",
-        "shape": shape.as_dict() if shape else None,
-    }), 201
+    return (
+        jsonify(
+            {
+                "message": "Shape added to library successfully",
+                "shape": shape.as_dict() if shape else None,
+            }
+        ),
+        201,
+    )
 
 
 @libraries_v1_bp.route("/<int:library_id>/shapes/<int:shape_id>", methods=["GET"])
@@ -292,10 +322,14 @@ def get_library_shape(library_id: int, shape_id: int):
 
     db = get_db()
 
-    shape = db(
-        (db.library_shapes.id == shape_id) &
-        (db.library_shapes.library_id == library_id)
-    ).select().first()
+    shape = (
+        db(
+            (db.library_shapes.id == shape_id)
+            & (db.library_shapes.library_id == library_id)
+        )
+        .select()
+        .first()
+    )
 
     if not shape:
         return jsonify({"error": "Shape not found"}), 404
@@ -318,8 +352,11 @@ def update_library_shape(library_id: int, shape_id: int):
         return jsonify({"error": "Library not found"}), 404
 
     # Only owner can update
-    if library["created_by_id"] != user["id"]:
-        return jsonify({"error": "Only the owner can update shapes in this library"}), 403
+    if library["owner_id"] != user["id"]:
+        return (
+            jsonify({"error": "Only the owner can update shapes in this library"}),
+            403,
+        )
 
     db = get_db()
 
@@ -335,8 +372,8 @@ def update_library_shape(library_id: int, shape_id: int):
 
     if update_data:
         updated = db(
-            (db.library_shapes.id == shape_id) &
-            (db.library_shapes.library_id == library_id)
+            (db.library_shapes.id == shape_id)
+            & (db.library_shapes.library_id == library_id)
         ).update(**update_data)
 
         if not updated:
@@ -346,10 +383,15 @@ def update_library_shape(library_id: int, shape_id: int):
 
     shape = db(db.library_shapes.id == shape_id).select().first()
 
-    return jsonify({
-        "message": "Shape updated successfully",
-        "shape": shape.as_dict() if shape else None,
-    }), 200
+    return (
+        jsonify(
+            {
+                "message": "Shape updated successfully",
+                "shape": shape.as_dict() if shape else None,
+            }
+        ),
+        200,
+    )
 
 
 @libraries_v1_bp.route("/<int:library_id>/shapes/<int:shape_id>", methods=["DELETE"])
@@ -363,14 +405,17 @@ def delete_library_shape(library_id: int, shape_id: int):
         return jsonify({"error": "Library not found"}), 404
 
     # Only owner can delete
-    if library["created_by_id"] != user["id"]:
-        return jsonify({"error": "Only the owner can delete shapes from this library"}), 403
+    if library["owner_id"] != user["id"]:
+        return (
+            jsonify({"error": "Only the owner can delete shapes from this library"}),
+            403,
+        )
 
     db = get_db()
 
     deleted = db(
-        (db.library_shapes.id == shape_id) &
-        (db.library_shapes.library_id == library_id)
+        (db.library_shapes.id == shape_id)
+        & (db.library_shapes.library_id == library_id)
     ).delete()
 
     if not deleted:
@@ -378,9 +423,14 @@ def delete_library_shape(library_id: int, shape_id: int):
 
     db.commit()
 
-    return jsonify({
-        "message": "Shape deleted successfully",
-    }), 200
+    return (
+        jsonify(
+            {
+                "message": "Shape deleted successfully",
+            }
+        ),
+        200,
+    )
 
 
 @libraries_v1_bp.route("/<int:library_id>/duplicate", methods=["POST"])
@@ -400,7 +450,7 @@ def duplicate_library(library_id: int):
     new_library_id = db.shape_libraries.insert(
         name=f"{source_library['name']} (Copy)",
         description=source_library.get("description", ""),
-        created_by_id=user["id"],
+        owner_id=user["id"],
         is_public=False,  # Copies are private by default
     )
 
@@ -420,7 +470,12 @@ def duplicate_library(library_id: int):
 
     new_library = get_library_by_id(new_library_id)
 
-    return jsonify({
-        "message": "Library duplicated successfully",
-        "library": new_library,
-    }), 201
+    return (
+        jsonify(
+            {
+                "message": "Library duplicated successfully",
+                "library": new_library,
+            }
+        ),
+        201,
+    )

@@ -26,15 +26,7 @@ FROM dependencies AS test
 
 WORKDIR /app
 
-# Install test dependencies
-RUN npm install --save-dev \
-    vitest \
-    @vitest/ui \
-    jsdom \
-    @testing-library/react \
-    @testing-library/user-event
-
-# Copy source code and tests
+# Copy source code and tests (test deps already installed via npm ci)
 COPY . .
 
 # Run tests
@@ -43,13 +35,17 @@ RUN npm run test -- --run --coverage
 # Stage 4: Build
 FROM dependencies AS builder
 
+# Build arguments for Vite
+ARG VITE_API_URL=""
+ARG VITE_API_BASE_PATH="/api/v1"
+
 WORKDIR /app
 
 # Copy source code
 COPY . .
 
-# Build application
-RUN npm run build
+# Build application with environment variables
+RUN VITE_API_URL=${VITE_API_URL} VITE_API_BASE_PATH=${VITE_API_BASE_PATH} npm run build
 
 # Stage 5: Production
 FROM nginx:1.25 AS production

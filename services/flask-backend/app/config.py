@@ -58,12 +58,14 @@ class Config:
 
     # CORS
     SITE_URL = config("SITE_URL", default="http://localhost:3000")
+    WEBUI_PORT = config("WEBUI_PORT", default=3000, cast=int)
 
     @staticmethod
     def _build_cors_origins():
         from urllib.parse import urlparse
 
         site_url = config("SITE_URL", default="http://localhost:3000")
+        webui_port = config("WEBUI_PORT", default=3000, cast=int)
         parsed = urlparse(site_url)
         scheme = parsed.scheme or "http"
         hostname = parsed.hostname or "localhost"
@@ -74,6 +76,11 @@ class Config:
             origins.append(f"{scheme}://{hostname}:{port}")
         else:
             origins.append(f"{scheme}://{hostname}")
+
+        # Always include the configured webui port
+        webui_origin = f"{scheme}://{hostname}:{webui_port}"
+        if webui_origin not in origins:
+            origins.append(webui_origin)
 
         if hostname in ("localhost", "127.0.0.1"):
             for dev_port in [3000, 3001, 3002, 3003, 3005, 5001, 5173, 8080]:
@@ -149,7 +156,9 @@ class Config:
     GOOGLE_REDIRECT_URI = config("GOOGLE_REDIRECT_URI", default="")
 
     # Email Configuration
-    EMAIL_PROVIDER = config("EMAIL_PROVIDER", default="smtp")  # smtp, sendgrid, ses, mailgun, gmail
+    EMAIL_PROVIDER = config(
+        "EMAIL_PROVIDER", default="smtp"
+    )  # smtp, sendgrid, ses, mailgun, gmail
     EMAIL_FROM = config("EMAIL_FROM", default="noreply@icecharts.local")
     EMAIL_FROM_NAME = config("EMAIL_FROM_NAME", default="IceCharts")
 

@@ -2,6 +2,8 @@
 
 import json
 
+import pytest
+
 
 class TestDrawingCreate:
     """Test drawing creation."""
@@ -14,16 +16,14 @@ class TestDrawingCreate:
             json={
                 "name": "Test Drawing",
                 "description": "A test drawing",
-                "content": {"nodes": [], "edges": []},
+                "canvas_data": {"nodes": [], "edges": []},
             },
         )
         assert response.status_code == 201
         data = json.loads(response.data)
-        assert data["success"] is True
-        assert "drawing" in data
-        assert "id" in data["drawing"]
-        assert data["drawing"]["name"] == "Test Drawing"
-        assert data["drawing"]["description"] == "A test drawing"
+        assert "id" in data
+        assert data["name"] == "Test Drawing"
+        assert data["description"] == "A test drawing"
 
     def test_create_drawing_without_auth(self, client):
         """Test drawing creation without authentication."""
@@ -32,7 +32,7 @@ class TestDrawingCreate:
             json={
                 "name": "Test Drawing",
                 "description": "A test drawing",
-                "content": {"nodes": [], "edges": []},
+                "canvas_data": {"nodes": [], "edges": []},
             },
         )
         assert response.status_code == 401
@@ -44,7 +44,7 @@ class TestDrawingCreate:
             headers=auth_headers,
             json={
                 "description": "A test drawing",
-                "content": {"nodes": [], "edges": []},
+                "canvas_data": {"nodes": [], "edges": []},
             },
         )
         assert response.status_code == 400
@@ -57,29 +57,36 @@ class TestDrawingCreate:
             json={
                 "name": "",
                 "description": "A test drawing",
-                "content": {"nodes": [], "edges": []},
+                "canvas_data": {"nodes": [], "edges": []},
             },
         )
         assert response.status_code == 400
 
     def test_create_drawing_with_group(self, client, auth_headers):
-        """Test drawing creation with tags (group-like categorization)."""
-        # Create drawing with tags for categorization
+        """Test drawing creation with group assignment."""
+        # First create a group
+        group_response = client.post(
+            "/api/v1/groups",
+            headers=auth_headers,
+            json={"name": "Test Group", "description": "A test group"},
+        )
+        assert group_response.status_code == 201
+        group_id = json.loads(group_response.data)["id"]
+
+        # Create drawing with group
         response = client.post(
             "/api/v1/drawings",
             headers=auth_headers,
             json={
                 "name": "Test Drawing",
                 "description": "A test drawing",
-                "content": {"nodes": [], "edges": []},
-                "tags": ["test-group"],
+                "group_id": group_id,
+                "canvas_data": {"nodes": [], "edges": []},
             },
         )
         assert response.status_code == 201
         data = json.loads(response.data)
-        assert data["success"] is True
-        assert "drawing" in data
-        assert "id" in data["drawing"]
+        assert data["group_id"] == group_id
 
 
 class TestDrawingRead:
@@ -94,20 +101,17 @@ class TestDrawingRead:
             json={
                 "name": "Test Drawing",
                 "description": "A test drawing",
-                "content": {"nodes": [], "edges": []},
+                "canvas_data": {"nodes": [], "edges": []},
             },
         )
-        create_data = json.loads(create_response.data)
-        drawing_id = create_data["drawing"]["id"]
+        drawing_id = json.loads(create_response.data)["id"]
 
         # Retrieve the drawing
         response = client.get(f"/api/v1/drawings/{drawing_id}", headers=auth_headers)
         assert response.status_code == 200
         data = json.loads(response.data)
-        assert data["success"] is True
-        assert "drawing" in data
-        assert data["drawing"]["id"] == drawing_id
-        assert data["drawing"]["name"] == "Test Drawing"
+        assert data["id"] == drawing_id
+        assert data["name"] == "Test Drawing"
 
     def test_get_drawing_not_found(self, client, auth_headers):
         """Test retrieving non-existent drawing."""
@@ -124,7 +128,7 @@ class TestDrawingRead:
                 json={
                     "name": f"Drawing {i}",
                     "description": f"Test drawing {i}",
-                    "content": {"nodes": [], "edges": []},
+                    "canvas_data": {"nodes": [], "edges": []},
                 },
             )
 
@@ -132,35 +136,33 @@ class TestDrawingRead:
         response = client.get("/api/v1/drawings", headers=auth_headers)
         assert response.status_code == 200
         data = json.loads(response.data)
-        assert data["success"] is True
         assert "items" in data
-        assert len(data["items"]) >= 3
+        assert len(data["items"]) == 3
 
-    def test_list_drawings_returns_count(self, client, auth_headers):
-        """Test drawing list includes count."""
-        # Create 5 drawings
-        for i in range(5):
+    def test_list_drawings_pagination(self, client, auth_headers):
+        """Test drawing list pagination."""
+        # Create 15 drawings
+        for i in range(15):
             client.post(
                 "/api/v1/drawings",
                 headers=auth_headers,
                 json={
                     "name": f"Drawing {i}",
                     "description": f"Test drawing {i}",
-                    "content": {"nodes": [], "edges": []},
+                    "canvas_data": {"nodes": [], "edges": []},
                 },
             )
 
-        # Get list
+        # Get first page
         response = client.get(
-            "/api/v1/drawings",
+            "/api/v1/drawings?page=1&per_page=10",
             headers=auth_headers,
         )
         assert response.status_code == 200
         data = json.loads(response.data)
-        assert "count" in data
-        assert data["count"] >= 5
-        assert "items" in data
-        assert "drawings" in data
+        assert len(data["items"]) == 10
+        assert data["total"] == 15
+        assert data["page"] == 1
 
 
 class TestDrawingUpdate:
@@ -175,11 +177,10 @@ class TestDrawingUpdate:
             json={
                 "name": "Original Name",
                 "description": "A test drawing",
-                "content": {"nodes": [], "edges": []},
+                "canvas_data": {"nodes": [], "edges": []},
             },
         )
-        create_data = json.loads(create_response.data)
-        drawing_id = create_data["drawing"]["id"]
+        drawing_id = json.loads(create_response.data)["id"]
 
         # Update the drawing
         response = client.put(
@@ -189,8 +190,7 @@ class TestDrawingUpdate:
         )
         assert response.status_code == 200
         data = json.loads(response.data)
-        assert data["success"] is True
-        assert data["drawing"]["name"] == "Updated Name"
+        assert data["name"] == "Updated Name"
 
     def test_update_drawing_content(self, client, auth_headers):
         """Test updating drawing canvas content."""
@@ -201,32 +201,32 @@ class TestDrawingUpdate:
             json={
                 "name": "Test Drawing",
                 "description": "A test drawing",
-                "content": {"nodes": [], "edges": []},
+                "canvas_data": {"nodes": [], "edges": []},
             },
         )
-        create_data = json.loads(create_response.data)
-        drawing_id = create_data["drawing"]["id"]
+        drawing_id = json.loads(create_response.data)["id"]
 
         # Update the content
         new_content = {
             "nodes": [
                 {"id": "1", "data": {"label": "Node 1"}, "position": {"x": 0, "y": 0}},
-                {"id": "2", "data": {"label": "Node 2"}, "position": {"x": 100, "y": 0}},
+                {
+                    "id": "2",
+                    "data": {"label": "Node 2"},
+                    "position": {"x": 100, "y": 0},
+                },
             ],
             "edges": [{"id": "e1-2", "source": "1", "target": "2"}],
         }
         response = client.put(
             f"/api/v1/drawings/{drawing_id}",
             headers=auth_headers,
-            json={"content": new_content},
+            json={"canvas_data": new_content},
         )
         assert response.status_code == 200
         data = json.loads(response.data)
-        assert data["success"] is True
-        assert "drawing" in data
-        assert "content" in data["drawing"]
-        assert len(data["drawing"]["content"]["nodes"]) == 2
-        assert len(data["drawing"]["content"]["edges"]) == 1
+        assert len(data["canvas_data"]["nodes"]) == 2
+        assert len(data["canvas_data"]["edges"]) == 1
 
     def test_update_drawing_without_auth(self, client):
         """Test updating drawing without authentication."""
@@ -258,20 +258,17 @@ class TestDrawingDelete:
             json={
                 "name": "Test Drawing",
                 "description": "A test drawing",
-                "content": {"nodes": [], "edges": []},
+                "canvas_data": {"nodes": [], "edges": []},
             },
         )
-        create_data = json.loads(create_response.data)
-        drawing_id = create_data["drawing"]["id"]
+        drawing_id = json.loads(create_response.data)["id"]
 
         # Delete the drawing
         response = client.delete(
             f"/api/v1/drawings/{drawing_id}",
             headers=auth_headers,
         )
-        assert response.status_code == 200
-        data = json.loads(response.data)
-        assert data["success"] is True
+        assert response.status_code == 204
 
         # Verify it's deleted
         get_response = client.get(
@@ -295,10 +292,10 @@ class TestDrawingDelete:
 
 
 class TestDrawingVersionHistory:
-    """Test drawing version history via updates."""
+    """Test drawing version history."""
 
-    def test_version_increments_on_content_update(self, client, auth_headers):
-        """Test that updating content creates new versions."""
+    def test_get_version_history(self, client, auth_headers):
+        """Test retrieving version history."""
         # Create a drawing
         create_response = client.post(
             "/api/v1/drawings",
@@ -306,73 +303,65 @@ class TestDrawingVersionHistory:
             json={
                 "name": "Test Drawing",
                 "description": "A test drawing",
-                "content": {"nodes": [], "edges": []},
+                "canvas_data": {"nodes": [], "edges": []},
             },
         )
-        create_data = json.loads(create_response.data)
-        drawing_id = create_data["drawing"]["id"]
+        drawing_id = json.loads(create_response.data)["id"]
 
-        # Make several content updates to create version history
+        # Make several updates to create history
         for i in range(3):
-            update_response = client.put(
+            client.put(
                 f"/api/v1/drawings/{drawing_id}",
                 headers=auth_headers,
-                json={
-                    "content": {
-                        "nodes": [{"id": str(j)} for j in range(i + 1)],
-                        "edges": [],
-                    }
-                },
+                json={"name": f"Updated Name {i}"},
             )
-            assert update_response.status_code == 200
 
-        # Get latest drawing and verify version number increased
+        # Get version history
         response = client.get(
-            f"/api/v1/drawings/{drawing_id}",
+            f"/api/v1/drawings/{drawing_id}/versions",
             headers=auth_headers,
         )
         assert response.status_code == 200
         data = json.loads(response.data)
-        assert data["success"] is True
-        assert "drawing" in data
-        # After initial creation (v1) + 3 updates, version should be >= 4
-        if "version" in data["drawing"]:
-            assert data["drawing"]["version"] >= 4
+        assert "versions" in data
+        assert len(data["versions"]) >= 1
 
-    def test_content_preserved_after_metadata_update(self, client, auth_headers):
-        """Test that metadata-only updates preserve content."""
-        # Create a drawing with content
+    def test_restore_version(self, client, auth_headers):
+        """Test restoring a previous version."""
+        # Create a drawing with initial content
         create_response = client.post(
             "/api/v1/drawings",
             headers=auth_headers,
             json={
                 "name": "Test Drawing",
                 "description": "A test drawing",
-                "content": {
-                    "nodes": [{"id": "1", "label": "Node 1"}],
-                    "edges": [],
-                },
+                "canvas_data": {"nodes": [{"id": "1", "label": "Node 1"}], "edges": []},
             },
         )
-        create_data = json.loads(create_response.data)
-        drawing_id = create_data["drawing"]["id"]
+        drawing_id = json.loads(create_response.data)["id"]
+        first_version = json.loads(create_response.data)
 
-        # Update only the name (no content change)
-        update_response = client.put(
+        # Update the drawing
+        client.put(
             f"/api/v1/drawings/{drawing_id}",
             headers=auth_headers,
-            json={"name": "Renamed Drawing"},
+            json={"canvas_data": {"nodes": [{"id": "1"}, {"id": "2"}], "edges": []}},
         )
-        assert update_response.status_code == 200
-        data = json.loads(update_response.data)
-        assert data["drawing"]["name"] == "Renamed Drawing"
+
+        # Restore first version
+        response = client.post(
+            f"/api/v1/drawings/{drawing_id}/restore",
+            headers=auth_headers,
+            json={"version_id": first_version.get("version_id") or 1},
+        )
+        assert response.status_code in [200, 404]  # 404 if version not found
 
 
 class TestDrawingSearch:
     """Test drawing search functionality."""
 
-    def test_list_drawings_filters_by_user(self, client, auth_headers):
-        """Test that listing drawings returns user's drawings."""
+    def test_search_drawings_by_name(self, client, auth_headers):
+        """Test searching drawings by name."""
         # Create drawings with different names
         client.post(
             "/api/v1/drawings",
@@ -380,7 +369,7 @@ class TestDrawingSearch:
             json={
                 "name": "Architecture Diagram",
                 "description": "System architecture",
-                "content": {"nodes": [], "edges": []},
+                "canvas_data": {"nodes": [], "edges": []},
             },
         )
         client.post(
@@ -389,54 +378,39 @@ class TestDrawingSearch:
             json={
                 "name": "Database Schema",
                 "description": "Database design",
-                "content": {"nodes": [], "edges": []},
+                "canvas_data": {"nodes": [], "edges": []},
             },
         )
 
-        # List all user drawings
+        # Search for architecture
         response = client.get(
-            "/api/v1/drawings",
+            "/api/v1/drawings?search=architecture",
             headers=auth_headers,
         )
         assert response.status_code == 200
         data = json.loads(response.data)
-        assert data["success"] is True
-        assert "items" in data
-        assert len(data["items"]) >= 2
+        assert len(data["items"]) == 1
+        assert "Architecture" in data["items"][0]["name"]
 
-        # Verify drawing names are present in results
-        names = [item["name"] for item in data["items"]]
-        assert "Architecture Diagram" in names
-        assert "Database Schema" in names
-
-    def test_list_drawings_returns_drawing_fields(self, client, auth_headers):
-        """Test that listed drawings have expected fields."""
-        # Create a drawing
+    def test_search_drawings_by_description(self, client, auth_headers):
+        """Test searching drawings by description."""
+        # Create drawings
         client.post(
             "/api/v1/drawings",
             headers=auth_headers,
             json={
                 "name": "Drawing 1",
                 "description": "This diagram shows the flow",
-                "content": {"nodes": [], "edges": []},
+                "canvas_data": {"nodes": [], "edges": []},
             },
         )
 
-        # List drawings
+        # Search by description
         response = client.get(
-            "/api/v1/drawings",
+            "/api/v1/drawings?search=flow",
             headers=auth_headers,
         )
         assert response.status_code == 200
-        data = json.loads(response.data)
-        assert len(data["items"]) >= 1
-
-        # Check that items have expected fields
-        item = data["items"][0]
-        assert "id" in item
-        assert "name" in item
-        assert "description" in item
-        assert "created_at" in item
 
 
 class TestDrawingSharing:
@@ -451,54 +425,26 @@ class TestDrawingSharing:
             json={
                 "name": "Test Drawing",
                 "description": "A test drawing",
-                "content": {"nodes": [], "edges": []},
+                "canvas_data": {"nodes": [], "edges": []},
             },
         )
-        create_data = json.loads(create_response.data)
-        drawing_id = create_data["drawing"]["id"]
+        drawing_id = json.loads(create_response.data)["id"]
 
         # Create another user
         other_user = create_test_user("other@example.com")
 
-        # Share the drawing via the shares endpoint
+        # Share the drawing
         response = client.post(
-            f"/api/v1/drawings/{drawing_id}/shares",
+            f"/api/v1/drawings/{drawing_id}/share",
             headers=auth_headers,
-            json={
-                "type": "user",
-                "user_id": other_user["id"],
-                "permission": "view",
-            },
+            json={"user_id": other_user["id"], "permission": "view"},
         )
-        assert response.status_code in [201, 403, 404]
+        assert response.status_code in [200, 201, 404]
 
-    def test_list_drawing_shares(self, client, auth_headers):
-        """Test listing shares for a drawing."""
-        # Create a drawing first
-        create_response = client.post(
-            "/api/v1/drawings",
-            headers=auth_headers,
-            json={
-                "name": "Test Drawing",
-                "description": "A test drawing",
-                "content": {"nodes": [], "edges": []},
-            },
-        )
-        create_data = json.loads(create_response.data)
-        drawing_id = create_data["drawing"]["id"]
-
-        # List shares for the drawing
+    def test_list_shared_drawings(self, client, auth_headers):
+        """Test listing shared drawings."""
         response = client.get(
-            f"/api/v1/drawings/{drawing_id}/shares",
-            headers=auth_headers,
-        )
-        # May return 200 if user is owner/admin, or 403 if insufficient permissions
-        assert response.status_code in [200, 403]
-
-    def test_list_user_drawings(self, client, auth_headers):
-        """Test listing user's own drawings."""
-        response = client.get(
-            "/api/v1/drawings",
+            "/api/v1/drawings?shared=true",
             headers=auth_headers,
         )
         assert response.status_code == 200

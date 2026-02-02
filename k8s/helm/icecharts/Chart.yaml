@@ -1,14 +1,23 @@
 apiVersion: v2
 name: icecharts
-description: IceCharts - Ice chart visualization and management platform
+description: Real-time collaborative diagramming platform with multi-cloud support
 type: application
-version: 1.0.2
-appVersion: "1.0.2"
+version: 1.0.3
+appVersion: "1.0.3"
+
 keywords:
-  - icecharts
-  - visualization
-  - charts
-home: https://github.com/penguintechinc/icecharts
+  - diagramming
+  - collaboration
+  - real-time
+  - architecture
+  - cloud-icons
+
 maintainers:
   - name: Penguin Tech Inc
     email: support@penguintech.io
+
+sources:
+  - https://github.com/penguintechinc/IceCharts
+
+home: https://icecharts.penguintech.io
+icon: https://icecharts.penguintech.io/logo.png

@@ -1,0 +1,16 @@
+# AWS Storage Class Patch
+# Configures AWS EBS (Elastic Block Storage) for persistent volumes
+# Uses GP3 (General Purpose) volumes for balanced price/performance
+# Note: PVCs are managed by StatefulSet volumeClaimTemplates, not defined here
+
+apiVersion: storage.k8s.io/v1
+kind: StorageClass
+metadata:
+  name: aws-ebs-gp3
+provisioner: ebs.csi.aws.com
+parameters:
+  type: gp3
+  iops: "3000"
+  throughput: "125"
+reclaimPolicy: Retain
+allowVolumeExpansion: true

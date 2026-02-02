@@ -377,7 +377,9 @@ class TestAdminStatisticsTopDrawings:
         )
         assert response.status_code == 400
 
-    def test_get_top_drawings_invalid_limit_exceeds_max(self, client, admin_auth_headers):
+    def test_get_top_drawings_invalid_limit_exceeds_max(
+        self, client, admin_auth_headers
+    ):
         """Test top drawings with limit exceeding maximum."""
         response = client.get(
             "/api/v1/admin/statistics/top-drawings?limit=101",

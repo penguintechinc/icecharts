@@ -49,11 +49,19 @@ class DrawingStorageService:
                 # Build config based on provider type
                 if provider_type in ("minio", "s3"):
                     config = {
-                        "endpoint": os.getenv("MINIO_ENDPOINT") or os.getenv("STORAGE_ENDPOINT", "minio:9000"),
-                        "access_key": os.getenv("MINIO_ACCESS_KEY") or os.getenv("STORAGE_ACCESS_KEY", "minioadmin"),
-                        "secret_key": os.getenv("MINIO_SECRET_KEY") or os.getenv("STORAGE_SECRET_KEY", "minioadmin"),
-                        "bucket": os.getenv("MINIO_BUCKET") or os.getenv("STORAGE_BUCKET", "icecharts"),
-                        "secure": (os.getenv("MINIO_SECURE") or os.getenv("STORAGE_SECURE", "false")).lower() == "true",
+                        "endpoint": os.getenv("MINIO_ENDPOINT")
+                        or os.getenv("STORAGE_ENDPOINT", "minio:9000"),
+                        "access_key": os.getenv("MINIO_ACCESS_KEY")
+                        or os.getenv("STORAGE_ACCESS_KEY", "minioadmin"),
+                        "secret_key": os.getenv("MINIO_SECRET_KEY")
+                        or os.getenv("STORAGE_SECRET_KEY", "minioadmin"),
+                        "bucket": os.getenv("MINIO_BUCKET")
+                        or os.getenv("STORAGE_BUCKET", "icecharts"),
+                        "secure": (
+                            os.getenv("MINIO_SECURE")
+                            or os.getenv("STORAGE_SECURE", "false")
+                        ).lower()
+                        == "true",
                     }
                     if provider_type == "s3":
                         config["region"] = os.getenv("STORAGE_REGION", "us-east-1")
@@ -63,7 +71,9 @@ class DrawingStorageService:
 
                 cls._provider = get_storage_provider(provider_type, config)
                 cls._initialized = True
-                current_app.logger.info(f"Initialized storage provider: {provider_type}")
+                current_app.logger.info(
+                    f"Initialized storage provider: {provider_type}"
+                )
 
             except Exception as e:
                 current_app.logger.error(f"Failed to initialize storage: {e}")
@@ -247,9 +257,7 @@ class DrawingStorageService:
                 for f in files:
                     cls._run_async(provider.delete(f.key))
 
-                current_app.logger.info(
-                    f"Deleted all content for drawing {drawing_id}"
-                )
+                current_app.logger.info(f"Deleted all content for drawing {drawing_id}")
                 return True
 
         except Exception as e:
@@ -279,12 +287,18 @@ class DrawingStorageService:
                 if filename.startswith("v") and filename.endswith(".json"):
                     try:
                         version_num = int(filename[1:-5])  # Remove 'v' and '.json'
-                        versions.append({
-                            "key": f.key,
-                            "version": version_num,
-                            "size": f.size,
-                            "modified": f.last_modified.isoformat() if f.last_modified else None,
-                        })
+                        versions.append(
+                            {
+                                "key": f.key,
+                                "version": version_num,
+                                "size": f.size,
+                                "modified": (
+                                    f.last_modified.isoformat()
+                                    if f.last_modified
+                                    else None
+                                ),
+                            }
+                        )
                     except ValueError:
                         pass
 

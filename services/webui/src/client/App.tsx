@@ -10,9 +10,18 @@ import Users from './pages/Users';
 import UserDetail from './pages/UserDetail';
 import Profile from './pages/Profile';
 import Settings from './pages/Settings';
+import Libraries from './pages/Libraries';
+import ServiceAccounts from './pages/Admin/ServiceAccounts';
+import AdminSettings from './pages/Admin/AdminSettings';
+import ActivityLogs from './pages/Admin/ActivityLogs';
+import AuditLogs from './pages/Admin/AuditLogs';
+import LicenseSettings from './pages/Admin/LicenseSettings';
 
 function App() {
   const { isAuthenticated, isLoading } = useAuth();
+
+  // Build timestamp for verification
+  console.log('IceCharts Build:', new Date().toISOString());
 
   if (isLoading) {
     return (
@@ -68,6 +77,16 @@ function App() {
           }
         />
 
+        {/* Libraries - Maintainer and Admin */}
+        <Route
+          path="/libraries"
+          element={
+            <RoleGuard allowedRoles={['admin', 'maintainer']}>
+              <Libraries />
+            </RoleGuard>
+          }
+        />
+
         {/* User management - Admin only */}
         <Route
           path="/users"
@@ -82,6 +101,48 @@ function App() {
           element={
             <RoleGuard allowedRoles={['admin']}>
               <UserDetail />
+            </RoleGuard>
+          }
+        />
+
+        {/* Admin pages - Admin only */}
+        <Route
+          path="/admin/service-accounts"
+          element={
+            <RoleGuard allowedRoles={['admin']}>
+              <ServiceAccounts />
+            </RoleGuard>
+          }
+        />
+        <Route
+          path="/admin/activity"
+          element={
+            <RoleGuard allowedRoles={['admin']}>
+              <ActivityLogs />
+            </RoleGuard>
+          }
+        />
+        <Route
+          path="/admin/audit-log"
+          element={
+            <RoleGuard allowedRoles={['admin']}>
+              <AuditLogs />
+            </RoleGuard>
+          }
+        />
+        <Route
+          path="/admin/settings"
+          element={
+            <RoleGuard allowedRoles={['admin']}>
+              <AdminSettings />
+            </RoleGuard>
+          }
+        />
+        <Route
+          path="/admin/license"
+          element={
+            <RoleGuard allowedRoles={['admin']}>
+              <LicenseSettings />
             </RoleGuard>
           }
         />

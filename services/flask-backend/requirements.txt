@@ -15,7 +15,7 @@ pymysql==1.1.1  # MySQL dialect for SQLAlchemy (optional, PyDAL supports MySQL)
 
 # Redis/Cache
 redis==5.2.1
-flask-caching==2.3.0
+flask-caching==2.3.1
 
 # Background Jobs & Celery
 celery==5.4.0
@@ -26,7 +26,7 @@ bcrypt==4.2.1
 cryptography==44.0.1
 pyotp==2.9.0
 # python3-saml==1.16.0  # Commented out: xmlsec dependency issues, can be installed when needed for enterprise SAML
-authlib==1.6.0
+authlib==1.6.6
 # lxml==5.3.0  # Commented out: only needed for python3-saml
 
 # HTTP & API Clients
@@ -49,6 +49,7 @@ python-json-logger==3.2.1
 pydantic==2.10.5
 email-validator==2.2.0
 validators==0.34.0
+PyYAML==6.0.2
 
 # Rate Limiting
 Flask-Limiter==3.8.0
@@ -65,6 +66,8 @@ python-socketio==5.14.0
 # Utilities
 python-dateutil==2.9.0.post0
 pytz==2024.2
+psutil==6.1.0  # System monitoring and resource checks
+croniter>=2.0.0  # Cron expression parsing and scheduling
 
 # Image Processing
 Pillow==12.0.0
@@ -73,6 +76,7 @@ Pillow==12.0.0
 # Cloud Storage (optional)
 boto3==1.35.90  # AWS S3
 google-cloud-storage==2.19.0  # GCS
+minio==7.2.11  # MinIO S3-compatible storage
 
 # Email Services
 sendgrid==6.10.0

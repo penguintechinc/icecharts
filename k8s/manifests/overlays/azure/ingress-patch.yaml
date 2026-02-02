@@ -1,0 +1,51 @@
+# Azure Application Gateway Ingress
+# Configures Azure Application Gateway for AKS
+# Requires: Application Gateway Ingress Controller (AGIC) addon installed on AKS cluster
+
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: icecharts-azure
+  namespace: icecharts
+  annotations:
+    # Azure Application Gateway Ingress Controller annotations
+    kubernetes.io/ingress.class: azure/application-gateway
+
+    # Application Gateway configuration
+    appgw.ingress.kubernetes.io/backend-path-prefix: "/"
+    appgw.ingress.kubernetes.io/ssl-redirect: "true"
+    appgw.ingress.kubernetes.io/backend-protocol: "http"
+
+    # Health check configuration
+    appgw.ingress.kubernetes.io/health-probe-path: "/api/v1/health"
+    appgw.ingress.kubernetes.io/health-probe-interval: "30"
+    appgw.ingress.kubernetes.io/health-probe-timeout: "5"
+
+    # Rewrite configuration (optional)
+    # appgw.ingress.kubernetes.io/rewrite-rule-set: "icecharts-rewrite"
+
+    # Rate limiting and WAF (optional)
+    # appgw.ingress.kubernetes.io/waf-policy: "/subscriptions/[subscription-id]/resourceGroups/[resource-group]/providers/Microsoft.Network/ApplicationGatewayWebApplicationFirewallPolicies/[policy-name]"
+
+  labels:
+    app.kubernetes.io/name: icecharts
+    environment: azure-production
+
+spec:
+  rules:
+  - http:
+      paths:
+      - path: /api
+        pathType: Prefix
+        backend:
+          service:
+            name: api
+            port:
+              number: 5000
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: web
+            port:
+              number: 3000

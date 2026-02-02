@@ -7,7 +7,7 @@ from typing import Optional
 
 from app.models import get_db
 from app.services.permission_service import PermissionService
-from app.storage import get_storage_provider, StorageError
+from app.storage import StorageError, get_storage_provider
 
 
 @dataclass(slots=True)
@@ -46,7 +46,7 @@ class ContentService:
         drawing_id: int,
         content_json: dict,
         user_id: int,
-        change_summary: Optional[str] = None
+        change_summary: Optional[str] = None,
     ) -> int:
         """
         Save drawing content and create a new version.
@@ -82,13 +82,15 @@ class ContentService:
 
         try:
             # Get next version number
-            latest_version = db(
-                db.drawing_versions.drawing_id == drawing_id
-            ).select(
-                db.drawing_versions.version_number,
-                orderby=~db.drawing_versions.version_number,
-                limitby=(0, 1)
-            ).first()
+            latest_version = (
+                db(db.drawing_versions.drawing_id == drawing_id)
+                .select(
+                    db.drawing_versions.version_number,
+                    orderby=~db.drawing_versions.version_number,
+                    limitby=(0, 1),
+                )
+                .first()
+            )
 
             next_version = (latest_version.version_number + 1) if latest_version else 1
 
@@ -100,8 +102,8 @@ class ContentService:
             # Save content to storage
             try:
                 storage = get_storage_provider()
-                content_bytes = json.dumps(content_json, indent=2).encode('utf-8')
-                storage.upload(storage_path, content_bytes, 'application/json')
+                content_bytes = json.dumps(content_json, indent=2).encode("utf-8")
+                storage.upload(storage_path, content_bytes, "application/json")
             except Exception as e:
                 raise StorageError(f"Failed to upload content to storage: {str(e)}")
 
@@ -128,9 +130,7 @@ class ContentService:
 
     @staticmethod
     def get_content(
-        drawing_id: int,
-        user_id: int,
-        version: Optional[int] = None
+        drawing_id: int, user_id: int, version: Optional[int] = None
     ) -> dict:
         """
         Get drawing content for a specific version or latest.
@@ -162,18 +162,21 @@ class ContentService:
         # Get version record
         if version is None:
             # Get latest version
-            version_record = db(
-                db.drawing_versions.drawing_id == drawing_id
-            ).select(
-                orderby=~db.drawing_versions.version_number,
-                limitby=(0, 1)
-            ).first()
+            version_record = (
+                db(db.drawing_versions.drawing_id == drawing_id)
+                .select(orderby=~db.drawing_versions.version_number, limitby=(0, 1))
+                .first()
+            )
         else:
             # Get specific version
-            version_record = db(
-                (db.drawing_versions.drawing_id == drawing_id) &
-                (db.drawing_versions.version_number == version)
-            ).select().first()
+            version_record = (
+                db(
+                    (db.drawing_versions.drawing_id == drawing_id)
+                    & (db.drawing_versions.version_number == version)
+                )
+                .select()
+                .first()
+            )
 
         if not version_record:
             raise ValueError("Version not found")
@@ -186,19 +189,14 @@ class ContentService:
         try:
             storage = get_storage_provider()
             content_bytes = storage.download(version_record.storage_path)
-            content = json.loads(content_bytes.decode('utf-8'))
+            content = json.loads(content_bytes.decode("utf-8"))
             return content
         except Exception as e:
-            raise StorageError(
-                f"Failed to retrieve content from storage: {str(e)}"
-            )
+            raise StorageError(f"Failed to retrieve content from storage: {str(e)}")
 
     @staticmethod
     def list_versions(
-        drawing_id: int,
-        user_id: int,
-        page: int = 1,
-        per_page: int = 20
+        drawing_id: int, user_id: int, page: int = 1, per_page: int = 20
     ) -> tuple[list[dict], int]:
         """
         List all versions for a drawing.
@@ -232,8 +230,8 @@ class ContentService:
 
         # Get versions with creator info
         versions = db(
-            (db.drawing_versions.drawing_id == drawing_id) &
-            (db.drawing_versions.created_by_id == db.identities.id)
+            (db.drawing_versions.drawing_id == drawing_id)
+            & (db.drawing_versions.created_by_id == db.identities.id)
         ).select(
             db.drawing_versions.ALL,
             db.identities.id,
@@ -247,20 +245,25 @@ class ContentService:
 
         result = []
         for v in versions:
-            result.append({
-                "id": v.drawing_versions.id,
-                "drawing_id": v.drawing_versions.drawing_id,
-                "version_number": v.drawing_versions.version_number,
-                "change_summary": v.drawing_versions.change_summary,
-                "storage_path": v.drawing_versions.storage_path,
-                "created_by": {
-                    "id": v.identities.id,
-                    "username": v.identities.username,
-                    "full_name": v.identities.full_name,
-                },
-                "created_at": v.drawing_versions.created_at.isoformat()
-                if v.drawing_versions.created_at else None,
-            })
+            result.append(
+                {
+                    "id": v.drawing_versions.id,
+                    "drawing_id": v.drawing_versions.drawing_id,
+                    "version_number": v.drawing_versions.version_number,
+                    "change_summary": v.drawing_versions.change_summary,
+                    "storage_path": v.drawing_versions.storage_path,
+                    "created_by": {
+                        "id": v.identities.id,
+                        "username": v.identities.username,
+                        "full_name": v.identities.full_name,
+                    },
+                    "created_at": (
+                        v.drawing_versions.created_at.isoformat()
+                        if v.drawing_versions.created_at
+                        else None
+                    ),
+                }
+            )
 
         return result, total
 
@@ -269,7 +272,7 @@ class ContentService:
         drawing_id: int,
         version: int,
         user_id: int,
-        change_summary: Optional[str] = None
+        change_summary: Optional[str] = None,
     ) -> int:
         """
         Restore a previous version as a new version.
@@ -301,9 +304,7 @@ class ContentService:
             change_summary = f"Restored from version {version}"
 
         # Save as new version
-        return ContentService.save_content(
-            drawing_id, content, user_id, change_summary
-        )
+        return ContentService.save_content(drawing_id, content, user_id, change_summary)
 
     @staticmethod
     def delete_version(drawing_id: int, version: int, user_id: int) -> bool:
@@ -331,10 +332,14 @@ class ContentService:
         db = get_db()
 
         # Check if version exists
-        version_record = db(
-            (db.drawing_versions.drawing_id == drawing_id) &
-            (db.drawing_versions.version_number == version)
-        ).select().first()
+        version_record = (
+            db(
+                (db.drawing_versions.drawing_id == drawing_id)
+                & (db.drawing_versions.version_number == version)
+            )
+            .select()
+            .first()
+        )
 
         if not version_record:
             return False
@@ -347,8 +352,8 @@ class ContentService:
         try:
             # Delete version record
             deleted = db(
-                (db.drawing_versions.drawing_id == drawing_id) &
-                (db.drawing_versions.version_number == version)
+                (db.drawing_versions.drawing_id == drawing_id)
+                & (db.drawing_versions.version_number == version)
             ).delete()
 
             # Optionally delete from storage
@@ -368,10 +373,7 @@ class ContentService:
 
     @staticmethod
     def compare_versions(
-        drawing_id: int,
-        version1: int,
-        version2: int,
-        user_id: int
+        drawing_id: int, version1: int, version2: int, user_id: int
     ) -> dict:
         """
         Compare two versions of a drawing.
@@ -419,12 +421,14 @@ class ContentService:
             Latest version number or 0 if no versions
         """
         db = get_db()
-        latest = db(
-            db.drawing_versions.drawing_id == drawing_id
-        ).select(
-            db.drawing_versions.version_number,
-            orderby=~db.drawing_versions.version_number,
-            limitby=(0, 1)
-        ).first()
+        latest = (
+            db(db.drawing_versions.drawing_id == drawing_id)
+            .select(
+                db.drawing_versions.version_number,
+                orderby=~db.drawing_versions.version_number,
+                limitby=(0, 1),
+            )
+            .first()
+        )
 
         return latest.version_number if latest else 0

@@ -181,26 +181,24 @@ def get_db() -> DAL:
         # that would block common column names like 'content', 'domain', etc.
         # fake_migrate=True ensures PyDAL doesn't try to create tables that exist
         # migrate_enabled=True allows PyDAL to track schema changes
-        instance_folder = os.path.join(os.path.dirname(__file__), "..", "..", "instance")
+        instance_folder = os.path.join(
+            os.path.dirname(__file__), "..", "..", "instance"
+        )
         os.makedirs(instance_folder, exist_ok=True)
 
-        # For in-memory SQLite, skip SQLAlchemy init (separate DB instance)
-        # and let PyDAL create tables directly with migrate_enabled=True.
-        is_memory_db = db_uri == "sqlite:memory"
+        # Initialize tables with SQLAlchemy first
+        from app.models.sqlalchemy_schema import initialize_database
 
-        if not is_memory_db:
-            # Initialize tables with SQLAlchemy first
-            from app.models.sqlalchemy_schema import initialize_database
-            try:
-                initialize_database(db_uri)
-            except Exception as e:
-                logger.warning(f"SQLAlchemy table initialization: {e}")
+        try:
+            initialize_database(db_uri)
+        except Exception as e:
+            logger.warning(f"SQLAlchemy table initialization: {e}")
 
         _thread_local.db = DAL(
             db_uri,
             pool_size=config.DB_POOL_SIZE,
             migrate_enabled=True,
-            fake_migrate_all=not is_memory_db,
+            fake_migrate_all=True,  # Tables created by SQLAlchemy, just sync metadata
             check_reserved=["common"],
             lazy_tables=True,
             folder=instance_folder,
@@ -268,7 +266,9 @@ def init_db(app):
         # Don't close the connection yet - keep it so tables stay in place
         # The connection will be replaced when needed in get_db()
 
-        logger.info("database_init_complete", message="Database initialization complete")
+        logger.info(
+            "database_init_complete", message="Database initialization complete"
+        )
 
     except Exception as e:
         logger.error(
@@ -379,7 +379,9 @@ def get_user_by_google_id(google_id: str) -> Optional[dict]:
     return None
 
 
-def create_user(email: str, password_hash: str, full_name: str = "", role: str = "viewer") -> dict:
+def create_user(
+    email: str, password_hash: str, full_name: str = "", role: str = "viewer"
+) -> dict:
     """
     Create a new user in the identities table.
 
@@ -531,8 +533,8 @@ def list_users(page: int = 1, per_page: int = 20, **filters) -> tuple[list[dict]
     search = filters.get("search")
     if search:
         query = db(
-            (db.identities.email.contains(search)) |
-            (db.identities.full_name.contains(search))
+            (db.identities.email.contains(search))
+            | (db.identities.full_name.contains(search))
         )
 
     role = filters.get("role")
@@ -564,22 +566,24 @@ def list_users(page: int = 1, per_page: int = 20, **filters) -> tuple[list[dict]
     # Convert to list of dicts
     user_list = []
     for user in users:
-        user_list.append({
-            "id": user.id,
-            "tenant_id": user.tenant_id,
-            "username": user.username,
-            "email": user.email,
-            "full_name": user.full_name,
-            "role": user.role,
-            "is_active": user.is_active,
-            "is_superuser": user.is_superuser,
-            "mfa_enabled": user.mfa_enabled,
-            "mfa_secret": user.mfa_secret,
-            "password_hash": user.password_hash,
-            "last_login_at": user.last_login_at,
-            "created_at": user.created_at,
-            "updated_at": user.updated_at,
-        })
+        user_list.append(
+            {
+                "id": user.id,
+                "tenant_id": user.tenant_id,
+                "username": user.username,
+                "email": user.email,
+                "full_name": user.full_name,
+                "role": user.role,
+                "is_active": user.is_active,
+                "is_superuser": user.is_superuser,
+                "mfa_enabled": user.mfa_enabled,
+                "mfa_secret": user.mfa_secret,
+                "password_hash": user.password_hash,
+                "last_login_at": user.last_login_at,
+                "created_at": user.created_at,
+                "updated_at": user.updated_at,
+            }
+        )
 
     return user_list, total
 
@@ -659,15 +663,16 @@ def get_comment_by_id(comment_id: int) -> Optional[dict]:
     db = get_db()
 
     # Get comment with author info
-    comment = db(
-        (db.comments.id == comment_id) &
-        (db.comments.author_id == db.identities.id)
-    ).select(
-        db.comments.ALL,
-        db.identities.id,
-        db.identities.email,
-        db.identities.full_name,
-    ).first()
+    comment = (
+        db((db.comments.id == comment_id) & (db.comments.author_id == db.identities.id))
+        .select(
+            db.comments.ALL,
+            db.identities.id,
+            db.identities.email,
+            db.identities.full_name,
+        )
+        .first()
+    )
 
     if not comment:
         return None
@@ -713,7 +718,9 @@ def get_comments_by_drawing(
     db = get_db()
 
     # Build query
-    query = (db.comments.drawing_id == drawing_id) & (db.comments.author_id == db.identities.id)
+    query = (db.comments.drawing_id == drawing_id) & (
+        db.comments.author_id == db.identities.id
+    )
 
     if shape_id:
         query = query & (db.comments.shape_id == shape_id)
@@ -733,24 +740,26 @@ def get_comments_by_drawing(
     # Convert to list of dicts
     result = []
     for c in comments:
-        result.append({
-            "id": c.comments.id,
-            "drawing_id": c.comments.drawing_id,
-            "author_id": c.comments.author_id,
-            "user_id": c.comments.author_id,  # Alias
-            "content": c.comments.content,
-            "shape_id": c.comments.shape_id,
-            "is_resolved": c.comments.is_resolved,
-            "x": c.comments.x,
-            "y": c.comments.y,
-            "created_at": c.comments.created_at,
-            "updated_at": c.comments.updated_at,
-            "author": {
-                "id": c.identities.id,
-                "email": c.identities.email,
-                "full_name": c.identities.full_name,
-            },
-        })
+        result.append(
+            {
+                "id": c.comments.id,
+                "drawing_id": c.comments.drawing_id,
+                "author_id": c.comments.author_id,
+                "user_id": c.comments.author_id,  # Alias
+                "content": c.comments.content,
+                "shape_id": c.comments.shape_id,
+                "is_resolved": c.comments.is_resolved,
+                "x": c.comments.x,
+                "y": c.comments.y,
+                "created_at": c.comments.created_at,
+                "updated_at": c.comments.updated_at,
+                "author": {
+                    "id": c.identities.id,
+                    "email": c.identities.email,
+                    "full_name": c.identities.full_name,
+                },
+            }
+        )
 
     return result
 
@@ -788,6 +797,7 @@ def update_comment(comment_id: int, content: str) -> Optional[dict]:
 
     # Update comment
     from datetime import datetime
+
     result = db(db.comments.id == comment_id).update(
         content=content,
         updated_at=datetime.utcnow(),
@@ -837,6 +847,7 @@ def resolve_comment(comment_id: int, resolved_by_id: int) -> Optional[dict]:
 
     # Update comment
     from datetime import datetime
+
     result = db(db.comments.id == comment_id).update(
         is_resolved=True,
         resolved_by=resolved_by_id,
