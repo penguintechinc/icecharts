@@ -1,5 +1,6 @@
 # Beta/staging environment overrides (icecharts.penguintech.io)
-namespace: icecharts-beta
+# Uses icecharts namespace (each cluster has its own icecharts namespace)
+namespace: icecharts
 
 image:
   registry: registry-dal2.penguintech.io

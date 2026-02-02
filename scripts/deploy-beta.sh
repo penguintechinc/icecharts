@@ -11,7 +11,7 @@ PROJECT_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
 
 # Configuration
 KUBE_CONTEXT="${KUBE_CONTEXT:-dal2-beta}"
-NAMESPACE="${NAMESPACE:-icecharts-beta}"
+NAMESPACE="${NAMESPACE:-icecharts}"
 RELEASE_NAME="icecharts"
 CHART_PATH="$PROJECT_ROOT/k8s/helm/icecharts"
 VALUES_FILE="$PROJECT_ROOT/k8s/helm/icecharts/values-beta.yaml"

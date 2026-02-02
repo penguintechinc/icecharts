@@ -11,7 +11,7 @@ PROJECT_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
 
 # Configuration variables
 KUBE_CONTEXT="${KUBE_CONTEXT:-dal2-beta}"
-NAMESPACE="${NAMESPACE:-icecharts-beta}"
+NAMESPACE="${NAMESPACE:-icecharts}"
 APP_HOST="${APP_HOST:-icecharts.penguintech.io}"
 ALB_ENDPOINT="${ALB_ENDPOINT:-dal2.penguintech.io}"
 VERBOSE="${VERBOSE:-0}"
@@ -54,7 +54,7 @@ check_prerequisites() {
         log_error "kubectl is not installed or not in PATH"
         return 1
     fi
-    log_info "kubectl: $(kubectl version --client --short 2>/dev/null | head -n 1)"
+    log_info "kubectl: $(kubectl version --client -o yaml 2>/dev/null | grep gitVersion | awk '{print $2}')"
 
     # Check if context exists (quietly)
     if ! kubectl config get-contexts "$KUBE_CONTEXT" &> /dev/null; then
@@ -200,15 +200,18 @@ check_services() {
 check_ingress() {
     log_section "Ingress Check"
 
+    # Ingress is in the icecharts namespace (each cluster has one ingress per app)
+    # not in the beta namespace
+    local ingress_ns="icecharts"
     local ingress_output
-    ingress_output=$(kubectl --context="$KUBE_CONTEXT" -n "$NAMESPACE" get ingress 2>&1)
+    ingress_output=$(kubectl --context="$KUBE_CONTEXT" -n "$ingress_ns" get ingress 2>&1)
 
     if [ $? -ne 0 ]; then
         log_error "Failed to get ingress: $ingress_output"
         return 2
     fi
 
-    log_info "Ingress:"
+    log_info "Ingress (in $ingress_ns namespace):"
     echo "$ingress_output"
     echo ""
 
@@ -574,7 +577,7 @@ while [[ $# -gt 0 ]]; do
             echo "Options:"
             echo "  --quick               Skip API integration tests (health checks only)"
             echo "  --context CONTEXT     Kubernetes context (default: dal2-beta)"
-            echo "  --namespace NS        Kubernetes namespace (default: icecharts-beta)"
+            echo "  --namespace NS        Kubernetes namespace (default: icecharts)"
             echo "  --host HOST           Application host (default: icecharts.penguintech.io)"
             echo "  --alb ENDPOINT        ALB endpoint (default: dal2.penguintech.io)"
             echo "  -v, --verbose         Enable verbose output"
@@ -582,7 +585,7 @@ while [[ $# -gt 0 ]]; do
             echo ""
             echo "Environment variables:"
             echo "  KUBE_CONTEXT          Kubernetes context (default: dal2-beta)"
-            echo "  NAMESPACE             Kubernetes namespace (default: icecharts-beta)"
+            echo "  NAMESPACE             Kubernetes namespace (default: icecharts)"
             echo "  APP_HOST              Application host (default: icecharts.penguintech.io)"
             echo "  ALB_ENDPOINT          ALB endpoint (default: dal2.penguintech.io)"
             echo "  VERBOSE               Enable verbose mode (0 or 1)"
