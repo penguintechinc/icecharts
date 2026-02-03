@@ -17,6 +17,14 @@ const navigation: NavCategory[] = [
     ],
   },
   {
+    label: 'Automation',
+    roles: ['admin', 'maintainer'],
+    items: [
+      { label: 'IceFlows', path: '/iceflows', icon: '🔄', roles: ['admin', 'maintainer'] },
+      { label: 'IceRuns', path: '/iceruns', icon: '⚡', roles: ['admin', 'maintainer'] },
+    ],
+  },
+  {
     label: 'Management',
     roles: ['admin', 'maintainer'],
     items: [

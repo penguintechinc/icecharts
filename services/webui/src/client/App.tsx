@@ -16,6 +16,18 @@ import AdminSettings from './pages/Admin/AdminSettings';
 import ActivityLogs from './pages/Admin/ActivityLogs';
 import AuditLogs from './pages/Admin/AuditLogs';
 import LicenseSettings from './pages/Admin/LicenseSettings';
+// IceFlows pages
+import IceFlowsList from './pages/iceflows/IceFlowsList';
+import IceFlowDetail from './pages/iceflows/IceFlowDetail';
+import IceFlowEditor from './pages/iceflows/IceFlowEditor';
+import IceFlowPromotions from './pages/iceflows/IceFlowPromotions';
+import MyApprovals from './pages/iceflows/MyApprovals';
+// IceRuns pages
+import IceRunsList from './pages/iceruns/IceRunsList';
+import IceRunCreate from './pages/iceruns/IceRunCreate';
+import IceRunDetail from './pages/iceruns/IceRunDetail';
+import IceRunEdit from './pages/iceruns/IceRunEdit';
+import IceRunExecutions from './pages/iceruns/IceRunExecutions';
 
 function App() {
   const { isAuthenticated, isLoading } = useAuth();
@@ -83,6 +95,98 @@ function App() {
           element={
             <RoleGuard allowedRoles={['admin', 'maintainer']}>
               <Libraries />
+            </RoleGuard>
+          }
+        />
+
+        {/* IceFlows - CI/CD Pipeline Orchestration - Maintainer and Admin */}
+        <Route
+          path="/iceflows"
+          element={
+            <RoleGuard allowedRoles={['admin', 'maintainer']}>
+              <IceFlowsList />
+            </RoleGuard>
+          }
+        />
+        <Route
+          path="/iceflows/new"
+          element={
+            <RoleGuard allowedRoles={['admin', 'maintainer']}>
+              <IceFlowEditor />
+            </RoleGuard>
+          }
+        />
+        <Route
+          path="/iceflows/:id"
+          element={
+            <RoleGuard allowedRoles={['admin', 'maintainer']}>
+              <IceFlowDetail />
+            </RoleGuard>
+          }
+        />
+        <Route
+          path="/iceflows/:id/edit"
+          element={
+            <RoleGuard allowedRoles={['admin', 'maintainer']}>
+              <IceFlowEditor />
+            </RoleGuard>
+          }
+        />
+        <Route
+          path="/iceflows/promotions"
+          element={
+            <RoleGuard allowedRoles={['admin', 'maintainer']}>
+              <IceFlowPromotions />
+            </RoleGuard>
+          }
+        />
+        <Route
+          path="/iceflows/approvals"
+          element={
+            <RoleGuard allowedRoles={['admin', 'maintainer']}>
+              <MyApprovals />
+            </RoleGuard>
+          }
+        />
+
+        {/* IceRuns - Serverless Functions - Maintainer and Admin */}
+        <Route
+          path="/iceruns"
+          element={
+            <RoleGuard allowedRoles={['admin', 'maintainer']}>
+              <IceRunsList />
+            </RoleGuard>
+          }
+        />
+        <Route
+          path="/iceruns/new"
+          element={
+            <RoleGuard allowedRoles={['admin', 'maintainer']}>
+              <IceRunCreate />
+            </RoleGuard>
+          }
+        />
+        <Route
+          path="/iceruns/:id"
+          element={
+            <RoleGuard allowedRoles={['admin', 'maintainer']}>
+              <IceRunDetail />
+            </RoleGuard>
+          }
+        />
+        <Route
+          path="/iceruns/:id/edit"
+          element={
+            <RoleGuard allowedRoles={['admin', 'maintainer']}>
+              <IceRunEdit />
+            </RoleGuard>
+          }
+        />
+        <Route
+          path="/iceruns/:id/executions"
+          element={
+            <RoleGuard allowedRoles={['admin', 'maintainer']}>
+              <IceRunExecutions />
             </RoleGuard>
           }
         />
