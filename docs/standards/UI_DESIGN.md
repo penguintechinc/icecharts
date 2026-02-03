@@ -1,4 +1,3 @@
-<<<<<<< HEAD
 # 🎨 UI Design Guide - Making Things Look Good
 
 Part of [Development Standards](../STANDARDS.md)
@@ -140,7 +139,6 @@ className={isActive
 <div className="pl-64">
   <main className="min-h-screen">
     <Outlet />
-=======
 # Web UI Design Standards
 
 Part of [Development Standards](../STANDARDS.md)
@@ -410,12 +408,10 @@ Part of [Development Standards](../STANDARDS.md)
         {renderTabContent()}
       </div>
     </div>
->>>>>>> origin/v1.0.X
   </main>
 </div>
 ```
 
-<<<<<<< HEAD
 ✅ Use `lucide-react` icons, consistently sized at `w-5 h-5`
 
 ---
@@ -638,7 +634,6 @@ Some users get sick from animations:
 ---
 
 ## 📦 Required Dependencies
-=======
 ## Right Sidebar Pattern (Detail Pages)
 
 **For detail pages with metadata panels:**
@@ -663,7 +658,6 @@ Some users get sick from animations:
 ```
 
 ## Required Dependencies
->>>>>>> origin/v1.0.X
 
 ```json
 {
@@ -679,13 +673,10 @@ Some users get sick from animations:
 }
 ```
 
-<<<<<<< HEAD
 ---
 
 ## 🎨 Tailwind CSS v4 Theme Configuration
-=======
 ## Tailwind CSS v4 Theme Configuration
->>>>>>> origin/v1.0.X
 
 ```css
 /* index.css */
@@ -705,7 +696,6 @@ Some users get sick from animations:
 }
 ```
 
-<<<<<<< HEAD
 ---
 
 ## ✨ Design Quick Checklist
@@ -723,7 +713,6 @@ Some users get sick from animations:
 - ✅ Active navigation has blue background
 
 Now go build something beautiful! 🚀
-=======
 ## Component Library Standards
 
 **Card Component:**
@@ -766,4 +755,3 @@ export const Button = ({ variant = 'primary', size = 'md', children, ...props })
 3. **ARIA Labels**: Proper labeling for screen readers
 4. **Color Contrast**: Minimum 4.5:1 contrast ratio for text
 5. **Reduced Motion**: Respect `prefers-reduced-motion` preference
->>>>>>> origin/v1.0.X

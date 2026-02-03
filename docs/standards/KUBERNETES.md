@@ -1,4 +1,3 @@
-<<<<<<< HEAD
 # ☸️ Kubernetes Guide - Container Orchestration Made Human
 
 Part of [Development Standards](../STANDARDS.md)
@@ -45,7 +44,6 @@ k8s/
 
 ```bash
 # Using Helm
-=======
 # Kubernetes Deployment Standards
 
 Part of [Development Standards](../STANDARDS.md)
@@ -109,13 +107,11 @@ Projects MUST support BOTH Helm and Kustomize deployment methods:
 **Installation**:
 ```bash
 # Deploy to development
->>>>>>> origin/v1.0.X
 helm install myapp ./k8s/helm \
   --namespace myapp-dev \
   --create-namespace \
   --values ./k8s/helm/values-dev.yaml
 
-<<<<<<< HEAD
 # Check it worked
 kubectl get pods -n myapp-dev
 ```
@@ -154,7 +150,6 @@ image:
   repository: ghcr.io/penguintechinc/myapp
   tag: "latest"
 
-=======
 # Deploy to staging
 helm install myapp ./k8s/helm \
   --namespace myapp-staging \
@@ -283,23 +278,18 @@ ingress:
       hosts:
         - myapp.penguintech.io
 
->>>>>>> origin/v1.0.X
 resources:
   limits:
     cpu: 500m
     memory: 512Mi
-<<<<<<< HEAD
-=======
   requests:
     cpu: 250m
     memory: 256Mi
->>>>>>> origin/v1.0.X
 
 autoscaling:
   enabled: true
   minReplicas: 2
   maxReplicas: 10
-<<<<<<< HEAD
 ```
 
 **values-dev.yaml** - Override for development:
@@ -537,7 +527,6 @@ helm install myapp ./k8s/helm --dry-run --debug  # Mock deploy
 6. **Secure by default**: Non-root users, no privilege escalation
 7. **Test first**: Lint + dry-run before deploying
 8. **Keep it simple**: K8s is powerful, but don't overcomplicate
-=======
   targetCPUUtilizationPercentage: 80
   targetMemoryUtilizationPercentage: 80
 
@@ -963,6 +952,5 @@ k8s-delete-dev:
 6. **Security**: Run as non-root, drop capabilities, use secret stores
 7. **Validation**: Lint and dry-run before deployment
 8. **Documentation**: Document deployment process in README
->>>>>>> origin/v1.0.X
 
 📚 **Related Standards**: [Architecture](ARCHITECTURE.md) | [Testing Phase 3](TESTING.md#phase-3-deployment--live-testing-k8s)

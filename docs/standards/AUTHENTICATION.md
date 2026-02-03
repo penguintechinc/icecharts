@@ -1,4 +1,3 @@
-<<<<<<< HEAD
 # 🔐 Authentication - Keeping the Bad Guys Out
 
 Part of [Development Standards](../STANDARDS.md)
@@ -55,7 +54,6 @@ app = Flask(__name__)
 
 # Security configuration
 app.config['SECRET_KEY'] = os.getenv('SECRET_KEY', 'dev-secret-key-change-in-production')
-=======
 # Authentication Standards
 
 Part of [Development Standards](../STANDARDS.md)
@@ -86,12 +84,10 @@ import os
 
 app = Flask(__name__)
 app.config['SECRET_KEY'] = os.getenv('SECRET_KEY', 'super-secret')
->>>>>>> origin/v1.0.X
 app.config['SECURITY_PASSWORD_SALT'] = os.getenv('SECURITY_PASSWORD_SALT', 'salt')
 app.config['SECURITY_REGISTERABLE'] = True
 app.config['SECURITY_SEND_REGISTER_EMAIL'] = False
 app.config['SECURITY_PASSWORD_HASH'] = 'bcrypt'
-<<<<<<< HEAD
 app.config['SECURITY_RECOVERABLE'] = True  # Enable password reset
 app.config['SECURITY_CHANGEABLE'] = True   # Enable password change
 ```
@@ -101,10 +97,8 @@ app.config['SECURITY_CHANGEABLE'] = True   # Enable password change
 ```python
 from pydal import DAL, Field
 
-=======
 
 # PyDAL database setup
->>>>>>> origin/v1.0.X
 db = DAL(
     f"postgresql://{os.getenv('DB_USER')}:{os.getenv('DB_PASS')}@"
     f"{os.getenv('DB_HOST')}:{os.getenv('DB_PORT')}/{os.getenv('DB_NAME')}",
@@ -112,11 +106,8 @@ db = DAL(
     migrate=True
 )
 
-<<<<<<< HEAD
 # User table
-=======
 # Define user and role tables
->>>>>>> origin/v1.0.X
 db.define_table('auth_user',
     Field('email', 'string', requires=IS_EMAIL(), unique=True),
     Field('username', 'string', unique=True),
@@ -127,26 +118,19 @@ db.define_table('auth_user',
     migrate=True
 )
 
-<<<<<<< HEAD
 # Role table
-=======
->>>>>>> origin/v1.0.X
 db.define_table('auth_role',
     Field('name', 'string', unique=True),
     Field('description', 'text'),
     migrate=True
 )
 
-<<<<<<< HEAD
 # User-Role mapping (many-to-many)
-=======
->>>>>>> origin/v1.0.X
 db.define_table('auth_user_roles',
     Field('user_id', 'reference auth_user'),
     Field('role_id', 'reference auth_role'),
     migrate=True
 )
-<<<<<<< HEAD
 ```
 
 ### Step 4: Create PyDAL Datastore
@@ -154,10 +138,8 @@ db.define_table('auth_user_roles',
 ```python
 from flask_security import DataStore
 
-=======
 
 # Custom PyDAL datastore for Flask-Security-Too
->>>>>>> origin/v1.0.X
 class PyDALUserDatastore(DataStore):
     def __init__(self, db, user_model, role_model):
         self.db = db
@@ -177,7 +159,6 @@ class PyDALUserDatastore(DataStore):
         for key, value in kwargs.items():
             if hasattr(self.user_model, key):
                 query = query(self.user_model[key] == value)
-<<<<<<< HEAD
         return query.select().first()
 ```
 
@@ -375,7 +356,6 @@ SSO lets users login with their company account (Google, Azure, SAML). It's **li
 from shared.licensing import requires_feature
 
 # SAML SSO (enterprise only)
-=======
         row = query.select().first()
         return row
 
@@ -423,15 +403,11 @@ def oauth_login():
 **SSO Configuration:**
 ```python
 # Enterprise SSO features (license-gated)
->>>>>>> origin/v1.0.X
 if license_client.has_feature('sso_saml'):
     app.config['SECURITY_SAML_ENABLED'] = True
     app.config['SECURITY_SAML_IDP_METADATA_URL'] = os.getenv('SAML_IDP_METADATA_URL')
 
-<<<<<<< HEAD
 # OAuth SSO (enterprise only)
-=======
->>>>>>> origin/v1.0.X
 if license_client.has_feature('sso_oauth'):
     app.config['SECURITY_OAUTH_ENABLED'] = True
     app.config['SECURITY_OAUTH_PROVIDERS'] = {
@@ -444,7 +420,6 @@ if license_client.has_feature('sso_oauth'):
             'client_secret': os.getenv('AZURE_CLIENT_SECRET'),
         }
     }
-<<<<<<< HEAD
 
 # Protected SSO endpoints
 @app.route('/auth/saml/login')
@@ -566,7 +541,6 @@ AZURE_CLIENT_SECRET=your-secret
 ---
 
 **Next Steps:** Check out [Database Standards](DATABASE.md) for data storage patterns and [API Standards](API.md) for endpoint design.
-=======
 ```
 
 ### Environment Variables
@@ -1105,4 +1079,3 @@ SECURITY_SEND_PASSWORD_RESET_EMAIL=true
 5. **Token Expiration**: Clearly communicate token lifetime to users
 6. **Password Complexity**: Display password requirements inline
 7. **Success Confirmation**: Provide clear feedback when password changed successfully
->>>>>>> origin/v1.0.X

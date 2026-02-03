@@ -117,7 +117,13 @@ export default function Login() {
       <div className="w-full max-w-md">
         {/* Logo/Title */}
         <div className="text-center mb-8">
-          <h1 className="text-4xl font-bold text-gold-gradient mb-2">IceCharts</h1>
+          <div className="flex justify-center">
+            <img
+              src="/logo-transparent.png"
+              alt="IceCharts"
+              className="h-20 w-auto mb-2"
+            />
+          </div>
           <p className="text-dark-400">Sign in to your account</p>
         </div>
 

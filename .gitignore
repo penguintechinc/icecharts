@@ -68,12 +68,11 @@ develop-eggs/
 downloads/
 eggs/
 .eggs/
-# Python virtualenv libs (not src/lib/)
-/lib/
-/lib64/
-# Exclude webui lib directories
+lib/
+!web/src/lib/
 !services/webui/src/lib/
 !services/webui/src/client/lib/
+lib64/
 parts/
 sdist/
 var/
@@ -224,6 +223,7 @@ _routes.json
 # Gatsby files
 .cache/
 public
+!services/webui/public/
 
 # Storybook build outputs
 .out

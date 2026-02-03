@@ -1,4 +1,3 @@
-<<<<<<< HEAD
 # Security Standards - Keeping Your App Safe
 
 Part of [Development Standards](../STANDARDS.md)
@@ -125,7 +124,6 @@ def require_scope(*required_scopes):
 
             if not any(scope in user_scopes for scope in required_scopes):
                 return {'error': 'Insufficient permissions'}, 403
-=======
 # Security Standards
 
 Part of [Development Standards](../STANDARDS.md)
@@ -222,7 +220,6 @@ def require_scope(*required_scopes):
             has_scope = any(scope in user_scopes for scope in required_scopes)
             if not has_scope:
                 return {'error': 'Insufficient permissions', 'required_scopes': required_scopes}, 403
->>>>>>> origin/v1.0.X
 
             return func(*args, **kwargs)
         return wrapper
@@ -231,7 +228,6 @@ def require_scope(*required_scopes):
 @app.route('/api/v1/users', methods=['GET'])
 @require_scope('users:read')
 def list_users():
-<<<<<<< HEAD
     """Only people with 'users:read' can see this"""
     users = db.users.select().fetchall()
     return jsonify({'data': users})
@@ -382,7 +378,6 @@ Before every commit and deploy:
 - [Flask-Security-Too Docs](https://flask-security-too.readthedocs.io/) - Our auth framework
 - [PyDAL Security](https://py4web.io/chapter-13#security) - Database protection
 - [SQLAlchemy Security](https://docs.sqlalchemy.org/en/14/faq/security.html) - ORM safety
-=======
     """List users - requires users:read scope"""
     users = db.users.select().fetchall()
     return jsonify({'data': users})
@@ -531,4 +526,3 @@ def create_api_client():
 3. Test updated dependencies thoroughly
 4. Document security fixes in commit messages
 5. Verify no new vulnerabilities introduced
->>>>>>> origin/v1.0.X

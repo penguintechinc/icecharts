@@ -1,4 +1,3 @@
-<<<<<<< HEAD
 🗄️ Database Guide - Your Data's New Home
 ==========================================
 
@@ -66,7 +65,6 @@ import os
 
 def initialize_database():
     """Create tables in your database"""
-=======
 # Database Standards
 
 Part of [Development Standards](../STANDARDS.md)
@@ -115,7 +113,6 @@ import os
 
 def get_sqlalchemy_engine():
     """Create SQLAlchemy engine for initialization only"""
->>>>>>> origin/v1.0.X
     db_type = os.getenv('DB_TYPE', 'postgresql')
     db_host = os.getenv('DB_HOST', 'localhost')
     db_port = os.getenv('DB_PORT', '5432')
@@ -123,7 +120,6 @@ def get_sqlalchemy_engine():
     db_user = os.getenv('DB_USER', 'app_user')
     db_pass = os.getenv('DB_PASS', 'app_pass')
 
-<<<<<<< HEAD
     # Build the database URL
     if db_type == 'sqlite':
         db_url = f"sqlite:///{db_name}.db"
@@ -141,7 +137,6 @@ def get_sqlalchemy_engine():
 
     # Define your tables
     users_table = Table('auth_user', metadata,
-=======
     # Map DB_TYPE to SQLAlchemy dialect
     dialect_map = {
         'postgresql': 'postgresql',
@@ -164,7 +159,6 @@ def initialize_database():
 
     # Define tables for initial schema creation
     users = Table('auth_user', metadata,
->>>>>>> origin/v1.0.X
         Column('id', Integer, primary_key=True),
         Column('email', String(255), unique=True, nullable=False),
         Column('password', String(255)),
@@ -173,13 +167,11 @@ def initialize_database():
         Column('confirmed_at', DateTime),
     )
 
-<<<<<<< HEAD
     # Create all tables
     metadata.create_all(engine)
     print("✅ Database schema created!")
 
 # Run this ONCE when setting up
-=======
     roles = Table('auth_role', metadata,
         Column('id', Integer, primary_key=True),
         Column('name', String(80), unique=True),
@@ -191,12 +183,10 @@ def initialize_database():
     print("Database schema initialized via SQLAlchemy")
 
 # Run during application first-time setup ONLY
->>>>>>> origin/v1.0.X
 if __name__ == '__main__':
     initialize_database()
 ```
 
-<<<<<<< HEAD
 💡 **Tip:** Run this once, then move on. You don't need this code in your daily application.
 
 ### Step 3: Query Your Data (PyDAL)
@@ -210,7 +200,6 @@ import os
 
 def get_db_connection():
     """Connect to the database for queries"""
-=======
 ### PyDAL Runtime Example
 
 ```python
@@ -220,7 +209,6 @@ import os
 
 def get_pydal_connection():
     """Get PyDAL connection for runtime operations"""
->>>>>>> origin/v1.0.X
     db_type = os.getenv('DB_TYPE', 'postgresql')
     db_host = os.getenv('DB_HOST', 'localhost')
     db_port = os.getenv('DB_PORT', '5432')
@@ -229,36 +217,27 @@ def get_pydal_connection():
     db_pass = os.getenv('DB_PASS', 'app_pass')
     pool_size = int(os.getenv('DB_POOL_SIZE', '10'))
 
-<<<<<<< HEAD
     # Build connection string
-=======
->>>>>>> origin/v1.0.X
     if db_type == 'sqlite':
         db_uri = f"sqlite://{db_name}.db"
     else:
         db_uri = f"{db_type}://{db_user}:{db_pass}@{db_host}:{db_port}/{db_name}"
 
-<<<<<<< HEAD
     # Connect with connection pooling
     db = DAL(
         db_uri,
         pool_size=pool_size,     # Reuse connections
         migrate=True,             # Auto-create tables if missing
-=======
     db = DAL(
         db_uri,
         pool_size=pool_size,
         migrate=True,  # PyDAL handles all migrations
->>>>>>> origin/v1.0.X
         check_reserved=['all'],
         lazy_tables=True
     )
 
-<<<<<<< HEAD
     # Define tables (mirrors your SQLAlchemy schema)
-=======
     # Define tables for PyDAL (mirrors SQLAlchemy schema)
->>>>>>> origin/v1.0.X
     db.define_table('auth_user',
         Field('email', 'string', unique=True, notnull=True),
         Field('password', 'password'),
@@ -270,7 +249,6 @@ def get_pydal_connection():
 
     return db
 
-<<<<<<< HEAD
 # Use in your app
 db = get_db_connection()
 
@@ -486,7 +464,6 @@ MariaDB Galera is like having multiple database copies that stay in sync. Specia
 ```python
 def get_galera_db():
     """MariaDB Galera configuration"""
-=======
 # Runtime usage
 db = get_pydal_connection()
 # Query example: db(db.auth_user.active == True).select()
@@ -502,7 +479,6 @@ import os
 
 def get_galera_pydal_connection():
     """PyDAL connection with Galera-specific settings"""
->>>>>>> origin/v1.0.X
     db_uri = f"mysql://{os.getenv('DB_USER')}:{os.getenv('DB_PASS')}@{os.getenv('DB_HOST')}:{os.getenv('DB_PORT')}/{os.getenv('DB_NAME')}"
 
     db = DAL(
@@ -511,7 +487,6 @@ def get_galera_pydal_connection():
         migrate=True,
         check_reserved=['all'],
         lazy_tables=True,
-<<<<<<< HEAD
         driver_args={'charset': 'utf8mb4'}  # Galera requirement
     )
     return db
@@ -528,7 +503,6 @@ def get_galera_pydal_connection():
 
 When using Go, use GORM for database access:
 
-=======
         # Galera-specific: Use ROW format for binary logging
         driver_args={'charset': 'utf8mb4'}
     )
@@ -698,7 +672,6 @@ When using Go for high-performance applications, MUST use a DAL supporting Postg
    - Good for performance-critical scenarios
 
 **Example GORM Implementation:**
->>>>>>> origin/v1.0.X
 ```go
 package main
 
@@ -710,22 +683,16 @@ import (
 )
 
 func initDB() (*gorm.DB, error) {
-<<<<<<< HEAD
     dbType := os.Getenv("DB_TYPE")
-=======
     dbType := os.Getenv("DB_TYPE") // "postgres" or "mysql"
->>>>>>> origin/v1.0.X
     dsn := os.Getenv("DATABASE_URL")
 
     var dialector gorm.Dialector
     switch dbType {
     case "mysql":
         dialector = mysql.Open(dsn)
-<<<<<<< HEAD
     default:
-=======
     default: // postgres
->>>>>>> origin/v1.0.X
         dialector = postgres.Open(dsn)
     }
 
@@ -734,7 +701,6 @@ func initDB() (*gorm.DB, error) {
 }
 ```
 
-<<<<<<< HEAD
 ---
 
 ## Threading & Async: Choose Your Power Level
@@ -790,7 +756,6 @@ def get_users():
 6. **Pool Your Connections:** Formula is (2 × CPU cores) + spindles
 
 **Your data is safe, fast, and ready to scale!** 🚀
-=======
 ## Environment Variables
 
 Applications MUST accept these Docker environment variables:
@@ -945,4 +910,3 @@ if __name__ == '__main__':
 5. **Multi-process Safety**:
    - Each process MUST create its own DAL instance
    - Connection pool is per-process, not shared across processes
->>>>>>> origin/v1.0.X

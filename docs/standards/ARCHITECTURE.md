@@ -1,4 +1,3 @@
-<<<<<<< HEAD
 # Architecture - The Big Picture
 
 Part of [Development Standards](../STANDARDS.md)
@@ -421,7 +420,6 @@ cache = Redis(host='redis', port=6379)
 ---
 
 **Enjoy building! Keep it simple, add complexity only when needed.** 🚀
-=======
 # Architecture Standards
 
 Part of [Development Standards](../STANDARDS.md)
@@ -1028,4 +1026,3 @@ app.get('/healthz', (req, res) => {
 4. **Standard endpoint**: Use `/healthz` for HTTP health checks
 5. **Proper exit codes**: Exit 0 for healthy, exit 1 for unhealthy
 6. **gRPC health**: Use standard gRPC health check protocol for gRPC services
->>>>>>> origin/v1.0.X

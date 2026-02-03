@@ -1,4 +1,3 @@
-<<<<<<< HEAD
 # Testing Guide: Trust But Verify
 
 Part of [Development Standards](../STANDARDS.md)
@@ -36,7 +35,6 @@ Each layer validates different aspects—unit tests catch code bugs, integration
 - Do critical API endpoints respond?
 - Does the UI load without crashing?
 
-=======
 # Testing Standards
 
 Part of [Development Standards](../STANDARDS.md)
@@ -58,31 +56,23 @@ Testing is organized into three distinct phases aligned with the development wor
 - End-to-end build and runtime verification
 
 **Execution**:
->>>>>>> origin/v1.0.X
 ```bash
 # Run via pre-commit script
 ./scripts/pre-commit/pre-commit.sh
 
-<<<<<<< HEAD
 # Or just the smoke tests directly
-=======
 # Or manually run smoke tests
->>>>>>> origin/v1.0.X
 ./tests/smoketests/run-all.sh
 ```
 
 **Requirements**:
 - MUST pass before committing
-<<<<<<< HEAD
-=======
 - Runs on developer's local machine
->>>>>>> origin/v1.0.X
 - Uses local Docker containers
 - Fast feedback loop (<2 min)
 
 ### Phase 2: CI/CD Pipeline (GitHub Actions)
 
-<<<<<<< HEAD
 **The Automated Enforcer**: Runs automatically when you push to GitHub. Catches what you missed locally.
 
 - **When**: Every push/PR
@@ -99,7 +89,6 @@ Testing is organized into three distinct phases aligned with the development wor
 
 ```yaml
 # .github/workflows/ci.yml (example flow)
-=======
 **Location**: `.github/workflows/`
 **When**: On every push/PR to GitHub
 **Duration**: 5-15 minutes
@@ -126,7 +115,6 @@ Testing is organized into three distinct phases aligned with the development wor
 **Example Workflow Steps**:
 ```yaml
 # .github/workflows/ci.yml
->>>>>>> origin/v1.0.X
 jobs:
   test:
     steps:
@@ -143,7 +131,6 @@ jobs:
         run: trivy image app:latest
 ```
 
-<<<<<<< HEAD
 **Characteristics**:
 - Static analysis only (no real deployment)
 - No access to live databases
@@ -172,7 +159,6 @@ jobs:
 ```
 
 **Example flow**:
-=======
 ### Phase 3: Deployment & Live Testing (K8s)
 
 **Location**: `tests/deployment/` and `tests/live/`
@@ -209,16 +195,12 @@ jobs:
 3. **Future CI/CD**: Will be integrated into release workflow
 
 **Example Deployment Test**:
->>>>>>> origin/v1.0.X
 ```bash
 #!/bin/bash
 # tests/deployment/validate-k8s-deployment.sh
 
-<<<<<<< HEAD
 echo "Validating Kubernetes Deployment..."
-=======
 echo "=== Validating K8s Deployment ==="
->>>>>>> origin/v1.0.X
 
 # Check pods are running
 kubectl get pods -n myapp | grep Running
@@ -226,18 +208,14 @@ kubectl get pods -n myapp | grep Running
 # Check services are accessible
 kubectl get svc -n myapp
 
-<<<<<<< HEAD
 # Test the live API
-=======
 # Test live API endpoint
->>>>>>> origin/v1.0.X
 curl -f https://myapp.penguintech.io/healthz
 
 # Run live integration tests
 kubectl exec -n myapp deploy/flask-backend -- pytest tests/live/
 ```
 
-<<<<<<< HEAD
 ### Quick Reference: Three-Phase Strategy
 
 | Phase | Timing | Location | Speed | Focus |
@@ -283,7 +261,6 @@ tests/smoketests/
 #### Writing Your First Smoke Test
 
 **Flask Backend example** - `tests/smoketests/flask-backend.sh`
-=======
 ### Summary: Three-Phase Testing Strategy
 
 | Phase | When | Where | Duration | Focus | Deployment |
@@ -352,7 +329,6 @@ Each smoke test script MUST verify:
 #### Example Smoke Test Scripts
 
 **Flask Backend:** `tests/smoketests/flask-backend.sh`
->>>>>>> origin/v1.0.X
 ```bash
 #!/bin/bash
 set -e
@@ -419,11 +395,8 @@ docker rm $CONTAINER_ID
 echo "✓ Flask Backend Smoke Test PASSED"
 ```
 
-<<<<<<< HEAD
 **WebUI/React example** - `tests/smoketests/webui.sh`
-=======
 **WebUI:** `tests/smoketests/webui.sh`
->>>>>>> origin/v1.0.X
 ```bash
 #!/bin/bash
 set -e
@@ -486,11 +459,8 @@ docker rm $CONTAINER_ID
 echo "✓ WebUI Smoke Test PASSED"
 ```
 
-<<<<<<< HEAD
 **Go backend example** - `tests/smoketests/go-backend.sh`
-=======
 **Go Backend:** `tests/smoketests/go-backend.sh`
->>>>>>> origin/v1.0.X
 ```bash
 #!/bin/bash
 set -e
@@ -531,11 +501,8 @@ docker rm $CONTAINER_ID
 echo "✓ Go Backend Smoke Test PASSED"
 ```
 
-<<<<<<< HEAD
 **Master coordinator** - `tests/smoketests/run-all.sh` (runs all smoke tests)
-=======
 **Run All:** `tests/smoketests/run-all.sh`
->>>>>>> origin/v1.0.X
 ```bash
 #!/bin/bash
 set -e
@@ -576,7 +543,6 @@ else
 fi
 ```
 
-<<<<<<< HEAD
 **Pro Tips for Smoke Tests**:
 - Keep it under 2 minutes (seriously—developers will skip slow tests)
 - Fail fast—exit on first error
@@ -605,7 +571,6 @@ Unit tests are the cheapest insurance you can buy. They run instantly and catch 
 **Quick Start**:
 
 Python (pytest):
-=======
 #### Integration with Pre-Commit
 
 Smoke tests MUST be executed in the pre-commit checklist:
@@ -647,30 +612,22 @@ echo "-------------------"
 - **Coverage targets**: Aim for >80% code coverage minimum
 
 **Python (pytest):**
->>>>>>> origin/v1.0.X
 ```bash
 pytest tests/unit/ -v --cov=app --cov-report=term-missing
 ```
 
-<<<<<<< HEAD
 Go:
-=======
 **Go:**
->>>>>>> origin/v1.0.X
 ```bash
 go test ./... -v -cover
 ```
 
-<<<<<<< HEAD
 Node.js (Jest):
-=======
 **Node.js (Jest):**
->>>>>>> origin/v1.0.X
 ```bash
 npm run test:unit -- --coverage
 ```
 
-<<<<<<< HEAD
 **Real Example** - Testing a user creation function:
 
 ```python
@@ -867,7 +824,6 @@ Mock data is fake data that looks real. Use it in tests so you don't accidentall
 - Use in all test phases (unit, integration, E2E)
 
 **Example Mock Users**:
-=======
 ### Integration Testing
 
 **Location:** `tests/integration/{service_name}/`
@@ -988,7 +944,6 @@ All tests and development environments should use consistent mock data:
 - **Reset capability**: Easy to reset to clean state
 
 **Example Fixture:**
->>>>>>> origin/v1.0.X
 ```python
 # tests/fixtures/users.py
 MOCK_USERS = [
@@ -1006,19 +961,15 @@ MOCK_USERS = [
         "email": "viewer@localhost.local",
         "username": "viewer",
         "role": "viewer"
-<<<<<<< HEAD
     },
     {
         "email": "guest@localhost.local",
         "username": "guest",
         "role": "guest"
-=======
->>>>>>> origin/v1.0.X
     }
 ]
 ```
 
-<<<<<<< HEAD
 **Seed Script** (populate test database):
 ```bash
 # scripts/seed/seed-test-data.sh
@@ -1143,7 +1094,6 @@ docker buildx build --platform linux/amd64 -t app:test-amd64 .
 ```
 
 This catches architecture-specific bugs (endianness, pointer sizes, etc.).
-=======
 ### Test Execution Order
 
 **Recommended execution order in CI/CD:**
@@ -1170,4 +1120,3 @@ docker run --platform linux/amd64 app:test-amd64 npm test
 ```
 
 This ensures multi-architecture compatibility and prevents platform-specific bugs.
->>>>>>> origin/v1.0.X

@@ -1,4 +1,3 @@
-<<<<<<< HEAD
 # 🌐 API Guide - How Our Services Talk
 
 Part of [Development Standards](../STANDARDS.md)
@@ -65,7 +64,6 @@ def users():
             'meta': {'total': len(all_users)}
         })
 
-=======
 # API and Protocol Standards
 
 Part of [Development Standards](../STANDARDS.md)
@@ -274,12 +272,10 @@ def users_v2():
                 'total': len(users)
             }
         })
->>>>>>> origin/v1.0.X
     elif request.method == 'POST':
         new_user = create_user(request.json)
         return jsonify({
             'status': 'created',
-<<<<<<< HEAD
             'data': new_user
         }), 201  # 201 = Created
 
@@ -565,7 +561,6 @@ GRPC_ENABLED=true             # Enable gRPC
 - **Postman**: GUI for API testing
 - **insomnia**: Modern API client
 - **pytest**: Python testing framework
-=======
             'data': new_user,
             'meta': {'version': 2}
         }), 201
@@ -788,4 +783,3 @@ REACT_APP_API_VERSION=v1  # For backwards compatibility during migration
 | Error Handling | Basic | Detailed error codes |
 | Pagination | Query params | Header-based |
 ```
->>>>>>> origin/v1.0.X

@@ -1,4 +1,3 @@
-<<<<<<< HEAD
 # ⚛️ Frontend Guide - Making Things Pretty
 
 Part of [Development Standards](../STANDARDS.md)
@@ -66,7 +65,6 @@ export const UserCard = ({ user, onEdit, onDelete }) => {
 ## 🔌 Connecting to the Backend
 
 Your React app talks to Flask via REST APIs. Here's how:
-=======
 # Frontend Development Standards
 
 Part of [Development Standards](../STANDARDS.md)
@@ -120,7 +118,6 @@ services/webui/
 ### API Client Integration
 
 **Create centralized API client for Flask backend:**
->>>>>>> origin/v1.0.X
 
 ```javascript
 // src/services/apiClient.js
@@ -130,7 +127,6 @@ const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000';
 
 export const apiClient = axios.create({
   baseURL: API_BASE_URL,
-<<<<<<< HEAD
   headers: { 'Content-Type': 'application/json' },
   withCredentials: true, // Keeps session cookies
 });
@@ -143,7 +139,6 @@ apiClient.interceptors.request.use((config) => {
 });
 
 // Handle 401 errors (expired login)
-=======
   headers: {
     'Content-Type': 'application/json',
   },
@@ -163,15 +158,11 @@ apiClient.interceptors.request.use(
 );
 
 // Response interceptor for error handling
->>>>>>> origin/v1.0.X
 apiClient.interceptors.response.use(
   (response) => response,
   (error) => {
     if (error.response?.status === 401) {
-<<<<<<< HEAD
-=======
       // Redirect to login on unauthorized
->>>>>>> origin/v1.0.X
       localStorage.removeItem('authToken');
       window.location.href = '/login';
     }
@@ -180,7 +171,6 @@ apiClient.interceptors.response.use(
 );
 ```
 
-<<<<<<< HEAD
 **Now fetch data** with React Query (automatic caching, refetching, loading states):
 
 ```javascript
@@ -239,7 +229,6 @@ import { createContext, useContext, useState, useEffect } from 'react';
 import { apiClient } from '../services/apiClient';
 
 const AuthContext = createContext();
-=======
 ### Authentication Context
 
 ```javascript
@@ -248,14 +237,12 @@ import React, { createContext, useContext, useState, useEffect } from 'react';
 import { apiClient } from '../services/apiClient';
 
 const AuthContext = createContext(null);
->>>>>>> origin/v1.0.X
 
 export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-<<<<<<< HEAD
     apiClient.get('/auth/me')
       .then(r => setUser(r.data))
       .catch(() => setUser(null))
@@ -266,7 +253,6 @@ export const AuthProvider = ({ children }) => {
     const res = await apiClient.post('/auth/login', { email, password });
     setUser(res.data.user);
     localStorage.setItem('authToken', res.data.token);
-=======
     // Check if user is authenticated on mount
     const checkAuth = async () => {
       try {
@@ -285,7 +271,6 @@ export const AuthProvider = ({ children }) => {
     const response = await apiClient.post('/auth/login', { email, password });
     setUser(response.data.user);
     localStorage.setItem('authToken', response.data.token);
->>>>>>> origin/v1.0.X
   };
 
   const logout = async () => {
@@ -304,24 +289,20 @@ export const AuthProvider = ({ children }) => {
 export const useAuth = () => useContext(AuthContext);
 ```
 
-<<<<<<< HEAD
 **Protected Routes** stay simple:
 
 ```javascript
 // src/components/ProtectedRoute.jsx
-=======
 ### Protected Routes
 
 ```javascript
 // src/components/ProtectedRoute.jsx
 import React from 'react';
->>>>>>> origin/v1.0.X
 import { Navigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 
 export const ProtectedRoute = ({ children }) => {
   const { user, loading } = useAuth();
-<<<<<<< HEAD
   if (loading) return <div>Loading...</div>;
   return user ? children : <Navigate to="/login" />;
 };
@@ -468,7 +449,6 @@ CMD ["nginx", "-g", "daemon off;"]
 ```
 
 Build locally with `npm run build`, Docker serves the static files with nginx. Fast and lightweight!
-=======
 
   if (loading) {
     return <div>Loading...</div>;
@@ -565,4 +545,3 @@ EXPOSE 80
 
 CMD ["nginx", "-g", "daemon off;"]
 ```
->>>>>>> origin/v1.0.X

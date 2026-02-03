@@ -106,7 +106,6 @@ IceCharts is a modern, web-based collaborative diagramming platform designed for
 - **Dependency visualization** showing relationships between infrastructure elements
 - **Live sync** with infrastructure definitions
 
-<<<<<<< HEAD
 ### IceRuns - Serverless Functions
 - **Multi-language runtime support** (Python, Node.js, Go, Ruby, Bash, PowerShell, Rust)
 - **Function management** with versioning and rollback
@@ -114,14 +113,13 @@ IceCharts is a modern, web-based collaborative diagramming platform designed for
 - **Container isolation** with resource limits and security hardening
 - **Real-time execution tracking** with WebSocket support
 - **See [IceRuns Documentation](docs/iceruns/README.md) for complete guide**
-=======
+
 ### Workflow Automation (IceStreams)
 - **Visual workflow editor** with drag-and-drop node canvas
 - **Connector Framework** for integrating external services
 - **WaddleBot integration** for chat bot automation (Twitch, Discord, Slack, Kick)
 - **Triggers, Actions, and Transforms** for building automation pipelines
 - **Schema-driven configuration** for easy node setup
->>>>>>> origin/v1.0.X
 
 ### Enterprise Security
 - **User authentication & authorization** with role-based access control (RBAC)

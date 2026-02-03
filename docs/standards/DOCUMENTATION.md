@@ -1,4 +1,3 @@
-<<<<<<< HEAD
 # 📝 Documentation Guide - Write Docs People Actually Read
 
 Part of [Development Standards](../STANDARDS.md)
@@ -144,7 +143,6 @@ Create `docs/RELEASE_NOTES.md` and add new releases to the top:
 ---
 
 **Golden Rule:** If you wouldn't want to read it, your team won't either. Make docs so clear they're almost impossible to misunderstand.
-=======
 # Documentation Standards
 
 Part of [Development Standards](../STANDARDS.md)
@@ -229,4 +227,3 @@ See [Deployment Guide](docs/DEPLOYMENT.md) for production setup without default 
 - Component interaction patterns
 - Data flow documentation
 - Decision records (ADRs)
->>>>>>> origin/v1.0.X

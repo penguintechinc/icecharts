@@ -1,14 +1,10 @@
-<<<<<<< HEAD
 # 🔌 Integrations Guide - Connecting All The Things
-=======
 # Integration Standards
->>>>>>> origin/v1.0.X
 
 Part of [Development Standards](../STANDARDS.md)
 
 ---
 
-<<<<<<< HEAD
 ## Overview
 
 This guide covers integrating your application with external services and platforms. We support three major integrations to power your apps:
@@ -38,7 +34,6 @@ Your app runs behind **MarchProxy** (`~/code/MarchProxy`) for routing, load bala
 ### Service Configuration
 
 Generate service definitions in `config/marchproxy/services.json`:
-=======
 ## MarchProxy API Gateway Integration
 
 Applications are expected to run behind **MarchProxy** (`~/code/MarchProxy`) for API gateway and load balancing functionality.
@@ -58,7 +53,6 @@ config/
 ```
 
 ### Service Definition Format
->>>>>>> origin/v1.0.X
 
 ```json
 {
@@ -82,10 +76,7 @@ config/
       "protocol": "grpc",
       "collection": "myapp",
       "auth_type": "none",
-<<<<<<< HEAD
-=======
       "tls_enabled": false,
->>>>>>> origin/v1.0.X
       "health_check_enabled": true,
       "health_check_path": "/grpc.health.v1.Health/Check",
       "health_check_interval": 10
@@ -96,22 +87,18 @@ config/
       "port": 80,
       "protocol": "http",
       "collection": "myapp",
-<<<<<<< HEAD
       "health_check_enabled": true,
       "health_check_path": "/"
-=======
       "auth_type": "none",
       "tls_enabled": false,
       "health_check_enabled": true,
       "health_check_path": "/",
       "health_check_interval": 30
->>>>>>> origin/v1.0.X
     }
   ]
 }
 ```
 
-<<<<<<< HEAD
 **Key fields:**
 - `name`: Use `{app_name}-{service}` for easy filtering
 - `protocol`: `http` (REST), `grpc` (high-performance), `tcp` (raw)
@@ -121,9 +108,7 @@ config/
 ### Route Configuration
 
 Define routes in `config/marchproxy/mappings.json`:
-=======
 ### Mapping Definition Format
->>>>>>> origin/v1.0.X
 
 ```json
 {
@@ -150,14 +135,12 @@ Define routes in `config/marchproxy/mappings.json`:
 }
 ```
 
-<<<<<<< HEAD
 ### Python Config Generator
 
 Auto-generate MarchProxy config from your app settings:
 
 ```python
 """Generate MarchProxy import configuration"""
-=======
 ### Import Script
 
 Create `scripts/marchproxy-import.sh`:
@@ -187,7 +170,6 @@ echo "MarchProxy configuration imported"
 
 ```python
 """Generate MarchProxy import configuration from application settings"""
->>>>>>> origin/v1.0.X
 import json
 import os
 from dataclasses import dataclass, asdict
@@ -201,20 +183,14 @@ class MarchProxyService:
     protocol: str = "http"
     collection: Optional[str] = None
     auth_type: str = "none"
-<<<<<<< HEAD
-=======
     tls_enabled: bool = False
->>>>>>> origin/v1.0.X
     health_check_enabled: bool = True
     health_check_path: str = "/healthz"
     health_check_interval: int = 30
 
 def generate_marchproxy_config(app_name: str, services: list[MarchProxyService]) -> dict:
-<<<<<<< HEAD
     """Generate MarchProxy-compatible configuration"""
-=======
     """Generate MarchProxy-compatible import configuration"""
->>>>>>> origin/v1.0.X
     return {
         "services": [asdict(s) for s in services],
         "metadata": {
@@ -225,14 +201,11 @@ def generate_marchproxy_config(app_name: str, services: list[MarchProxyService])
     }
 
 def write_marchproxy_config(config: dict, output_dir: str = "config/marchproxy"):
-<<<<<<< HEAD
     """Write configuration to file"""
     os.makedirs(output_dir, exist_ok=True)
-=======
     """Write configuration files for MarchProxy import"""
     os.makedirs(output_dir, exist_ok=True)
 
->>>>>>> origin/v1.0.X
     with open(f"{output_dir}/import-config.json", "w") as f:
         json.dump(config, f, indent=2)
 
@@ -244,32 +217,25 @@ if __name__ == "__main__":
             ip_fqdn="flask-backend",
             port=8080,
             protocol="http",
-<<<<<<< HEAD
-=======
             collection="myapp",
->>>>>>> origin/v1.0.X
             auth_type="jwt"
         ),
         MarchProxyService(
             name="myapp-go-backend",
             ip_fqdn="go-backend",
             port=50051,
-<<<<<<< HEAD
             protocol="grpc"
         ),
     ]
-=======
             protocol="grpc",
             collection="myapp"
         ),
     ]
 
->>>>>>> origin/v1.0.X
     config = generate_marchproxy_config("myapp", services)
     write_marchproxy_config(config)
 ```
 
-<<<<<<< HEAD
 ### Import Script
 
 Create `scripts/marchproxy-import.sh` to import your config:
@@ -299,7 +265,6 @@ echo "MarchProxy configuration imported"
 | `/api/v1/services` | POST | Create a service |
 | `/api/v1/services/import` | POST | Bulk import services |
 | `/api/v1/services` | GET | List all services |
-=======
 ### Integration Notes
 
 1. **Service Names**: Use `{app_name}-{service}` naming convention for easy filtering
@@ -318,12 +283,10 @@ echo "MarchProxy configuration imported"
 | `/api/v1/services` | POST | Create service |
 | `/api/v1/services/import` | POST | Bulk import services |
 | `/api/v1/services` | GET | List services |
->>>>>>> origin/v1.0.X
 | `/api/v1/services/{id}` | PUT | Update service |
 | `/api/v1/services/{id}` | DELETE | Delete service |
 | `/api/v1/config/{cluster_id}` | GET | Get cluster config |
 
-<<<<<<< HEAD
 📚 **Full docs:** See `~/code/MarchProxy/api-server/README.md`
 
 ---
@@ -372,7 +335,6 @@ version: '3.8'
 services:
   flask-backend:
     build: ./services/flask-backend
-=======
 📚 **Full MarchProxy Documentation**: See `~/code/MarchProxy/api-server/README.md`
 
 ---
@@ -423,7 +385,6 @@ version: '3.8'
 services:
   api:
     build: ./services/api
->>>>>>> origin/v1.0.X
     environment:
       - WADDLEAI_URL=http://waddleai:8000
     depends_on:
@@ -436,23 +397,17 @@ services:
       - MAX_WORKERS=4
     volumes:
       - ai-models:/models
-<<<<<<< HEAD
     # Internal only - not exposed to host
-=======
     # Not exposed to host - internal network only
->>>>>>> origin/v1.0.X
 
 volumes:
   ai-models:
 ```
 
-<<<<<<< HEAD
 **3. Python API client for Flask backend:**
-=======
 ### API Client for WaddleAI
 
 **Python integration in Flask backend:**
->>>>>>> origin/v1.0.X
 
 ```python
 import os
@@ -494,11 +449,8 @@ from shared.licensing import requires_feature
 app = Flask(__name__)
 ai_client = WaddleAIClient()
 
-<<<<<<< HEAD
 @app.route('/api/v1/ai/analyze', methods=['POST'])
-=======
 @app.route('/api/ai/analyze', methods=['POST'])
->>>>>>> origin/v1.0.X
 @auth_required()
 @requires_feature('ai_analysis')  # License-gate AI features
 async def ai_analyze():
@@ -508,7 +460,6 @@ async def ai_analyze():
     return jsonify(result)
 ```
 
-<<<<<<< HEAD
 **4. React component to use AI features:**
 
 ```javascript
@@ -520,7 +471,6 @@ const aiService = {
     apiClient.post('/api/v1/ai/analyze', { text, task })
 };
 
-=======
 **ReactJS integration:**
 
 ```javascript
@@ -543,12 +493,10 @@ export const aiService = {
 import { useState } from 'react';
 import { aiService } from '../services/aiClient';
 
->>>>>>> origin/v1.0.X
 export const AIAnalyzer = () => {
   const [text, setText] = useState('');
   const [result, setResult] = useState(null);
 
-<<<<<<< HEAD
   return (
     <div>
       <textarea value={text} onChange={(e) => setText(e.target.value)} />
@@ -556,7 +504,6 @@ export const AIAnalyzer = () => {
         const res = await aiService.analyzeText(text);
         setResult(res.data);
       }}>Analyze</button>
-=======
   const handleAnalyze = async () => {
     const analysis = await aiService.analyzeText(text);
     setResult(analysis);
@@ -566,14 +513,12 @@ export const AIAnalyzer = () => {
     <div>
       <textarea value={text} onChange={(e) => setText(e.target.value)} />
       <button onClick={handleAnalyze}>Analyze</button>
->>>>>>> origin/v1.0.X
       {result && <pre>{JSON.stringify(result, null, 2)}</pre>}
     </div>
   );
 };
 ```
 
-<<<<<<< HEAD
 ### AI Features License Gating
 
 AI features should be enterprise/professional tier only:
@@ -588,7 +533,6 @@ AI_FEATURES = {
 }
 
 # Check what's available
-=======
 ### License-Gating AI Features
 
 **ALWAYS make AI features enterprise-only:**
@@ -603,7 +547,6 @@ AI_FEATURES = {
 }
 
 # Feature checking
->>>>>>> origin/v1.0.X
 from shared.licensing import license_client
 
 def check_ai_features():
@@ -630,7 +573,6 @@ AI_FEATURES_ENABLED=true
 
 ### Important Notes
 
-<<<<<<< HEAD
 1. **Optional**: Only add if you actually need AI features
 2. **License-gated**: Make AI enterprise/professional tier
 3. **Resource-intensive**: Monitor GPU/CPU usage if using inference
@@ -651,7 +593,6 @@ PenguinTech License Server manages feature entitlements and licensing at `https:
 - **Tier enforcement**: Community, Professional, Enterprise
 
 ### Environment Setup
-=======
 1. **Optional Integration**: Only add WaddleAI when AI features are needed
 2. **License Gating**: AI features are typically enterprise/professional tier
 3. **Performance**: AI inference can be resource-intensive - monitor usage
@@ -1099,23 +1040,18 @@ export function ConfigurationPage() {
 PenguinTech License Server provides feature gating and entitlement management at `https://license.penguintech.io`.
 
 ### Environment Variables
->>>>>>> origin/v1.0.X
 
 ```bash
 # License Configuration
 LICENSE_KEY=PENG-XXXX-XXXX-XXXX-XXXX-ABCD
 LICENSE_SERVER_URL=https://license.penguintech.io
 PRODUCT_NAME=project-template
-<<<<<<< HEAD
 RELEASE_MODE=false  # Dev: false (all features), Prod: true (enforce license)
-=======
 RELEASE_MODE=false  # Enable license enforcement (dev: false, prod: true)
->>>>>>> origin/v1.0.X
 ```
 
 ### Validation Flow
 
-<<<<<<< HEAD
 On startup:
 1. Read license key from environment
 2. Call license server to validate
@@ -1128,14 +1064,12 @@ Error handling:
 - **Validation fails (RELEASE_MODE=false)**: Warn, continue (development)
 - **Network error**: Cache previous result, retry on next startup
 - **Feature not entitled**: Return 403 Forbidden
-=======
 ```
 1. Application startup → License validation
 2. Return: { valid, tier, features[], expires_at, limits }
 3. Conditional behavior based on tier and features
 4. Hourly keepalive with usage stats
 ```
->>>>>>> origin/v1.0.X
 
 ### Feature Gating
 
@@ -1145,20 +1079,14 @@ from app.license import license_manager
 
 @require_feature('sso_integration')
 def enable_sso():
-<<<<<<< HEAD
     # Only runs if license allows SSO
-=======
     # Only runs if tier supports SSO
->>>>>>> origin/v1.0.X
     pass
 
 # Manual check
 if license_manager.is_feature_enabled('audit_logs'):
-<<<<<<< HEAD
     # Log important actions
-=======
     # Log to audit table
->>>>>>> origin/v1.0.X
     pass
 ```
 
@@ -1166,11 +1094,8 @@ if license_manager.is_feature_enabled('audit_logs'):
 
 ```
 Community (free):
-<<<<<<< HEAD
 ├── Basic auth (email/password)
-=======
 ├── Basic authentication (email/password)
->>>>>>> origin/v1.0.X
 ├── Up to 5 users
 └── Single team
 
@@ -1188,15 +1113,12 @@ Enterprise:
 └── Priority support
 ```
 
-<<<<<<< HEAD
 ### Keepalive Check-in
 
 Every hour, report usage to license server:
-=======
 ### Keepalive/Checkin
 
 Background task runs hourly:
->>>>>>> origin/v1.0.X
 
 ```python
 {
@@ -1210,7 +1132,6 @@ Background task runs hourly:
 }
 ```
 
-<<<<<<< HEAD
 ---
 
 ## 🔧 Configuration Management
@@ -1428,7 +1349,6 @@ export function ConfigurationPage() {
 7. **Security**: Mask and encrypt sensitive values
 
 📚 **Related:** [Database Standards](DATABASE.md) | [Authentication Standards](AUTHENTICATION.md) | [Security Standards](SECURITY.md)
-=======
 ### Error Handling
 
 - **Validation Fails (RELEASE_MODE=true)**: Exit with error
@@ -1596,4 +1516,3 @@ Logs/metrics batched and sent every 5 seconds:
 7. **Encryption**: Encrypt sensitive values at rest
 
 📚 **Related Standards**: [Database](DATABASE.md) | [Authentication](AUTHENTICATION.md) | [Security](SECURITY.md)
->>>>>>> origin/v1.0.X

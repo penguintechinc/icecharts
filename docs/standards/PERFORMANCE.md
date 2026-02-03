@@ -1,4 +1,3 @@
-<<<<<<< HEAD
 # ⚡ Performance Guide - Making Things Fast
 
 Part of [Development Standards](../STANDARDS.md)
@@ -73,7 +72,6 @@ async def process_users(
     batch_size: int = 100,
     callback: Optional[Callable[[User], None]] = None
 ) -> Dict[int, User]:
-=======
 # Performance Standards
 
 Part of [Development Standards](../STANDARDS.md)
@@ -163,7 +161,6 @@ async def process_users(
     callback: Optional[Callable[[User], None]] = None
 ) -> Dict[int, User]:
     """Process users with full type hints"""
->>>>>>> origin/v1.0.X
     results: Dict[int, User] = {}
     for user_id in user_ids:
         user = await fetch_user(user_id)
@@ -173,7 +170,6 @@ async def process_users(
     return results
 ```
 
-<<<<<<< HEAD
 Type hints help Python optimize your code and catch bugs before runtime.
 
 ## 🔄 Concurrency: Async vs Threading vs Multiprocessing
@@ -366,7 +362,6 @@ Only for extreme network requirements:
 - Trade-off: Highest complexity, best performance
 
 **When in doubt:** Start with standard sockets. Profile first. Add complexity only if proven necessary.
-=======
 ### Go Performance Requirements
 - **Goroutines**: Leverage goroutines and channels for concurrent operations
 - **Sync primitives**: Use sync.Pool, sync.Map for concurrent data structures
@@ -462,4 +457,3 @@ func setupAFXDP(ifname string, queueID int) (*xdp.Socket, error) {
 - Profile actual performance before optimization
 - XDP/AF_XDP adds significant complexity
 - Requires specialized knowledge and maintenance
->>>>>>> origin/v1.0.X

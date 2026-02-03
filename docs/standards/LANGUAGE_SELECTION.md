@@ -1,4 +1,3 @@
-<<<<<<< HEAD
 # Choosing Your Weapon: 🐍 Python vs 🦫 Go
 
 Part of [Development Standards](../STANDARDS.md)
@@ -163,7 +162,6 @@ A: Python. By a lot. Easier debugging, clearer errors, shorter onboarding. Go re
 ---
 
 *Remember: Premature optimization is the root of all evil. Ship fast with Python, scale with Go only when you need to.*
-=======
 # Language Selection Criteria
 
 Part of [Development Standards](../STANDARDS.md)
@@ -211,4 +209,3 @@ Part of [Development Standards](../STANDARDS.md)
 - Profile and measure actual performance before switching
 - Consider operational complexity of multi-language stack
 - Go adds development overhead - only use when necessary
->>>>>>> origin/v1.0.X

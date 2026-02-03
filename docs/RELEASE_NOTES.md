@@ -1,6 +1,5 @@
 # Release Notes
 
-<<<<<<< HEAD
 ## [1.4.0] - January 2026
 
 ### Overview
@@ -178,7 +177,8 @@ None.
 
 Built with Penguin Tech Inc's enterprise template and community feedback.
 
-=======
+---
+
 ## [0.3.0] - January 2025
 
 ### Overview
@@ -257,7 +257,6 @@ ELDER_URL=http://localhost:5000
 ELDER_API_KEY=your-api-key
 ```
 
->>>>>>> origin/v1.0.X
 ---
 
 ## [0.2.0] - December 2024
