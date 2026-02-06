@@ -21,6 +21,13 @@ const streamsItems = [
   { path: '/playbooks/templates', label: 'Templates', icon: 'M8 7v8a2 2 0 002 2h6M8 7V5a2 2 0 012-2h4.586a1 1 0 01.707.293l4.414 4.414a1 1 0 01.293.707V15a2 2 0 01-2 2h-2M8 7H6a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2v-2' },
 ];
 
+// Flows section (IceFlows - approval workflows)
+const flowsItems = [
+  { path: '/iceflows', label: 'Workflows', icon: 'M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4' },
+  { path: '/iceflows/my-approvals', label: 'My Approvals', icon: 'M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z' },
+  { path: '/iceflows/promotions', label: 'Promotions', icon: 'M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12' },
+];
+
 // Runs section (IceRuns - serverless functions)
 const runsItems = [
   { path: '/iceruns', label: 'Functions', icon: 'M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4' },
@@ -108,6 +115,31 @@ export const Sidebar: React.FC = () => {
           </p>
         </div>
         {streamsItems.map((item) => (
+          <NavLink
+            key={item.path}
+            to={item.path}
+            className={({ isActive }) =>
+              `flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium transition-colors ${
+                isActive
+                  ? 'bg-ice-gold-500/20 text-ice-gold-400'
+                  : 'text-ice-navy-200 hover:bg-ice-navy-700 hover:text-white'
+              }`
+            }
+          >
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d={item.icon} />
+            </svg>
+            {item.label}
+          </NavLink>
+        ))}
+
+        {/* Flows section */}
+        <div className="pt-4 pb-2">
+          <p className="px-4 text-xs font-semibold text-ice-navy-400 uppercase tracking-wider">
+            Flows
+          </p>
+        </div>
+        {flowsItems.map((item) => (
           <NavLink
             key={item.path}
             to={item.path}

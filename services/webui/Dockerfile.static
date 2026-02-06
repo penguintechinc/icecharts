@@ -3,10 +3,11 @@ FROM node:20-slim AS builder
 
 WORKDIR /app
 
-# Set build-time environment variables for Vite
-ARG VITE_API_URL=http://localhost:5002
-ARG VITE_API_BASE_PATH=/api/v1
-ARG VITE_WS_URL=http://localhost:5002
+# Set build-time environment variables for Vite (production defaults)
+# Empty API_URL means use relative paths (works through nginx proxy)
+ARG VITE_API_URL=""
+ARG VITE_API_BASE_PATH="/api/v1"
+ARG VITE_WS_URL=""
 ENV VITE_API_URL=$VITE_API_URL
 ENV VITE_API_BASE_PATH=$VITE_API_BASE_PATH
 ENV VITE_WS_URL=$VITE_WS_URL

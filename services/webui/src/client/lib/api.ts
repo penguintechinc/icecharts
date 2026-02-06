@@ -1,7 +1,7 @@
 import axios, { AxiosError, InternalAxiosRequestConfig } from 'axios';
 
 // Build API URL - combine API host with base path
-const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:5001';
+const apiUrl = import.meta.env.VITE_API_URL || (import.meta.env.PROD ? '' : 'http://localhost:5001');
 const basePath = import.meta.env.VITE_API_BASE_PATH || '/api/v1';
 const API_BASE_URL = `${apiUrl}${basePath}`;
 

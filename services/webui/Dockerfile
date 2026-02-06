@@ -35,7 +35,7 @@ RUN npm run test -- --run --coverage
 # Stage 4: Build
 FROM dependencies AS builder
 
-# Build arguments for Vite
+# Build arguments for Vite (production defaults)
 ARG VITE_API_URL=""
 ARG VITE_API_BASE_PATH="/api/v1"
 
@@ -45,7 +45,8 @@ WORKDIR /app
 COPY . .
 
 # Build application with environment variables
-RUN VITE_API_URL=${VITE_API_URL} VITE_API_BASE_PATH=${VITE_API_BASE_PATH} npm run build
+# Production uses empty API_URL (relative paths) and /api/v1 base path
+RUN VITE_API_URL="" VITE_API_BASE_PATH="/api/v1" npm run build
 
 # Stage 5: Production
 FROM nginx:1.25 AS production
