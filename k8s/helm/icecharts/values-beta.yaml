@@ -1,10 +1,26 @@
 # Beta/staging environment overrides (icecharts.penguintech.io)
 # Uses icecharts namespace (each cluster has its own icecharts namespace)
-namespace: icecharts
+namespace:
+  create: false
+  name: icecharts
 
-image:
-  registry: registry-dal2.penguintech.io
-  tag: "beta"
+# Global overrides for dal2 cluster (no Docker Hub access)
+global:
+  busyboxImage: "registry-dal2.penguintech.io/busybox:1.35"
+
+# API image from dal2 registry
+api:
+  image:
+    registry: registry-dal2.penguintech.io
+    repository: icecharts-api
+    tag: "beta"
+
+# Web image from dal2 registry
+web:
+  image:
+    registry: registry-dal2.penguintech.io
+    repository: icecharts-web
+    tag: "beta"
 
 ingress:
   # Disabled: ingress for icecharts.penguintech.io is managed in the
@@ -19,8 +35,23 @@ ingress:
 # Minio image from dal2 registry (Docker Hub not accessible from cluster)
 minio:
   image:
-    repository: registry-dal2.penguintech.io/minio
+    registry: registry-dal2.penguintech.io
+    repository: minio
     tag: "latest"
+
+# Postgres image from dal2 registry
+postgres:
+  image:
+    registry: registry-dal2.penguintech.io
+    repository: postgres
+    tag: "17-alpine"
+
+# Redis image from dal2 registry
+redis:
+  image:
+    registry: registry-dal2.penguintech.io
+    repository: redis
+    tag: "7-alpine"
 
 config:
   FLASK_ENV: "production"

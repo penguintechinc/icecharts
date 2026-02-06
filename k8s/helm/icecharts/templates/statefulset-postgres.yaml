@@ -68,32 +68,23 @@ spec:
             - name: data
               mountPath: /var/lib/postgresql/data
           readinessProbe:
-            exec:
-              command:
-                - /bin/sh
-                - -c
-                - pg_isready -U $(POSTGRES_USER) -h localhost
+            tcpSocket:
+              port: 5432
             initialDelaySeconds: {{ .Values.postgres.healthCheck.readiness.initialDelaySeconds }}
             periodSeconds: {{ .Values.postgres.healthCheck.readiness.periodSeconds }}
             timeoutSeconds: {{ .Values.postgres.healthCheck.readiness.timeoutSeconds }}
             successThreshold: 1
             failureThreshold: 3
           livenessProbe:
-            exec:
-              command:
-                - /bin/sh
-                - -c
-                - pg_isready -U $(POSTGRES_USER) -h localhost
+            tcpSocket:
+              port: 5432
             initialDelaySeconds: {{ .Values.postgres.healthCheck.liveness.initialDelaySeconds }}
             periodSeconds: {{ .Values.postgres.healthCheck.liveness.periodSeconds }}
             timeoutSeconds: {{ .Values.postgres.healthCheck.liveness.timeoutSeconds }}
             failureThreshold: 3
           startupProbe:
-            exec:
-              command:
-                - /bin/sh
-                - -c
-                - pg_isready -U $(POSTGRES_USER) -h localhost
+            tcpSocket:
+              port: 5432
             initialDelaySeconds: {{ .Values.postgres.healthCheck.startup.initialDelaySeconds }}
             periodSeconds: {{ .Values.postgres.healthCheck.startup.periodSeconds }}
             failureThreshold: {{ .Values.postgres.healthCheck.startup.failureThreshold }}

@@ -119,7 +119,7 @@ export default function Login() {
         <div className="text-center mb-8">
           <div className="flex justify-center">
             <img
-              src="/logo-transparent.png"
+              src="/logo.jpg"
               alt="IceCharts"
               className="h-20 w-auto mb-2"
             />

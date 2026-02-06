@@ -48,7 +48,7 @@ export const Sidebar: React.FC = () => {
       {/* Logo */}
       <div className="p-4 border-b border-ice-navy-700 flex justify-center">
         <img
-          src="/logo-transparent.png"
+          src="/logo.jpg"
           alt="IceCharts"
           className="h-24 w-auto"
         />

@@ -148,7 +148,7 @@ postgres:
 
   image:
     registry: docker.io
-    repository: postgres
+    repository: library/postgres
     tag: "17-alpine"
     pullPolicy: IfNotPresent
 
@@ -206,7 +206,7 @@ redis:
 
   image:
     registry: docker.io
-    repository: redis
+    repository: library/redis
     tag: "7-alpine"
     pullPolicy: IfNotPresent
 
@@ -260,6 +260,10 @@ minio:
 
   replicaCount: 1
 
+  ports:
+    api: 9000
+    console: 9001
+
   service:
     type: ClusterIP
     apiPort: 9000
@@ -309,7 +313,7 @@ api:
     registry: ghcr.io
     repository: penguintechinc/icecharts-flask-backend
     tag: "v1.0.3"
-    pullPolicy: IfNotPresent
+    pullPolicy: Always
 
   # Number of replicas
   replicaCount: 1
@@ -451,14 +455,14 @@ web:
     registry: ghcr.io
     repository: penguintechinc/icecharts-webui
     tag: "v1.0.3"
-    pullPolicy: IfNotPresent
+    pullPolicy: Always
 
   replicaCount: 1
 
   service:
     type: ClusterIP
     port: 80
-    targetPort: 80
+    targetPort: 8080
 
   # Environment configuration
   env:

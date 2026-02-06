@@ -375,9 +375,9 @@ with open('$orig_package', 'w') as f:
     sed 's/npm ci/npm install/g' "$PROJECT_ROOT/services/webui/Dockerfile.static" > "$docker_file_tmp"
 
     if ! docker build \
-        --build-arg VITE_API_URL=/api/v1 \
+        --build-arg VITE_API_URL= \
         --build-arg VITE_API_BASE_PATH=/api/v1 \
-        --build-arg VITE_WS_URL=/api/v1 \
+        --build-arg VITE_WS_URL= \
         -t "$IMAGE_REGISTRY/icecharts-web:$IMAGE_TAG" \
         -t "$IMAGE_REGISTRY/icecharts-web:beta" \
         -f "$docker_file_tmp" \
@@ -400,7 +400,7 @@ with open('$orig_package', 'w') as f:
         -t "$IMAGE_REGISTRY/icecharts-api:$IMAGE_TAG" \
         -t "$IMAGE_REGISTRY/icecharts-api:beta" \
         -f "$PROJECT_ROOT/services/flask-backend/Dockerfile" \
-        "$PROJECT_ROOT/services/flask-backend" 2>&1 | grep -E "Successfully tagged|Error|error"; then
+        "$PROJECT_ROOT" 2>&1 | grep -E "Successfully tagged|Error|error"; then
         log_error "API image build failed"
         return 1
     fi

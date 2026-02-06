@@ -35,7 +35,7 @@ RUN pip install --user --no-cache-dir \
     pytest-mock==3.13.0
 
 # Copy test files and app code
-COPY services/flask-backend . .
+COPY services/flask-backend/ .
 
 # Set test environment
 ENV FLASK_ENV=testing
@@ -61,7 +61,7 @@ RUN pip install --user --no-cache-dir \
     isort==5.13.2
 
 # Copy source code
-COPY services/flask-backend . .
+COPY services/flask-backend/ .
 
 # Run linting
 RUN flake8 app/ tests/ --count --select=E9,F63,F7,F82 --show-source --statistics && \

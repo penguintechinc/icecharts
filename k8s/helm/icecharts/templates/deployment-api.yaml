@@ -40,7 +40,7 @@ spec:
         runAsNonRoot: {{ .Values.api.securityContext.runAsNonRoot }}
       initContainers:
         - name: wait-for-postgres
-          image: busybox:1.35
+          image: {{ .Values.global.busyboxImage | default "busybox:1.35" }}
           command:
             - sh
             - -c
@@ -51,7 +51,7 @@ spec:
               done
               echo "PostgreSQL is ready"
         - name: wait-for-redis
-          image: busybox:1.35
+          image: {{ .Values.global.busyboxImage | default "busybox:1.35" }}
           command:
             - sh
             - -c
@@ -62,7 +62,7 @@ spec:
               done
               echo "Redis is ready"
         - name: wait-for-minio
-          image: busybox:1.35
+          image: {{ .Values.global.busyboxImage | default "busybox:1.35" }}
           command:
             - sh
             - -c
@@ -81,7 +81,23 @@ spec:
               containerPort: 5000
               protocol: TCP
           env:
-            # Database configuration
+            # Database configuration (app uses DB_* env vars)
+            - name: DB_NAME
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "icecharts.secretName" . }}
+                  key: postgres-db
+            - name: DB_USER
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "icecharts.secretName" . }}
+                  key: postgres-user
+            - name: DB_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "icecharts.secretName" . }}
+                  key: postgres-password
+            # Also set POSTGRES_* for compatibility
             - name: POSTGRES_DB
               valueFrom:
                 secretKeyRef:
@@ -130,6 +146,17 @@ spec:
                 secretKeyRef:
                   name: {{ include "icecharts.secretName" . }}
                   key: jwt-secret-key
+            # Default admin credentials for initial setup
+            - name: DEFAULT_ADMIN_EMAIL
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "icecharts.secretName" . }}
+                  key: default-admin-email
+            - name: DEFAULT_ADMIN_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "icecharts.secretName" . }}
+                  key: default-admin-password
           envFrom:
             - configMapRef:
                 name: {{ include "icecharts.fullname" . }}-config

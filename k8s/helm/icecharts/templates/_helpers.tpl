@@ -62,8 +62,12 @@ PostgreSQL fullname
 PostgreSQL labels
 */}}
 {{- define "icecharts.postgres.labels" -}}
-{{ include "icecharts.labels" . }}
-app.kubernetes.io/component: database
+helm.sh/chart: {{ include "icecharts.chart" . }}
+{{ include "icecharts.postgres.selectorLabels" . }}
+{{- if .Chart.AppVersion }}
+app.kubernetes.io/version: {{ .Chart.AppVersion | quote }}
+{{- end }}
+app.kubernetes.io/managed-by: {{ .Release.Service }}
 {{- end }}
 
 {{/*
@@ -86,8 +90,12 @@ Redis fullname
 Redis labels
 */}}
 {{- define "icecharts.redis.labels" -}}
-{{ include "icecharts.labels" . }}
-app.kubernetes.io/component: cache
+helm.sh/chart: {{ include "icecharts.chart" . }}
+{{ include "icecharts.redis.selectorLabels" . }}
+{{- if .Chart.AppVersion }}
+app.kubernetes.io/version: {{ .Chart.AppVersion | quote }}
+{{- end }}
+app.kubernetes.io/managed-by: {{ .Release.Service }}
 {{- end }}
 
 {{/*
@@ -110,8 +118,12 @@ MinIO fullname
 MinIO labels
 */}}
 {{- define "icecharts.minio.labels" -}}
-{{ include "icecharts.labels" . }}
-app.kubernetes.io/component: storage
+helm.sh/chart: {{ include "icecharts.chart" . }}
+{{ include "icecharts.minio.selectorLabels" . }}
+{{- if .Chart.AppVersion }}
+app.kubernetes.io/version: {{ .Chart.AppVersion | quote }}
+{{- end }}
+app.kubernetes.io/managed-by: {{ .Release.Service }}
 {{- end }}
 
 {{/*
@@ -134,8 +146,12 @@ API fullname
 API labels
 */}}
 {{- define "icecharts.api.labels" -}}
-{{ include "icecharts.labels" . }}
-app.kubernetes.io/component: backend
+helm.sh/chart: {{ include "icecharts.chart" . }}
+{{ include "icecharts.api.selectorLabels" . }}
+{{- if .Chart.AppVersion }}
+app.kubernetes.io/version: {{ .Chart.AppVersion | quote }}
+{{- end }}
+app.kubernetes.io/managed-by: {{ .Release.Service }}
 {{- end }}
 
 {{/*
@@ -158,8 +174,12 @@ Web fullname
 Web labels
 */}}
 {{- define "icecharts.web.labels" -}}
-{{ include "icecharts.labels" . }}
-app.kubernetes.io/component: frontend
+helm.sh/chart: {{ include "icecharts.chart" . }}
+{{ include "icecharts.web.selectorLabels" . }}
+{{- if .Chart.AppVersion }}
+app.kubernetes.io/version: {{ .Chart.AppVersion | quote }}
+{{- end }}
+app.kubernetes.io/managed-by: {{ .Release.Service }}
 {{- end }}
 
 {{/*
