@@ -11,6 +11,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import api from '../../lib/api';
 
 interface PendingApproval {
   promotion_id: string;
@@ -68,42 +69,25 @@ export const MyApprovals: React.FC = () => {
   const [rejectComment, setRejectComment] = useState('');
 
   useEffect(() => {
-    // TODO: Fetch pending approvals from API
-    // Mock data for now
-    const mockApprovals: PendingApproval[] = [
-      {
-        promotion_id: 'promo-001',
-        flow_name: 'Production Deployment',
-        repository_url: 'https://github.com/company/api-service',
-        source_branch: 'staging',
-        target_branch: 'production',
-        requested_by: 'Alice Johnson',
-        requested_at: new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString(),
-        is_day_blocked: false,
-      },
-      {
-        promotion_id: 'promo-002',
-        flow_name: 'Canary Release',
-        repository_url: 'https://github.com/company/frontend-app',
-        source_branch: 'develop',
-        target_branch: 'canary',
-        requested_by: 'Bob Smith',
-        requested_at: new Date(Date.now() - 30 * 60 * 1000).toISOString(),
-        is_day_blocked: true,
-      },
-      {
-        promotion_id: 'promo-003',
-        flow_name: 'Hotfix Release',
-        repository_url: 'https://github.com/company/backend-service',
-        source_branch: 'hotfix/critical-bug',
-        target_branch: 'main',
-        requested_by: 'Charlie Davis',
-        requested_at: new Date(Date.now() - 4 * 60 * 60 * 1000).toISOString(),
-        is_day_blocked: false,
-      },
-    ];
-    setApprovals(mockApprovals);
-    setLoading(false);
+    const fetchApprovals = async () => {
+      try {
+        const response = await api.get('/iceflows/my-approvals');
+        const data = response.data;
+
+        if (data.success && data.pending_approvals) {
+          setApprovals(data.pending_approvals);
+        } else {
+          setApprovals([]);
+        }
+      } catch (error) {
+        console.error('Error fetching approvals:', error);
+        setApprovals([]);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchApprovals();
   }, []);
 
   const handleApprove = (approval: PendingApproval) => {
@@ -116,24 +100,40 @@ export const MyApprovals: React.FC = () => {
     setModalType('reject');
   };
 
-  const confirmApprove = () => {
+  const confirmApprove = async () => {
     if (selectedApproval) {
-      // TODO: Call API to approve
-      console.log('Approved:', selectedApproval.promotion_id);
-      setApprovals(approvals.filter(a => a.promotion_id !== selectedApproval.promotion_id));
-      setSelectedApproval(null);
-      setModalType(null);
+      try {
+        await api.post(`/iceflows/promotions/${selectedApproval.promotion_id}/approve`, {
+          comment: '', // Optional comment
+        });
+
+        // Remove from list on success
+        setApprovals(approvals.filter(a => a.promotion_id !== selectedApproval.promotion_id));
+        setSelectedApproval(null);
+        setModalType(null);
+      } catch (error) {
+        console.error('Error approving promotion:', error);
+        alert('Failed to approve promotion. Please try again.');
+      }
     }
   };
 
-  const confirmReject = () => {
+  const confirmReject = async () => {
     if (selectedApproval && rejectComment.trim()) {
-      // TODO: Call API to reject with comment
-      console.log('Rejected:', selectedApproval.promotion_id, 'Comment:', rejectComment);
-      setApprovals(approvals.filter(a => a.promotion_id !== selectedApproval.promotion_id));
-      setSelectedApproval(null);
-      setModalType(null);
-      setRejectComment('');
+      try {
+        await api.post(`/iceflows/promotions/${selectedApproval.promotion_id}/reject`, {
+          comment: rejectComment,
+        });
+
+        // Remove from list on success
+        setApprovals(approvals.filter(a => a.promotion_id !== selectedApproval.promotion_id));
+        setSelectedApproval(null);
+        setModalType(null);
+        setRejectComment('');
+      } catch (error) {
+        console.error('Error rejecting promotion:', error);
+        alert('Failed to reject promotion. Please try again.');
+      }
     }
   };
 

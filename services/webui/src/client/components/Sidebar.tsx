@@ -1,5 +1,7 @@
 import { Link, useLocation } from 'react-router-dom';
+import { useEffect, useState } from 'react';
 import { useAuth } from '../hooks/useAuth';
+import api from '../lib/api';
 import type { NavCategory, UserRole } from '../types';
 
 interface SidebarProps {
@@ -22,6 +24,13 @@ const navigation: NavCategory[] = [
     items: [
       { label: 'IceFlows', path: '/iceflows', icon: '🔄', roles: ['admin', 'maintainer'] },
       { label: 'IceRuns', path: '/iceruns', icon: '⚡', roles: ['admin', 'maintainer'] },
+    ],
+  },
+  {
+    label: 'Approvals',
+    roles: ['admin', 'maintainer'],
+    items: [
+      { label: 'Approval Center', path: '/approvals', icon: '✓', roles: ['admin', 'maintainer'] },
     ],
   },
   {
@@ -49,6 +58,36 @@ const navigation: NavCategory[] = [
 export default function Sidebar({ collapsed, onToggle }: SidebarProps) {
   const location = useLocation();
   const { user, logout, hasRole } = useAuth();
+  const [pendingApprovalsCount, setPendingApprovalsCount] = useState(0);
+
+  // Fetch pending approvals count
+  useEffect(() => {
+    const fetchPendingCount = async () => {
+      try {
+        const [iceflowsRes, icestreamsRes] = await Promise.all([
+          api.get('/iceflows/my-approvals').catch(() => ({ data: { pending_approvals: [] } })),
+          api.get('/playbooks/my-approvals').catch(() => ({ data: { pending_approvals: [] } })),
+        ]);
+
+        const total =
+          (iceflowsRes.data.pending_approvals?.length || 0) +
+          (icestreamsRes.data.pending_approvals?.length || 0);
+
+        setPendingApprovalsCount(total);
+      } catch (error) {
+        console.error('Error fetching approval count:', error);
+      }
+    };
+
+    // Only fetch if user has appropriate role
+    if (hasRole(['admin', 'maintainer'] as UserRole[])) {
+      fetchPendingCount();
+
+      // Poll every 60 seconds
+      const interval = setInterval(fetchPendingCount, 60000);
+      return () => clearInterval(interval);
+    }
+  }, [hasRole]);
 
   // Filter navigation based on user role
   const filteredNav = navigation
@@ -98,8 +137,16 @@ export default function Sidebar({ collapsed, onToggle }: SidebarProps) {
                 className={`sidebar-item ${isActive(item.path) ? 'sidebar-item-active' : ''}`}
                 title={collapsed ? item.label : undefined}
               >
-                <span className="text-lg">{item.icon}</span>
-                {!collapsed && <span className="ml-3">{item.label}</span>}
+                <div className="flex items-center flex-1">
+                  <span className="text-lg">{item.icon}</span>
+                  {!collapsed && <span className="ml-3">{item.label}</span>}
+                </div>
+                {/* Badge for Approval Center */}
+                {!collapsed && item.path === '/approvals' && pendingApprovalsCount > 0 && (
+                  <span className="px-2 py-1 text-xs font-bold text-white bg-red-500 rounded-full">
+                    {pendingApprovalsCount}
+                  </span>
+                )}
               </Link>
             ))}
           </div>

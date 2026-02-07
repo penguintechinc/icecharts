@@ -22,6 +22,7 @@ from .elder import elder_v1_bp
 from .groups import groups_v1_bp
 from .health import health_v1_bp
 from .libraries import libraries_v1_bp
+from .playbook_approvals import playbook_approvals_bp
 from .playbook_hooks import playbook_hooks_v1_bp
 from .playbooks import playbooks_v1_bp
 from .profile import profile_v1_bp
@@ -35,6 +36,7 @@ from .iceruns import iceruns_v1_bp
 from .iceruns_executions import iceruns_executions_v1_bp
 from .iceruns_hooks import iceruns_hooks_v1_bp
 from .iceflows import iceflows_v1_bp
+from .iceflows_credentials import iceflows_credentials_v1_bp
 from .iceflows_stages import iceflows_stages_bp
 from .iceflows_promotions import iceflows_promotions_bp
 from .iceflows_hooks import iceflows_hooks_bp
@@ -62,11 +64,13 @@ api_v1_bp.register_blueprint(admin_sso_v1_bp)
 api_v1_bp.register_blueprint(admin_license_v1_bp)
 api_v1_bp.register_blueprint(service_accounts_v1_bp)
 api_v1_bp.register_blueprint(playbooks_v1_bp)
+api_v1_bp.register_blueprint(playbook_approvals_bp)
 api_v1_bp.register_blueprint(playbook_hooks_v1_bp)
 api_v1_bp.register_blueprint(iceruns_v1_bp)
 api_v1_bp.register_blueprint(iceruns_executions_v1_bp)
 api_v1_bp.register_blueprint(iceruns_hooks_v1_bp)
 api_v1_bp.register_blueprint(iceflows_v1_bp)
+api_v1_bp.register_blueprint(iceflows_credentials_v1_bp)
 api_v1_bp.register_blueprint(iceflows_stages_bp)
 api_v1_bp.register_blueprint(iceflows_promotions_bp)
 api_v1_bp.register_blueprint(iceflows_hooks_bp)

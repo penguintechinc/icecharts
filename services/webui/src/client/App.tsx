@@ -22,6 +22,8 @@ import IceFlowDetail from './pages/iceflows/IceFlowDetail';
 import IceFlowEditor from './pages/iceflows/IceFlowEditor';
 import IceFlowPromotions from './pages/iceflows/IceFlowPromotions';
 import MyApprovals from './pages/iceflows/MyApprovals';
+// Approvals pages
+import ApprovalCenter from './pages/approvals/ApprovalCenter';
 // IceRuns pages
 import IceRunsList from './pages/iceruns/IceRunsList';
 import IceRunCreate from './pages/iceruns/IceRunCreate';
@@ -145,6 +147,24 @@ function App() {
           element={
             <RoleGuard allowedRoles={['admin', 'maintainer']}>
               <MyApprovals />
+            </RoleGuard>
+          }
+        />
+        <Route
+          path="/iceflows/my-approvals"
+          element={
+            <RoleGuard allowedRoles={['admin', 'maintainer']}>
+              <MyApprovals />
+            </RoleGuard>
+          }
+        />
+
+        {/* Unified Approval Center - Maintainer and Admin */}
+        <Route
+          path="/approvals"
+          element={
+            <RoleGuard allowedRoles={['admin', 'maintainer']}>
+              <ApprovalCenter />
             </RoleGuard>
           }
         />

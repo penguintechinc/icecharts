@@ -64,6 +64,10 @@ def define_all_tables(db):
     40. iceflows_webhooks - Registered git webhooks
     41. iceflows_notifications - Notification channel configs
     42. iceflows_notification_log - Sent notification history
+
+    IceStreams Approval Tables (v1.6.0 - Human Approval Gates):
+    43. playbook_approval_gates - Approval gate node configurations
+    44. playbook_execution_approvals - Approval decisions for paused executions
     """
 
     # ==========================================
@@ -1178,6 +1182,7 @@ def define_all_tables(db):
                 [
                     "pending",
                     "running",
+                    "paused_for_approval",
                     "completed",
                     "failed",
                     "cancelled",
@@ -1680,6 +1685,71 @@ def define_all_tables(db):
     )
 
     # ==========================================
+    # IceStreams/Playbook Approval Gates (v1.6.0 - Human Approval System)
+    # ==========================================
+
+    # Playbook approval gates (human approval nodes in workflows)
+    db.define_table(
+        "playbook_approval_gates",
+        Field("gate_id", "string", length=36, unique=True, notnull=True),  # UUID
+        Field("playbook_id", "reference playbooks", notnull=True, ondelete="CASCADE"),
+        Field("node_id", "string", length=255, notnull=True),  # ReactFlow node ID
+        Field("name", "string", length=255, notnull=True, requires=IS_NOT_EMPTY()),
+        Field("description", "text"),
+        Field("require_approval", "boolean", default=True, notnull=True),
+        Field("min_approvers", "integer", default=1),  # Minimum approvals required
+        Field("approvers", "list:reference identities"),  # List of user IDs who can approve
+        Field("approver_groups", "list:reference groups"),  # List of group IDs
+        Field("timeout_minutes", "integer"),  # Auto-reject after timeout (optional)
+        Field("is_enabled", "boolean", default=True, notnull=True),
+        Field(
+            "created_at",
+            "datetime",
+            default=lambda: datetime.datetime.now(datetime.timezone.utc),
+        ),
+        Field(
+            "updated_at",
+            "datetime",
+            update=lambda: datetime.datetime.now(datetime.timezone.utc),
+        ),
+        migrate=True,
+    )
+
+    # Playbook execution approvals (individual approval decisions)
+    db.define_table(
+        "playbook_execution_approvals",
+        Field("approval_id", "string", length=36, unique=True, notnull=True),  # UUID
+        Field(
+            "execution_id",
+            "string",
+            length=100,
+            notnull=True,
+        ),  # FK to playbook_executions.execution_id
+        Field(
+            "gate_id",
+            "reference playbook_approval_gates",
+            notnull=True,
+            ondelete="CASCADE",
+        ),
+        Field("approver_id", "reference identities", notnull=True, ondelete="CASCADE"),
+        Field(
+            "decision",
+            "string",
+            length=50,
+            notnull=True,
+            requires=IS_IN_SET(["approve", "reject"]),
+        ),
+        Field("comment", "text"),
+        Field(
+            "created_at",
+            "datetime",
+            default=lambda: datetime.datetime.now(datetime.timezone.utc),
+            notnull=True,
+        ),
+        migrate=True,
+    )
+
+    # ==========================================
     # IceRuns Indexes for Performance Optimization
     # ==========================================
     # Note: Indexes are created via safe_create_index helper which uses
@@ -1715,6 +1785,11 @@ def define_all_tables(db):
         ),
         Field("repository_name", "string", length=255),
         Field("default_branch", "string", length=255, default="main"),
+        Field(
+            "credential_id",
+            "reference iceflows_credentials",
+            ondelete="SET NULL",
+        ),  # Git provider access token
         Field("gitops_enabled", "boolean", default=False),
         Field("gitops_repo_url", "string", length=1024),
         Field("gitops_branch", "string", length=255, default="main"),
@@ -1730,6 +1805,46 @@ def define_all_tables(db):
         Field("is_enabled", "boolean", default=True),
         Field("created_by_id", "reference identities", notnull=True, ondelete="CASCADE"),
         Field("tags", "list:string"),
+        Field(
+            "created_at",
+            "datetime",
+            default=lambda: datetime.datetime.now(datetime.timezone.utc),
+        ),
+        Field(
+            "updated_at",
+            "datetime",
+            update=lambda: datetime.datetime.now(datetime.timezone.utc),
+        ),
+        migrate=True,
+    )
+
+    # IceFlows credentials (secure Git provider tokens)
+    db.define_table(
+        "iceflows_credentials",
+        Field(
+            "tenant_id",
+            "reference tenants",
+            default=1,
+            notnull=True,
+            ondelete="CASCADE",
+        ),
+        Field("credential_id", "string", length=36, unique=True, notnull=True),  # UUID
+        Field("name", "string", length=255, notnull=True, requires=IS_NOT_EMPTY()),
+        Field("description", "text"),
+        Field(
+            "provider",
+            "string",
+            length=50,
+            notnull=True,
+            requires=IS_IN_SET(["github", "gitlab"]),
+        ),
+        Field("access_token", "password", length=512, notnull=True),  # Encrypted
+        Field("token_type", "string", length=50, default="personal"),  # personal, oauth, app
+        Field("scopes", "list:string"),  # Token permissions/scopes
+        Field("expires_at", "datetime"),  # Token expiration (optional)
+        Field("is_active", "boolean", default=True),
+        Field("created_by_id", "reference identities", notnull=True, ondelete="CASCADE"),
+        Field("last_used_at", "datetime"),
         Field(
             "created_at",
             "datetime",
