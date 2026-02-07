@@ -109,9 +109,16 @@ def get_my_approvals():
                 "playbook_name": playbook.name,
                 "gate_id": gate.gate_id if gate else None,
                 "gate_name": gate.name if gate else "Unknown Gate",
-                "requested_by": requester.username if requester else execution.triggered_by or "Unknown",
-                "requested_at": execution.created_at.isoformat() if execution.created_at else None,
-                "paused_at": execution.started_at.isoformat() if execution.started_at else None,
+                "requested_by": (
+                    requester.username if requester
+                    else execution.triggered_by or "Unknown"
+                ),
+                "requested_at": (
+                    execution.created_at.isoformat() if execution.created_at else None
+                ),
+                "paused_at": (
+                    execution.started_at.isoformat() if execution.started_at else None
+                ),
             })
 
         return (
@@ -400,7 +407,7 @@ def get_approval_status(execution_id: str):
         JSON with approval status and decisions
     """
     try:
-        user = get_current_user()
+        get_current_user()  # Verify authentication
         db = get_db()
 
         # Find execution
@@ -534,7 +541,7 @@ def create_approval_gate(playbook_id: str):
         JSON with created gate
     """
     try:
-        user = get_current_user()
+        get_current_user()  # Verify authentication
         db = get_db()
         data = request.get_json() or {}
 
