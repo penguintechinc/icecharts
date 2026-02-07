@@ -1,5 +1,5 @@
 import { Routes, Route, Navigate } from 'react-router-dom';
-import { AppConsoleVersion } from '@penguin/react_libs';
+import { AppConsoleVersion } from '@penguintechinc/react-libs';
 import { useAuth } from './hooks/useAuth';
 import Layout from './components/Layout';
 import ProtectedRoute from './components/ProtectedRoute';
