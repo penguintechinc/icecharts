@@ -375,7 +375,9 @@ with open('$orig_package', 'w') as f:
     sed 's/npm ci/npm install/g' "$PROJECT_ROOT/services/webui/Dockerfile.static" > "$docker_file_tmp"
 
     # Build web image (defaults in Dockerfile.static are production-ready)
+    # Pass GitHub token for @penguintechinc package access
     if ! docker build \
+        --build-arg GITHUB_TOKEN="${GITHUB_TOKEN:-$(gh auth token 2>/dev/null)}" \
         -t "$IMAGE_REGISTRY/icecharts-web:$IMAGE_TAG" \
         -t "$IMAGE_REGISTRY/icecharts-web:beta" \
         -f "$docker_file_tmp" \

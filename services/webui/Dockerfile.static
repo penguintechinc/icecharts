@@ -12,8 +12,16 @@ ENV VITE_API_URL=$VITE_API_URL
 ENV VITE_API_BASE_PATH=$VITE_API_BASE_PATH
 ENV VITE_WS_URL=$VITE_WS_URL
 
-# Copy package files
+# GitHub token for private package access
+ARG GITHUB_TOKEN
+RUN if [ -n "$GITHUB_TOKEN" ]; then \
+      echo "@penguintechinc:registry=https://npm.pkg.github.com" > .npmrc && \
+      echo "//npm.pkg.github.com/:_authToken=${GITHUB_TOKEN}" >> .npmrc; \
+    fi
+
+# Copy package files and .npmrc if it exists
 COPY package*.json ./
+COPY .npmrc* ./ 2>/dev/null || true
 
 # Install dependencies
 RUN npm ci
