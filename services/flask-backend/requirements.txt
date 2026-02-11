@@ -67,7 +67,7 @@ python-dateutil==2.9.0.post0
 pytz==2024.2
 
 # Image Processing
-Pillow==12.0.0
+Pillow==12.1.1
 # weasyprint==61.2  # Optional: commented out due to heavy system dependencies (gobject-2.0, pango, etc.)
 
 # Cloud Storage (optional)
