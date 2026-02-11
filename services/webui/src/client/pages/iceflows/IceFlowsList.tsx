@@ -10,39 +10,50 @@
 
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
+import apiClient from '../../lib/api';
 
 interface IceFlow {
   flow_id: string;
   name: string;
   description: string;
   repository_url: string;
-  provider: 'github' | 'gitlab';
+  repository_provider: 'github' | 'gitlab';
   default_branch: string;
   status: 'active' | 'paused' | 'draft';
   gitops_enabled: boolean;
-  stages_count: number;
-  last_promotion_at: string | null;
+  stage_count?: number;
+  last_promotion_at?: string | null;
   created_at: string;
 }
 
 export const IceFlowsList: React.FC = () => {
   const navigate = useNavigate();
-  const [flows, _setFlows] = useState<IceFlow[]>([]);
+  const [flows, setFlows] = useState<IceFlow[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
   const [providerFilter, setProviderFilter] = useState('all');
 
   useEffect(() => {
-    // TODO: Fetch flows from API
-    setLoading(false);
+    const fetchFlows = async () => {
+      try {
+        const response = await apiClient.get('/v1/iceflows');
+        setFlows(response.data.flows || []);
+      } catch (error) {
+        console.error('Error fetching flows:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchFlows();
   }, []);
 
   const filteredFlows = flows.filter((flow) => {
     const matchesSearch = flow.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
                          flow.repository_url.toLowerCase().includes(searchTerm.toLowerCase());
     const matchesStatus = statusFilter === 'all' || flow.status === statusFilter;
-    const matchesProvider = providerFilter === 'all' || flow.provider === providerFilter;
+    const matchesProvider = providerFilter === 'all' || flow.repository_provider === providerFilter;
     return matchesSearch && matchesStatus && matchesProvider;
   });
 
@@ -140,10 +151,10 @@ export const IceFlowsList: React.FC = () => {
                   <td className="px-6 py-4">
                     <div className="flex items-center space-x-2">
                       <span className={`px-2 py-1 rounded text-xs font-medium ${
-                        flow.provider === 'github' ? 'bg-gray-500/20 text-gray-300' :
+                        flow.repository_provider === 'github' ? 'bg-gray-500/20 text-gray-300' :
                         'bg-orange-500/20 text-orange-400'
                       }`}>
-                        {flow.provider}
+                        {flow.repository_provider}
                       </span>
                       <a
                         href={flow.repository_url}
@@ -156,7 +167,7 @@ export const IceFlowsList: React.FC = () => {
                       </a>
                     </div>
                   </td>
-                  <td className="px-6 py-4 text-white">{flow.stages_count}</td>
+                  <td className="px-6 py-4 text-white">{flow.stage_count || 0}</td>
                   <td className="px-6 py-4">
                     <span className={`px-2 py-1 rounded text-xs font-medium ${
                       flow.status === 'active' ? 'bg-green-500/20 text-green-400' :
@@ -186,9 +197,18 @@ export const IceFlowsList: React.FC = () => {
                     </Link>
                     <button
                       className="text-red-400 hover:text-red-300"
-                      onClick={(e) => {
+                      onClick={async (e) => {
                         e.stopPropagation();
-                        // TODO: Delete confirmation
+                        if (window.confirm(`Are you sure you want to delete pipeline "${flow.name}"?`)) {
+                          try {
+                            await apiClient.delete(`/v1/iceflows/${flow.flow_id}`);
+                            // Refresh the list
+                            setFlows(flows.filter(f => f.flow_id !== flow.flow_id));
+                          } catch (error) {
+                            console.error('Error deleting flow:', error);
+                            alert('Failed to delete pipeline');
+                          }
+                        }
                       }}
                     >
                       Delete

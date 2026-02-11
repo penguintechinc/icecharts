@@ -547,7 +547,7 @@ def define_all_tables(db):
         ),
         Field("name", "string", length=255, notnull=True, requires=IS_NOT_EMPTY()),
         Field("description", "text"),
-        Field("created_by_id", "reference identities", notnull=True, ondelete="CASCADE"),
+        Field("owner_id", "reference identities", notnull=True, ondelete="CASCADE"),
         Field("is_public", "boolean", default=False, notnull=True),
         Field(
             "created_at",

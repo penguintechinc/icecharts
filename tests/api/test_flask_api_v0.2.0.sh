@@ -24,6 +24,7 @@ TESTS_FAILED=0
 # Test data storage
 TEST_USER_ID=""
 ACCESS_TOKEN=""
+ADMIN_TOKEN=""
 DRAWING_ID=""
 COLLECTION_ID=""
 COLLECTION_ID_2=""
@@ -208,7 +209,12 @@ test_delete() {
 extract_json_field() {
     local json="$1"
     local field="$2"
-    echo "$json" | grep -o "\"$field\":\"[^\"]*\"" | cut -d'"' -f4 || echo "$json" | grep -o "\"$field\":[0-9]*" | cut -d':' -f2
+    # Try string format first: "field":"value"
+    echo "$json" | grep -o "\"$field\":\"[^\"]*\"" | cut -d'"' -f4 && return 0
+    # Then try number format: "field":123
+    echo "$json" | grep -o "\"$field\":[0-9]*" | cut -d':' -f2 && return 0
+    # If both fail, return empty
+    return 1
 }
 
 # Main Test Suite
@@ -282,6 +288,20 @@ main() {
             else
                 log_warn "Could not extract access token from login response"
             fi
+        fi
+    fi
+
+    # Login as default admin for admin-specific tests
+    log_info "Logging in as admin for admin tests..."
+    admin_login_response=$(test_post "/api/v1/auth/login" \
+        "{\"email\":\"admin@localhost.local\",\"password\":\"admin123\"}" \
+        200 \
+        "POST /api/v1/auth/login - Admin login") || true
+
+    if [ $? -eq 0 ]; then
+        ADMIN_TOKEN=$(extract_json_field "$admin_login_response" "access_token")
+        if [ -n "$ADMIN_TOKEN" ]; then
+            log_info "Successfully obtained admin access token"
         fi
     fi
     echo ""
@@ -430,6 +450,38 @@ main() {
     log_section "Admin Statistics API Tests"
     echo "=== Admin Statistics API Tests ==="
 
+    # Test with admin token (should succeed)
+    if [ -n "$ADMIN_TOKEN" ]; then
+        log_info "Testing admin statistics with admin token (expecting 200)..."
+        test_get "/api/v1/admin/statistics/dashboard?time_range=7d" \
+            200 \
+            "GET /api/v1/admin/statistics/dashboard - Dashboard stats (admin)" \
+            "$ADMIN_TOKEN" > /dev/null || true
+
+        test_get "/api/v1/admin/statistics/top-users?limit=10" \
+            200 \
+            "GET /api/v1/admin/statistics/top-users - Top users (admin)" \
+            "$ADMIN_TOKEN" > /dev/null || true
+
+        test_get "/api/v1/admin/statistics/top-drawings?limit=10" \
+            200 \
+            "GET /api/v1/admin/statistics/top-drawings - Top drawings (admin)" \
+            "$ADMIN_TOKEN" > /dev/null || true
+
+        # Test latency metrics (admin only)
+        test_get "/api/v1/admin/statistics/latency" \
+            200 \
+            "GET /api/v1/admin/statistics/latency - Latency metrics (admin)" \
+            "$ADMIN_TOKEN" > /dev/null || true
+
+        # Test time series (admin only)
+        test_get "/api/v1/admin/statistics/time-series/users?time_range=7d&interval=1h" \
+            200 \
+            "GET /api/v1/admin/statistics/time-series/{metric} - Time series (admin)" \
+            "$ADMIN_TOKEN" > /dev/null || true
+    fi
+
+    # Test with non-admin token (should fail with 403)
     if [ -n "$ACCESS_TOKEN" ]; then
         # These should fail with 403 for non-admin users
         log_info "Testing admin statistics (expecting 403 for non-admin user)..."
@@ -461,7 +513,7 @@ main() {
             "$ACCESS_TOKEN" > /dev/null || true
     fi
 
-    # Test unauthorized access to admin endpoints
+    # Test unauthorized access to admin endpoints (no auth)
     log_info "Testing unauthorized access to admin endpoints..."
     test_get "/api/v1/admin/statistics/dashboard" \
         401 \

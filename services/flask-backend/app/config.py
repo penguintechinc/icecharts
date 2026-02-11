@@ -19,9 +19,9 @@ class Config:
     APP_NAME = "IceCharts"
     APP_VERSION = config("APP_VERSION", default="0.2.0")
 
-    # Database (PyDAL - use individual components or DATABASE_URL)
-    DATABASE_URL = config("DATABASE_URL", default=None)
-    DB_TYPE = config("DB_TYPE", default="postgres")
+    # Database - DB_TYPE drives URI construction
+    # Supported: postgresql, mysql, mariadb, sqlite
+    DB_TYPE = config("DB_TYPE", default="postgresql")
     DB_HOST = config("DB_HOST", default="localhost")
     DB_PORT = config("DB_PORT", default=5432, cast=int)
     DB_NAME = config("DB_NAME", default="icecharts")
@@ -222,7 +222,7 @@ class TestingConfig(Config):
     TESTING = True
     WTF_CSRF_ENABLED = False
     DB_TYPE = "sqlite"
-    DATABASE_URL = "sqlite:memory"
+    DB_NAME = ":memory:"
     DB_POOL_SIZE = 0
     RATELIMIT_ENABLED = False
     JWT_SECRET_KEY = "test-secret-key-for-pytest"

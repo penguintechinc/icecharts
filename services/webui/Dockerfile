@@ -4,6 +4,13 @@ FROM node:20-slim AS dependencies
 
 WORKDIR /app
 
+# GitHub token for private package access
+ARG GITHUB_TOKEN
+RUN if [ -n "$GITHUB_TOKEN" ]; then \
+      echo "@penguintechinc:registry=https://npm.pkg.github.com" > .npmrc && \
+      echo "//npm.pkg.github.com/:_authToken=${GITHUB_TOKEN}" >> .npmrc; \
+    fi
+
 # Copy package files
 COPY package*.json ./
 

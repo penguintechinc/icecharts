@@ -251,7 +251,7 @@ class StatisticsService:
         shares_by_permission = {}
         for row in result:
             permission = row.drawing_shares.permission
-            count = row._extra[f"COUNT(drawing_shares.id)"]
+            count = row._extra.get(f"COUNT(drawing_shares.id)", 0)
             shares_by_permission[permission] = count
 
         # Ensure all permission levels are represented (even if 0)
@@ -285,7 +285,7 @@ class StatisticsService:
         views_by_type = {}
         for row in result:
             share_type = row.share_analytics.share_type
-            count = row._extra[f"COUNT(share_analytics.id)"]
+            count = row._extra.get(f"COUNT(share_analytics.id)", 0)
             views_by_type[share_type] = count
 
         # Ensure both types are represented (even if 0)
@@ -360,7 +360,7 @@ class StatisticsService:
                     "username": row.identities.username,
                     "email": row.identities.email,
                     "full_name": row.identities.full_name or "",
-                    "drawing_count": row._extra[f"COUNT(drawings.id)"],
+                    "drawing_count": row._extra.get(f"COUNT(drawings.id)", 0),
                 }
             )
 
@@ -403,7 +403,7 @@ class StatisticsService:
                     "drawing_id": row.drawings.id,
                     "title": row.drawings.title or "Untitled",
                     "owner_id": row.drawings.created_by_id,
-                    "share_count": row._extra[f"COUNT(drawing_shares.id)"],
+                    "share_count": row._extra.get(f"COUNT(drawing_shares.id)", 0),
                 }
             )
 

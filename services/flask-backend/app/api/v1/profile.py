@@ -210,6 +210,10 @@ def update_preferences():
     if not data:
         return jsonify({"error": "Request body required"}), 400
 
+    # Validate preferences format (must be a dictionary)
+    if not isinstance(data, dict):
+        return jsonify({"error": "Preferences must be a JSON object"}), 400
+
     # Store preferences as JSON
     update_user(user["id"], preferences=data)
 
@@ -276,7 +280,7 @@ def change_password():
 
     user_record = get_user_by_id(user["id"])
     if not verify_password(current_password, user_record["password_hash"]):
-        return jsonify({"error": "Current password is incorrect"}), 401
+        return jsonify({"error": "Current password is incorrect"}), 400
 
     # Update password
     new_password_hash = hash_password(new_password)

@@ -12,6 +12,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
+import apiClient from '../../lib/api';
 
 interface StageFormData {
   stage_id?: string;
@@ -22,12 +23,20 @@ interface StageFormData {
   min_approvers: number;
 }
 
+interface Credential {
+  credential_id: string;
+  name: string;
+  provider: 'github' | 'gitlab';
+  access_token_preview?: string;
+}
+
 interface FlowFormData {
   name: string;
   description: string;
   repository_url: string;
   provider: 'github' | 'gitlab';
   default_branch: string;
+  credential_id: string;
   status: 'active' | 'paused' | 'draft';
   gitops_enabled: boolean;
   gitops_yaml_path: string;
@@ -40,12 +49,21 @@ export const IceFlowEditor: React.FC = () => {
   const isEdit = !!id;
   const [loading, setLoading] = useState(isEdit);
 
+  const [credentials, setCredentials] = useState<Credential[]>([]);
+  const [showCredentialModal, setShowCredentialModal] = useState(false);
+  const [newCredential, setNewCredential] = useState({
+    name: '',
+    provider: 'github' as 'github' | 'gitlab',
+    access_token: '',
+  });
+
   const [formData, setFormData] = useState<FlowFormData>({
     name: '',
     description: '',
     repository_url: '',
     provider: 'github',
     default_branch: 'main',
+    credential_id: '',
     status: 'draft',
     gitops_enabled: false,
     gitops_yaml_path: '.iceflows/pipeline.yaml',
@@ -53,10 +71,44 @@ export const IceFlowEditor: React.FC = () => {
   });
 
   useEffect(() => {
-    if (isEdit) {
-      // TODO: Fetch flow data from API
-      setLoading(false);
-    }
+    const fetchCredentials = async () => {
+      try {
+        const response = await apiClient.get('/v1/iceflows/credentials');
+        setCredentials(response.data.credentials || []);
+      } catch (error) {
+        console.error('Error fetching credentials:', error);
+      }
+    };
+
+    const fetchFlow = async () => {
+      if (isEdit && id) {
+        try {
+          const response = await apiClient.get(`/v1/iceflows/${id}`);
+          const flow = response.data.flow;
+
+          setFormData({
+            name: flow.name,
+            description: flow.description,
+            repository_url: flow.repository_url,
+            provider: flow.repository_provider,
+            default_branch: flow.default_branch,
+            credential_id: flow.credential?.credential_id || '',
+            status: flow.status,
+            gitops_enabled: flow.gitops_enabled,
+            gitops_yaml_path: flow.gitops_path || '.iceflows/pipeline.yaml',
+            stages: flow.stages || [],
+          });
+        } catch (error) {
+          console.error('Error fetching flow:', error);
+          alert('Failed to load pipeline');
+        } finally {
+          setLoading(false);
+        }
+      }
+    };
+
+    fetchCredentials();
+    fetchFlow();
   }, [id, isEdit]);
 
   const handleAddStage = () => {
@@ -107,9 +159,84 @@ export const IceFlowEditor: React.FC = () => {
     setFormData({ ...formData, stages: newStages });
   };
 
+  const handleCreateCredential = async () => {
+    try {
+      if (!newCredential.name || !newCredential.access_token) {
+        alert('Please provide credential name and access token');
+        return;
+      }
+
+      const response = await apiClient.post('/v1/iceflows/credentials', {
+        name: newCredential.name,
+        provider: newCredential.provider,
+        access_token: newCredential.access_token,
+      });
+
+      const createdCredential = response.data.credential;
+      setCredentials([...credentials, createdCredential]);
+      setFormData({ ...formData, credential_id: createdCredential.credential_id });
+      setShowCredentialModal(false);
+      setNewCredential({ name: '', provider: 'github', access_token: '' });
+    } catch (error: any) {
+      console.error('Error creating credential:', error);
+      alert(error.response?.data?.error || 'Failed to create credential');
+    }
+  };
+
   const handleSave = async () => {
-    // TODO: Submit to API
-    navigate(isEdit ? `/iceflows/${id}` : '/iceflows');
+    try {
+      setLoading(true);
+
+      if (isEdit) {
+        // Update existing flow
+        await apiClient.put(`/v1/iceflows/${id}`, {
+          name: formData.name,
+          description: formData.description,
+          repository_url: formData.repository_url,
+          repository_provider: formData.provider,
+          default_branch: formData.default_branch,
+          credential_id: formData.credential_id || null,
+          status: formData.status,
+          gitops_enabled: formData.gitops_enabled,
+          gitops_path: formData.gitops_yaml_path,
+        });
+
+        // TODO: Update stages (requires stage deletion and re-creation)
+        // For now, navigate to detail page where stages can be managed separately
+        navigate(`/iceflows/${id}`);
+      } else {
+        // Create new flow
+        const flowResponse = await apiClient.post('/v1/iceflows', {
+          name: formData.name,
+          description: formData.description,
+          repository_url: formData.repository_url,
+          repository_provider: formData.provider,
+          default_branch: formData.default_branch,
+          credential_id: formData.credential_id || null,
+          status: formData.status,
+          gitops_enabled: formData.gitops_enabled,
+          gitops_path: formData.gitops_yaml_path,
+        });
+
+        const flowId = flowResponse.data.flow.flow_id;
+
+        // Create stages for the new flow
+        for (const stage of formData.stages) {
+          await apiClient.post(`/v1/iceflows/${flowId}/stages`, {
+            branch_name: stage.branch_name,
+            display_name: stage.display_name,
+            is_production: stage.is_production,
+            min_approvers: stage.min_approvers,
+          });
+        }
+
+        navigate(`/iceflows/${flowId}`);
+      }
+    } catch (error: any) {
+      console.error('Error saving pipeline:', error);
+      alert(error.response?.data?.error || 'Failed to save pipeline');
+      setLoading(false);
+    }
   };
 
   if (loading) {
@@ -173,6 +300,39 @@ export const IceFlowEditor: React.FC = () => {
                   <option value="gitlab">GitLab</option>
                 </select>
               </div>
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-ice-navy-300 mb-2">Access Credentials</label>
+              <div className="flex gap-2">
+                <select
+                  value={formData.credential_id}
+                  onChange={(e) => setFormData({ ...formData, credential_id: e.target.value })}
+                  className="flex-1 px-4 py-2 bg-ice-navy-700 text-white rounded-lg border border-ice-navy-600 focus:outline-none focus:border-purple-500"
+                >
+                  <option value="">Select credential (optional)</option>
+                  {credentials
+                    .filter(c => c.provider === formData.provider)
+                    .map((cred) => (
+                      <option key={cred.credential_id} value={cred.credential_id}>
+                        {cred.name} ({cred.access_token_preview})
+                      </option>
+                    ))}
+                </select>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setNewCredential({ ...newCredential, provider: formData.provider });
+                    setShowCredentialModal(true);
+                  }}
+                  className="px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg"
+                >
+                  + New
+                </button>
+              </div>
+              <p className="text-xs text-ice-navy-400 mt-1">
+                Credentials are required for IceFlows to interact with {formData.provider === 'github' ? 'GitHub' : 'GitLab'} (create PRs, merge, etc.)
+              </p>
             </div>
 
             <div className="grid grid-cols-2 gap-4">
@@ -346,6 +506,74 @@ export const IceFlowEditor: React.FC = () => {
           </button>
         </div>
       </div>
+
+      {/* Credential Creation Modal */}
+      {showCredentialModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-ice-navy-800 rounded-lg p-6 max-w-md w-full mx-4">
+            <h2 className="text-2xl font-bold text-white mb-4">Create New Credential</h2>
+
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-ice-navy-300 mb-2">Credential Name</label>
+                <input
+                  type="text"
+                  value={newCredential.name}
+                  onChange={(e) => setNewCredential({ ...newCredential, name: e.target.value })}
+                  className="w-full px-4 py-2 bg-ice-navy-700 text-white rounded-lg border border-ice-navy-600 focus:outline-none focus:border-purple-500"
+                  placeholder="My GitHub Token"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-ice-navy-300 mb-2">Provider</label>
+                <select
+                  value={newCredential.provider}
+                  onChange={(e) => setNewCredential({ ...newCredential, provider: e.target.value as 'github' | 'gitlab' })}
+                  className="w-full px-4 py-2 bg-ice-navy-700 text-white rounded-lg border border-ice-navy-600 focus:outline-none focus:border-purple-500"
+                >
+                  <option value="github">GitHub</option>
+                  <option value="gitlab">GitLab</option>
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-ice-navy-300 mb-2">Access Token</label>
+                <input
+                  type="password"
+                  value={newCredential.access_token}
+                  onChange={(e) => setNewCredential({ ...newCredential, access_token: e.target.value })}
+                  className="w-full px-4 py-2 bg-ice-navy-700 text-white rounded-lg border border-ice-navy-600 focus:outline-none focus:border-purple-500"
+                  placeholder="ghp_..."
+                />
+                <p className="text-xs text-ice-navy-400 mt-1">
+                  {newCredential.provider === 'github'
+                    ? 'Create a Personal Access Token at: Settings → Developer settings → Personal access tokens'
+                    : 'Create an Access Token at: Settings → Access Tokens'}
+                </p>
+              </div>
+            </div>
+
+            <div className="flex justify-end space-x-3 mt-6">
+              <button
+                onClick={() => {
+                  setShowCredentialModal(false);
+                  setNewCredential({ name: '', provider: 'github', access_token: '' });
+                }}
+                className="px-4 py-2 bg-ice-navy-700 text-white rounded-lg hover:bg-ice-navy-600"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleCreateCredential}
+                className="px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg"
+              >
+                Create Credential
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

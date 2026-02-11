@@ -334,95 +334,59 @@ build_and_push_images() {
         log_info "Generated build tag with epoch: $IMAGE_TAG"
     fi
 
-    # Web image
-    log_info "Building web image: $IMAGE_REGISTRY/icecharts-web:$IMAGE_TAG"
+    # Build web image if no service specified or service is 'web'
+    if [ -z "$SERVICE" ] || [ "$SERVICE" = "web" ]; then
+        log_info "Building web image: $IMAGE_REGISTRY/icecharts-web:$IMAGE_TAG"
 
-    # Copy react_libs into webui context temporarily
-    cp -r "$PROJECT_ROOT/shared/react_libs" "$PROJECT_ROOT/services/webui/_react_libs_build" || {
-        log_error "Failed to copy react_libs"
-        return 1
-    }
-
-    # Modify package.json temporarily to use local react_libs path
-    local orig_package="$PROJECT_ROOT/services/webui/package.json"
-    cp "$orig_package" "$orig_package.bak"
-
-    python3 -c "
-import json
-with open('$orig_package', 'r') as f:
-    data = json.load(f)
-if '@penguin/react_libs' in data.get('dependencies', {}):
-    data['dependencies']['@penguin/react_libs'] = 'file:./_react_libs_build'
-with open('$orig_package', 'w') as f:
-    json.dump(data, f, indent=2)
-" || {
-        log_error "Failed to update package.json"
-        mv "$orig_package.bak" "$orig_package"
-        rm -rf "$PROJECT_ROOT/services/webui/_react_libs_build"
-        return 1
-    }
-
-    # Regenerate lock file
-    cd "$PROJECT_ROOT/services/webui" || return 1
-    rm -f package-lock.json
-    if ! npm install 2>&1 | tail -3; then
-        log_warn "npm install may have warnings (proceeding)"
-    fi
-    cd "$PROJECT_ROOT" || return 1
-
-    # Build web image (using sed to replace npm ci with npm install for dependency resolution)
-    local docker_file_tmp="$PROJECT_ROOT/services/webui/Dockerfile.static.tmp"
-    sed 's/npm ci/npm install/g' "$PROJECT_ROOT/services/webui/Dockerfile.static" > "$docker_file_tmp"
-
-    # Build web image (defaults in Dockerfile.static are production-ready)
-    # Pass GitHub token for @penguintechinc package access
-    if ! docker build \
-        --build-arg GITHUB_TOKEN="${GITHUB_TOKEN:-$(gh auth token 2>/dev/null)}" \
-        -t "$IMAGE_REGISTRY/icecharts-web:$IMAGE_TAG" \
-        -t "$IMAGE_REGISTRY/icecharts-web:beta" \
-        -f "$docker_file_tmp" \
-        "$PROJECT_ROOT/services/webui" 2>&1 | tail -5 | grep -E "Successfully tagged|Error|error"; then
-        log_error "Web image build failed"
-        mv "$orig_package.bak" "$orig_package"
-        rm -rf "$PROJECT_ROOT/services/webui/_react_libs_build" "$docker_file_tmp"
-        return 1
+        # Build web image with GitHub token for @penguintechinc package access
+        # Dockerfile.static defaults are production-ready (empty VITE_API_URL for relative paths)
+        if ! docker build \
+            --build-arg GITHUB_TOKEN="${GITHUB_TOKEN:-$(gh auth token 2>/dev/null)}" \
+            -t "$IMAGE_REGISTRY/icecharts-web:$IMAGE_TAG" \
+            -t "$IMAGE_REGISTRY/icecharts-web:beta" \
+            -f "$PROJECT_ROOT/services/webui/Dockerfile.static" \
+            "$PROJECT_ROOT/services/webui" 2>&1 | tail -20 | grep -E "Successfully tagged|writing image sha256|Error|error"; then
+            log_error "Web image build failed"
+            return 1
+        fi
     fi
 
-    rm -f "$docker_file_tmp"
-
-    # Restore package.json
-    mv "$orig_package.bak" "$orig_package"
-    rm -rf "$PROJECT_ROOT/services/webui/_react_libs_build"
-
-    # API image
-    log_info "Building API image: $IMAGE_REGISTRY/icecharts-api:$IMAGE_TAG"
-    if ! docker build \
-        -t "$IMAGE_REGISTRY/icecharts-api:$IMAGE_TAG" \
-        -t "$IMAGE_REGISTRY/icecharts-api:beta" \
-        -f "$PROJECT_ROOT/services/flask-backend/Dockerfile" \
-        "$PROJECT_ROOT" 2>&1 | grep -E "Successfully tagged|Error|error"; then
-        log_error "API image build failed"
-        return 1
+    # Build API image if no service specified or service is 'api'
+    if [ -z "$SERVICE" ] || [ "$SERVICE" = "api" ]; then
+        log_info "Building API image: $IMAGE_REGISTRY/icecharts-api:$IMAGE_TAG"
+        if ! docker build \
+            -t "$IMAGE_REGISTRY/icecharts-api:$IMAGE_TAG" \
+            -t "$IMAGE_REGISTRY/icecharts-api:beta" \
+            -f "$PROJECT_ROOT/services/flask-backend/Dockerfile" \
+            "$PROJECT_ROOT" 2>&1 | grep -E "Successfully tagged|Error|error"; then
+            log_error "API image build failed"
+            return 1
+        fi
     fi
 
     # Push images
     log_info "Pushing images to registry"
-    if ! docker push "$IMAGE_REGISTRY/icecharts-web:$IMAGE_TAG" 2>&1 | tail -3; then
-        log_error "Failed to push web image"
-        return 1
-    fi
-    if ! docker push "$IMAGE_REGISTRY/icecharts-web:beta" 2>&1 | tail -3; then
-        log_error "Failed to push web:beta tag"
-        return 1
+
+    if [ -z "$SERVICE" ] || [ "$SERVICE" = "web" ]; then
+        if ! docker push "$IMAGE_REGISTRY/icecharts-web:$IMAGE_TAG" 2>&1 | tail -3; then
+            log_error "Failed to push web image"
+            return 1
+        fi
+        if ! docker push "$IMAGE_REGISTRY/icecharts-web:beta" 2>&1 | tail -3; then
+            log_error "Failed to push web:beta tag"
+            return 1
+        fi
     fi
 
-    if ! docker push "$IMAGE_REGISTRY/icecharts-api:$IMAGE_TAG" 2>&1 | tail -3; then
-        log_error "Failed to push API image"
-        return 1
-    fi
-    if ! docker push "$IMAGE_REGISTRY/icecharts-api:beta" 2>&1 | tail -3; then
-        log_error "Failed to push api:beta tag"
-        return 1
+    if [ -z "$SERVICE" ] || [ "$SERVICE" = "api" ]; then
+        if ! docker push "$IMAGE_REGISTRY/icecharts-api:$IMAGE_TAG" 2>&1 | tail -3; then
+            log_error "Failed to push API image"
+            return 1
+        fi
+        if ! docker push "$IMAGE_REGISTRY/icecharts-api:beta" 2>&1 | tail -3; then
+            log_error "Failed to push api:beta tag"
+            return 1
+        fi
     fi
 
     log_info "Images built and pushed successfully: $IMAGE_TAG (and beta tag)"

@@ -10,7 +10,8 @@
  */
 
 import React, { useState, useEffect } from 'react';
-import { Link, useParams, useNavigate } from 'react-router-dom';
+import { Link, useParams } from 'react-router-dom';
+import apiClient from '../../lib/api';
 
 interface IceFlowStage {
   stage_id: string;
@@ -37,17 +38,37 @@ interface IceFlow {
 
 export const IceFlowDetail: React.FC = () => {
   const { id } = useParams<{ id: string }>();
-  const navigate = useNavigate();
-  void navigate; // Will be used for navigation
   const [activeTab, setActiveTab] = useState('stages');
   const [flowData, setFlowData] = useState<IceFlow | null>(null);
-  void setFlowData; // Will be used when API is connected
   const [selectedStage, setSelectedStage] = useState<IceFlowStage | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // TODO: Fetch flow details from API
-    setLoading(false);
+    const fetchFlow = async () => {
+      if (!id) return;
+
+      try {
+        const response = await apiClient.get(`/v1/iceflows/${id}`);
+        const flow = response.data.flow;
+
+        setFlowData({
+          flow_id: flow.flow_id,
+          name: flow.name,
+          description: flow.description,
+          repository_url: flow.repository_url,
+          provider: flow.repository_provider,
+          status: flow.status,
+          gitops_enabled: flow.gitops_enabled,
+          stages: flow.stages || [],
+        });
+      } catch (error) {
+        console.error('Error fetching flow:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchFlow();
   }, [id]);
 
   const handleExportYaml = async () => {

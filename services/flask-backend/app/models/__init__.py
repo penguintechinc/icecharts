@@ -14,21 +14,35 @@ logger = structlog.get_logger()
 # Thread-local storage for PyDAL database connections
 _thread_local = local()
 
-# Valid PyDAL DB_TYPE values for input validation
-VALID_DB_TYPES = {
-    "postgres",
-    "postgresql",
-    "mysql",
-    "sqlite",
-    "mssql",
-    "oracle",
-    "db2",
-    "firebird",
-    "informix",
-    "ingres",
-    "cubrid",
-    "sapdb",
+# Supported DB_TYPE values and their PyDAL URI scheme mappings
+# DB_TYPE env accepts user-friendly names; PyDAL needs specific scheme prefixes
+DB_TYPE_TO_PYDAL_SCHEME = {
+    # Primary supported
+    "postgresql": "postgres",
+    "postgres": "postgres",
+    "mysql": "mysql",
+    "mariadb": "mysql",  # MariaDB Galera uses MySQL protocol
+    "sqlite": "sqlite",
+    # Enterprise SQL
+    "mssql": "mssql",
+    "oracle": "oracle",
+    "db2": "db2",
+    "firebird": "firebird",
+    "sapdb": "sapdb",
+    "informix": "informix",
+    "ingres": "ingres",
+    "teradata": "teradata",
+    "vertica": "vertica",
+    "sybase": "sybase",
+    "cubrid": "cubrid",
+    # NoSQL
+    "mongodb": "mongodb",
+    "couchdb": "couchdb",
+    "firestore": "google:datastore",
+    # Data Warehouses
+    "snowflake": "snowflake",
 }
+VALID_DB_TYPES = set(DB_TYPE_TO_PYDAL_SCHEME.keys())
 
 
 def _initialize_default_settings(db) -> None:
@@ -136,25 +150,27 @@ def get_db_uri(config) -> str:
     Raises:
         ValueError: If DB_TYPE is invalid
     """
-    # Use DATABASE_URL if provided
-    if config.DATABASE_URL:
-        return config.DATABASE_URL
-
     # Validate DB_TYPE
     db_type = config.DB_TYPE.lower()
     if db_type not in VALID_DB_TYPES:
         raise ValueError(
-            f"Invalid DB_TYPE: {db_type}. Must be one of: {VALID_DB_TYPES}"
+            f"Invalid DB_TYPE: {db_type}. "
+            f"Must be one of: {sorted(VALID_DB_TYPES)}"
         )
 
+    # Map to PyDAL scheme
+    pydal_scheme = DB_TYPE_TO_PYDAL_SCHEME[db_type]
+
     # Build URI from components
-    if db_type == "sqlite":
-        db_path = config.DB_NAME if config.DB_NAME != ":memory:" else ":memory:"
+    if pydal_scheme == "sqlite":
+        db_path = (
+            config.DB_NAME if config.DB_NAME != ":memory:" else ":memory:"
+        )
         return f"sqlite://{db_path}"
 
-    # For other databases, build full connection string
+    # For network databases, build full connection string
     return (
-        f"{db_type}://{config.DB_USER}:{config.DB_PASSWORD}@"
+        f"{pydal_scheme}://{config.DB_USER}:{config.DB_PASSWORD}@"
         f"{config.DB_HOST}:{config.DB_PORT}/{config.DB_NAME}"
     )
 

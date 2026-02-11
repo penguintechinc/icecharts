@@ -87,12 +87,12 @@ def list_comments(drawing_id: int):
 
     # Get comments with user details
     comments = db(
-        (db.comments.drawing_id == drawing_id) & (db.comments.user_id == db.users.id)
+        (db.comments.drawing_id == drawing_id) & (db.comments.author_id == db.identities.id)
     ).select(
         db.comments.ALL,
-        db.users.id,
-        db.users.email,
-        db.users.full_name,
+        db.identities.id,
+        db.identities.email,
+        db.identities.full_name,
         orderby=db.comments.created_at,
     )
 
@@ -101,7 +101,7 @@ def list_comments(drawing_id: int):
         comment_list.append(
             {
                 "id": c.comments.id,
-                "content": c.comments.content,
+                "content": c.comments.comment_text,
                 "x_position": c.comments.x_position,
                 "y_position": c.comments.y_position,
                 "is_resolved": c.comments.is_resolved,
@@ -118,9 +118,9 @@ def list_comments(drawing_id: int):
                     c.comments.updated_at.isoformat() if c.comments.updated_at else None
                 ),
                 "user": {
-                    "id": c.users.id,
-                    "email": c.users.email,
-                    "full_name": c.users.full_name,
+                    "id": c.identities.id,
+                    "email": c.identities.email,
+                    "full_name": c.identities.full_name,
                 },
             }
         )
@@ -167,8 +167,8 @@ def create_comment(drawing_id: int):
     # Create comment
     comment_id = db.comments.insert(
         drawing_id=drawing_id,
-        user_id=user["id"],
-        content=content,
+        author_id=user["id"],
+        comment_text=content,
         x_position=x_position,
         y_position=y_position,
         is_resolved=False,
@@ -232,7 +232,7 @@ def update_comment(drawing_id: int, comment_id: int):
         return jsonify({"error": "Comment not found"}), 404
 
     # Only comment author can update
-    if comment["user_id"] != user["id"]:
+    if comment["author_id"] != user["id"]:
         return jsonify({"error": "You can only edit your own comments"}), 403
 
     content = data.get("content", "").strip()
@@ -243,7 +243,7 @@ def update_comment(drawing_id: int, comment_id: int):
 
     # Update comment
     db(db.comments.id == comment_id).update(
-        content=content,
+        comment_text=content,
         updated_at=datetime.utcnow(),
     )
     db.commit()
@@ -280,7 +280,7 @@ def delete_comment(drawing_id: int, comment_id: int):
         return jsonify({"error": "Comment not found"}), 404
 
     # Only comment author or drawing owner can delete
-    if comment["user_id"] != user["id"] and drawing["owner_id"] != user["id"]:
+    if comment["author_id"] != user["id"] and drawing["owner_id"] != user["id"]:
         return jsonify({"error": "Insufficient permissions"}), 403
 
     db = get_db()
@@ -375,12 +375,12 @@ def list_comment_replies(drawing_id: int, comment_id: int):
     # Get replies
     replies = db(
         (db.comment_replies.comment_id == comment_id)
-        & (db.comment_replies.user_id == db.users.id)
+        & (db.comment_replies.author_id == db.identities.id)
     ).select(
         db.comment_replies.ALL,
-        db.users.id,
-        db.users.email,
-        db.users.full_name,
+        db.identities.id,
+        db.identities.email,
+        db.identities.full_name,
         orderby=db.comment_replies.created_at,
     )
 
@@ -389,16 +389,16 @@ def list_comment_replies(drawing_id: int, comment_id: int):
         reply_list.append(
             {
                 "id": r.comment_replies.id,
-                "content": r.comment_replies.content,
+                "content": r.comment_replies.reply_text,
                 "created_at": (
                     r.comment_replies.created_at.isoformat()
                     if r.comment_replies.created_at
                     else None
                 ),
                 "user": {
-                    "id": r.users.id,
-                    "email": r.users.email,
-                    "full_name": r.users.full_name,
+                    "id": r.identities.id,
+                    "email": r.identities.email,
+                    "full_name": r.identities.full_name,
                 },
             }
         )
@@ -447,8 +447,8 @@ def create_comment_reply(drawing_id: int, comment_id: int):
     # Create reply
     reply_id = db.comment_replies.insert(
         comment_id=comment_id,
-        user_id=user["id"],
-        content=content,
+        author_id=user["id"],
+        reply_text=content,
     )
     db.commit()
 

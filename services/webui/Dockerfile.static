@@ -19,9 +19,8 @@ RUN if [ -n "$GITHUB_TOKEN" ]; then \
       echo "//npm.pkg.github.com/:_authToken=${GITHUB_TOKEN}" >> .npmrc; \
     fi
 
-# Copy package files and .npmrc if it exists
+# Copy package files
 COPY package*.json ./
-COPY .npmrc* ./ 2>/dev/null || true
 
 # Install dependencies
 RUN npm ci

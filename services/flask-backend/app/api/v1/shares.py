@@ -65,12 +65,12 @@ def list_shares(drawing_id: int):
     # Get user shares
     user_shares = db(
         (db.drawing_shares.drawing_id == drawing_id)
-        & (db.drawing_shares.user_id == db.users.id)
+        & (db.drawing_shares.user_id == db.identities.id)
     ).select(
         db.drawing_shares.ALL,
-        db.users.id,
-        db.users.email,
-        db.users.full_name,
+        db.identities.id,
+        db.identities.email,
+        db.identities.full_name,
     )
 
     # Get group shares
@@ -99,9 +99,9 @@ def list_shares(drawing_id: int):
         shares["user_shares"].append(
             {
                 "id": s.drawing_shares.id,
-                "user_id": s.users.id,
-                "email": s.users.email,
-                "full_name": s.users.full_name,
+                "user_id": s.identities.id,
+                "email": s.identities.email,
+                "full_name": s.identities.full_name,
                 "permission": s.drawing_shares.permission,
                 "created_at": (
                     s.drawing_shares.created_at.isoformat()

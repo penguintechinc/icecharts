@@ -207,7 +207,12 @@ test_delete() {
 extract_json_field() {
     local json="$1"
     local field="$2"
-    echo "$json" | grep -o "\"$field\":\"[^\"]*\"" | cut -d'"' -f4 || echo "$json" | grep -o "\"$field\":[0-9]*" | cut -d':' -f2
+    # Try string format first: "field":"value"
+    echo "$json" | grep -o "\"$field\":\"[^\"]*\"" | cut -d'"' -f4 && return 0
+    # Then try number format: "field":123
+    echo "$json" | grep -o "\"$field\":[0-9]*" | cut -d':' -f2 && return 0
+    # If both fail, return empty
+    return 1
 }
 
 # Extract nested JSON field
@@ -245,35 +250,28 @@ main() {
     log_section "Admin Authentication Setup"
     echo "=== Admin Authentication Setup ==="
 
-    # Generate unique email for this test run
-    TIMESTAMP=$(date +%s)
-    ADMIN_EMAIL="admin-sa-test-${TIMESTAMP}@example.com"
-    ADMIN_PASSWORD="Admin123"
+    # Use default admin credentials (created automatically on first startup)
+    # Note: Self-registration always assigns 'viewer' role, so we use the default admin
+    ADMIN_EMAIL="admin@localhost.local"
+    ADMIN_PASSWORD="admin123"
 
-    # Register admin user
-    log_info "Registering admin user: $ADMIN_EMAIL"
-    register_response=$(test_post "/api/v1/auth/register" \
-        "{\"email\":\"$ADMIN_EMAIL\",\"password\":\"$ADMIN_PASSWORD\",\"full_name\":\"Service Account Test Admin\",\"role\":\"admin\"}" \
-        201 \
-        "POST /api/v1/auth/register - Admin registration")
+    log_info "Logging in as default admin: $ADMIN_EMAIL"
+    login_response=$(test_post "/api/v1/auth/login" \
+        "{\"email\":\"$ADMIN_EMAIL\",\"password\":\"$ADMIN_PASSWORD\"}" \
+        200 \
+        "POST /api/v1/auth/login - Admin login")
 
     if [ $? -eq 0 ]; then
-        # Login to get access token
-        log_info "Logging in as admin: $ADMIN_EMAIL"
-        login_response=$(test_post "/api/v1/auth/login" \
-            "{\"email\":\"$ADMIN_EMAIL\",\"password\":\"$ADMIN_PASSWORD\"}" \
-            200 \
-            "POST /api/v1/auth/login - Admin login")
-
-        if [ $? -eq 0 ]; then
-            ADMIN_TOKEN=$(extract_json_field "$login_response" "access_token")
-            if [ -n "$ADMIN_TOKEN" ]; then
-                log_info "Successfully obtained admin access token"
-            else
-                log_error "Could not extract admin access token"
-                exit 1
-            fi
+        ADMIN_TOKEN=$(extract_json_field "$login_response" "access_token")
+        if [ -n "$ADMIN_TOKEN" ]; then
+            log_info "Successfully obtained admin access token"
+        else
+            log_error "Could not extract admin access token"
+            exit 1
         fi
+    else
+        log_error "Failed to login as admin"
+        exit 1
     fi
     echo ""
 

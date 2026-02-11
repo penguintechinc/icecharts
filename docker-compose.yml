@@ -1,3 +1,16 @@
+# ==========================================================================
+# DEPRECATED: Docker Compose support has been deprecated.
+# Kubernetes (microk8s) with Helm v3 is now the standard deployment method.
+#
+# Use instead:
+#   Alpha:  make k8s-alpha-deploy
+#   Beta:   make k8s-beta-deploy
+#   Prod:   make k8s-prod-deploy
+#
+# See k8s/helm/icecharts/ for Helm charts and values files.
+# This file is retained for reference only and will be removed in a future release.
+# ==========================================================================
+
 ---
 services:
   # PostgreSQL 17 Database
@@ -114,7 +127,7 @@ services:
       - RELEASE_MODE=${RELEASE_MODE:-false}
 
       # Logging Configuration
-      - LOG_LEVEL=${LOG_LEVEL:-info}
+      - LOG_LEVEL=${LOG_LEVEL:-INFO}
       - LOG_FORMAT=${LOG_FORMAT:-json}
 
     ports:
@@ -144,6 +157,7 @@ services:
       args:
         VITE_API_URL: ${VITE_API_URL:-http://localhost:${API_PORT:-5001}}
         VITE_WS_URL: ${VITE_WS_URL:-http://localhost:${API_PORT:-5001}}
+        GITHUB_TOKEN: ${GITHUB_TOKEN:-}
     container_name: icecharts-web
     environment:
       - NODE_ENV=${NODE_ENV:-production}
@@ -186,7 +200,7 @@ services:
       - DB_PASSWORD=${POSTGRES_PASSWORD:-changeme}
 
       # Logging
-      - LOG_LEVEL=${LOG_LEVEL:-info}
+      - LOG_LEVEL=${LOG_LEVEL:-INFO}
     depends_on:
       postgres:
         condition: service_healthy
@@ -230,7 +244,7 @@ services:
       - MINIO_SECURE=${MINIO_SECURE:-false}
 
       # Logging
-      - LOG_LEVEL=${LOG_LEVEL:-info}
+      - LOG_LEVEL=${LOG_LEVEL:-INFO}
 
     depends_on:
       postgres:
@@ -274,7 +288,7 @@ services:
 
       # Container Execution
       - WARM_CONTAINER_TTL=${WARM_CONTAINER_TTL:-600}
-      - LOG_LEVEL=${LOG_LEVEL:-info}
+      - LOG_LEVEL=${LOG_LEVEL:-INFO}
 
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock

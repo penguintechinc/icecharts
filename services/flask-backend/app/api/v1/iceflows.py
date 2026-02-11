@@ -29,6 +29,19 @@ def serialize_flow(flow, include_stages=False):
     Returns:
         Dictionary representation of flow
     """
+    db = get_db()
+
+    # Get credential info if exists
+    credential_info = None
+    if flow.credential_id:
+        cred = db.iceflows_credentials[flow.credential_id]
+        if cred:
+            credential_info = {
+                "credential_id": cred.credential_id,
+                "name": cred.name,
+                "provider": cred.provider,
+            }
+
     result = {
         "flow_id": flow.flow_id,
         "name": flow.name,
@@ -37,6 +50,7 @@ def serialize_flow(flow, include_stages=False):
         "repository_provider": flow.repository_provider,
         "repository_name": flow.repository_name or "",
         "default_branch": flow.default_branch or "main",
+        "credential": credential_info,
         "gitops_enabled": flow.gitops_enabled or False,
         "gitops_repo_url": flow.gitops_repo_url or "",
         "gitops_branch": flow.gitops_branch or "main",
@@ -204,6 +218,7 @@ def create_flow():
     Request body:
         - name (required): Flow name
         - repository_url (required): Git repository URL
+        - credential_id (optional): Credential ID for Git provider access
         - description (optional): Flow description
         - repository_provider (optional): github or gitlab (auto-detected if not provided)
         - default_branch (optional): Default branch (default: main)
@@ -241,6 +256,17 @@ def create_flow():
             else:
                 provider = "github"  # Default to github
 
+        # Validate credential_id if provided
+        credential_db_id = None
+        if data.get("credential_id"):
+            credential = db(
+                (db.iceflows_credentials.credential_id == data["credential_id"])
+                & (db.iceflows_credentials.created_by_id == user_id)
+            ).select().first()
+            if not credential:
+                return jsonify({"success": False, "error": "Invalid credential_id"}), 400
+            credential_db_id = credential.id
+
         # Generate flow_id and webhook_secret
         flow_id = str(uuid.uuid4())
         webhook_secret = secrets.token_hex(32)
@@ -254,6 +280,7 @@ def create_flow():
             repository_provider=provider,
             repository_name=data.get("repository_url").split("/")[-1].replace(".git", ""),
             default_branch=data.get("default_branch", "main"),
+            credential_id=credential_db_id,
             gitops_enabled=data.get("gitops_enabled", False),
             gitops_repo_url=data.get("gitops_repo_url", ""),
             gitops_branch=data.get("gitops_branch", "main"),
@@ -375,6 +402,18 @@ def update_flow(flow_id: str):
             update_data["repository_provider"] = data["repository_provider"]
         if "default_branch" in data:
             update_data["default_branch"] = data["default_branch"]
+        if "credential_id" in data:
+            # Validate credential if provided
+            if data["credential_id"]:
+                credential = db(
+                    (db.iceflows_credentials.credential_id == data["credential_id"])
+                    & (db.iceflows_credentials.created_by_id == user_id)
+                ).select().first()
+                if not credential:
+                    return jsonify({"success": False, "error": "Invalid credential_id"}), 400
+                update_data["credential_id"] = credential.id
+            else:
+                update_data["credential_id"] = None
         if "gitops_enabled" in data:
             update_data["gitops_enabled"] = data["gitops_enabled"]
         if "gitops_repo_url" in data:

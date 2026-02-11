@@ -15,6 +15,7 @@ from .admin_stats import admin_stats_v1_bp
 
 # Import all sub-blueprints
 from .auth import auth_v1_bp
+from .collections import collections_v1_bp
 from .comments import comments_v1_bp
 from .dashboard import dashboard_v1_bp
 from .drawings import drawings_v1_bp
@@ -41,6 +42,7 @@ from .iceflows_stages import iceflows_stages_bp
 from .iceflows_promotions import iceflows_promotions_bp
 from .iceflows_hooks import iceflows_hooks_bp
 from .connectors import connectors_v1_bp
+from .database_ops import database_ops_v1_bp
 
 # Register all blueprints
 api_v1_bp.register_blueprint(auth_v1_bp)
@@ -51,6 +53,7 @@ api_v1_bp.register_blueprint(templates_v1_bp)
 api_v1_bp.register_blueprint(groups_v1_bp)
 api_v1_bp.register_blueprint(elder_v1_bp)
 api_v1_bp.register_blueprint(shares_v1_bp)
+api_v1_bp.register_blueprint(collections_v1_bp)
 api_v1_bp.register_blueprint(comments_v1_bp)
 api_v1_bp.register_blueprint(libraries_v1_bp)
 api_v1_bp.register_blueprint(storage_v1_bp)
@@ -75,5 +78,6 @@ api_v1_bp.register_blueprint(iceflows_stages_bp)
 api_v1_bp.register_blueprint(iceflows_promotions_bp)
 api_v1_bp.register_blueprint(iceflows_hooks_bp)
 api_v1_bp.register_blueprint(connectors_v1_bp)
+api_v1_bp.register_blueprint(database_ops_v1_bp)
 
 __all__ = ["api_v1_bp"]

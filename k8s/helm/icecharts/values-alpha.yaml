@@ -1,0 +1,26 @@
+## IceCharts - Alpha Environment Overrides
+namespace:
+  create: true
+  name: icecharts-alpha
+api:
+  replicas: 1
+  image:
+    pullPolicy: Never
+    tag: alpha
+  resources:
+    requests: {memory: "128Mi", cpu: "100m"}
+    limits: {memory: "256Mi", cpu: "250m"}
+web:
+  replicas: 1
+  image:
+    pullPolicy: Never
+    tag: alpha
+  resources:
+    requests: {memory: "128Mi", cpu: "100m"}
+    limits: {memory: "256Mi", cpu: "250m"}
+ingress:
+  enabled: false
+config:
+  FLASK_ENV: development
+  LOG_LEVEL: debug
+  RELEASE_MODE: "false"

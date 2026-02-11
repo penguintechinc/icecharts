@@ -206,7 +206,12 @@ test_delete() {
 extract_json_field() {
     local json="$1"
     local field="$2"
-    echo "$json" | grep -o "\"$field\":\"[^\"]*\"" | cut -d'"' -f4 || echo "$json" | grep -o "\"$field\":[0-9]*" | cut -d':' -f2
+    # Try string format first: "field":"value"
+    echo "$json" | grep -o "\"$field\":\"[^\"]*\"" | cut -d'"' -f4 && return 0
+    # Then try number format: "field":123
+    echo "$json" | grep -o "\"$field\":[0-9]*" | cut -d':' -f2 && return 0
+    # If both fail, return empty
+    return 1
 }
 
 # Main Test Suite
@@ -236,32 +241,29 @@ main() {
     log_section "Authentication Setup"
     echo "=== Authentication Setup ==="
 
-    TIMESTAMP=$(date +%s)
-    TEST_EMAIL="test-groups-${TIMESTAMP}@example.com"
-    TEST_EMAIL_2="test-groups-member-${TIMESTAMP}@example.com"
+    # Use default admin for group owner (group creation requires admin/maintainer role)
+    ADMIN_EMAIL="admin@localhost.local"
+    ADMIN_PASSWORD="admin123"
     TEST_PASSWORD="Admin123"
 
-    # Register first user (group owner)
-    log_info "Registering test user 1: $TEST_EMAIL"
-    register_response=$(test_post "/api/v1/auth/register" \
-        "{\"email\":\"$TEST_EMAIL\",\"password\":\"$TEST_PASSWORD\",\"full_name\":\"Groups Test User\"}" \
-        201 \
-        "POST /api/v1/auth/register - User 1 registration")
+    # Login as admin (group owner)
+    log_info "Logging in as admin: $ADMIN_EMAIL"
+    login_response=$(test_post "/api/v1/auth/login" \
+        "{\"email\":\"$ADMIN_EMAIL\",\"password\":\"$ADMIN_PASSWORD\"}" \
+        200 \
+        "POST /api/v1/auth/login - Admin login")
 
     if [ $? -eq 0 ]; then
-        USER_ID=$(echo "$register_response" | grep -o '{.*}' | python3 -c "import sys,json; d=json.load(sys.stdin); print(d.get('user',{}).get('id', d.get('id','')))" 2>/dev/null)
-        login_response=$(test_post "/api/v1/auth/login" \
-            "{\"email\":\"$TEST_EMAIL\",\"password\":\"$TEST_PASSWORD\"}" \
-            200 \
-            "POST /api/v1/auth/login - User 1 login")
-
-        if [ $? -eq 0 ]; then
-            ACCESS_TOKEN=$(extract_json_field "$login_response" "access_token")
-            log_info "User 1 access token obtained"
-        fi
+        ACCESS_TOKEN=$(extract_json_field "$login_response" "access_token")
+        log_info "Admin access token obtained"
+    else
+        log_error "Failed to login as admin"
+        exit 1
     fi
 
-    # Register second user (group member)
+    # Register second user (group member) - regular user
+    TIMESTAMP=$(date +%s)
+    TEST_EMAIL_2="test-groups-member-${TIMESTAMP}@example.com"
     log_info "Registering test user 2: $TEST_EMAIL_2"
     register_response_2=$(test_post "/api/v1/auth/register" \
         "{\"email\":\"$TEST_EMAIL_2\",\"password\":\"$TEST_PASSWORD\",\"full_name\":\"Groups Member User\"}" \

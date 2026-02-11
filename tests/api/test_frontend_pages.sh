@@ -147,7 +147,12 @@ test_post() {
 extract_json_field() {
     local json="$1"
     local field="$2"
-    echo "$json" | grep -o "\"$field\":\"[^\"]*\"" | cut -d'"' -f4
+    # Try string format first: "field":"value"
+    echo "$json" | grep -o "\"$field\":\"[^\"]*\"" | cut -d'"' -f4 && return 0
+    # Then try number format: "field":123
+    echo "$json" | grep -o "\"$field\":[0-9]*" | cut -d':' -f2 && return 0
+    # If both fail, return empty
+    return 1
 }
 
 # Check if a JavaScript bundle or static asset loads

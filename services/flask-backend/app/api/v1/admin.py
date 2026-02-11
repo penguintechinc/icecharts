@@ -37,15 +37,15 @@ def admin_list_users():
 
     if search:
         conditions.append(
-            (db.users.email.contains(search)) | (db.users.full_name.contains(search))
+            (db.identities.email.contains(search)) | (db.identities.full_name.contains(search))
         )
 
     if role:
-        conditions.append(db.users.role == role)
+        conditions.append(db.identities.role == role)
 
     if active:
         is_active = active.lower() == "true"
-        conditions.append(db.users.is_active == is_active)
+        conditions.append(db.identities.is_active == is_active)
 
     # Combine conditions or use all users
     if conditions:
@@ -54,12 +54,12 @@ def admin_list_users():
             combined = combined & cond
         query = db(combined)
     else:
-        query = db(db.users.id > 0)
+        query = db(db.identities.id > 0)
 
     offset = (page - 1) * per_page
 
     users = query.select(
-        orderby=db.users.created_at,
+        orderby=db.identities.created_at,
         limitby=(offset, offset + per_page),
     )
     total = query.count()
@@ -451,13 +451,13 @@ def admin_get_stats():
 
     stats = {
         "users": {
-            "total": db(db.users).count(),
-            "active": db(db.users.is_active == True).count(),
-            "inactive": db(db.users.is_active == False).count(),
+            "total": db(db.identities).count(),
+            "active": db(db.identities.is_active == True).count(),
+            "inactive": db(db.identities.is_active == False).count(),
             "by_role": {
-                "admin": db(db.users.role == "admin").count(),
-                "maintainer": db(db.users.role == "maintainer").count(),
-                "viewer": db(db.users.role == "viewer").count(),
+                "admin": db(db.identities.role == "admin").count(),
+                "maintainer": db(db.identities.role == "maintainer").count(),
+                "viewer": db(db.identities.role == "viewer").count(),
             },
         },
         "drawings": {
