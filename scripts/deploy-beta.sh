@@ -17,7 +17,7 @@ CHART_PATH="$PROJECT_ROOT/k8s/helm/icecharts"
 VALUES_FILE="$PROJECT_ROOT/k8s/helm/icecharts/values-beta.yaml"
 IMAGE_REGISTRY="registry-dal2.penguintech.io"
 VERSION_FILE="$PROJECT_ROOT/.version"
-APP_HOST="icecharts.penguintech.io"
+APP_HOST="icecharts.penguintech.cloud"
 ALB_ENDPOINT="dal2.penguintech.io"
 
 # Default flags

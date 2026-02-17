@@ -10,10 +10,10 @@ spec:
   ingressClassName: nginx
   tls:
   - hosts:
-    - icecharts-alpha.penguintech.io
+    - icecharts-alpha.localhost.local
     secretName: icecharts-alpha-tls
   rules:
-  - host: icecharts-alpha.penguintech.io
+  - host: icecharts-alpha.localhost.local
     http:
       paths:
       - path: /api

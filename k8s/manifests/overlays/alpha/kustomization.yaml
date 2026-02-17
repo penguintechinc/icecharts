@@ -10,7 +10,7 @@ resources:
   - ../../base
 
 # Override namespace for alpha
-namespace: icecharts-alpha
+namespace: icecharts
 
 # Apply patches for alpha environment using new syntax
 patches:
@@ -40,7 +40,7 @@ patches:
         value: ghcr.io/penguintech/icecharts-api:alpha
       - op: replace
         path: /spec/template/spec/containers/0/imagePullPolicy
-        value: Always
+        value: Never
   - target:
       kind: Deployment
       name: web
@@ -50,7 +50,7 @@ patches:
         value: ghcr.io/penguintech/icecharts-web:alpha
       - op: replace
         path: /spec/template/spec/containers/0/imagePullPolicy
-        value: Always
+        value: Never
 
   # Resource patches for API
   - target:

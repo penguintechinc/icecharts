@@ -1,4 +1,4 @@
-# Beta/staging environment overrides (icecharts.penguintech.io)
+# Beta/staging environment overrides (icecharts.penguintech.cloud)
 # Uses icecharts namespace (each cluster has its own icecharts namespace)
 namespace:
   create: false
@@ -23,11 +23,11 @@ web:
     tag: "beta"
 
 ingress:
-  # Disabled: ingress for icecharts.penguintech.io is managed in the
+  # Disabled: ingress for icecharts.penguintech.cloud is managed in the
   # icecharts namespace (created via kustomize). The nginx admission
   # webhook rejects duplicate host+path across namespaces.
   enabled: false
-  host: icecharts.penguintech.io
+  host: icecharts.penguintech.cloud
   tls:
     enabled: true
     secretName: icecharts-tls
@@ -57,4 +57,4 @@ config:
   FLASK_ENV: "production"
   LOG_LEVEL: "info"
   RELEASE_MODE: "false"
-  CORS_ORIGINS: "https://icecharts.penguintech.io"
+  CORS_ORIGINS: "https://icecharts.penguintech.cloud"

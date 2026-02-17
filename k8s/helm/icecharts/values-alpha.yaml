@@ -1,7 +1,7 @@
 ## IceCharts - Alpha Environment Overrides
 namespace:
   create: true
-  name: icecharts-alpha
+  name: icecharts
 api:
   replicas: 1
   image:
