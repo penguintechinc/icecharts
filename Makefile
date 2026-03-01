@@ -187,6 +187,59 @@ test-coverage: ## Testing - Generate coverage reports
 	@echo "  Python: coverage-python.xml, htmlcov-python/"
 	@echo "  Node.js: coverage/"
 
+# New Testing Commands
+.PHONY: test-unit test-icestreams-unit test-iceflows-unit test-iceruns-unit test-e2e test-e2e-headed test-security test-functional test-lint test-all test-controller install-playwright
+
+test-unit: ## Testing - Run all unit tests
+	@echo "$(BLUE)Running all unit tests...$(RESET)"
+	@./scripts/test-controller.sh unit all
+
+test-icestreams-unit: ## Testing - Run IceStreams worker unit tests
+	@echo "$(BLUE)Running IceStreams unit tests...$(RESET)"
+	@cd services/icestreams-worker && python -m pytest tests/ -v
+
+test-iceflows-unit: ## Testing - Run IceFlows worker unit tests
+	@echo "$(BLUE)Running IceFlows unit tests...$(RESET)"
+	@cd services/iceflows-worker && python -m pytest tests/ -v
+
+test-iceruns-unit: ## Testing - Run IceRuns invoker unit tests
+	@echo "$(BLUE)Running IceRuns unit tests...$(RESET)"
+	@cd services/iceruns-invoker && python -m pytest tests/ -v
+
+test-e2e: ## Testing - Run Playwright E2E tests
+	@echo "$(BLUE)Running E2E tests...$(RESET)"
+	@cd tests/e2e && npx playwright test
+
+test-e2e-headed: ## Testing - Run Playwright E2E tests in headed mode
+	@echo "$(BLUE)Running E2E tests (headed)...$(RESET)"
+	@cd tests/e2e && npx playwright test --headed
+
+test-security: ## Testing - Run security scans (bandit, npm audit, trivy)
+	@echo "$(BLUE)Running security scans...$(RESET)"
+	@./scripts/test-controller.sh security
+
+test-functional: ## Testing - Run functional tests (page loads, API responses)
+	@echo "$(BLUE)Running functional tests...$(RESET)"
+	@./scripts/test-controller.sh functional
+
+test-lint: ## Testing - Run all linters
+	@echo "$(BLUE)Running all linters...$(RESET)"
+	@./scripts/test-controller.sh lint all
+
+test-all: ## Testing - Run complete test suite
+	@echo "$(BLUE)Running complete test suite...$(RESET)"
+	@./scripts/test-controller.sh unit all
+	@./scripts/test-controller.sh lint all
+	@./scripts/test-controller.sh api
+	@echo "$(GREEN)Complete test suite finished!$(RESET)"
+
+test-controller: ## Testing - Run test-controller with args (usage: make test-controller ARGS="unit flask")
+	@./scripts/test-controller.sh $(ARGS)
+
+install-playwright: ## Testing - Install Playwright browsers
+	@echo "$(BLUE)Installing Playwright browsers...$(RESET)"
+	@cd tests/e2e && npx playwright install --with-deps
+
 # Build Commands
 build: ## Build - Build all applications
 	@echo "$(BLUE)Building all applications...$(RESET)"
