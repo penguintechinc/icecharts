@@ -61,14 +61,14 @@ def create_trigger_node(
     Returns:
         Generated BaseNode subclass.
     """
-    node_type = f"trigger_{connector_id}_{trigger.id}"
+    _node_type = f"trigger_{connector_id}_{trigger.id}"
     display_name = f"{connector_name}: {trigger.name}"
 
     # Pre-compute outputs
-    outputs = [_port_to_node_output(p) for p in trigger.outputs]
-    if not outputs:
+    _outputs = [_port_to_node_output(p) for p in trigger.outputs]
+    if not _outputs:
         # Default output if none specified
-        outputs = [NodeOutput(name="out", description="Trigger output", data_type="any")]
+        _outputs = [NodeOutput(name="out", description="Trigger output", data_type="any")]
 
     # Pre-compute config schema for validation
     required_fields = [f.field for f in trigger.config_schema if f.required]
@@ -76,7 +76,7 @@ def create_trigger_node(
     class GeneratedTriggerNode(BaseNode):
         """Dynamically generated trigger node."""
 
-        node_type = node_type
+        node_type = _node_type
         name = display_name
         description = trigger.description
         category = "triggers"
@@ -95,7 +95,7 @@ def create_trigger_node(
 
         @classmethod
         def outputs(cls) -> List[NodeOutput]:
-            return outputs
+            return _outputs
 
         @classmethod
         def validate_config(cls, config: Dict[str, Any]) -> List[str]:
@@ -125,7 +125,7 @@ def create_trigger_node(
             output_data = {"out": trigger_data}
 
             # For event triggers with multiple outputs, route by event type
-            if len(outputs) > 1 and "event_type" in trigger_data:
+            if len(_outputs) > 1 and "event_type" in trigger_data:
                 event_type = trigger_data.get("event_type", "other")
                 output_data = {event_type: trigger_data, "out": trigger_data}
 
@@ -160,7 +160,7 @@ def create_action_node(
     Returns:
         Generated BaseNode subclass.
     """
-    node_type = f"action_{connector_id}_{action.id}"
+    _node_type = f"action_{connector_id}_{action.id}"
     display_name = f"{connector_name}: {action.name}"
 
     # Pre-compute inputs and outputs
@@ -180,7 +180,7 @@ def create_action_node(
     class GeneratedActionNode(BaseNode):
         """Dynamically generated action node."""
 
-        node_type = node_type
+        node_type = _node_type
         name = display_name
         description = action.description
         category = "actions"
@@ -268,7 +268,7 @@ def create_transform_node(
     Returns:
         Generated BaseNode subclass.
     """
-    node_type = f"transform_{connector_id}_{transform.id}"
+    _node_type = f"transform_{connector_id}_{transform.id}"
     display_name = f"{connector_name}: {transform.name}"
 
     # Pre-compute inputs and outputs
@@ -285,7 +285,7 @@ def create_transform_node(
     class GeneratedTransformNode(BaseNode):
         """Dynamically generated transform node."""
 
-        node_type = node_type
+        node_type = _node_type
         name = display_name
         description = transform.description
         category = "transforms"

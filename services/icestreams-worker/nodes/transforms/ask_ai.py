@@ -310,7 +310,7 @@ class AskAiTransform(BaseNode):
         if output_format == "json":
             prompt += "\n\nRespond with valid JSON only, no additional text."
 
-        context.info(f"Calling {llm_config.provider} ({llm_config.model})")
+        context.log_info(f"Calling {llm_config.provider} ({llm_config.model})")
 
         try:
             # Call appropriate provider
@@ -347,7 +347,7 @@ class AskAiTransform(BaseNode):
             else:
                 parsed = raw_content
 
-            context.info(f"AI response received ({response['usage'].get('output_tokens', 0)} tokens)")
+            context.log_info(f"AI response received ({response['usage'].get('output_tokens', 0)} tokens)")
 
             return NodeResult.success_result(
                 outputs={

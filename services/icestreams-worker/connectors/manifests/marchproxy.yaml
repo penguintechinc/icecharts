@@ -39,14 +39,10 @@ connector:
           label: Module Types
           description: Filter by module protocol type
           options:
-            - value: http
-              label: HTTP
-            - value: tcp
-              label: TCP
-            - value: udp
-              label: UDP
-            - value: grpc
-              label: gRPC
+            - http
+            - tcp
+            - udp
+            - grpc
           required: false
 
     - id: route_changed
@@ -64,12 +60,9 @@ connector:
           label: Change Types
           description: Filter by change type
           options:
-            - value: added
-              label: Added
-            - value: updated
-              label: Updated
-            - value: removed
-              label: Removed
+            - added
+            - updated
+            - removed
           required: false
 
   actions:
@@ -99,14 +92,10 @@ connector:
           label: Module Type
           description: Protocol type for the module
           options:
-            - value: http
-              label: HTTP
-            - value: tcp
-              label: TCP
-            - value: udp
-              label: UDP
-            - value: grpc
-              label: gRPC
+            - http
+            - tcp
+            - udp
+            - grpc
           required: true
         - field: upstream_url
           type: string
@@ -159,14 +148,10 @@ connector:
           label: Load Balancing Strategy
           description: Strategy for distributing traffic
           options:
-            - value: round_robin
-              label: Round Robin
-            - value: least_conn
-              label: Least Connections
-            - value: ip_hash
-              label: IP Hash
-            - value: weighted
-              label: Weighted
+            - round_robin
+            - least_conn
+            - ip_hash
+            - weighted
           default: round_robin
           required: false
 
@@ -224,16 +209,11 @@ connector:
           label: HTTP Method
           description: HTTP method for the request
           options:
-            - value: GET
-              label: GET
-            - value: POST
-              label: POST
-            - value: PUT
-              label: PUT
-            - value: DELETE
-              label: DELETE
-            - value: PATCH
-              label: PATCH
+            - GET
+            - POST
+            - PUT
+            - DELETE
+            - PATCH
           default: GET
           required: false
         - field: headers
@@ -264,16 +244,11 @@ connector:
           label: Module Type
           description: Filter by module protocol type
           options:
-            - value: any
-              label: Any
-            - value: http
-              label: HTTP
-            - value: tcp
-              label: TCP
-            - value: udp
-              label: UDP
-            - value: grpc
-              label: gRPC
+            - any
+            - http
+            - tcp
+            - udp
+            - grpc
           default: any
           required: false
         - field: status
@@ -281,14 +256,10 @@ connector:
           label: Status
           description: Filter by module health status
           options:
-            - value: any
-              label: Any
-            - value: healthy
-              label: Healthy
-            - value: unhealthy
-              label: Unhealthy
-            - value: draining
-              label: Draining
+            - any
+            - healthy
+            - unhealthy
+            - draining
           default: any
           required: false
 
@@ -340,11 +311,8 @@ connector:
           label: Time Range
           description: Time range for statistics
           options:
-            - value: 1h
-              label: Last 1 Hour
-            - value: 24h
-              label: Last 24 Hours
-            - value: 7d
-              label: Last 7 Days
+            - 1h
+            - 24h
+            - 7d
           default: 24h
           required: false

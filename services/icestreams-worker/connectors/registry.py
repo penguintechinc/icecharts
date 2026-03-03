@@ -192,10 +192,14 @@ class ConnectorRegistry:
         cls, manifest: ConnectorManifest
     ) -> Type[BaseConnector]:
         """Create a generic connector class from manifest."""
+        # Use prefixed names to avoid class-body scoping bug where
+        # `manifest = manifest` would shadow the enclosing variable.
+        _manifest = manifest
+        _connector_id = manifest.id
 
         class GenericConnector(BaseConnector):
-            connector_id = manifest.id
-            manifest = manifest
+            connector_id = _connector_id
+            manifest = _manifest
 
         GenericConnector.__name__ = f"{manifest.name.replace(' ', '')}Connector"
         return GenericConnector

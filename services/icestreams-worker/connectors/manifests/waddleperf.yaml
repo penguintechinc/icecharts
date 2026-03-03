@@ -39,16 +39,11 @@ connector:
           label: Test Types
           description: Filter by test type
           options:
-            - value: latency
-              label: Latency Test
-            - value: throughput
-              label: Throughput Test
-            - value: stress
-              label: Stress Test
-            - value: soak
-              label: Soak Test
-            - value: spike
-              label: Spike Test
+            - latency
+            - throughput
+            - stress
+            - soak
+            - spike
           required: false
         - field: min_score
           type: number
@@ -72,16 +67,11 @@ connector:
           label: Device Types
           description: Filter by device type
           options:
-            - value: server
-              label: Server
-            - value: desktop
-              label: Desktop
-            - value: mobile
-              label: Mobile
-            - value: iot
-              label: IoT Device
-            - value: network
-              label: Network Device
+            - server
+            - desktop
+            - mobile
+            - iot
+            - network
           required: false
 
   actions:
@@ -111,16 +101,11 @@ connector:
           label: Test Type
           description: Type of performance test to execute
           options:
-            - value: latency
-              label: Latency Test
-            - value: throughput
-              label: Throughput Test
-            - value: stress
-              label: Stress Test
-            - value: soak
-              label: Soak Test
-            - value: spike
-              label: Spike Test
+            - latency
+            - throughput
+            - stress
+            - soak
+            - spike
           required: true
         - field: target_url
           type: string
@@ -173,16 +158,11 @@ connector:
           label: Device Type
           description: Type of device being enrolled
           options:
-            - value: server
-              label: Server
-            - value: desktop
-              label: Desktop
-            - value: mobile
-              label: Mobile
-            - value: iot
-              label: IoT Device
-            - value: network
-              label: Network Device
+            - server
+            - desktop
+            - mobile
+            - iot
+            - network
           required: true
         - field: hostname
           type: string
@@ -230,12 +210,9 @@ connector:
           label: Status
           description: Device operational status
           options:
-            - value: active
-              label: Active
-            - value: inactive
-              label: Inactive
-            - value: maintenance
-              label: Maintenance
+            - active
+            - inactive
+            - maintenance
           required: false
         - field: tags
           type: string
@@ -293,18 +270,12 @@ connector:
           label: Test Type
           description: Filter by test type
           options:
-            - value: any
-              label: Any
-            - value: latency
-              label: Latency Test
-            - value: throughput
-              label: Throughput Test
-            - value: stress
-              label: Stress Test
-            - value: soak
-              label: Soak Test
-            - value: spike
-              label: Spike Test
+            - any
+            - latency
+            - throughput
+            - stress
+            - soak
+            - spike
           default: any
           required: false
         - field: status
@@ -312,16 +283,11 @@ connector:
           label: Status
           description: Filter by test status
           options:
-            - value: any
-              label: Any
-            - value: pending
-              label: Pending
-            - value: running
-              label: Running
-            - value: completed
-              label: Completed
-            - value: failed
-              label: Failed
+            - any
+            - pending
+            - running
+            - completed
+            - failed
           default: any
           required: false
         - field: limit
@@ -379,14 +345,10 @@ connector:
           label: Time Range
           description: Time range for statistics
           options:
-            - value: 24h
-              label: Last 24 Hours
-            - value: 7d
-              label: Last 7 Days
-            - value: 30d
-              label: Last 30 Days
-            - value: 90d
-              label: Last 90 Days
+            - 24h
+            - 7d
+            - 30d
+            - 90d
           default: 7d
           required: false
 
@@ -410,16 +372,11 @@ connector:
           label: Metric
           description: Performance metric to analyze
           options:
-            - value: latency_p50
-              label: Latency P50
-            - value: latency_p95
-              label: Latency P95
-            - value: latency_p99
-              label: Latency P99
-            - value: throughput
-              label: Throughput
-            - value: error_rate
-              label: Error Rate
+            - latency_p50
+            - latency_p95
+            - latency_p99
+            - throughput
+            - error_rate
           default: latency_p95
           required: false
         - field: time_range
@@ -427,11 +384,8 @@ connector:
           label: Time Range
           description: Time range for trend analysis
           options:
-            - value: 7d
-              label: Last 7 Days
-            - value: 30d
-              label: Last 30 Days
-            - value: 90d
-              label: Last 90 Days
+            - 7d
+            - 30d
+            - 90d
           default: 30d
           required: false

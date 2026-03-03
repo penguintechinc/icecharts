@@ -45,12 +45,9 @@ connector:
           label: Protocol Filter
           description: Filter packets by protocol type
           options:
-            - value: tcp
-              label: TCP
-            - value: udp
-              label: UDP
-            - value: icmp
-              label: ICMP
+            - tcp
+            - udp
+            - icmp
           required: false
 
   actions:
@@ -86,12 +83,9 @@ connector:
           label: Priority
           description: Packet forwarding priority level
           options:
-            - value: low
-              label: Low
-            - value: normal
-              label: Normal
-            - value: high
-              label: High
+            - low
+            - normal
+            - high
           default: normal
           required: false
 
