@@ -52,7 +52,7 @@ def mock_db():
     # Mock table operations
     executions_table = MagicMock()
     executions_table.update_or_insert.return_value = True
-    mock.__call__.return_value = executions_table
+    mock.return_value = executions_table
     return mock
 
 

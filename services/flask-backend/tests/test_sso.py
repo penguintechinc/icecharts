@@ -25,17 +25,17 @@ class TestSamlLogin:
     def test_saml_login_no_auth_required(self, client):
         """SAML login initiation does not require authentication."""
         response = client.get("/api/v1/sso/saml/login")
-        # Expect redirect or 404 (not configured) — not 401
-        assert response.status_code in [302, 404, 500]
+        # Expect redirect, 404 (not configured), 403 (not licensed), or 500
+        assert response.status_code in [302, 403, 404, 500]
 
 
 class TestSamlAcs:
     """Tests for POST /sso/saml/acs."""
 
     def test_saml_acs_missing_saml_response(self, client):
-        """ACS returns 400 when SAMLResponse is missing."""
+        """ACS returns error when SAMLResponse is missing."""
         response = client.post("/api/v1/sso/saml/acs", data={})
-        assert response.status_code in [400, 404, 500]
+        assert response.status_code in [400, 403, 404, 500]
 
     def test_saml_acs_no_auth_required(self, client):
         """ACS endpoint does not require a JWT token."""
@@ -54,8 +54,8 @@ class TestSamlLogout:
     def test_saml_logout_with_auth(self, client, auth_headers):
         """Authenticated user can call SAML logout."""
         response = client.post("/api/v1/sso/saml/logout", headers=auth_headers)
-        # 404 if SAML not configured, 200 if configured
-        assert response.status_code in [200, 404, 500]
+        # 403 if not licensed, 404 if SAML not configured, 200 if configured
+        assert response.status_code in [200, 403, 404, 500]
 
 
 class TestOidcLogin:

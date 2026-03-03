@@ -221,8 +221,8 @@ class TestingConfig(Config):
 
     TESTING = True
     WTF_CSRF_ENABLED = False
-    DB_TYPE = "sqlite"
-    DB_NAME = ":memory:"
+    # DB_TYPE, DB_HOST, DB_PORT, DB_NAME, DB_USER, DB_PASSWORD are set
+    # via environment variables in conftest.py to point at PostgreSQL test DB.
     DB_POOL_SIZE = 0
     RATELIMIT_ENABLED = False
     JWT_SECRET_KEY = "test-secret-key-for-pytest"

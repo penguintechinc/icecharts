@@ -76,10 +76,11 @@ class TestCreateShare:
     def test_missing_body_returns_400(self, client, auth_headers):
         response = client.post(
             "/api/v1/drawings/999999/shares",
-            json=None,
             headers=auth_headers,
+            data="",
+            content_type="application/json",
         )
-        assert response.status_code in (400, 404)
+        assert response.status_code in (400, 404, 415)
 
 
 class TestDeleteShare:

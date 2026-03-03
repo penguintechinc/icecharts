@@ -59,7 +59,7 @@ class TestIceFlowsWorkerConnect:
         """connect() creates and pings Redis client."""
         from worker import IceFlowsWorker
         worker = IceFlowsWorker(redis_url="redis://localhost:6379")
-        with patch("redis.asyncio.from_url", return_value=mock_redis):
+        with patch("worker.aioredis.from_url", new_callable=AsyncMock, return_value=mock_redis):
             await worker.connect()
         assert worker.redis_client == mock_redis
         mock_redis.ping.assert_awaited_once()

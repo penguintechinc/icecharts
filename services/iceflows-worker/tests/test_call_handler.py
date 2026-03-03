@@ -229,11 +229,17 @@ class TestExecuteCalls:
 
     def test_blocking_call_polls_for_completion(self, handler, mock_session):
         """Blocking call polls for completion status."""
-        mock_session.post.return_value.json.return_value = {"execution_id": "exec-bl"}
-        mock_session.get.return_value.json.return_value = {
+        # Use separate response objects for post and get to avoid
+        # the second json.return_value overwriting the first
+        post_response = MagicMock()
+        post_response.json.return_value = {"execution_id": "exec-bl"}
+        mock_session.post.return_value = post_response
+        get_response = MagicMock()
+        get_response.json.return_value = {
             "status": "completed",
             "output": {"ok": True},
         }
+        mock_session.get.return_value = get_response
         config = {
             "call_id": "bl-1",
             "name": "Blocking",

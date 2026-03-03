@@ -106,6 +106,7 @@ class TestPromotionApproval:
         response = client.post(
             f"/api/v1/iceflows/promotions/{NONEXISTENT_PROMOTION_ID}/approve",
             headers=auth_headers,
+            json={},
         )
         assert response.status_code == 404
 

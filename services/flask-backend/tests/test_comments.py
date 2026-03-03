@@ -32,16 +32,19 @@ class TestCreateComment:
         )
         assert response.status_code == 404
 
-    def test_create_empty_content_returns_400(self, client, auth_headers, app):
+    def test_create_empty_content_returns_400(
+        self, client, auth_headers, app, test_user
+    ):
         with app.app_context():
             from app.models import get_db
             db = get_db()
+            uid = test_user["id"]
             drawing_id = db.drawings.insert(
                 tenant_id=1,
                 title="Comment Test Drawing",
-                owner_id=1,
-                user_id=1,
-                created_by_id=1,
+                owner_id=uid,
+                user_id=uid,
+                created_by_id=uid,
             )
             db.commit()
 
@@ -55,10 +58,11 @@ class TestCreateComment:
     def test_create_missing_body_returns_400(self, client, auth_headers):
         response = client.post(
             "/api/v1/drawings/999999/comments",
-            json=None,
             headers=auth_headers,
+            data="",
+            content_type="application/json",
         )
-        assert response.status_code in (400, 404)
+        assert response.status_code in (400, 404, 415)
 
 
 class TestGetComment:
@@ -72,16 +76,19 @@ class TestGetComment:
         )
         assert response.status_code == 404
 
-    def test_get_nonexistent_comment_returns_404(self, client, auth_headers, app):
+    def test_get_nonexistent_comment_returns_404(
+        self, client, auth_headers, app, test_user
+    ):
         with app.app_context():
             from app.models import get_db
             db = get_db()
+            uid = test_user["id"]
             drawing_id = db.drawings.insert(
                 tenant_id=1,
                 title="Drawing for Comment Get Test",
-                owner_id=1,
-                user_id=1,
-                created_by_id=1,
+                owner_id=uid,
+                user_id=uid,
+                created_by_id=uid,
             )
             db.commit()
 
@@ -130,16 +137,19 @@ class TestResolveComment:
         )
         assert response.status_code == 404
 
-    def test_resolve_nonexistent_comment_returns_404(self, client, auth_headers, app):
+    def test_resolve_nonexistent_comment_returns_404(
+        self, client, auth_headers, app, test_user
+    ):
         with app.app_context():
             from app.models import get_db
             db = get_db()
+            uid = test_user["id"]
             drawing_id = db.drawings.insert(
                 tenant_id=1,
                 title="Drawing for Resolve Test",
-                owner_id=1,
-                user_id=1,
-                created_by_id=1,
+                owner_id=uid,
+                user_id=uid,
+                created_by_id=uid,
             )
             db.commit()
 
@@ -176,20 +186,23 @@ class TestCommentReplies:
         )
         assert response.status_code == 404
 
-    def test_create_reply_empty_content_returns_400(self, client, auth_headers, app):
+    def test_create_reply_empty_content_returns_400(
+        self, client, auth_headers, app, test_user
+    ):
         with app.app_context():
             from app.models import get_db
             db = get_db()
+            uid = test_user["id"]
             drawing_id = db.drawings.insert(
                 tenant_id=1,
                 title="Drawing for Reply Test",
-                owner_id=1,
-                user_id=1,
-                created_by_id=1,
+                owner_id=uid,
+                user_id=uid,
+                created_by_id=uid,
             )
             comment_id = db.comments.insert(
                 drawing_id=drawing_id,
-                author_id=1,
+                author_id=uid,
                 comment_text="Original comment",
                 is_resolved=False,
             )

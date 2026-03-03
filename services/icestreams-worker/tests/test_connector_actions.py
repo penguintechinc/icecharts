@@ -111,6 +111,11 @@ def _register_manifest(manifest: ConnectorManifest) -> None:
     ConnectorRegistry.register_manifest(manifest)
 
 
+def _get_real_connector():
+    """Get a real GenericConnector from the registry (requires manifest registered first)."""
+    return ConnectorRegistry.get_instance("testconn")
+
+
 class TestExecuteActionHTTP:
     """Tests for HTTP call execution in execute_action."""
 
@@ -121,28 +126,20 @@ class TestExecuteActionHTTP:
         _register_manifest(manifest)
 
         executor = ConnectorActionExecutor()
+        connector = _get_real_connector()
+        executor._connectors["testconn"] = connector
 
-        with patch.object(
-            executor._get_connector("testconn").__class__,
-            "call_api",
-            new_callable=AsyncMock,
-            return_value={"status": "ok"},
-        ) as mock_call:
-            # Re-get connector after mock
-            connector = ConnectorRegistry.get_instance("testconn", _make_config())
-            executor._connectors["testconn"] = connector
-
-            with patch.object(connector, "call_api", new_callable=AsyncMock, return_value={"ok": True}) as mock_api:
-                result = await executor.execute_action(
-                    connector_id="testconn",
-                    action_id="do_thing",
-                    config={},
-                    inputs={},
-                    variables={},
-                )
-                mock_api.assert_called_once()
-                call_kwargs = mock_api.call_args
-                assert call_kwargs is not None
+        with patch.object(connector, "call_api", new_callable=AsyncMock, return_value={"ok": True}) as mock_api:
+            result = await executor.execute_action(
+                connector_id="testconn",
+                action_id="do_thing",
+                config={},
+                inputs={},
+                variables={},
+            )
+            mock_api.assert_called_once()
+            call_kwargs = mock_api.call_args
+            assert call_kwargs is not None
 
     @pytest.mark.asyncio
     async def test_execute_action_uses_correct_http_method(self):
@@ -150,7 +147,7 @@ class TestExecuteActionHTTP:
         manifest = _make_manifest_with_action(method="PUT", endpoint="/api/update")
         _register_manifest(manifest)
 
-        connector = ConnectorRegistry.get_instance("testconn", _make_config())
+        connector = _get_real_connector()
         executor = ConnectorActionExecutor()
         executor._connectors["testconn"] = connector
 
@@ -172,7 +169,7 @@ class TestExecuteActionHTTP:
         manifest = _make_manifest_with_action()
         _register_manifest(manifest)
 
-        connector = ConnectorRegistry.get_instance("testconn", _make_config())
+        connector = _get_real_connector()
         executor = ConnectorActionExecutor()
         executor._connectors["testconn"] = connector
 
@@ -193,7 +190,7 @@ class TestExecuteActionHTTP:
         manifest = _make_manifest_with_action()
         _register_manifest(manifest)
 
-        connector = ConnectorRegistry.get_instance("testconn", _make_config())
+        connector = _get_real_connector()
         executor = ConnectorActionExecutor()
         executor._connectors["testconn"] = connector
 
@@ -225,7 +222,7 @@ class TestExecuteActionHTTP:
         manifest = _make_manifest_with_action()
         _register_manifest(manifest)
 
-        connector = ConnectorRegistry.get_instance("testconn", _make_config())
+        connector = _get_real_connector()
         executor = ConnectorActionExecutor()
         executor._connectors["testconn"] = connector
 
@@ -382,7 +379,7 @@ class TestExecuteTransform:
         manifest = _make_manifest_with_action()
         _register_manifest(manifest)
 
-        connector = ConnectorRegistry.get_instance("testconn", _make_config())
+        connector = _get_real_connector()
         executor = ConnectorActionExecutor()
         executor._connectors["testconn"] = connector
 
@@ -403,7 +400,7 @@ class TestExecuteTransform:
         manifest = _make_manifest_with_action()
         _register_manifest(manifest)
 
-        connector = ConnectorRegistry.get_instance("testconn", _make_config())
+        connector = _get_real_connector()
         executor = ConnectorActionExecutor()
         executor._connectors["testconn"] = connector
 
@@ -423,7 +420,7 @@ class TestExecuteTransform:
         manifest = _make_manifest_with_action()
         _register_manifest(manifest)
 
-        connector = ConnectorRegistry.get_instance("testconn", _make_config())
+        connector = _get_real_connector()
         executor = ConnectorActionExecutor()
         executor._connectors["testconn"] = connector
 
@@ -460,7 +457,7 @@ class TestExecuteTransform:
         ConnectorRegistry.clear()
         ConnectorRegistry.register_manifest(manifest)
 
-        connector = ConnectorRegistry.get_instance("testconn", _make_config())
+        connector = _get_real_connector()
         executor = ConnectorActionExecutor()
         executor._connectors["testconn"] = connector
 
@@ -491,7 +488,7 @@ class TestCleanup:
         manifest = _make_manifest_with_action()
         _register_manifest(manifest)
 
-        connector = ConnectorRegistry.get_instance("testconn", _make_config())
+        connector = _get_real_connector()
         executor = ConnectorActionExecutor()
         executor._connectors["testconn"] = connector
 

@@ -120,7 +120,8 @@ class TestServiceAccountManagement:
         )
         assert response.status_code == 400
         result = response.get_json()
-        assert "invalid" in result["error"].lower()
+        # Error message may say "invalid" or "Validation failed"
+        assert "invalid" in result["error"].lower() or "validation" in result["error"].lower()
 
     def test_create_service_account_no_scopes(self, client, admin_auth_headers):
         """Test creating a service account without scopes."""

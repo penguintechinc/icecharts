@@ -16,9 +16,9 @@ class TestMetricsRecorder:
         from app.metrics import MetricsRecorder, ACTIVE_EXECUTIONS
 
         mock_labels = MagicMock()
-        with patch.object(ACTIVE_EXECUTIONS, "labels", return_value=mock_labels):
+        with patch.object(ACTIVE_EXECUTIONS, "labels", return_value=mock_labels) as mock_lbl:
             MetricsRecorder.record_execution_start("worker-1")
-        ACTIVE_EXECUTIONS.labels.assert_called_once_with(worker_id="worker-1")
+            mock_lbl.assert_called_once_with(worker_id="worker-1")
         mock_labels.inc.assert_called_once()
 
     def test_record_execution_end_decrements_gauge(self):
@@ -35,7 +35,7 @@ class TestMetricsRecorder:
         from app.metrics import MetricsRecorder, EXECUTIONS_TOTAL
 
         mock_labels = MagicMock()
-        with patch.object(EXECUTIONS_TOTAL, "labels", return_value=mock_labels):
+        with patch.object(EXECUTIONS_TOTAL, "labels", return_value=mock_labels) as mock_lbl:
             with patch("app.metrics.EXECUTION_DURATION") as mock_dur:
                 mock_dur.labels.return_value = MagicMock()
                 MetricsRecorder.record_execution_complete(
@@ -44,9 +44,9 @@ class TestMetricsRecorder:
                     duration_ms=1500,
                     trigger_type="manual",
                 )
-        EXECUTIONS_TOTAL.labels.assert_called_once_with(
-            runtime="python3.13", status="completed", trigger_type="manual"
-        )
+            mock_lbl.assert_called_once_with(
+                runtime="python3.13", status="completed", trigger_type="manual"
+            )
         mock_labels.inc.assert_called_once()
 
     def test_record_execution_complete_observes_duration(self):
@@ -88,9 +88,9 @@ class TestMetricsRecorder:
         from app.metrics import MetricsRecorder, EXECUTION_ERRORS
 
         mock_labels = MagicMock()
-        with patch.object(EXECUTION_ERRORS, "labels", return_value=mock_labels):
+        with patch.object(EXECUTION_ERRORS, "labels", return_value=mock_labels) as mock_lbl:
             MetricsRecorder.record_execution_error(runtime="go", error_type="timeout")
-        EXECUTION_ERRORS.labels.assert_called_once_with(runtime="go", error_type="timeout")
+            mock_lbl.assert_called_once_with(runtime="go", error_type="timeout")
         mock_labels.inc.assert_called_once()
 
     def test_set_queue_size(self):

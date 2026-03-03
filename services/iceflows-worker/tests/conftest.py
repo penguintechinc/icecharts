@@ -48,11 +48,10 @@ def mock_requests_session():
 @pytest.fixture
 def worker_instance(mock_redis):
     """Create an IceFlowsWorker with mocked Redis."""
-    with patch('aioredis.from_url', return_value=mock_redis):
-        from worker import IceFlowsWorker
-        worker = IceFlowsWorker(redis_url="redis://localhost:6379", worker_id="test-worker")
-        worker.redis_client = mock_redis
-        return worker
+    from worker import IceFlowsWorker
+    worker = IceFlowsWorker(redis_url="redis://localhost:6379", worker_id="test-worker")
+    worker.redis_client = mock_redis
+    return worker
 
 
 @pytest.fixture
