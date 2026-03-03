@@ -1,176 +1,431 @@
-#!/bin/bash
-# Deploy IceCharts to Alpha Environment (MicroK8s - dal2-alpha)
-#
-# This script deploys IceCharts to the alpha testing environment
-# using MicroK8s with the dal2-alpha kubectl context.
+#!/usr/bin/env bash
+# =============================================================================
+# IceCharts Alpha Deployment Script
+# Local MicroK8s Deployment via Kustomize
 #
 # Usage:
-#   ./scripts/deploy-alpha.sh [--build] [--test]
+#   ./scripts/deploy-alpha.sh [OPTIONS]
 #
 # Options:
-#   --build   Build and push Docker images before deploying
-#   --test    Run smoke tests after deployment
+#   --build               Build Docker images and import into MicroK8s (default)
+#   --skip-build          Skip Docker build, use existing images
+#   --tag TAG             Image tag to use (default: alpha)
+#   --service SERVICE     Build/deploy specific service only
+#   --dry-run             Show what would be deployed without applying
+#   --rollback            Rollback deployments to previous revision
+#   --help                Show this help message
 #
-# Prerequisites:
-#   - kubectl configured with dal2-alpha context
-#   - MicroK8s running with required addons (dns, ingress, storage)
-#   - Docker logged in to ghcr.io (for --build option)
+# Environment:
+#   KUBE_CONTEXT          Kubernetes context (default: local-alpha)
+#   NAMESPACE             Target namespace (default: icecharts-alpha)
+#   APP_HOST              Application hostname (default: icecharts.localhost.local)
+#
+# NOTE: This repo uses k8s/manifests/overlays/alpha (not k8s/kustomize/overlays/alpha).
+# Images are imported into MicroK8s directly (not pushed to an external registry).
+#
+# =============================================================================
 
 set -euo pipefail
 
+# =============================================================================
 # Configuration
-KUBE_CONTEXT="${KUBE_CONTEXT:-local-alpha}"
-NAMESPACE="icecharts-alpha"
-OVERLAY_PATH="k8s/manifests/overlays/alpha"
-REGISTRY="ghcr.io/penguintech"
-IMAGE_TAG="alpha"
+# =============================================================================
 
-# Colors for output
-RED='\033[0;31m'
-GREEN='\033[0;32m'
-YELLOW='\033[1;33m'
-BLUE='\033[0;34m'
-NC='\033[0m' # No Color
+readonly SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+readonly PROJECT_ROOT="$(dirname "${SCRIPT_DIR}")"
 
-# Parse arguments
-BUILD_IMAGES=false
-RUN_TESTS=false
-PUSH_IMAGES=true
+readonly APP_NAME="${APP_NAME:-icecharts}"
+readonly KUBE_CONTEXT="${KUBE_CONTEXT:-local-alpha}"
+readonly NAMESPACE="${NAMESPACE:-icecharts-alpha}"
+readonly APP_HOST="${APP_HOST:-icecharts.localhost.local}"
+readonly OVERLAY_PATH="${OVERLAY_PATH:-k8s/manifests/overlays/alpha}"
 
-while [[ $# -gt 0 ]]; do
-    case $1 in
-        --build)
-            BUILD_IMAGES=true
-            shift
-            ;;
-        --test)
-            RUN_TESTS=true
-            shift
-            ;;
-        --no-push)
-            PUSH_IMAGES=false
-            shift
-            ;;
-        *)
-            echo -e "${RED}Unknown option: $1${NC}"
-            exit 1
-            ;;
-    esac
-done
+# Services with Dockerfiles (customize per repo)
+declare -a SERVICES=("flask-backend" "webui")
 
-echo -e "${BLUE}============================================${NC}"
-echo -e "${BLUE}  IceCharts Alpha Deployment${NC}"
-echo -e "${BLUE}============================================${NC}"
-echo ""
+# Image name prefix (used for docker build tags)
+readonly IMAGE_PREFIX="${APP_NAME}"
 
-# Verify kubectl context exists
-if ! kubectl config get-contexts "$KUBE_CONTEXT" &>/dev/null; then
-    echo -e "${RED}Error: kubectl context '$KUBE_CONTEXT' not found${NC}"
-    echo "Available contexts:"
-    kubectl config get-contexts --output=name
-    exit 1
-fi
+# Defaults
+declare TAG="alpha"
+declare SERVICE_FILTER=""
+declare SKIP_BUILD=false
+declare DRY_RUN=false
+declare DO_ROLLBACK=false
 
-echo -e "${GREEN}Using kubectl context: $KUBE_CONTEXT${NC}"
+# =============================================================================
+# Color output helpers
+# =============================================================================
 
-# Function to run kubectl with context
-kctl() {
-    kubectl --context "$KUBE_CONTEXT" "$@"
+readonly RED='\033[0;31m'
+readonly GREEN='\033[0;32m'
+readonly YELLOW='\033[1;33m'
+readonly BLUE='\033[0;34m'
+readonly NC='\033[0m'
+
+print_info() {
+    echo -e "${BLUE}[INFO]${NC} $*"
 }
 
-# Build and push images if requested
-if [ "$BUILD_IMAGES" = true ]; then
-    echo ""
-    echo -e "${YELLOW}Building Docker images...${NC}"
+print_success() {
+    echo -e "${GREEN}[OK]${NC} $*"
+}
 
-    # Build API image (using Dockerfile.notests for faster alpha builds)
-    # Tests should be run separately via CI/CD, not during every local build
-    echo -e "${BLUE}Building API image (no tests)...${NC}"
-    docker build -t "$REGISTRY/icecharts-api:$IMAGE_TAG" \
-        -f services/flask-backend/Dockerfile.notests \
-        services/flask-backend/
+print_warning() {
+    echo -e "${YELLOW}[WARN]${NC} $*"
+}
 
-    # Build Web image (using Dockerfile.notests for faster alpha builds)
-    echo -e "${BLUE}Building Web image (no tests)...${NC}"
-    docker build -t "$REGISTRY/icecharts-web:$IMAGE_TAG" \
-        -f services/webui/Dockerfile.notests \
-        services/webui/
+print_error() {
+    echo -e "${RED}[ERROR]${NC} $*" >&2
+}
 
-    # Push images (unless --no-push is specified)
-    if [ "$PUSH_IMAGES" = true ]; then
-        echo -e "${BLUE}Pushing images to registry...${NC}"
-        docker push "$REGISTRY/icecharts-api:$IMAGE_TAG"
-        docker push "$REGISTRY/icecharts-web:$IMAGE_TAG"
-        echo -e "${GREEN}Images built and pushed successfully${NC}"
-    else
-        echo -e "${YELLOW}Skipping push (--no-push specified)${NC}"
-        echo -e "${GREEN}Images built successfully (local only)${NC}"
+# =============================================================================
+# kubectl wrapper (always uses --context)
+# =============================================================================
+
+kctl() {
+    kubectl --context "${KUBE_CONTEXT}" "$@"
+}
+
+# =============================================================================
+# Prerequisite checks
+# =============================================================================
+
+check_prerequisites() {
+    print_info "Checking prerequisites..."
+    local missing=()
+
+    for cmd in kubectl docker microk8s; do
+        if ! command -v "${cmd}" &>/dev/null; then
+            missing+=("${cmd}")
+        fi
+    done
+
+    if [[ ${#missing[@]} -gt 0 ]]; then
+        print_error "Missing required tools: ${missing[*]}"
+        exit 1
     fi
-fi
 
-# Create namespace if it doesn't exist
-echo ""
-echo -e "${YELLOW}Ensuring namespace exists...${NC}"
-if ! kctl get namespace "$NAMESPACE" &>/dev/null; then
-    echo -e "${BLUE}Creating namespace $NAMESPACE...${NC}"
-    kctl create namespace "$NAMESPACE"
-fi
+    # Verify context exists
+    if ! kubectl config get-contexts "${KUBE_CONTEXT}" &>/dev/null; then
+        print_error "Kubernetes context '${KUBE_CONTEXT}' not found"
+        echo "Available contexts:"
+        kubectl config get-contexts --output=name
+        exit 1
+    fi
 
-# Apply kustomize overlay
-echo ""
-echo -e "${YELLOW}Applying Kubernetes manifests...${NC}"
-kctl apply -k "$OVERLAY_PATH"
+    # Verify cluster reachable
+    if ! kctl cluster-info &>/dev/null; then
+        print_error "Cannot reach cluster via context '${KUBE_CONTEXT}'"
+        print_error "Is MicroK8s running? Try: microk8s status"
+        exit 1
+    fi
 
-# Wait for deployments to be ready
-echo ""
-echo -e "${YELLOW}Waiting for deployments to be ready...${NC}"
+    # Verify overlay exists
+    if [[ ! -d "${PROJECT_ROOT}/${OVERLAY_PATH}" ]]; then
+        print_error "Kustomize overlay not found: ${OVERLAY_PATH}"
+        exit 1
+    fi
 
-echo -e "${BLUE}Waiting for API deployment...${NC}"
-kctl rollout status deployment/api -n "$NAMESPACE" --timeout=300s
+    print_success "All prerequisites satisfied"
+}
 
-echo -e "${BLUE}Waiting for Web deployment...${NC}"
-kctl rollout status deployment/web -n "$NAMESPACE" --timeout=300s
+# =============================================================================
+# Docker build and MicroK8s import
+# =============================================================================
 
-echo -e "${BLUE}Waiting for PostgreSQL...${NC}"
-kctl rollout status statefulset/postgres -n "$NAMESPACE" --timeout=300s
+build_and_import() {
+    local service="$1"
+    local tag="$2"
+    local service_path="${PROJECT_ROOT}/services/${service}"
 
-echo -e "${BLUE}Waiting for Redis...${NC}"
-kctl rollout status statefulset/redis -n "$NAMESPACE" --timeout=300s
+    if [[ ! -d "${service_path}" ]]; then
+        print_warning "Service directory not found: services/${service} — skipping"
+        return 0
+    fi
 
-echo ""
-echo -e "${GREEN}============================================${NC}"
-echo -e "${GREEN}  Deployment Complete!${NC}"
-echo -e "${GREEN}============================================${NC}"
+    # Find Dockerfile (prefer Dockerfile.notests for faster alpha builds)
+    local dockerfile="${service_path}/Dockerfile"
+    if [[ -f "${service_path}/Dockerfile.notests" ]]; then
+        dockerfile="${service_path}/Dockerfile.notests"
+        print_info "Using Dockerfile.notests for ${service} (faster alpha build)"
+    fi
 
-# Show deployment status
-echo ""
-echo -e "${YELLOW}Deployment Status:${NC}"
-kctl get pods -n "$NAMESPACE"
+    if [[ ! -f "${dockerfile}" ]]; then
+        print_warning "No Dockerfile found for ${service} — skipping"
+        return 0
+    fi
 
-echo ""
-echo -e "${YELLOW}Services:${NC}"
-kctl get svc -n "$NAMESPACE"
+    local image_name="${IMAGE_PREFIX}/${service}:${tag}"
 
-# Get service URLs
-API_PORT=$(kctl get svc api -n "$NAMESPACE" -o jsonpath='{.spec.ports[0].nodePort}' 2>/dev/null || echo "")
-WEB_PORT=$(kctl get svc web -n "$NAMESPACE" -o jsonpath='{.spec.ports[0].nodePort}' 2>/dev/null || echo "")
+    print_info "Building image: ${image_name}"
+    if ! docker build \
+        --file "${dockerfile}" \
+        --tag "${image_name}" \
+        --label "environment=alpha" \
+        --label "timestamp=$(date -u +%Y-%m-%dT%H:%M:%SZ)" \
+        "${service_path}"; then
+        print_error "Failed to build ${service}"
+        return 1
+    fi
 
-echo ""
-echo -e "${BLUE}Access URLs:${NC}"
-if [ -n "$API_PORT" ]; then
-    echo "  API: http://localhost:$API_PORT/api/v1/health"
-fi
-if [ -n "$WEB_PORT" ]; then
-    echo "  Web: http://localhost:$WEB_PORT"
-fi
-echo "  Ingress: http://icecharts-alpha.local (add to /etc/hosts)"
+    print_info "Importing ${image_name} into MicroK8s..."
+    if ! docker save "${image_name}" | microk8s ctr image import -; then
+        print_error "Failed to import ${image_name} into MicroK8s"
+        return 1
+    fi
 
-# Run smoke tests if requested
-if [ "$RUN_TESTS" = true ]; then
+    print_success "Built and imported: ${image_name}"
+}
+
+# =============================================================================
+# Kustomize deployment
+# =============================================================================
+
+do_deploy() {
+    print_info "Deploying to local MicroK8s cluster..."
+    print_info "  Context:   ${KUBE_CONTEXT}"
+    print_info "  Namespace: ${NAMESPACE}"
+    print_info "  Overlay:   ${OVERLAY_PATH}"
+    print_info "  Host:      ${APP_HOST}"
+
+    # Create namespace if missing
+    if ! kctl get namespace "${NAMESPACE}" &>/dev/null; then
+        print_info "Creating namespace: ${NAMESPACE}"
+        kctl create namespace "${NAMESPACE}"
+    fi
+
+    # Apply kustomize overlay
+    if [[ "${DRY_RUN}" == "true" ]]; then
+        print_info "DRY-RUN: Rendering kustomize output..."
+        kctl apply -k "${PROJECT_ROOT}/${OVERLAY_PATH}" --dry-run=client -o yaml
+        return 0
+    fi
+
+    if ! kctl apply -k "${PROJECT_ROOT}/${OVERLAY_PATH}"; then
+        print_error "Failed to apply kustomize overlay"
+        return 1
+    fi
+
+    print_success "Kustomize manifests applied"
+}
+
+# =============================================================================
+# Rollout verification
+# =============================================================================
+
+wait_for_rollout() {
+    print_info "Waiting for deployments to roll out..."
+
+    # Get all deployments in namespace
+    local deployments
+    deployments=$(kctl get deployments -n "${NAMESPACE}" -o jsonpath='{.items[*].metadata.name}' 2>/dev/null || echo "")
+
+    if [[ -z "${deployments}" ]]; then
+        print_warning "No deployments found in namespace ${NAMESPACE}"
+        return 0
+    fi
+
+    local failed=false
+    for deploy in ${deployments}; do
+        print_info "Waiting for deployment/${deploy}..."
+        if ! kctl rollout status "deployment/${deploy}" -n "${NAMESPACE}" --timeout=300s; then
+            print_error "Deployment ${deploy} failed to roll out"
+            failed=true
+        fi
+    done
+
+    # Also check statefulsets
+    local statefulsets
+    statefulsets=$(kctl get statefulsets -n "${NAMESPACE}" -o jsonpath='{.items[*].metadata.name}' 2>/dev/null || echo "")
+
+    for sts in ${statefulsets}; do
+        print_info "Waiting for statefulset/${sts}..."
+        if ! kctl rollout status "statefulset/${sts}" -n "${NAMESPACE}" --timeout=300s; then
+            print_error "StatefulSet ${sts} failed to roll out"
+            failed=true
+        fi
+    done
+
+    if [[ "${failed}" == "true" ]]; then
+        return 1
+    fi
+
+    print_success "All workloads rolled out successfully"
+}
+
+# =============================================================================
+# Show status
+# =============================================================================
+
+show_status() {
     echo ""
-    echo -e "${YELLOW}Running smoke tests...${NC}"
-    ./scripts/test-alpha-smoke.sh
-fi
+    print_info "Pod Status:"
+    kctl get pods -n "${NAMESPACE}" -o wide
+    echo ""
+    print_info "Services:"
+    kctl get svc -n "${NAMESPACE}"
+    echo ""
+    print_info "Access URL: https://${APP_HOST}"
+    echo ""
+    print_info "Quick commands:"
+    echo "  View pods:   kubectl --context ${KUBE_CONTEXT} get pods -n ${NAMESPACE}"
+    echo "  View logs:   kubectl --context ${KUBE_CONTEXT} logs -n ${NAMESPACE} -l environment=alpha -f"
+    echo "  Describe:    kubectl --context ${KUBE_CONTEXT} describe pods -n ${NAMESPACE}"
+}
 
-echo ""
-echo -e "${GREEN}Done!${NC}"
+# =============================================================================
+# Rollback
+# =============================================================================
+
+do_rollback() {
+    print_warning "Rolling back deployments in ${NAMESPACE}..."
+
+    local deployments
+    deployments=$(kctl get deployments -n "${NAMESPACE}" -o jsonpath='{.items[*].metadata.name}' 2>/dev/null || echo "")
+
+    if [[ -z "${deployments}" ]]; then
+        print_error "No deployments found in namespace ${NAMESPACE}"
+        return 1
+    fi
+
+    for deploy in ${deployments}; do
+        print_info "Rolling back deployment/${deploy}..."
+        kctl rollout undo "deployment/${deploy}" -n "${NAMESPACE}"
+    done
+
+    print_success "Rollback initiated"
+    wait_for_rollout
+}
+
+# =============================================================================
+# Help
+# =============================================================================
+
+show_help() {
+    cat <<EOF
+Usage: $(basename "$0") [OPTIONS]
+
+Deploy ${APP_NAME} to local MicroK8s alpha environment using Kustomize.
+
+OPTIONS:
+    --build               Build images and import into MicroK8s (default)
+    --skip-build          Skip Docker build, use existing images
+    --tag TAG             Image tag (default: alpha)
+    --service SERVICE     Build specific service only (e.g., flask-backend)
+    --dry-run             Render manifests without applying
+    --rollback            Rollback deployments to previous revision
+    --help                Show this help message
+
+ENVIRONMENT:
+    KUBE_CONTEXT:   ${KUBE_CONTEXT}
+    NAMESPACE:      ${NAMESPACE}
+    APP_HOST:       ${APP_HOST}
+    OVERLAY_PATH:   ${OVERLAY_PATH}
+    SERVICES:       ${SERVICES[*]}
+
+EXAMPLES:
+    # Full build and deploy
+    $(basename "$0")
+
+    # Deploy without rebuilding images
+    $(basename "$0") --skip-build
+
+    # Build and deploy only one service
+    $(basename "$0") --service flask-backend
+
+    # Preview what would be applied
+    $(basename "$0") --skip-build --dry-run
+
+    # Rollback to previous deployment
+    $(basename "$0") --rollback
+EOF
+}
+
+# =============================================================================
+# Main
+# =============================================================================
+
+main() {
+    # Parse arguments
+    while [[ $# -gt 0 ]]; do
+        case "$1" in
+            --build)
+                SKIP_BUILD=false
+                shift
+                ;;
+            --skip-build)
+                SKIP_BUILD=true
+                shift
+                ;;
+            --tag)
+                TAG="$2"
+                shift 2
+                ;;
+            --service)
+                SERVICE_FILTER="$2"
+                shift 2
+                ;;
+            --dry-run)
+                DRY_RUN=true
+                shift
+                ;;
+            --rollback)
+                DO_ROLLBACK=true
+                shift
+                ;;
+            --help)
+                show_help
+                exit 0
+                ;;
+            *)
+                print_error "Unknown option: $1"
+                show_help
+                exit 1
+                ;;
+        esac
+    done
+
+    echo ""
+    print_info "=========================================="
+    print_info "  ${APP_NAME} — Alpha Deployment"
+    print_info "=========================================="
+    echo ""
+
+    check_prerequisites
+
+    # Handle rollback
+    if [[ "${DO_ROLLBACK}" == "true" ]]; then
+        do_rollback
+        show_status
+        exit $?
+    fi
+
+    # Build images
+    if [[ "${SKIP_BUILD}" != "true" ]]; then
+        print_info "Building and importing Docker images..."
+        for service in "${SERVICES[@]}"; do
+            if [[ -z "${SERVICE_FILTER}" ]] || [[ "${SERVICE_FILTER}" == "${service}" ]]; then
+                build_and_import "${service}" "${TAG}" || {
+                    print_error "Failed to build ${service}"
+                    exit 1
+                }
+            fi
+        done
+    else
+        print_info "Skipping build (--skip-build)"
+    fi
+
+    # Deploy
+    do_deploy || exit 1
+
+    if [[ "${DRY_RUN}" != "true" ]]; then
+        wait_for_rollout || print_warning "Some workloads did not roll out cleanly"
+        show_status
+        print_success "Alpha deployment complete!"
+    else
+        print_success "Dry-run complete!"
+    fi
+}
+
+main "$@"
