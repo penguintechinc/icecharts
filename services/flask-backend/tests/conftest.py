@@ -179,14 +179,31 @@ def _clean_data(app: Flask):
                     )
                 except Exception:
                     pass
+        # Ensure we are in a clean transaction state before re-seeding.
+        # The TRUNCATE block above may have silently swallowed an exception,
+        # leaving the psycopg2 connection in an aborted state.  A rollback
+        # here is always safe (no-op when no transaction is active) and
+        # prevents the subsequent update_or_insert from failing with
+        # "InFailedSqlTransaction".
+        try:
+            db.rollback()
+        except Exception:
+            pass
+
         # Re-seed the default tenant after truncation
-        db.tenants.update_or_insert(
-            db.tenants.slug == "test-tenant",
-            name="Test Tenant",
-            slug="test-tenant",
-            is_active=True,
-        )
-        db.commit()
+        try:
+            db.tenants.update_or_insert(
+                db.tenants.slug == "test-tenant",
+                name="Test Tenant",
+                slug="test-tenant",
+                is_active=True,
+            )
+            db.commit()
+        except Exception:
+            try:
+                db.rollback()
+            except Exception:
+                pass
     yield
 
 

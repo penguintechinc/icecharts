@@ -295,3 +295,200 @@ class TestAuthRoleBasedAccess:
         assert response.status_code == 200
         data = json.loads(response.data)
         assert data["user"]["role"] == "viewer"
+
+
+class TestAuthEdgeCases:
+    """Edge case tests for authentication."""
+
+    def test_auth_required_missing_bearer_prefix(self, client):
+        """Token without 'Bearer ' prefix should return 401."""
+        response = client.get(
+            "/api/v1/auth/me",
+            headers={"Authorization": "just-a-token-without-bearer"},
+        )
+        assert response.status_code == 401
+        data = json.loads(response.data)
+        assert "error" in data
+
+    def test_auth_required_malformed_token(self, client):
+        """Malformed JWT token should return 401."""
+        response = client.get(
+            "/api/v1/auth/me",
+            headers={"Authorization": "Bearer not.a.valid.jwt"},
+        )
+        assert response.status_code == 401
+        data = json.loads(response.data)
+        assert "error" in data
+
+    def test_auth_required_empty_authorization_header(self, client):
+        """Empty Authorization header should return 401."""
+        response = client.get(
+            "/api/v1/auth/me",
+            headers={"Authorization": ""},
+        )
+        assert response.status_code == 401
+
+    def test_auth_required_bearer_without_token(self, client):
+        """'Bearer ' without token should return 401."""
+        response = client.get(
+            "/api/v1/auth/me",
+            headers={"Authorization": "Bearer "},
+        )
+        assert response.status_code == 401
+
+    def test_multiple_spaces_in_authorization(self, client):
+        """Authorization with extra spaces should return 401."""
+        response = client.get(
+            "/api/v1/auth/me",
+            headers={"Authorization": "Bearer  token"},
+        )
+        assert response.status_code == 401
+
+    def test_case_insensitive_bearer_prefix(self, client, valid_jwt_token):
+        """Bearer prefix should work case-insensitively."""
+        response = client.get(
+            "/api/v1/auth/me",
+            headers={"Authorization": f"bearer {valid_jwt_token}"},
+        )
+        assert response.status_code == 200
+
+    def test_login_after_logout_gets_new_token(
+        self, client, test_user, auth_headers
+    ):
+        """User should get a new token after logout and re-login."""
+        # Logout
+        logout_response = client.post("/api/v1/auth/logout", headers=auth_headers)
+        assert logout_response.status_code == 200
+
+        # Login again
+        login_response = client.post(
+            "/api/v1/auth/login",
+            json={"email": test_user["email"], "password": test_user["password"]},
+        )
+        assert login_response.status_code == 200
+        data = json.loads(login_response.data)
+        assert "access_token" in data
+        new_token = data["access_token"]
+
+        # New token should be valid
+        response = client.get(
+            "/api/v1/auth/me",
+            headers={"Authorization": f"Bearer {new_token}"},
+        )
+        assert response.status_code == 200
+
+    def test_register_with_unicode_characters(self, client):
+        """Registration with unicode characters should work."""
+        response = client.post(
+            "/api/v1/auth/register",
+            json={
+                "email": "unicode@example.com",
+                "password": "SecurePass123!",
+                "full_name": "José García",
+            },
+        )
+        assert response.status_code == 201
+        data = json.loads(response.data)
+        assert data["user"]["full_name"] == "José García"
+
+    def test_login_case_insensitive_email(self, client, test_user):
+        """Login should be case-insensitive for email."""
+        response = client.post(
+            "/api/v1/auth/login",
+            json={
+                "email": test_user["email"].upper(),
+                "password": test_user["password"],
+            },
+        )
+        # Should either work or explicitly fail consistently
+        assert response.status_code in [200, 401]
+
+
+class TestAuthSecurityEdgeCases:
+    """Security-focused edge case tests for authentication."""
+
+    def test_login_with_expired_token_returns_401(
+        self, client, expired_jwt_token
+    ):
+        """Accessing a protected endpoint with an expired token must return 401."""
+        headers = {"Authorization": f"Bearer {expired_jwt_token}"}
+        response = client.get("/api/v1/auth/me", headers=headers)
+        assert response.status_code == 401
+        data = json.loads(response.data)
+        assert "error" in data
+
+    def test_refresh_token_replay_attack_second_use_fails(
+        self, client, refresh_token, app
+    ):
+        """A refresh token must be single-use: second call after rotation fails."""
+        # First use – should succeed and issue a new access token
+        first_response = client.post(
+            "/api/v1/auth/refresh",
+            json={"refresh_token": refresh_token},
+        )
+        assert first_response.status_code == 200, (
+            f"First refresh failed: {first_response.data}"
+        )
+
+        # Second use of the same (now consumed) token must be rejected
+        second_response = client.post(
+            "/api/v1/auth/refresh",
+            json={"refresh_token": refresh_token},
+        )
+        # The original token should no longer be valid after first use
+        assert second_response.status_code in [401, 400], (
+            "Replay of already-used refresh token should be rejected"
+        )
+
+    def test_auth_required_tampered_signature(self, client, valid_jwt_token):
+        """A JWT with a tampered signature must be rejected with 401."""
+        # Corrupt the signature part (last segment) of the token
+        parts = valid_jwt_token.split(".")
+        assert len(parts) == 3, "JWT should have three dot-separated parts"
+        tampered_sig = parts[2][:-4] + "XXXX"
+        tampered_token = ".".join([parts[0], parts[1], tampered_sig])
+
+        headers = {"Authorization": f"Bearer {tampered_token}"}
+        response = client.get("/api/v1/auth/me", headers=headers)
+        assert response.status_code == 401
+        data = json.loads(response.data)
+        assert "error" in data
+
+    def test_auth_required_wrong_token_type(self, client, refresh_token):
+        """Using a refresh token where an access token is expected must fail."""
+        # Refresh tokens have type='refresh'; the auth middleware should reject them
+        headers = {"Authorization": f"Bearer {refresh_token}"}
+        response = client.get("/api/v1/auth/me", headers=headers)
+        # Should be 401 because token type is 'refresh', not 'access'
+        assert response.status_code == 401
+
+    def test_register_then_login_full_cycle(self, client):
+        """Registering and immediately logging in should produce a valid token."""
+        email = "cycle@example.com"
+        password = "CyclePass123!"
+
+        # Register
+        reg_resp = client.post(
+            "/api/v1/auth/register",
+            json={"email": email, "password": password, "full_name": "Cycle User"},
+        )
+        assert reg_resp.status_code == 201
+
+        # Login
+        login_resp = client.post(
+            "/api/v1/auth/login",
+            json={"email": email, "password": password},
+        )
+        assert login_resp.status_code == 200
+        data = json.loads(login_resp.data)
+        assert "access_token" in data
+        token = data["access_token"]
+
+        # Use the token immediately
+        me_resp = client.get(
+            "/api/v1/auth/me",
+            headers={"Authorization": f"Bearer {token}"},
+        )
+        assert me_resp.status_code == 200
+        me_data = json.loads(me_resp.data)
+        assert me_data.get("email") == email

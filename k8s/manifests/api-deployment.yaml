@@ -2,7 +2,7 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: api
-  namespace: icecharts-beta
+  namespace: icecharts
   labels:
     app: api
     app.kubernetes.io/name: icecharts
@@ -28,7 +28,7 @@ spec:
         runAsNonRoot: true
       containers:
       - name: api
-        image: registry-dal2.penguintech.io/icecharts-api:v1.0.2-beta
+        image: ghcr.io/penguintechinc/icecharts/icecharts-api:v1.0.2
         ports:
         - containerPort: 5000
           protocol: TCP

@@ -238,6 +238,7 @@ jobs:
             --cov-report=xml \
             --cov-report=html \
             --junitxml=test-results.xml \
+            --cov-fail-under=95 \
             -v
         env:
           FLASK_ENV: testing
@@ -253,6 +254,7 @@ jobs:
           files: ./services/flask-backend/coverage.xml
           flags: flask-py${{ matrix.python-version }}
           name: flask-coverage-${{ matrix.python-version }}
+          fail_ci_if_error: false
 
       - name: Upload test results
         uses: actions/upload-artifact@v4
@@ -324,6 +326,7 @@ jobs:
         with:
           files: ./services/${{ matrix.service }}/coverage.xml
           flags: ${{ matrix.service }}-py${{ matrix.python-version }}
+          fail_ci_if_error: false
 
       - name: Upload test results
         uses: actions/upload-artifact@v4
@@ -376,6 +379,7 @@ jobs:
         with:
           files: ./services/webui/coverage/coverage-final.json
           flags: webui-node${{ matrix.node-version }}
+          fail_ci_if_error: false
 
       - name: Upload build artifacts
         uses: actions/upload-artifact@v4

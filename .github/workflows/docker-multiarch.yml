@@ -46,9 +46,13 @@ jobs:
             # Release: v1.0.0
             TAG="v${VERSION}"
             echo "Release build: $TAG"
-          elif [[ "${{ github.ref }}" == "refs/heads/main" ]]; then
-            # Main branch: v1.0.0-beta
+          elif [[ "${{ github.ref }}" == refs/heads/v* ]]; then
+            # Release branch (v*.x): v1.0.0-beta
             TAG="v${VERSION}-beta"
+            echo "Release branch build: $TAG"
+          elif [[ "${{ github.ref }}" == "refs/heads/main" ]]; then
+            # Main branch: v1.0.0-gamma
+            TAG="v${VERSION}-gamma"
             echo "Main branch build: $TAG"
           else
             # Other branches: v1.0.0-alpha

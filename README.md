@@ -6,6 +6,7 @@
   <a href="https://github.com/penguintechinc/IceCharts/actions/workflows/ci.yml"><img src="https://github.com/penguintechinc/IceCharts/actions/workflows/ci.yml/badge.svg" alt="CI"></a>
   <a href="https://github.com/penguintechinc/IceCharts/actions/workflows/docker-multiarch.yml"><img src="https://github.com/penguintechinc/IceCharts/actions/workflows/docker-multiarch.yml/badge.svg" alt="Docker Build"></a>
   <a href="https://github.com/penguintechinc/IceCharts/actions/workflows/test-and-lint.yml"><img src="https://github.com/penguintechinc/IceCharts/actions/workflows/test-and-lint.yml/badge.svg" alt="Tests"></a>
+  <a href="https://codecov.io/gh/penguintechinc/IceCharts"><img src="https://codecov.io/gh/penguintechinc/IceCharts/branch/main/graph/badge.svg" alt="Coverage"></a>
   <a href="https://semver.org"><img src="https://img.shields.io/badge/version-1.0.3-blue.svg" alt="version"></a>
   <a href="LICENSE.md"><img src="https://img.shields.io/badge/License-Limited%20AGPL3-blue.svg" alt="License"></a>
 </p>

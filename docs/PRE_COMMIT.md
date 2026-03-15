@@ -337,6 +337,16 @@ Before running `git commit`:
 - [ ] Documentation updated (if changing features)
 - [ ] No cross-architecture build failures (optional QEMU test)
 
+## Coverage Check
+
+Before committing, verify coverage does not drop below thresholds:
+
+- [ ] `cd services/flask-backend && pytest tests/ --cov=app --cov-fail-under=95 -q`
+- [ ] `cd services/icestreams-worker && pytest tests/ --cov=. --cov-fail-under=90 -q`
+- [ ] `cd services/iceflows-worker && pytest tests/ --cov=. --cov-fail-under=90 -q`
+- [ ] `cd services/iceruns-invoker && pytest tests/ --cov=. --cov-fail-under=90 -q`
+- [ ] `cd services/webui && npm run test:coverage`
+
 ## Resources
 
 - **Testing Guide**: [Testing Documentation](TESTING.md)

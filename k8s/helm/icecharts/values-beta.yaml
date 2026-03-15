@@ -4,22 +4,26 @@ namespace:
   create: false
   name: icecharts
 
-# Global overrides for dal2 cluster (no Docker Hub access)
+# Global overrides for beta cluster (pull from GitHub Container Registry)
 global:
-  busyboxImage: "registry-dal2.penguintech.io/busybox:1.35"
+  busyboxImage: "ghcr.io/penguintechinc/icecharts/busybox:1.35"
 
-# API image from dal2 registry
+# Image pull secret for ghcr.io
+imagePullSecrets:
+  - name: ghcr-pull-secret
+
+# API image from ghcr.io (CI-built)
 api:
   image:
-    registry: registry-dal2.penguintech.io
-    repository: icecharts-api
+    registry: ghcr.io/penguintechinc/icecharts
+    repository: api
     tag: "beta"
 
-# Web image from dal2 registry
+# Web image from ghcr.io (CI-built)
 web:
   image:
-    registry: registry-dal2.penguintech.io
-    repository: icecharts-web
+    registry: ghcr.io/penguintechinc/icecharts
+    repository: web
     tag: "beta"
 
 ingress:
@@ -32,24 +36,24 @@ ingress:
     enabled: true
     secretName: icecharts-tls
 
-# Minio image from dal2 registry (Docker Hub not accessible from cluster)
+# Minio image from ghcr.io (CI-built)
 minio:
   image:
-    registry: registry-dal2.penguintech.io
+    registry: ghcr.io/penguintechinc/icecharts
     repository: minio
     tag: "latest"
 
-# Postgres image from dal2 registry
+# Postgres image from ghcr.io (CI-built)
 postgres:
   image:
-    registry: registry-dal2.penguintech.io
+    registry: ghcr.io/penguintechinc/icecharts
     repository: postgres
     tag: "17-alpine"
 
-# Redis image from dal2 registry
+# Redis image from ghcr.io (CI-built)
 redis:
   image:
-    registry: registry-dal2.penguintech.io
+    registry: ghcr.io/penguintechinc/icecharts
     repository: redis
     tag: "7-alpine"
 

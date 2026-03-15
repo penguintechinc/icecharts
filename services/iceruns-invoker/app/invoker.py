@@ -2,6 +2,7 @@
 
 import os
 import sys
+import io
 import json
 import socket
 import tempfile
@@ -309,7 +310,6 @@ class IceRunsInvoker:
 
 def main():
     """Entry point."""
-    import io
     import threading
     from app.metrics_server import run_metrics_server
 

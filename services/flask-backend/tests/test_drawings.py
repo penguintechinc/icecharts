@@ -361,3 +361,135 @@ class TestDrawingSharing:
         """Test listing drawings returns successfully."""
         response = client.get("/api/v1/drawings", headers=auth_headers)
         assert response.status_code == 200
+
+
+class TestDrawingErrorPaths:
+    """Error path tests for drawing operations."""
+
+    def test_get_nonexistent_drawing_returns_404(self, client, auth_headers):
+        """Getting a drawing that doesn't exist returns 404."""
+        response = client.get(
+            "/api/v1/drawings/99999",
+            headers=auth_headers
+        )
+        assert response.status_code == 404
+
+    def test_create_drawing_missing_required_fields_returns_400(self, client, auth_headers):
+        """Creating a drawing without required fields returns 400."""
+        response = client.post(
+            "/api/v1/drawings",
+            json={},  # missing name/title/required fields
+            headers=auth_headers
+        )
+        assert response.status_code == 400
+
+    def test_delete_nonexistent_drawing_returns_404(self, client, auth_headers):
+        """Deleting a drawing that doesn't exist returns 404."""
+        response = client.delete(
+            "/api/v1/drawings/99999",
+            headers=auth_headers
+        )
+        assert response.status_code == 404
+
+    def test_update_nonexistent_drawing_returns_404_duplicate(self, client, auth_headers):
+        """Test updating non-existent drawing returns 404 (second test)."""
+        response = client.put(
+            "/api/v1/drawings/99999",
+            headers=auth_headers,
+            json={"name": "Updated Name"}
+        )
+        assert response.status_code == 404
+
+    def test_create_drawing_with_null_name_returns_400(self, client, auth_headers):
+        """Creating a drawing with null name returns 400."""
+        response = client.post(
+            "/api/v1/drawings",
+            headers=auth_headers,
+            json={
+                "name": None,
+                "description": "A test drawing",
+                "content": {"nodes": [], "edges": []},
+            },
+        )
+        assert response.status_code == 400
+
+    def test_get_drawing_without_auth_returns_401(self, client):
+        """Getting a drawing without authentication returns 401."""
+        response = client.get("/api/v1/drawings/1")
+        assert response.status_code == 401
+
+    def test_list_drawings_without_auth_returns_401(self, client):
+        """Listing drawings without authentication returns 401."""
+        response = client.get("/api/v1/drawings")
+        assert response.status_code == 401
+
+
+class TestDrawingOwnershipAndExport:
+    """Ownership enforcement and export error path tests for drawing operations."""
+
+    def test_export_drawing_invalid_format_returns_400(self, client, auth_headers):
+        """Exporting a drawing with an unsupported format returns 400."""
+        _, created = _create_drawing_via_api(client, auth_headers)
+        assert created is not None
+        drawing_id = created["id"]
+
+        response = client.post(
+            f"/api/v1/drawings/{drawing_id}/export",
+            headers=auth_headers,
+            json={"format": "bmp"},  # not in VALID_FORMATS: png, jpg, svg, pdf, json
+        )
+        assert response.status_code == 400
+
+    def test_non_owner_cannot_update_drawing_returns_403(
+        self, client, auth_headers, create_test_user
+    ):
+        """A user who does not own a drawing cannot update it (returns 403)."""
+        # Create a drawing as the default auth user (owner)
+        _, created = _create_drawing_via_api(client, auth_headers)
+        assert created is not None
+        drawing_id = created["id"]
+
+        # Create a second user (viewer role) and their headers
+        other_user = create_test_user(
+            email="other_viewer@example.com",
+            role="viewer",
+        )
+        other_headers = {"Authorization": f"Bearer {other_user['token']}"}
+
+        response = client.put(
+            f"/api/v1/drawings/{drawing_id}",
+            headers=other_headers,
+            json={"name": "Hijacked Name"},
+        )
+        assert response.status_code == 403
+
+    def test_non_owner_cannot_delete_drawing_returns_403(
+        self, client, auth_headers, create_test_user
+    ):
+        """A user who does not own a drawing cannot delete it (returns 403)."""
+        # Create a drawing as the default auth user (owner)
+        _, created = _create_drawing_via_api(client, auth_headers)
+        assert created is not None
+        drawing_id = created["id"]
+
+        # Create a second user (viewer role) and their headers
+        other_user = create_test_user(
+            email="other_viewer2@example.com",
+            role="viewer",
+        )
+        other_headers = {"Authorization": f"Bearer {other_user['token']}"}
+
+        response = client.delete(
+            f"/api/v1/drawings/{drawing_id}",
+            headers=other_headers,
+        )
+        assert response.status_code == 403
+
+    def test_export_nonexistent_drawing_returns_404(self, client, auth_headers):
+        """Exporting a drawing that doesn't exist returns 404."""
+        response = client.post(
+            "/api/v1/drawings/99999/export",
+            headers=auth_headers,
+            json={"format": "svg"},
+        )
+        assert response.status_code == 404

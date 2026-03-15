@@ -253,3 +253,233 @@ class TestExecuteCalls:
         results = handler.execute_calls([config], {}, trigger_phase="post_merge")
         assert results[0].success is True
         assert results[0].status == "completed"
+
+
+class TestCallHandlerErrors:
+    """Error path tests for call handler."""
+
+    def test_http_timeout_returns_error_status(self, handler, mock_session):
+        """When HTTP call times out, CallResult status is 'error'."""
+        import requests
+        mock_session.post.side_effect = requests.Timeout("Connection timeout")
+        config = {
+            "call_id": "err-timeout",
+            "name": "Timeout Call",
+            "call_type": "icestreams",
+            "target_id": "pb-1",
+            "input_template": {},
+            "is_blocking": False,
+            "trigger_on": "post_merge",
+        }
+        result = handler.execute_call(config, {})
+        assert result.success is False
+        assert result.status == "error"
+        assert "API request failed" in result.error_message
+
+    def test_http_connection_error_returns_error_status(self, handler, mock_session):
+        """When HTTP connection fails, CallResult status is 'error'."""
+        import requests
+        mock_session.post.side_effect = requests.ConnectionError("Connection refused")
+        config = {
+            "call_id": "err-conn",
+            "name": "Connection Error Call",
+            "call_type": "iceruns",
+            "target_id": "fn-1",
+            "input_template": {},
+            "is_blocking": False,
+            "trigger_on": "post_merge",
+        }
+        result = handler.execute_call(config, {})
+        assert result.success is False
+        assert result.status == "error"
+        assert "Connection refused" in result.error_message
+
+    def test_http_auth_failure_raises_for_status(self, handler, mock_session):
+        """When API returns 401/403, response.raise_for_status() raises."""
+        import requests
+        mock_session.post.return_value.status_code = 401
+        mock_session.post.return_value.raise_for_status.side_effect = (
+            requests.HTTPError("401 Unauthorized")
+        )
+        config = {
+            "call_id": "err-auth",
+            "name": "Auth Failure Call",
+            "call_type": "icestreams",
+            "target_id": "pb-2",
+            "input_template": {},
+            "is_blocking": False,
+            "trigger_on": "post_merge",
+        }
+        result = handler.execute_call(config, {})
+        assert result.success is False
+        assert result.status == "error"
+        assert "API request failed" in result.error_message
+
+    def test_missing_target_id_returns_config_error(self, handler):
+        """When target_id is missing, CallResult status is 'error'."""
+        config = {
+            "call_id": "err-no-target",
+            "name": "Missing Target Call",
+            "call_type": "icestreams",
+            # target_id missing
+            "input_template": {},
+            "is_blocking": False,
+            "trigger_on": "post_merge",
+        }
+        result = handler.execute_call(config, {})
+        assert result.success is False
+        assert result.status == "error"
+        assert "target_id is required" in result.error_message
+
+    def test_invalid_call_type_returns_config_error(self, handler):
+        """When call_type is invalid, CallResult status is 'error'."""
+        config = {
+            "call_id": "err-bad-type",
+            "name": "Bad Call Type",
+            "call_type": "invalid_type",
+            "target_id": "pb-1",
+            "input_template": {},
+            "is_blocking": False,
+            "trigger_on": "post_merge",
+        }
+        result = handler.execute_call(config, {})
+        assert result.success is False
+        assert result.status == "error"
+        assert "Invalid call_type" in result.error_message
+
+    def test_polling_timeout_returns_timeout_status(self, handler, mock_session):
+        """When polling times out, status is 'timeout'."""
+        post_response = MagicMock()
+        post_response.json.return_value = {"execution_id": "exec-timeout"}
+        mock_session.post.return_value = post_response
+
+        get_response = MagicMock()
+        get_response.json.return_value = {"status": "running"}
+        mock_session.get.return_value = get_response
+
+        config = {
+            "call_id": "bl-timeout",
+            "name": "Blocking Timeout",
+            "call_type": "icestreams",
+            "target_id": "pb-1",
+            "input_template": {},
+            "is_blocking": True,
+            "timeout_seconds": 2,  # Very short timeout
+            "trigger_on": "post_merge",
+        }
+
+        with patch("time.time") as mock_time, patch("time.sleep"):
+            # Simulate time passing: start=0, each poll adds 10s
+            mock_time.side_effect = [0, 0, 10, 10, 20, 20]
+            result = handler.execute_call(config, {})
+
+        assert result.success is False
+        assert result.status == "timeout"
+        assert "did not complete" in result.error_message
+
+    def test_invalid_execution_id_response_raises_value_error(self, handler, mock_session):
+        """When execution_id missing in response, raises ValueError."""
+        mock_session.post.return_value.json.return_value = {"no_id_here": "value"}
+        config = {
+            "call_id": "err-no-exec-id",
+            "name": "No Exec ID Call",
+            "call_type": "icestreams",
+            "target_id": "pb-1",
+            "input_template": {},
+            "is_blocking": False,
+            "trigger_on": "post_merge",
+        }
+        result = handler.execute_call(config, {})
+        assert result.success is False
+        assert result.status == "error"
+        assert "missing execution_id" in result.error_message
+
+    def test_blocking_call_with_failed_status_returns_failed(self, handler, mock_session):
+        """When blocking call returns failed status, result.success is False."""
+        post_response = MagicMock()
+        post_response.json.return_value = {"execution_id": "exec-failed"}
+        mock_session.post.return_value = post_response
+
+        get_response = MagicMock()
+        get_response.json.return_value = {
+            "status": "failed",
+            "output": None,
+            "error_message": "Execution failed",
+        }
+        mock_session.get.return_value = get_response
+
+        config = {
+            "call_id": "bl-failed",
+            "name": "Blocking Failed",
+            "call_type": "iceruns",
+            "target_id": "fn-1",
+            "input_template": {},
+            "is_blocking": True,
+            "timeout_seconds": 30,
+            "trigger_on": "post_merge",
+        }
+        result = handler.execute_call(config, {})
+        assert result.success is False
+        assert result.status == "failed"
+        assert result.error_message == "Execution failed"
+
+    def test_polling_api_error_during_poll_returns_error(self, handler, mock_session):
+        """When API errors during polling, status is 'error'."""
+        import requests
+        post_response = MagicMock()
+        post_response.json.return_value = {"execution_id": "exec-poll-err"}
+        mock_session.post.return_value = post_response
+
+        mock_session.get.side_effect = requests.ConnectionError("Poll failed")
+
+        config = {
+            "call_id": "bl-poll-error",
+            "name": "Blocking Poll Error",
+            "call_type": "icestreams",
+            "target_id": "pb-1",
+            "input_template": {},
+            "is_blocking": True,
+            "timeout_seconds": 30,
+            "trigger_on": "post_merge",
+        }
+        result = handler.execute_call(config, {})
+        assert result.success is False
+        assert result.status == "error"
+        assert "API error" in result.error_message
+
+    def test_execute_calls_continues_after_single_call_failure(self, handler, mock_session):
+        """execute_calls processes all calls even if one fails."""
+        # First call fails
+        mock_session.post.side_effect = [
+            MagicMock(json=MagicMock(return_value={})),  # No execution_id
+            MagicMock(
+                json=MagicMock(return_value={"execution_id": "exec-ok"}),
+                raise_for_status=MagicMock()
+            ),
+        ]
+
+        configs = [
+            {
+                "call_id": "c1",
+                "name": "Call 1",
+                "call_type": "icestreams",
+                "target_id": "pb-1",
+                "input_template": {},
+                "is_blocking": False,
+                "trigger_on": "post_merge",
+            },
+            {
+                "call_id": "c2",
+                "name": "Call 2",
+                "call_type": "icestreams",
+                "target_id": "pb-2",
+                "input_template": {},
+                "is_blocking": False,
+                "trigger_on": "post_merge",
+            },
+        ]
+
+        results = handler.execute_calls(configs, {}, trigger_phase="post_merge")
+        assert len(results) == 2
+        assert results[0].success is False
+        assert results[1].success is True
