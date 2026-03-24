@@ -84,7 +84,7 @@ jobs:
           cache-to: type=gha,mode=max,scope=${{ matrix.runtime.name }}-${{ matrix.platform }}
 
       - name: Run Trivy security scan
-        uses: aquasecurity/trivy-action@master
+        uses: aquasecurity/trivy-action@v0.35.0
         with:
           image-ref: ${{ env.REGISTRY }}/${{ env.IMAGE_PREFIX }}/${{ matrix.runtime.name }}:${{ matrix.runtime.version }}
           format: 'sarif'
