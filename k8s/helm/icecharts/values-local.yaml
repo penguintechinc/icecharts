@@ -1,0 +1,181 @@
+# ============================================================================
+# IceCharts Helm Chart - Local Environment Values
+# ============================================================================
+# This file overrides base values.yaml for local testing environments
+# designed to run with minimal resources on a development machine or
+# local Kubernetes cluster (e.g., Docker Desktop, Minikube, KinD).
+#
+# Key features:
+# - Traefik ingress controller for local routing
+# - Kubernetes native secrets (minimal setup required)
+# - Single replica for all stateful and stateless services
+# - Reduced storage sizes for local development
+# - Significantly reduced resource limits (50% of production)
+# - No network policies, monitoring, or backups
+# - Debug mode enabled for troubleshooting
+#
+# Usage:
+#   helm install icecharts . -f values.yaml -f values-local.yaml
+# ============================================================================
+
+# ============================================================================
+# Global Settings
+# ============================================================================
+global:
+  # Use local storage class if available
+  storageClass: ""
+
+# ============================================================================
+# Secrets Management
+# ============================================================================
+secrets:
+  # Use Kubernetes native secrets for local development
+  provider: kubernetes
+
+# ============================================================================
+# PostgreSQL Configuration
+# ============================================================================
+postgres:
+  # Single replica for local testing
+  replicaCount: 1
+
+  # Reduced storage for local development
+  persistence:
+    enabled: true
+    size: 10Gi
+
+  # Reduced resources (50% of production)
+  resources:
+    requests:
+      memory: "256Mi"
+      cpu: "125m"
+    limits:
+      memory: "1Gi"
+      cpu: "500m"
+
+# ============================================================================
+# Redis Configuration
+# ============================================================================
+redis:
+  # Single replica for local testing
+  replicaCount: 1
+
+  # Reduced storage for local development
+  persistence:
+    enabled: true
+    size: 5Gi
+
+  # Reduced resources (50% of production)
+  resources:
+    requests:
+      memory: "128Mi"
+      cpu: "50m"
+    limits:
+      memory: "512Mi"
+      cpu: "250m"
+
+# ============================================================================
+# MinIO Configuration
+# ============================================================================
+minio:
+  # Single replica for local testing
+  replicaCount: 1
+
+  # Reduced storage for local development
+  persistence:
+    enabled: true
+    size: 10Gi
+
+  # Reduced resources (50% of production)
+  resources:
+    requests:
+      memory: "256Mi"
+      cpu: "125m"
+    limits:
+      memory: "1Gi"
+      cpu: "500m"
+
+# ============================================================================
+# API (Flask Backend) Configuration
+# ============================================================================
+api:
+  # Single replica (no auto-scaling)
+  replicaCount: 1
+
+  # Environment overrides for local testing
+  env:
+    # Enable debug mode for development
+    debug: "true"
+    logLevel: debug
+    flaskEnv: development
+
+  # Reduced resources (50% of production)
+  resources:
+    requests:
+      memory: "256Mi"
+      cpu: "125m"
+    limits:
+      memory: "1Gi"
+      cpu: "500m"
+
+  # Disable auto-scaling for local environments
+  autoscaling:
+    enabled: false
+
+# ============================================================================
+# Web (React Frontend) Configuration
+# ============================================================================
+web:
+  # Single replica (no auto-scaling)
+  replicaCount: 1
+
+  # Reduced resources (50% of production)
+  resources:
+    requests:
+      memory: "128Mi"
+      cpu: "50m"
+    limits:
+      memory: "512Mi"
+      cpu: "250m"
+
+  # Disable auto-scaling for local environments
+  autoscaling:
+    enabled: false
+
+# ============================================================================
+# Ingress Configuration
+# ============================================================================
+ingress:
+  # Enable ingress for local access
+  enabled: true
+
+  # Use Traefik for local development
+  className: traefik
+
+  # Local hostname (add to /etc/hosts: 127.0.0.1 icecharts.local)
+  host: icecharts.local
+
+  # No TLS for local development
+  tls:
+    enabled: false
+
+# ============================================================================
+# Monitoring Configuration
+# ============================================================================
+monitoring:
+  # Disable monitoring for local environments to save resources
+  enabled: false
+
+# ============================================================================
+# Network Policies
+# ============================================================================
+networkPolicies:
+  # Disable network policies for local development simplicity
+  enabled: false
+
+# ============================================================================
+# Database Backup Configuration
+# ============================================================================
+backup:
+  # Disable backups for local development
+  enabled: false

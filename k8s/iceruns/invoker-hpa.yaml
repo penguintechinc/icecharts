@@ -1,0 +1,63 @@
+# IceRuns Invoker Horizontal Pod Autoscaler
+# Automatically scales invoker instances based on CPU and memory utilization
+# Also responds to Redis queue depth via custom metrics (if metrics-server is installed)
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: iceruns-invoker-hpa
+  namespace: iceruns
+  labels:
+    app.kubernetes.io/name: iceruns
+    app.kubernetes.io/component: invoker
+spec:
+  # Target the invoker deployment
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: iceruns-invoker
+
+  # Scaling boundaries
+  minReplicas: 2
+  maxReplicas: 10
+
+  # Scaling metrics
+  metrics:
+  # CPU utilization: scale up at 70% average
+  - type: Resource
+    resource:
+      name: cpu
+      target:
+        type: Utilization
+        averageUtilization: 70
+
+  # Memory utilization: scale up at 80% average
+  - type: Resource
+    resource:
+      name: memory
+      target:
+        type: Utilization
+        averageUtilization: 80
+
+  # Scaling behavior (prevents rapid scaling up/down)
+  behavior:
+    scaleUp:
+      stabilizationWindowSeconds: 60
+      policies:
+      - type: Percent
+        value: 100
+        periodSeconds: 60
+      - type: Pods
+        value: 2
+        periodSeconds: 60
+      selectPolicy: Max
+
+    scaleDown:
+      stabilizationWindowSeconds: 300
+      policies:
+      - type: Percent
+        value: 50
+        periodSeconds: 60
+      - type: Pods
+        value: 1
+        periodSeconds: 120
+      selectPolicy: Min

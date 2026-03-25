@@ -37,16 +37,15 @@ def admin_list_users():
 
     if search:
         conditions.append(
-            (db.users.email.contains(search)) |
-            (db.users.full_name.contains(search))
+            (db.identities.email.contains(search)) | (db.identities.full_name.contains(search))
         )
 
     if role:
-        conditions.append(db.users.role == role)
+        conditions.append(db.identities.role == role)
 
     if active:
         is_active = active.lower() == "true"
-        conditions.append(db.users.is_active == is_active)
+        conditions.append(db.identities.is_active == is_active)
 
     # Combine conditions or use all users
     if conditions:
@@ -55,12 +54,12 @@ def admin_list_users():
             combined = combined & cond
         query = db(combined)
     else:
-        query = db(db.users.id > 0)
+        query = db(db.identities.id > 0)
 
     offset = (page - 1) * per_page
 
     users = query.select(
-        orderby=db.users.created_at,
+        orderby=db.identities.created_at,
         limitby=(offset, offset + per_page),
     )
     total = query.count()
@@ -81,22 +80,29 @@ def admin_list_users():
         for m in memberships:
             group = db.groups(m.group_id)
             if group:
-                groups.append({
-                    "id": group.id,
-                    "name": group.name,
-                    "role": m.role,
-                })
+                groups.append(
+                    {
+                        "id": group.id,
+                        "name": group.name,
+                        "role": m.role,
+                    }
+                )
         user_dict["groups"] = groups
 
         user_list.append(user_dict)
 
-    return jsonify({
-        "users": user_list,
-        "total": total,
-        "page": page,
-        "per_page": per_page,
-        "pages": (total + per_page - 1) // per_page,
-    }), 200
+    return (
+        jsonify(
+            {
+                "users": user_list,
+                "total": total,
+                "page": page,
+                "per_page": per_page,
+                "pages": (total + per_page - 1) // per_page,
+            }
+        ),
+        200,
+    )
 
 
 @admin_v1_bp.route("/users/<int:user_id>", methods=["GET"])
@@ -121,6 +127,8 @@ def admin_get_user(user_id: int):
 @admin_required
 def admin_create_user():
     """Create a new user (admin only)."""
+    from ...services.logging_service import LoggingService
+
     data = request.get_json()
 
     if not data:
@@ -141,10 +149,15 @@ def admin_create_user():
     # Validate role
     valid_roles = ["admin", "maintainer", "viewer"]
     if role not in valid_roles:
-        return jsonify({
-            "error": "Invalid role",
-            "valid_roles": valid_roles,
-        }), 400
+        return (
+            jsonify(
+                {
+                    "error": "Invalid role",
+                    "valid_roles": valid_roles,
+                }
+            ),
+            400,
+        )
 
     # Check if user exists
     existing = get_user_by_email(email)
@@ -166,10 +179,30 @@ def admin_create_user():
     user.pop("password_hash", None)
     user.pop("mfa_secret", None)
 
-    return jsonify({
-        "message": "User created successfully",
-        "user": user,
-    }), 201
+    # Log audit
+    current_user = get_current_user()
+    LoggingService.log_audit(
+        action="user_created",
+        resource_type="user",
+        resource_id=user.get("id"),
+        resource_name=email,
+        user_id=current_user.get("id") if current_user else None,
+        changes={
+            "email": email,
+            "full_name": full_name,
+            "role": role,
+        },
+    )
+
+    return (
+        jsonify(
+            {
+                "message": "User created successfully",
+                "user": user,
+            }
+        ),
+        201,
+    )
 
 
 @admin_v1_bp.route("/users/<int:user_id>", methods=["PUT"])
@@ -177,6 +210,8 @@ def admin_create_user():
 @admin_required
 def admin_update_user(user_id: int):
     """Update user details (admin only)."""
+    from ...services.logging_service import LoggingService
+
     data = request.get_json()
 
     if not data:
@@ -188,6 +223,7 @@ def admin_update_user(user_id: int):
 
     # Prepare update data
     update_data = {}
+    changes = {}
 
     if "email" in data:
         new_email = data["email"].strip().lower()
@@ -196,22 +232,43 @@ def admin_update_user(user_id: int):
         if existing and existing["id"] != user_id:
             return jsonify({"error": "Email already in use"}), 409
         update_data["email"] = new_email
+        changes["email"] = {
+            "old_value": user.get("email"),
+            "new_value": new_email,
+        }
 
     if "full_name" in data:
         update_data["full_name"] = data["full_name"].strip()
+        changes["full_name"] = {
+            "old_value": user.get("full_name"),
+            "new_value": data["full_name"].strip(),
+        }
 
     if "role" in data:
         role = data["role"].strip()
         valid_roles = ["admin", "maintainer", "viewer"]
         if role not in valid_roles:
-            return jsonify({
-                "error": "Invalid role",
-                "valid_roles": valid_roles,
-            }), 400
+            return (
+                jsonify(
+                    {
+                        "error": "Invalid role",
+                        "valid_roles": valid_roles,
+                    }
+                ),
+                400,
+            )
         update_data["role"] = role
+        changes["role"] = {
+            "old_value": user.get("role"),
+            "new_value": role,
+        }
 
     if "is_active" in data:
         update_data["is_active"] = data["is_active"]
+        changes["is_active"] = {
+            "old_value": user.get("is_active"),
+            "new_value": data["is_active"],
+        }
 
     if "password" in data:
         password = data["password"]
@@ -221,6 +278,10 @@ def admin_update_user(user_id: int):
         from .auth import hash_password
 
         update_data["password_hash"] = hash_password(password)
+        changes["password"] = {
+            "old_value": "***",
+            "new_value": "***",
+        }
 
     if not update_data:
         return jsonify({"error": "No valid fields to update"}), 400
@@ -232,10 +293,26 @@ def admin_update_user(user_id: int):
     updated_user.pop("password_hash", None)
     updated_user.pop("mfa_secret", None)
 
-    return jsonify({
-        "message": "User updated successfully",
-        "user": updated_user,
-    }), 200
+    # Log audit
+    current_user = get_current_user()
+    LoggingService.log_audit(
+        action="user_updated",
+        resource_type="user",
+        resource_id=user_id,
+        resource_name=user.get("email"),
+        user_id=current_user.get("id") if current_user else None,
+        changes=changes if changes else None,
+    )
+
+    return (
+        jsonify(
+            {
+                "message": "User updated successfully",
+                "user": updated_user,
+            }
+        ),
+        200,
+    )
 
 
 @admin_v1_bp.route("/users/<int:user_id>", methods=["DELETE"])
@@ -243,6 +320,8 @@ def admin_update_user(user_id: int):
 @admin_required
 def admin_delete_user(user_id: int):
     """Delete user (admin only)."""
+    from ...services.logging_service import LoggingService
+
     current_user = get_current_user()
 
     # Prevent self-deletion
@@ -259,9 +338,23 @@ def admin_delete_user(user_id: int):
     if not success:
         return jsonify({"error": "Failed to delete user"}), 500
 
-    return jsonify({
-        "message": "User deleted successfully",
-    }), 200
+    # Log audit
+    LoggingService.log_audit(
+        action="user_deleted",
+        resource_type="user",
+        resource_id=user_id,
+        resource_name=user.get("email"),
+        user_id=current_user.get("id"),
+    )
+
+    return (
+        jsonify(
+            {
+                "message": "User deleted successfully",
+            }
+        ),
+        200,
+    )
 
 
 @admin_v1_bp.route("/users/<int:user_id>/activate", methods=["POST"])
@@ -269,6 +362,9 @@ def admin_delete_user(user_id: int):
 @admin_required
 def admin_activate_user(user_id: int):
     """Activate user account (admin only)."""
+    from ...services.logging_service import LoggingService
+
+    current_user = get_current_user()
     user = get_user_by_id(user_id)
     if not user:
         return jsonify({"error": "User not found"}), 404
@@ -276,9 +372,29 @@ def admin_activate_user(user_id: int):
     # Activate user
     update_user(user_id, is_active=True)
 
-    return jsonify({
-        "message": "User activated successfully",
-    }), 200
+    # Log audit
+    LoggingService.log_audit(
+        action="user_activated",
+        resource_type="user",
+        resource_id=user_id,
+        resource_name=user.get("email"),
+        user_id=current_user.get("id"),
+        changes={
+            "is_active": {
+                "old_value": user.get("is_active"),
+                "new_value": True,
+            }
+        },
+    )
+
+    return (
+        jsonify(
+            {
+                "message": "User activated successfully",
+            }
+        ),
+        200,
+    )
 
 
 @admin_v1_bp.route("/users/<int:user_id>/deactivate", methods=["POST"])
@@ -286,6 +402,8 @@ def admin_activate_user(user_id: int):
 @admin_required
 def admin_deactivate_user(user_id: int):
     """Deactivate user account (admin only)."""
+    from ...services.logging_service import LoggingService
+
     current_user = get_current_user()
 
     # Prevent self-deactivation
@@ -299,9 +417,29 @@ def admin_deactivate_user(user_id: int):
     # Deactivate user
     update_user(user_id, is_active=False)
 
-    return jsonify({
-        "message": "User deactivated successfully",
-    }), 200
+    # Log audit
+    LoggingService.log_audit(
+        action="user_deactivated",
+        resource_type="user",
+        resource_id=user_id,
+        resource_name=user.get("email"),
+        user_id=current_user.get("id"),
+        changes={
+            "is_active": {
+                "old_value": user.get("is_active"),
+                "new_value": False,
+            }
+        },
+    )
+
+    return (
+        jsonify(
+            {
+                "message": "User deactivated successfully",
+            }
+        ),
+        200,
+    )
 
 
 @admin_v1_bp.route("/stats", methods=["GET"])
@@ -313,13 +451,13 @@ def admin_get_stats():
 
     stats = {
         "users": {
-            "total": db(db.users).count(),
-            "active": db(db.users.is_active == True).count(),
-            "inactive": db(db.users.is_active == False).count(),
+            "total": db(db.identities).count(),
+            "active": db(db.identities.is_active == True).count(),
+            "inactive": db(db.identities.is_active == False).count(),
             "by_role": {
-                "admin": db(db.users.role == "admin").count(),
-                "maintainer": db(db.users.role == "maintainer").count(),
-                "viewer": db(db.users.role == "viewer").count(),
+                "admin": db(db.identities.role == "admin").count(),
+                "maintainer": db(db.identities.role == "maintainer").count(),
+                "viewer": db(db.identities.role == "viewer").count(),
             },
         },
         "drawings": {
@@ -329,7 +467,11 @@ def admin_get_stats():
             "total": db(db.groups).count() if hasattr(db, "groups") else 0,
         },
         "storage": {
-            "providers": db(db.storage_providers).count() if hasattr(db, "storage_providers") else 0,
+            "providers": (
+                db(db.storage_providers).count()
+                if hasattr(db, "storage_providers")
+                else 0
+            ),
         },
     }
 
@@ -340,79 +482,173 @@ def admin_get_stats():
 @auth_required
 @admin_required
 def admin_get_activity():
-    """Get recent system activity (admin only)."""
-    db = get_db()
+    """Get recent system activity (admin only).
+
+    Query parameters:
+    - page: Page number (default: 1)
+    - per_page: Records per page (default: 50)
+    - user_id: Filter by user ID
+    - action: Filter by action type
+    - resource_type: Filter by resource type
+    - start_date: Filter by start date (ISO 8601)
+    - end_date: Filter by end date (ISO 8601)
+    """
+    from ...services.logging_service import LoggingService
 
     page = request.args.get("page", 1, type=int)
     per_page = request.args.get("per_page", 50, type=int)
+    user_id = request.args.get("user_id", type=int)
+    action = request.args.get("action", "").strip()
+    resource_type = request.args.get("resource_type", "").strip()
+    start_date_str = request.args.get("start_date", "").strip()
+    end_date_str = request.args.get("end_date", "").strip()
 
-    # TODO: Implement activity logging and retrieval
-    # For now, return placeholder
+    # Parse dates if provided
+    start_date = None
+    end_date = None
+    try:
+        if start_date_str:
+            start_date = datetime.fromisoformat(start_date_str.replace("Z", "+00:00"))
+        if end_date_str:
+            end_date = datetime.fromisoformat(end_date_str.replace("Z", "+00:00"))
+    except ValueError:
+        return jsonify({"error": "Invalid date format. Use ISO 8601"}), 400
 
-    activities = []
+    # Validate pagination
+    if page < 1 or per_page < 1 or per_page > 1000:
+        return jsonify({"error": "Invalid pagination parameters"}), 400
 
-    return jsonify({
-        "activities": activities,
-        "total": len(activities),
-        "page": page,
-        "per_page": per_page,
-    }), 200
+    offset = (page - 1) * per_page
+
+    # Retrieve activity logs
+    activities, total = LoggingService.get_activity_logs(
+        user_id=user_id,
+        action=action if action else None,
+        resource_type=resource_type if resource_type else None,
+        start_date=start_date,
+        end_date=end_date,
+        limit=per_page,
+        offset=offset,
+    )
+
+    return (
+        jsonify(
+            {
+                "activities": activities,
+                "total": total,
+                "page": page,
+                "per_page": per_page,
+                "pages": (total + per_page - 1) // per_page,
+            }
+        ),
+        200,
+    )
 
 
 @admin_v1_bp.route("/audit-log", methods=["GET"])
 @auth_required
 @admin_required
 def admin_get_audit_log():
-    """Get audit log entries (admin only)."""
-    db = get_db()
+    """Get audit log entries (admin only).
+
+    Query parameters:
+    - page: Page number (default: 1)
+    - per_page: Records per page (default: 50)
+    - user_id: Filter by user ID
+    - action: Filter by action type
+    - resource_type: Filter by resource type
+    - start_date: Filter by start date (ISO 8601)
+    - end_date: Filter by end date (ISO 8601)
+    """
+    from ...services.logging_service import LoggingService
 
     page = request.args.get("page", 1, type=int)
     per_page = request.args.get("per_page", 50, type=int)
     user_id = request.args.get("user_id", type=int)
     action = request.args.get("action", "").strip()
+    resource_type = request.args.get("resource_type", "").strip()
+    start_date_str = request.args.get("start_date", "").strip()
+    end_date_str = request.args.get("end_date", "").strip()
 
-    # TODO: Implement audit logging and retrieval
-    # For now, return placeholder
+    # Parse dates if provided
+    start_date = None
+    end_date = None
+    try:
+        if start_date_str:
+            start_date = datetime.fromisoformat(start_date_str.replace("Z", "+00:00"))
+        if end_date_str:
+            end_date = datetime.fromisoformat(end_date_str.replace("Z", "+00:00"))
+    except ValueError:
+        return jsonify({"error": "Invalid date format. Use ISO 8601"}), 400
 
-    audit_logs = []
+    # Validate pagination
+    if page < 1 or per_page < 1 or per_page > 1000:
+        return jsonify({"error": "Invalid pagination parameters"}), 400
 
-    return jsonify({
-        "audit_logs": audit_logs,
-        "total": len(audit_logs),
-        "page": page,
-        "per_page": per_page,
-    }), 200
+    offset = (page - 1) * per_page
+
+    # Retrieve audit logs
+    audit_logs, total = LoggingService.get_audit_logs(
+        user_id=user_id,
+        action=action if action else None,
+        resource_type=resource_type if resource_type else None,
+        start_date=start_date,
+        end_date=end_date,
+        limit=per_page,
+        offset=offset,
+    )
+
+    return (
+        jsonify(
+            {
+                "audit_logs": audit_logs,
+                "total": total,
+                "page": page,
+                "per_page": per_page,
+                "pages": (total + per_page - 1) // per_page,
+            }
+        ),
+        200,
+    )
 
 
 @admin_v1_bp.route("/system/health", methods=["GET"])
 @auth_required
 @admin_required
 def admin_get_system_health():
-    """Get system health status (admin only)."""
-    # Check various system components
+    """Get detailed system health status for all components (admin only)."""
+    from ...services.health_check_service import HealthCheckService
 
-    health = {
-        "status": "healthy",
-        "timestamp": datetime.utcnow().isoformat(),
-        "components": {
-            "database": {
-                "status": "healthy",
-                "message": "Database connection OK",
-            },
-            "storage": {
-                "status": "healthy",
-                "message": "Storage accessible",
-            },
-            "cache": {
-                "status": "healthy",
-                "message": "Cache operational",
-            },
-        },
-    }
+    try:
+        health_service = HealthCheckService()
+        health = health_service.check_all()
 
-    # TODO: Implement actual health checks for each component
+        # Determine HTTP status code based on overall health
+        status_code = 200
+        if health["status"] == "unhealthy":
+            status_code = 503  # Service Unavailable
+        elif health["status"] == "degraded":
+            status_code = 200  # Still OK, but degraded
 
-    return jsonify({"health": health}), 200
+        return jsonify({"health": health}), status_code
+    except Exception as e:
+        import logging
+
+        logger = logging.getLogger(__name__)
+        logger.error(f"Failed to perform health check: {str(e)}")
+        return (
+            jsonify(
+                {
+                    "health": {
+                        "status": "unhealthy",
+                        "timestamp": datetime.utcnow().isoformat(),
+                        "error": str(e),
+                        "components": {},
+                    }
+                }
+            ),
+            503,
+        )
 
 
 @admin_v1_bp.route("/system/config", methods=["GET"])
@@ -426,7 +662,9 @@ def admin_get_system_config():
     config = {
         "environment": current_app.config.get("ENV", "production"),
         "debug": current_app.config.get("DEBUG", False),
-        "jwt_expiry_seconds": int(current_app.config.get("JWT_ACCESS_TOKEN_EXPIRES").total_seconds()),
+        "jwt_expiry_seconds": int(
+            current_app.config.get("JWT_ACCESS_TOKEN_EXPIRES").total_seconds()
+        ),
         "db_type": current_app.config.get("DB_TYPE", "postgres"),
     }
 
@@ -447,8 +685,8 @@ def admin_list_storage_configs():
 
     # Get organization-level storage configs (where user_id is null or is_system_default is true)
     configs = db(
-        (db.storage_providers.is_system_default == True) |
-        (db.storage_providers.user_id == None)
+        (db.storage_providers.is_system_default == True)
+        | (db.storage_providers.user_id == None)
     ).select(orderby=~db.storage_providers.updated_at)
 
     items = []
@@ -457,7 +695,12 @@ def admin_list_storage_configs():
         # Mask sensitive config fields
         if item.get("config_json"):
             masked = item["config_json"].copy()
-            for key in ["client_secret", "secret_access_key", "account_key", "password"]:
+            for key in [
+                "client_secret",
+                "secret_access_key",
+                "account_key",
+                "password",
+            ]:
                 if key in masked:
                     masked[key] = "***"
             item["config_json"] = masked
@@ -485,7 +728,11 @@ def admin_create_storage_config():
         return jsonify({"error": f"Invalid provider. Valid: {valid_providers}"}), 400
 
     if not name:
-        name = {"gdrive": "Google Drive", "onedrive": "OneDrive", "s3": "External S3"}.get(provider, provider)
+        name = {
+            "gdrive": "Google Drive",
+            "onedrive": "OneDrive",
+            "s3": "External S3",
+        }.get(provider, provider)
 
     # Build config based on provider type
     config_json = {}
@@ -519,13 +766,20 @@ def admin_create_storage_config():
     db = get_db()
 
     # Check if provider already exists at org level
-    existing = db(
-        (db.storage_providers.provider_type == provider) &
-        (db.storage_providers.is_system_default == True)
-    ).select().first()
+    existing = (
+        db(
+            (db.storage_providers.provider_type == provider)
+            & (db.storage_providers.is_system_default == True)
+        )
+        .select()
+        .first()
+    )
 
     if existing:
-        return jsonify({"error": f"{name} is already configured. Edit it instead."}), 409
+        return (
+            jsonify({"error": f"{name} is already configured. Edit it instead."}),
+            409,
+        )
 
     # Create storage config
     config_id = db.storage_providers.insert(
@@ -541,10 +795,15 @@ def admin_create_storage_config():
 
     config = db.storage_providers(config_id)
 
-    return jsonify({
-        "message": f"{name} configured successfully",
-        "id": config_id,
-    }), 201
+    return (
+        jsonify(
+            {
+                "message": f"{name} configured successfully",
+                "id": config_id,
+            }
+        ),
+        201,
+    )
 
 
 @admin_v1_bp.route("/storage/<int:config_id>", methods=["PUT"])
@@ -680,7 +939,9 @@ def admin_bulk_import_users():
                 continue
 
             if not password or len(password) < 8:
-                errors.append({"index": idx, "error": "Password must be at least 8 characters"})
+                errors.append(
+                    {"index": idx, "error": "Password must be at least 8 characters"}
+                )
                 continue
 
             # Check if user exists
@@ -703,9 +964,11 @@ def admin_bulk_import_users():
         except Exception as e:
             errors.append({"index": idx, "error": str(e)})
 
-    return jsonify({
-        "message": f"Bulk import completed: {len(created)} created, {len(errors)} errors",
-        "created_count": len(created),
-        "error_count": len(errors),
-        "errors": errors,
-    }), 201 if created else 400
+    return jsonify(
+        {
+            "message": f"Bulk import completed: {len(created)} created, {len(errors)} errors",
+            "created_count": len(created),
+            "error_count": len(errors),
+            "errors": errors,
+        }
+    ), (201 if created else 400)

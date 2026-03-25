@@ -1,0 +1,20 @@
+# Rust 1.75 runtime image (Debian 12 slim)
+FROM debian:12-slim
+
+# Install Rust 1.75
+RUN apt-get update && apt-get install -y \
+    curl \
+    ca-certificates \
+    build-essential \
+    && curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y \
+    && rm -rf /var/lib/apt/lists/*
+
+ENV PATH="/root/.cargo/bin:${PATH}"
+
+# Action container server
+COPY action-server/rust-server.rs /app/server.rs
+WORKDIR /app
+
+EXPOSE 8080
+
+CMD ["cargo", "run"]

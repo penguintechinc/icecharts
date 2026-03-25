@@ -1,29 +1,64 @@
-# Beta/staging environment overrides (icecharts.penguintech.io)
+# Beta/staging environment overrides (icecharts.penguintech.cloud)
 # Uses icecharts namespace (each cluster has its own icecharts namespace)
-namespace: icecharts
+namespace:
+  create: false
+  name: icecharts
 
-image:
-  registry: registry-dal2.penguintech.io
-  tag: "beta"
+# Global overrides for beta cluster (pull from GitHub Container Registry)
+global:
+  busyboxImage: "ghcr.io/penguintechinc/icecharts/busybox:1.35"
+
+# Image pull secret for ghcr.io
+imagePullSecrets:
+  - name: ghcr-pull-secret
+
+# API image from ghcr.io (CI-built)
+api:
+  image:
+    registry: ghcr.io/penguintechinc/icecharts
+    repository: api
+    tag: "beta"
+
+# Web image from ghcr.io (CI-built)
+web:
+  image:
+    registry: ghcr.io/penguintechinc/icecharts
+    repository: web
+    tag: "beta"
 
 ingress:
-  # Disabled: ingress for icecharts.penguintech.io is managed in the
+  # Disabled: ingress for icecharts.penguintech.cloud is managed in the
   # icecharts namespace (created via kustomize). The nginx admission
   # webhook rejects duplicate host+path across namespaces.
   enabled: false
-  host: icecharts.penguintech.io
+  host: icecharts.penguintech.cloud
   tls:
     enabled: true
     secretName: icecharts-tls
 
-# Minio image from dal2 registry (Docker Hub not accessible from cluster)
+# Minio image from ghcr.io (CI-built)
 minio:
   image:
-    repository: registry-dal2.penguintech.io/minio
+    registry: ghcr.io/penguintechinc/icecharts
+    repository: minio
     tag: "latest"
+
+# Postgres image from ghcr.io (CI-built)
+postgres:
+  image:
+    registry: ghcr.io/penguintechinc/icecharts
+    repository: postgres
+    tag: "17-alpine"
+
+# Redis image from ghcr.io (CI-built)
+redis:
+  image:
+    registry: ghcr.io/penguintechinc/icecharts
+    repository: redis
+    tag: "7-alpine"
 
 config:
   FLASK_ENV: "production"
   LOG_LEVEL: "info"
   RELEASE_MODE: "false"
-  CORS_ORIGINS: "https://icecharts.penguintech.io"
+  CORS_ORIGINS: "https://icecharts.penguintech.cloud"

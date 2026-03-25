@@ -1,10 +1,11 @@
 """WebSocket handlers for real-time collaboration with permission-based editing."""
 
-from typing import Dict, Any
+import os
+from typing import Any, Dict
+
+import jwt
 from flask import request
 from flask_socketio import emit, join_room, leave_room
-import jwt
-import os
 
 from app.services.collaboration_service import CollaborationService
 
@@ -69,7 +70,7 @@ def register_handlers(socketio_instance):
                     drawing_id=drawing_id,
                     user_id=user_id,
                     session_id=request.sid,
-                    socket_id=request.sid
+                    socket_id=request.sid,
                 )
             except PermissionError as e:
                 emit("error", {"message": str(e)})
@@ -80,21 +81,29 @@ def register_handlers(socketio_instance):
             join_room(room_name)
 
             # Notify user of successful join
-            emit("drawing_joined", {
-                "drawing_id": drawing_id,
-                "session": session_info["session"],
-                "user": session_info["user"],
-                "can_edit": session_info["can_edit"],
-                "collaborators": session_info["collaborators"]
-            })
+            emit(
+                "drawing_joined",
+                {
+                    "drawing_id": drawing_id,
+                    "session": session_info["session"],
+                    "user": session_info["user"],
+                    "can_edit": session_info["can_edit"],
+                    "collaborators": session_info["collaborators"],
+                },
+            )
 
             # Broadcast user_joined to other users in the room
-            emit("user_joined", {
-                "drawing_id": drawing_id,
-                "user": session_info["user"],
-                "permission": session_info["session"]["permission"],
-                "can_edit": session_info["can_edit"]
-            }, room=room_name, include_self=False)
+            emit(
+                "user_joined",
+                {
+                    "drawing_id": drawing_id,
+                    "user": session_info["user"],
+                    "permission": session_info["session"]["permission"],
+                    "can_edit": session_info["can_edit"],
+                },
+                room=room_name,
+                include_self=False,
+            )
 
             print(f"User {user_id} joined drawing {drawing_id} (session {request.sid})")
 
@@ -129,9 +138,7 @@ def register_handlers(socketio_instance):
 
             # Leave drawing session
             CollaborationService.leave_drawing_session(
-                drawing_id=drawing_id,
-                user_id=user_id,
-                session_id=request.sid
+                drawing_id=drawing_id, user_id=user_id, session_id=request.sid
             )
 
             # Leave Socket.IO room
@@ -139,11 +146,15 @@ def register_handlers(socketio_instance):
             leave_room(room_name)
 
             # Broadcast user_left to other users
-            emit("user_left", {
-                "drawing_id": drawing_id,
-                "user_id": user_id,
-                "session_id": request.sid
-            }, room=room_name)
+            emit(
+                "user_left",
+                {
+                    "drawing_id": drawing_id,
+                    "user_id": user_id,
+                    "session_id": request.sid,
+                },
+                room=room_name,
+            )
 
             print(f"User {user_id} left drawing {drawing_id}")
 
@@ -183,18 +194,23 @@ def register_handlers(socketio_instance):
                 user_id=user_id,
                 session_id=request.sid,
                 cursor_x=cursor_x,
-                cursor_y=cursor_y
+                cursor_y=cursor_y,
             )
 
             # Broadcast cursor position to other users
             room_name = f"drawing_{drawing_id}"
-            emit("cursor_moved", {
-                "drawing_id": drawing_id,
-                "user_id": user_id,
-                "session_id": request.sid,
-                "x": cursor_x,
-                "y": cursor_y
-            }, room=room_name, include_self=False)
+            emit(
+                "cursor_moved",
+                {
+                    "drawing_id": drawing_id,
+                    "user_id": user_id,
+                    "session_id": request.sid,
+                    "x": cursor_x,
+                    "y": cursor_y,
+                },
+                room=room_name,
+                include_self=False,
+            )
 
         except Exception as e:
             print(f"Cursor move error: {e}")
@@ -228,10 +244,7 @@ def register_handlers(socketio_instance):
 
             # Trigger attention click event
             click_event = CollaborationService.trigger_attention_click(
-                drawing_id=drawing_id,
-                user_id=user_id,
-                click_x=click_x,
-                click_y=click_y
+                drawing_id=drawing_id, user_id=user_id, click_x=click_x, click_y=click_y
             )
 
             # Broadcast attention click to all users (including self for confirmation)
@@ -260,7 +273,10 @@ def register_handlers(socketio_instance):
             change_data = data.get("change_data")  # shape/connector data
 
             if not drawing_id or not token or not change_type:
-                emit("error", {"message": "drawing_id, token, and change_type are required"})
+                emit(
+                    "error",
+                    {"message": "drawing_id, token, and change_type are required"},
+                )
                 return
 
             # Verify JWT token
@@ -277,21 +293,29 @@ def register_handlers(socketio_instance):
 
             # Verify user has edit permission
             if not CollaborationService.can_edit_drawing_realtime(user_id, drawing_id):
-                emit("error", {
-                    "message": "You do not have permission to edit this drawing",
-                    "permission_required": "editor"
-                })
+                emit(
+                    "error",
+                    {
+                        "message": "You do not have permission to edit this drawing",
+                        "permission_required": "editor",
+                    },
+                )
                 return
 
             # Broadcast drawing change to other users
             room_name = f"drawing_{drawing_id}"
-            emit("drawing_changed", {
-                "drawing_id": drawing_id,
-                "user_id": user_id,
-                "change_type": change_type,
-                "change_data": change_data,
-                "timestamp": data.get("timestamp")
-            }, room=room_name, include_self=False)
+            emit(
+                "drawing_changed",
+                {
+                    "drawing_id": drawing_id,
+                    "user_id": user_id,
+                    "change_type": change_type,
+                    "change_data": change_data,
+                    "timestamp": data.get("timestamp"),
+                },
+                room=room_name,
+                include_self=False,
+            )
 
             print(f"User {user_id} made drawing change: {change_type}")
 
@@ -318,18 +342,20 @@ def register_handlers(socketio_instance):
 
                 # Mark session as inactive
                 CollaborationService.leave_drawing_session(
-                    drawing_id=drawing_id,
-                    user_id=user_id,
-                    session_id=session_id
+                    drawing_id=drawing_id, user_id=user_id, session_id=session_id
                 )
 
                 # Notify other users
                 room_name = f"drawing_{drawing_id}"
-                emit("user_left", {
-                    "drawing_id": drawing_id,
-                    "user_id": user_id,
-                    "session_id": session_id
-                }, room=room_name)
+                emit(
+                    "user_left",
+                    {
+                        "drawing_id": drawing_id,
+                        "user_id": user_id,
+                        "session_id": session_id,
+                    },
+                    room=room_name,
+                )
 
                 print(f"User {user_id} disconnected from drawing {drawing_id}")
             else:
@@ -357,10 +383,10 @@ def register_handlers(socketio_instance):
             collaborators = CollaborationService.get_active_collaborators(drawing_id)
 
             # Send collaborators list to requester
-            emit("collaborators_list", {
-                "drawing_id": drawing_id,
-                "collaborators": collaborators
-            })
+            emit(
+                "collaborators_list",
+                {"drawing_id": drawing_id, "collaborators": collaborators},
+            )
 
         except Exception as e:
             print(f"Request collaborators error: {e}")
@@ -380,9 +406,7 @@ def register_handlers(socketio_instance):
             # Clean up inactive sessions
             cleaned = CollaborationService.cleanup_inactive_sessions(drawing_id)
 
-            emit("cleanup_complete", {
-                "sessions_cleaned": cleaned
-            })
+            emit("cleanup_complete", {"sessions_cleaned": cleaned})
 
         except Exception as e:
             print(f"Cleanup error: {e}")

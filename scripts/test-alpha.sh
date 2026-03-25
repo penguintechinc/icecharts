@@ -137,6 +137,24 @@ run_build() {
         build_args="--no-cache"
     fi
 
+    # Load GitHub token for private npm packages if not already set
+    if [ -z "${GITHUB_TOKEN:-}" ]; then
+        local token_file="$HOME/code/.gh-token"
+        if [ -f "$token_file" ]; then
+            export GITHUB_TOKEN
+            # Extract first ghp_ token line, ignoring comments
+            GITHUB_TOKEN="$(grep -m1 '^ghp_' "$token_file" | tr -d '[:space:]')"
+            if [ -n "$GITHUB_TOKEN" ]; then
+                log_info "Loaded GitHub token from $token_file"
+            else
+                log_warn "No ghp_ token found in $token_file"
+            fi
+        else
+            log_warn "No GITHUB_TOKEN set and $token_file not found"
+            log_warn "WebUI build may fail for private npm packages"
+        fi
+    fi
+
     log_info "Building containers..."
     if $DOCKER_COMPOSE -f "$COMPOSE_FILE" build $build_args 2>&1; then
         log_info "Build completed successfully"

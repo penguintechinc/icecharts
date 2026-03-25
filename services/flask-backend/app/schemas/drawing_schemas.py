@@ -212,7 +212,7 @@ class ExportDrawingRequest(BaseModel):
     )
     page_size: Optional[str] = Field(
         default="A4",
-        description="PDF page size (A0, A1, A2, A3, A4, A5, A6, Letter, Legal, Tabloid, Ledger)"
+        description="PDF page size (A0, A1, A2, A3, A4, A5, A6, Letter, Legal, Tabloid, Ledger)",
     )
 
     @field_validator("format")
@@ -255,7 +255,19 @@ class ExportDrawingRequest(BaseModel):
         if v is None:
             return "A4"
         v = v.upper()
-        valid_sizes = ["A0", "A1", "A2", "A3", "A4", "A5", "A6", "LETTER", "LEGAL", "TABLOID", "LEDGER"]
+        valid_sizes = [
+            "A0",
+            "A1",
+            "A2",
+            "A3",
+            "A4",
+            "A5",
+            "A6",
+            "LETTER",
+            "LEGAL",
+            "TABLOID",
+            "LEDGER",
+        ]
         if v not in valid_sizes:
             raise ValueError(f"page_size must be one of: {', '.join(valid_sizes)}")
         return v
@@ -322,7 +334,7 @@ class ExportPdfRequest(BaseModel):
 
     page_size: Optional[str] = Field(
         default="A4",
-        description="PDF page size (A0, A1, A2, A3, A4, A5, A6, Letter, Legal, Tabloid, Ledger)"
+        description="PDF page size (A0, A1, A2, A3, A4, A5, A6, Letter, Legal, Tabloid, Ledger)",
     )
     include_background: Optional[bool] = Field(
         default=True, description="Include background"
@@ -335,7 +347,19 @@ class ExportPdfRequest(BaseModel):
         if v is None:
             return "A4"
         v = v.upper()
-        valid_sizes = ["A0", "A1", "A2", "A3", "A4", "A5", "A6", "LETTER", "LEGAL", "TABLOID", "LEDGER"]
+        valid_sizes = [
+            "A0",
+            "A1",
+            "A2",
+            "A3",
+            "A4",
+            "A5",
+            "A6",
+            "LETTER",
+            "LEGAL",
+            "TABLOID",
+            "LEDGER",
+        ]
         if v not in valid_sizes:
             raise ValueError(f"page_size must be one of: {', '.join(valid_sizes)}")
         return v
@@ -355,9 +379,7 @@ class ExportPdfRequest(BaseModel):
 class ExportJobIdRequest(BaseModel):
     """Schema for export job ID validation."""
 
-    job_id: str = Field(
-        ..., min_length=1, max_length=255, description="Celery task ID"
-    )
+    job_id: str = Field(..., min_length=1, max_length=255, description="Celery task ID")
 
     model_config = {
         "json_schema_extra": {

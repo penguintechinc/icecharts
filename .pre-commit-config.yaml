@@ -1,0 +1,33 @@
+repos:
+  - repo: https://github.com/pycqa/flake8
+    rev: 7.2.0
+    hooks:
+      - id: flake8
+        # Uses .flake8 config at repo root (max-line-length=99, extend-ignore=E402,W503)
+        additional_dependencies: []
+
+  - repo: https://github.com/psf/black
+    rev: 25.1.0
+    hooks:
+      - id: black
+        language_version: python3
+        args: [--line-length=99]
+
+  - repo: https://github.com/pycqa/isort
+    rev: 5.13.2
+    hooks:
+      - id: isort
+        args: [--profile=black, --line-length=99]
+
+  - repo: local
+    hooks:
+      - id: eslint
+        name: eslint
+        language: node
+        entry: npx eslint
+        types_or: [ts, tsx]
+        files: ^services/webui/
+        args: [--max-warnings=0]
+        pass_filenames: true
+        additional_dependencies:
+          - eslint

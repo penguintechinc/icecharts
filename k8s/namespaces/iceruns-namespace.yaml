@@ -1,0 +1,10 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: iceruns
+  labels:
+    name: iceruns
+    app.kubernetes.io/name: iceruns
+    app.kubernetes.io/component: serverless-platform
+  annotations:
+    description: "IceRuns serverless function execution platform"

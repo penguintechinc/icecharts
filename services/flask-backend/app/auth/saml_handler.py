@@ -1,10 +1,10 @@
 """SAML 2.0 handler for enterprise SSO integration."""
 
 import logging
-from dataclasses import dataclass
-from typing import Optional, Dict, Any, List
-from datetime import datetime
 import xml.etree.ElementTree as ET
+from dataclasses import dataclass
+from datetime import datetime
+from typing import Any, Dict, List, Optional
 
 import requests
 from flask import current_app
@@ -24,6 +24,7 @@ logger = logging.getLogger(__name__)
 @dataclass(slots=True)
 class SAMLConfig:
     """SAML 2.0 configuration."""
+
     idp_name: str
     idp_entity_id: str
     sso_url: str
@@ -46,13 +47,15 @@ class SAMLConfig:
             raise ValueError(f"Could not fetch SAML metadata: {e}")
 
     @classmethod
-    def from_metadata_xml(cls, metadata_xml: str, metadata_url: Optional[str] = None) -> "SAMLConfig":
+    def from_metadata_xml(
+        cls, metadata_xml: str, metadata_url: Optional[str] = None
+    ) -> "SAMLConfig":
         """Parse SAML metadata XML."""
         try:
             root = ET.fromstring(metadata_xml)
 
             # Extract entity ID
-            entity_id = root.get('entityID')
+            entity_id = root.get("entityID")
             if not entity_id:
                 raise ValueError("EntityDescriptor missing entityID")
 
@@ -62,22 +65,28 @@ class SAMLConfig:
             x509_cert = None
 
             namespaces = {
-                'md': 'urn:oasis:names:tc:SAML:2.0:metadata',
-                'ds': 'http://www.w3.org/2000/09/xmldsig#'
+                "md": "urn:oasis:names:tc:SAML:2.0:metadata",
+                "ds": "http://www.w3.org/2000/09/xmldsig#",
             }
 
             # Find SingleSignOnService
-            sso_element = root.find('.//md:SingleSignOnService[@Binding="urn:oasis:names:tc:SAML:2.0:bindings:HTTP-Redirect"]', namespaces)
+            sso_element = root.find(
+                './/md:SingleSignOnService[@Binding="urn:oasis:names:tc:SAML:2.0:bindings:HTTP-Redirect"]',
+                namespaces,
+            )
             if sso_element is not None:
-                sso_url = sso_element.get('Location')
+                sso_url = sso_element.get("Location")
 
             # Find SingleLogoutService
-            slo_element = root.find('.//md:SingleLogoutService[@Binding="urn:oasis:names:tc:SAML:2.0:bindings:HTTP-Redirect"]', namespaces)
+            slo_element = root.find(
+                './/md:SingleLogoutService[@Binding="urn:oasis:names:tc:SAML:2.0:bindings:HTTP-Redirect"]',
+                namespaces,
+            )
             if slo_element is not None:
-                slo_url = slo_element.get('Location')
+                slo_url = slo_element.get("Location")
 
             # Extract X.509 certificate
-            cert_element = root.find('.//ds:X509Certificate', namespaces)
+            cert_element = root.find(".//ds:X509Certificate", namespaces)
             if cert_element is not None:
                 x509_cert = cert_element.text
 
@@ -87,12 +96,12 @@ class SAMLConfig:
                 raise ValueError("Could not find X.509 certificate in metadata")
 
             return cls(
-                idp_name=entity_id.split('/')[-1],
+                idp_name=entity_id.split("/")[-1],
                 idp_entity_id=entity_id,
                 sso_url=sso_url,
                 slo_url=slo_url,
                 x509_cert=x509_cert,
-                metadata_url=metadata_url
+                metadata_url=metadata_url,
             )
         except ET.ParseError as e:
             logger.error(f"Failed to parse SAML metadata XML: {e}")
@@ -102,7 +111,9 @@ class SAMLConfig:
 class SAMLHandler:
     """SAML 2.0 authentication handler."""
 
-    def __init__(self, saml_config: SAMLConfig, sp_config: Optional[Dict[str, Any]] = None):
+    def __init__(
+        self, saml_config: SAMLConfig, sp_config: Optional[Dict[str, Any]] = None
+    ):
         """Initialize SAML handler.
 
         Args:
@@ -120,48 +131,48 @@ class SAMLHandler:
 
     def _build_default_sp_config(self) -> Dict[str, Any]:
         """Build default SP configuration."""
-        site_url = current_app.config.get('SITE_URL', 'http://localhost:3000')
-        api_url = current_app.config.get('API_URL', 'http://localhost:5000')
+        site_url = current_app.config.get("SITE_URL", "http://localhost:3000")
+        api_url = current_app.config.get("API_URL", "http://localhost:5000")
 
         acs_url = f"{api_url}/api/v1/sso/saml/acs"
         sls_url = f"{api_url}/api/v1/sso/saml/sls"
 
         return {
-            'sp': {
-                'entityID': f"{api_url}/api/v1/sso/saml/metadata",
-                'assertionConsumerService': {
-                    'url': acs_url,
-                    'binding': 'urn:oasis:names:tc:SAML:2.0:bindings:HTTP-POST'
+            "sp": {
+                "entityID": f"{api_url}/api/v1/sso/saml/metadata",
+                "assertionConsumerService": {
+                    "url": acs_url,
+                    "binding": "urn:oasis:names:tc:SAML:2.0:bindings:HTTP-POST",
                 },
-                'singleLogoutService': {
-                    'url': sls_url,
-                    'binding': 'urn:oasis:names:tc:SAML:2.0:bindings:HTTP-Redirect'
+                "singleLogoutService": {
+                    "url": sls_url,
+                    "binding": "urn:oasis:names:tc:SAML:2.0:bindings:HTTP-Redirect",
                 },
-                'x509cert': '',
-                'privateKey': ''
+                "x509cert": "",
+                "privateKey": "",
             },
-            'idp': {
-                'entityID': self.saml_config.idp_entity_id,
-                'singleSignOnService': {
-                    'url': self.saml_config.sso_url,
-                    'binding': 'urn:oasis:names:tc:SAML:2.0:bindings:HTTP-Redirect'
+            "idp": {
+                "entityID": self.saml_config.idp_entity_id,
+                "singleSignOnService": {
+                    "url": self.saml_config.sso_url,
+                    "binding": "urn:oasis:names:tc:SAML:2.0:bindings:HTTP-Redirect",
                 },
-                'singleLogoutService': {
-                    'url': self.saml_config.slo_url or '',
-                    'binding': 'urn:oasis:names:tc:SAML:2.0:bindings:HTTP-Redirect'
+                "singleLogoutService": {
+                    "url": self.saml_config.slo_url or "",
+                    "binding": "urn:oasis:names:tc:SAML:2.0:bindings:HTTP-Redirect",
                 },
-                'x509cert': self.saml_config.x509_cert
+                "x509cert": self.saml_config.x509_cert,
             },
-            'security': {
-                'nameIdEncrypted': False,
-                'authnRequestsSigned': False,
-                'wantAssertionsSigned': True,
-                'wantAssertionsEncrypted': False,
-                'wantNameIdEncrypted': False,
-                'signMetadata': False,
-                'wantAttributeStatement': True,
-                'requestedAuthnContext': False
-            }
+            "security": {
+                "nameIdEncrypted": False,
+                "authnRequestsSigned": False,
+                "wantAssertionsSigned": True,
+                "wantAssertionsEncrypted": False,
+                "wantNameIdEncrypted": False,
+                "signMetadata": False,
+                "wantAttributeStatement": True,
+                "requestedAuthnContext": False,
+            },
         }
 
     def create_saml_request(self) -> str:
@@ -173,7 +184,9 @@ class SAMLHandler:
         auth = OneLogin_Saml2_Auth({}, self.sp_config)
         return auth.login()
 
-    def parse_saml_response(self, saml_response: str, relay_state: Optional[str] = None) -> bool:
+    def parse_saml_response(
+        self, saml_response: str, relay_state: Optional[str] = None
+    ) -> bool:
         """Parse and validate SAML response.
 
         Args:
@@ -187,16 +200,14 @@ class SAMLHandler:
             ValueError: If SAML response is invalid
         """
         request_data = {
-            'http_host': current_app.config.get('SERVER_NAME', 'localhost'),
-            'script_name': '/api/v1/sso/saml/acs',
-            'get_data': {},
-            'post_data': {
-                'SAMLResponse': saml_response
-            }
+            "http_host": current_app.config.get("SERVER_NAME", "localhost"),
+            "script_name": "/api/v1/sso/saml/acs",
+            "get_data": {},
+            "post_data": {"SAMLResponse": saml_response},
         }
 
         if relay_state:
-            request_data['post_data']['RelayState'] = relay_state
+            request_data["post_data"]["RelayState"] = relay_state
 
         auth = OneLogin_Saml2_Auth(request_data, self.sp_config)
         auth.process_response()
@@ -221,12 +232,10 @@ class SAMLHandler:
             ValueError: If response parsing fails
         """
         request_data = {
-            'http_host': current_app.config.get('SERVER_NAME', 'localhost'),
-            'script_name': '/api/v1/sso/saml/acs',
-            'get_data': {},
-            'post_data': {
-                'SAMLResponse': saml_response
-            }
+            "http_host": current_app.config.get("SERVER_NAME", "localhost"),
+            "script_name": "/api/v1/sso/saml/acs",
+            "get_data": {},
+            "post_data": {"SAMLResponse": saml_response},
         }
 
         auth = OneLogin_Saml2_Auth(request_data, self.sp_config)
@@ -240,25 +249,30 @@ class SAMLHandler:
         session_index = auth.get_session_index()
 
         return {
-            'name_id': name_id,
-            'session_index': session_index,
-            'attributes': attributes,
-            'email': self._extract_email(attributes, name_id),
-            'name': self._extract_name(attributes),
-            'groups': self._extract_groups(attributes),
+            "name_id": name_id,
+            "session_index": session_index,
+            "attributes": attributes,
+            "email": self._extract_email(attributes, name_id),
+            "name": self._extract_name(attributes),
+            "groups": self._extract_groups(attributes),
         }
 
     def _extract_email(self, attributes: Dict[str, List[str]], name_id: str) -> str:
         """Extract email from SAML attributes."""
         # Common email attribute names
-        email_attrs = ['email', 'emailAddress', 'mail', 'http://schemas.xmlsoap.org/ws/2005/05/identity/claims/emailaddress']
+        email_attrs = [
+            "email",
+            "emailAddress",
+            "mail",
+            "http://schemas.xmlsoap.org/ws/2005/05/identity/claims/emailaddress",
+        ]
 
         for attr in email_attrs:
             if attr in attributes and attributes[attr]:
                 return attributes[attr][0].lower()
 
         # Fallback to name_id if it looks like email
-        if name_id and '@' in name_id:
+        if name_id and "@" in name_id:
             return name_id.lower()
 
         raise ValueError("Could not extract email from SAML response")
@@ -267,10 +281,12 @@ class SAMLHandler:
         """Extract full name from SAML attributes."""
         # Common name attribute names
         name_attrs = [
-            'displayName', 'cn', 'commonName',
-            'http://schemas.xmlsoap.org/ws/2005/05/identity/claims/name',
-            'http://schemas.xmlsoap.org/ws/2005/05/identity/claims/givenname',
-            'http://schemas.xmlsoap.org/ws/2005/05/identity/claims/surname'
+            "displayName",
+            "cn",
+            "commonName",
+            "http://schemas.xmlsoap.org/ws/2005/05/identity/claims/name",
+            "http://schemas.xmlsoap.org/ws/2005/05/identity/claims/givenname",
+            "http://schemas.xmlsoap.org/ws/2005/05/identity/claims/surname",
         ]
 
         for attr in name_attrs:
@@ -283,8 +299,10 @@ class SAMLHandler:
         """Extract groups/roles from SAML attributes."""
         # Common group attribute names
         group_attrs = [
-            'groups', 'memberOf', 'roles',
-            'http://schemas.xmlsoap.org/ws/2005/05/identity/claims/groups'
+            "groups",
+            "memberOf",
+            "roles",
+            "http://schemas.xmlsoap.org/ws/2005/05/identity/claims/groups",
         ]
 
         groups = []
@@ -313,12 +331,10 @@ class SAMLHandler:
             True if signature is valid
         """
         request_data = {
-            'http_host': current_app.config.get('SERVER_NAME', 'localhost'),
-            'script_name': '/api/v1/sso/saml/acs',
-            'get_data': {},
-            'post_data': {
-                'SAMLResponse': saml_response
-            }
+            "http_host": current_app.config.get("SERVER_NAME", "localhost"),
+            "script_name": "/api/v1/sso/saml/acs",
+            "get_data": {},
+            "post_data": {"SAMLResponse": saml_response},
         }
 
         auth = OneLogin_Saml2_Auth(request_data, self.sp_config)
@@ -332,6 +348,6 @@ class SAMLHandler:
 
 
 __all__ = [
-    'SAMLConfig',
-    'SAMLHandler',
+    "SAMLConfig",
+    "SAMLHandler",
 ]

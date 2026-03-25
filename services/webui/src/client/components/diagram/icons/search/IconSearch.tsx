@@ -129,7 +129,7 @@ export default function IconSearch({
   /**
    * Get badge color based on icon source
    */
-  const getSourceBadgeColor = (source: string): string => {
+  const getSourceBadgeColor = (source: string | undefined): string => {
     switch (source) {
       case 'aws':
         return 'bg-orange-500/20 text-orange-300 border-orange-500/30';
@@ -150,7 +150,8 @@ export default function IconSearch({
   /**
    * Get badge label for source
    */
-  const getSourceLabel = (source: string): string => {
+  const getSourceLabel = (source: string | undefined): string => {
+    if (!source) return 'Unknown';
     return source.charAt(0).toUpperCase() + source.slice(1);
   };
 

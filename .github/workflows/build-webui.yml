@@ -31,6 +31,14 @@ jobs:
           cache: 'npm'
           cache-dependency-path: services/webui/package-lock.json
 
+      - name: Configure npm for GitHub Packages
+        working-directory: services/webui
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          echo "@penguintechinc:registry=https://npm.pkg.github.com" >> .npmrc
+          echo "//npm.pkg.github.com/:_authToken=${NODE_AUTH_TOKEN}" >> .npmrc
+
       - name: Install dependencies
         working-directory: services/webui
         run: npm ci
@@ -56,6 +64,14 @@ jobs:
           node-version: '22'
           cache: 'npm'
           cache-dependency-path: services/webui/package-lock.json
+
+      - name: Configure npm for GitHub Packages
+        working-directory: services/webui
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          echo "@penguintechinc:registry=https://npm.pkg.github.com" >> .npmrc
+          echo "//npm.pkg.github.com/:_authToken=${NODE_AUTH_TOKEN}" >> .npmrc
 
       - name: Install dependencies
         working-directory: services/webui
@@ -110,6 +126,8 @@ jobs:
           push: ${{ github.event_name != 'pull_request' }}
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
+          build-args: |
+            GITHUB_TOKEN=${{ secrets.GITHUB_TOKEN }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
 

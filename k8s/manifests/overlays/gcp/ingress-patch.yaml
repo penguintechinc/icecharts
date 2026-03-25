@@ -1,0 +1,46 @@
+# GCP Cloud Load Balancer Ingress
+# Configures Google Cloud Load Balancer ingress for GKE
+# Integrates with Google Cloud's managed load balancing service
+
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: icecharts-gcp
+  namespace: icecharts
+  annotations:
+    # GCP Cloud Load Balancer annotations
+    kubernetes.io/ingress.class: "gce"
+    kubernetes.io/ingress.global-static-ip-name: "icecharts-ip"  # Configure with your static IP
+
+    # Session affinity for stateful connections
+    client.cloud.google.com/neg: '{"ingress": true}'
+    client.cloud.google.com/neg-status: '{"network_endpoint_groups":{"80":"icecharts-neg"}}'
+
+    # Health check configuration
+    cloud.google.com/armor-config: '{"rules":[{"action":"allow"}]}'
+
+    # Labels for GCP resource management
+    cloud.google.com/load-balancer-type: "External"
+
+  labels:
+    app.kubernetes.io/name: icecharts
+    environment: gcp-production
+
+spec:
+  rules:
+  - http:
+      paths:
+      - path: /api
+        pathType: Prefix
+        backend:
+          service:
+            name: api
+            port:
+              number: 5000
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: web
+            port:
+              number: 3000

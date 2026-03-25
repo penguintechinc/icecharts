@@ -26,7 +26,7 @@ class RegisterRequest(BaseModel):
         """Validate email format (allows localhost for development)."""
         v = v.strip().lower()
         # Basic email regex that allows localhost
-        email_pattern = r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+(?:\.[a-zA-Z]{2,})?$'
+        email_pattern = r"^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+(?:\.[a-zA-Z]{2,})?$"
         if not re.match(email_pattern, v):
             raise ValueError("Invalid email format")
         return v
@@ -84,7 +84,7 @@ class LoginRequest(BaseModel):
         """Validate email format (allows localhost for development)."""
         v = v.strip().lower()
         # Basic email regex that allows localhost
-        email_pattern = r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+(?:\.[a-zA-Z]{2,})?$'
+        email_pattern = r"^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+(?:\.[a-zA-Z]{2,})?$"
         if not re.match(email_pattern, v):
             raise ValueError("Invalid email format")
         return v
@@ -152,7 +152,7 @@ class PasswordResetRequest(BaseModel):
         """Validate email format (allows localhost for development)."""
         v = v.strip().lower()
         # Basic email regex that allows localhost
-        email_pattern = r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+(?:\.[a-zA-Z]{2,})?$'
+        email_pattern = r"^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+(?:\.[a-zA-Z]{2,})?$"
         if not re.match(email_pattern, v):
             raise ValueError("Invalid email format")
         return v
@@ -208,9 +208,7 @@ class PasswordResetConfirmRequest(BaseModel):
 class MFAVerifyRequest(BaseModel):
     """Schema for MFA verification request."""
 
-    code: str = Field(
-        ..., min_length=6, max_length=6, description="6-digit MFA code"
-    )
+    code: str = Field(..., min_length=6, max_length=6, description="6-digit MFA code")
 
     @field_validator("code")
     @classmethod
@@ -256,9 +254,7 @@ class GoogleCallbackRequest(BaseModel):
     code: str = Field(
         ..., min_length=1, description="Authorization code from Google OAuth"
     )
-    state: Optional[str] = Field(
-        None, description="CSRF state parameter for security"
-    )
+    state: Optional[str] = Field(None, description="CSRF state parameter for security")
 
     @field_validator("code")
     @classmethod

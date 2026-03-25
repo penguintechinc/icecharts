@@ -24,11 +24,11 @@ import '@xyflow/react/dist/style.css';
 import api from '../lib/api';
 import Button from '../components/Button';
 import type { Drawing, UpdateDrawingData } from '../types';
-import { iconMap, iconCategories } from '../components/diagram/icons';
+import { iconMap, cloudProviders, otherIconSources, type ProviderInfo } from '../components/diagram/icons/index';
 import IconSearch from '../components/diagram/icons/search/IconSearch';
 import EdgeControls from '../components/diagram/EdgeControls';
 import StoragePickerDialog from '../components/storage/StoragePickerDialog';
-import type { IconDefinition } from '../components/diagram/icons/types';
+import type { IconDefinition, IconCategory } from '../components/diagram/icons/types';
 
 // Custom handle styles for bidirectional connections
 const handleStyle = "!w-3 !h-3 !bg-gold-500 !border-2 !border-gold-600";
@@ -155,8 +155,8 @@ const shapeOptions = [
   { type: 'diamond', label: 'Diamond', icon: '◇' },
 ];
 
-// Get category keys for tabs
-const categoryKeys = Object.keys(iconCategories) as (keyof typeof iconCategories)[];
+// Combine all providers for the dropdown
+const allProviders: ProviderInfo[] = [...cloudProviders, ...otherIconSources];
 
 const colorOptions = [
   { color: '#3B82F6', label: 'Blue' },
@@ -178,7 +178,8 @@ export default function DrawingEditor() {
   const [error, setError] = useState('');
   const [drawingName, setDrawingName] = useState('Untitled Drawing');
   const [isEditingName, setIsEditingName] = useState(false);
-  const [activeCategory, setActiveCategory] = useState<keyof typeof iconCategories | 'shapes'>('cloud');
+  const [activeProvider, setActiveProvider] = useState<string>('aws');
+  const [activeCategory, setActiveCategory] = useState<string>('Compute');
 
   // React Flow state
   const [nodes, setNodes] = useState<Node[]>([]);
@@ -196,9 +197,42 @@ export default function DrawingEditor() {
 
   const isNewDrawing = !id || id === 'new';
 
+  // Add back button handler that directs to DrawingDetail after saving
+  const handleBackToDetail = () => {
+    if (id && id !== 'new') {
+      navigate(`/drawings/${id}`);
+    } else {
+      navigate('/drawings');
+    }
+  };
+
   // Create array of all available icons for search
   const allIcons = useMemo<IconDefinition[]>(() => {
-    return Object.values(iconCategories).flatMap(cat => cat.icons) as IconDefinition[];
+    return allProviders.flatMap((provider: ProviderInfo) =>
+      provider.categories.flatMap((cat: IconCategory) => cat.icons)
+    );
+  }, []);
+
+  // Get current provider's categories
+  const currentProvider = useMemo<ProviderInfo | undefined>(() => {
+    return allProviders.find((p: ProviderInfo) => p.id === activeProvider);
+  }, [activeProvider]);
+
+  // Get current category from current provider
+  const currentCategory = useMemo<IconCategory | undefined>(() => {
+    if (!currentProvider || activeProvider === 'shapes') return undefined;
+    return currentProvider.categories.find((cat: IconCategory) => cat.label === activeCategory);
+  }, [currentProvider, activeCategory, activeProvider]);
+
+  // Handle provider change - reset category to first available
+  const handleProviderChange = useCallback((providerId: string) => {
+    setActiveProvider(providerId);
+    if (providerId !== 'shapes') {
+      const provider = allProviders.find((p: ProviderInfo) => p.id === providerId);
+      if (provider && provider.categories.length > 0) {
+        setActiveCategory(provider.categories[0].label);
+      }
+    }
   }, []);
 
   useEffect(() => {
@@ -362,8 +396,8 @@ export default function DrawingEditor() {
 
   // Handle icon selection from IconSearch
   const handleIconSelect = useCallback((icon: IconDefinition) => {
-    const isCloudProvider = icon.source === 'aws';
-    addIconNode(icon.id, icon.label, icon.color || selectedColor, isCloudProvider);
+    const isCloudProviderIcon = cloudProviders.some((p: ProviderInfo) => p.id === icon.source);
+    addIconNode(icon.id, icon.label, icon.color || selectedColor, isCloudProviderIcon);
   }, [selectedColor]);
 
   // Handle edge selection from canvas click
@@ -498,15 +532,15 @@ export default function DrawingEditor() {
       {/* Editor Header */}
       <div className="bg-dark-900 border-b border-dark-700 px-4 py-2 flex items-center justify-between z-10">
         <div className="flex items-center gap-4">
-          <Link
-            to="/drawings"
+          <button
+            onClick={handleBackToDetail}
             className="text-gold-400 hover:text-gold-300 transition-colors p-2"
-            title="Back to Drawings"
+            title={isNewDrawing ? "Back to Drawings" : "Back to Drawing Details"}
           >
             <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
             </svg>
-          </Link>
+          </button>
 
           {isEditingName ? (
             <input
@@ -570,33 +604,59 @@ export default function DrawingEditor() {
             />
           </div>
 
-          {/* Category selector dropdown */}
+          {/* Provider selector dropdown */}
           <div className="p-2 border-b border-dark-700">
+            <label className="text-xs text-dark-500 block mb-1">Provider</label>
             <select
-              value={activeCategory}
-              onChange={(e) => setActiveCategory(e.target.value as keyof typeof iconCategories | 'shapes')}
+              value={activeProvider}
+              onChange={(e) => handleProviderChange(e.target.value)}
               className="w-full bg-dark-800 border border-dark-600 rounded px-2 py-1.5 text-sm text-gold-400 focus:outline-none focus:border-gold-500"
             >
-              {categoryKeys.map((key) => (
-                <option key={key} value={key}>
-                  {iconCategories[key].label}
+              {cloudProviders.map((provider: ProviderInfo) => (
+                <option key={provider.id} value={provider.id}>
+                  ☁️ {provider.label} ({provider.categories.reduce((sum: number, cat: IconCategory) => sum + cat.icons.length, 0)})
                 </option>
               ))}
-              <option value="shapes">Basic Shapes</option>
+              <optgroup label="Other">
+                {otherIconSources.map((provider: ProviderInfo) => (
+                  <option key={provider.id} value={provider.id}>
+                    {provider.label} ({provider.categories.reduce((sum: number, cat: IconCategory) => sum + cat.icons.length, 0)})
+                  </option>
+                ))}
+                <option value="shapes">🔷 Basic Shapes</option>
+              </optgroup>
             </select>
           </div>
 
+          {/* Category selector dropdown - only show for non-shapes */}
+          {activeProvider !== 'shapes' && currentProvider && (
+            <div className="p-2 border-b border-dark-700">
+              <label className="text-xs text-dark-500 block mb-1">Category</label>
+              <select
+                value={activeCategory}
+                onChange={(e) => setActiveCategory(e.target.value)}
+                className="w-full bg-dark-800 border border-dark-600 rounded px-2 py-1.5 text-sm text-gold-400 focus:outline-none focus:border-gold-500"
+              >
+                {currentProvider.categories.map((category: IconCategory) => (
+                  <option key={category.label} value={category.label}>
+                    {category.label} ({category.icons.length})
+                  </option>
+                ))}
+              </select>
+            </div>
+          )}
+
           {/* Icon grid */}
           <div className="flex-1 overflow-y-auto p-2">
-            {activeCategory !== 'shapes' && iconCategories[activeCategory] && (
+            {activeProvider !== 'shapes' && currentCategory && (
               <div className="grid grid-cols-2 gap-1.5">
-                {iconCategories[activeCategory].icons.map((icon) => {
+                {currentCategory.icons.map((icon: IconDefinition) => {
                   const IconComponent = iconMap[icon.id];
-                  const isCloudProvider = activeCategory === 'cloud';
+                  const isCloudProviderIcon = cloudProviders.some((p: ProviderInfo) => p.id === icon.source);
                   return (
                     <button
                       key={icon.id}
-                      onClick={() => addIconNode(icon.id, icon.label, icon.color, isCloudProvider)}
+                      onClick={() => addIconNode(icon.id, icon.label, icon.color, isCloudProviderIcon)}
                       className="flex flex-col items-center gap-1 p-2 rounded bg-dark-800 hover:bg-dark-700 transition-colors text-white"
                       style={{ borderLeft: `3px solid ${icon.color}` }}
                       title={icon.label}
@@ -609,7 +669,7 @@ export default function DrawingEditor() {
               </div>
             )}
 
-            {activeCategory === 'shapes' && (
+            {activeProvider === 'shapes' && (
               <>
                 <div className="grid grid-cols-2 gap-1.5 mb-3">
                   {shapeOptions.map((shape) => (

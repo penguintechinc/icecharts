@@ -1,0 +1,19 @@
+{
+  "typescript": true,
+  "memo": true,
+  "jsxRuntime": "automatic",
+  "svgoConfig": {
+    "plugins": [
+      {
+        "name": "removeAttrs",
+        "params": {
+          "attrs": ["(isolation)"]
+        }
+      }
+    ]
+  },
+  "replaceAttrValues": {
+    "isolation": ""
+  },
+  "plugins": ["@svgr/plugin-jsx", "@svgr/plugin-prettier"]
+}

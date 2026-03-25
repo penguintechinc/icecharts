@@ -86,17 +86,16 @@ export default function SSOConfiguration() {
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
 
-  const isAdmin = user?.role === 'admin';
-
-  // Fetch available providers on mount (must be before any early return)
+  // Fetch available providers on mount
   useEffect(() => {
-    if (!isAdmin) return;
-    fetchProviders();
-    fetchExistingConfigs();
-  }, [isAdmin]);
+    if (user?.role === 'admin') {
+      fetchProviders();
+      fetchExistingConfigs();
+    }
+  }, [user?.role]);
 
   // Check authorization
-  if (!isAdmin) {
+  if (user?.role !== 'admin') {
     return (
       <div className="container mx-auto px-4 py-8">
         <div className="p-4 bg-red-900/30 border border-red-700 rounded-lg text-red-400">

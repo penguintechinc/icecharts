@@ -1,5 +1,7 @@
 import { Link, useLocation } from 'react-router-dom';
+import { useEffect, useState } from 'react';
 import { useAuth } from '../hooks/useAuth';
+import api from '../lib/api';
 import type { NavCategory, UserRole } from '../types';
 
 interface SidebarProps {
@@ -17,10 +19,26 @@ const navigation: NavCategory[] = [
     ],
   },
   {
+    label: 'Automation',
+    roles: ['admin', 'maintainer'],
+    items: [
+      { label: 'IceFlows', path: '/iceflows', icon: '🔄', roles: ['admin', 'maintainer'] },
+      { label: 'IceRuns', path: '/iceruns', icon: '⚡', roles: ['admin', 'maintainer'] },
+    ],
+  },
+  {
+    label: 'Approvals',
+    roles: ['admin', 'maintainer'],
+    items: [
+      { label: 'Approval Center', path: '/approvals', icon: '✓', roles: ['admin', 'maintainer'] },
+    ],
+  },
+  {
     label: 'Management',
     roles: ['admin', 'maintainer'],
     items: [
       { label: 'Settings', path: '/settings', icon: '⚙️', roles: ['admin', 'maintainer'] },
+      { label: 'Libraries', path: '/libraries', icon: '📚', roles: ['admin', 'maintainer'] },
     ],
   },
   {
@@ -28,6 +46,11 @@ const navigation: NavCategory[] = [
     roles: ['admin'],
     items: [
       { label: 'Users', path: '/users', icon: '👥', roles: ['admin'] },
+      { label: 'Service Accounts', path: '/admin/service-accounts', icon: '🔑', roles: ['admin'] },
+      { label: 'Activity Logs', path: '/admin/activity', icon: '📋', roles: ['admin'] },
+      { label: 'Audit Logs', path: '/admin/audit-log', icon: '🔍', roles: ['admin'] },
+      { label: 'License', path: '/admin/license', icon: '📜', roles: ['admin'] },
+      { label: 'Settings', path: '/admin/settings', icon: '⚙️', roles: ['admin'] },
     ],
   },
 ];
@@ -35,6 +58,36 @@ const navigation: NavCategory[] = [
 export default function Sidebar({ collapsed, onToggle }: SidebarProps) {
   const location = useLocation();
   const { user, logout, hasRole } = useAuth();
+  const [pendingApprovalsCount, setPendingApprovalsCount] = useState(0);
+
+  // Fetch pending approvals count
+  useEffect(() => {
+    const fetchPendingCount = async () => {
+      try {
+        const [iceflowsRes, icestreamsRes] = await Promise.all([
+          api.get('/iceflows/my-approvals').catch(() => ({ data: { pending_approvals: [] } })),
+          api.get('/playbooks/my-approvals').catch(() => ({ data: { pending_approvals: [] } })),
+        ]);
+
+        const total =
+          (iceflowsRes.data.pending_approvals?.length || 0) +
+          (icestreamsRes.data.pending_approvals?.length || 0);
+
+        setPendingApprovalsCount(total);
+      } catch (error) {
+        console.error('Error fetching approval count:', error);
+      }
+    };
+
+    // Only fetch if user has appropriate role
+    if (hasRole(['admin', 'maintainer'] as UserRole[])) {
+      fetchPendingCount();
+
+      // Poll every 60 seconds
+      const interval = setInterval(fetchPendingCount, 60000);
+      return () => clearInterval(interval);
+    }
+  }, [hasRole]);
 
   // Filter navigation based on user role
   const filteredNav = navigation
@@ -84,13 +137,45 @@ export default function Sidebar({ collapsed, onToggle }: SidebarProps) {
                 className={`sidebar-item ${isActive(item.path) ? 'sidebar-item-active' : ''}`}
                 title={collapsed ? item.label : undefined}
               >
-                <span className="text-lg">{item.icon}</span>
-                {!collapsed && <span className="ml-3">{item.label}</span>}
+                <div className="flex items-center flex-1">
+                  <span className="text-lg">{item.icon}</span>
+                  {!collapsed && <span className="ml-3">{item.label}</span>}
+                </div>
+                {/* Badge for Approval Center */}
+                {!collapsed && item.path === '/approvals' && pendingApprovalsCount > 0 && (
+                  <span className="px-2 py-1 text-xs font-bold text-white bg-red-500 rounded-full">
+                    {pendingApprovalsCount}
+                  </span>
+                )}
               </Link>
             ))}
           </div>
         ))}
       </nav>
+
+      {/* Action buttons */}
+      <div className="border-t border-dark-700 p-4 space-y-2">
+        <Link
+          to="/drawings/new"
+          className={`flex items-center ${
+            collapsed ? 'justify-center' : ''
+          } px-4 py-2 text-sm text-gold-400 hover:bg-dark-800 rounded-lg transition-colors duration-200`}
+          title="New Chart"
+        >
+          <span className="text-lg">📊</span>
+          {!collapsed && <span className="ml-2">New Chart</span>}
+        </Link>
+        <Link
+          to="/playbooks/new"
+          className={`flex items-center ${
+            collapsed ? 'justify-center' : ''
+          } px-4 py-2 text-sm text-gold-400 hover:bg-dark-800 rounded-lg transition-colors duration-200`}
+          title="New Stream"
+        >
+          <span className="text-lg">⚡</span>
+          {!collapsed && <span className="ml-2">New Stream</span>}
+        </Link>
+      </div>
 
       {/* User section */}
       <div className="border-t border-dark-700 p-4">

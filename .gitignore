@@ -1,3 +1,5 @@
+:memory:
+
 .PLAN*
 .REQUIREMENTS
 .TODO
@@ -70,6 +72,8 @@ eggs/
 .eggs/
 lib/
 !web/src/lib/
+!services/webui/src/lib/
+!services/webui/src/client/lib/
 lib64/
 parts/
 sdist/
@@ -221,6 +225,7 @@ _routes.json
 # Gatsby files
 .cache/
 public
+!services/webui/public/
 
 # Storybook build outputs
 .out
@@ -433,3 +438,4 @@ tramp
 *.rej
 .vagrant/
 vagrant/
+services/webui/.npmrc

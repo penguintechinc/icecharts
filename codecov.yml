@@ -1,0 +1,80 @@
+codecov:
+  require_ci_to_pass: yes
+  notify:
+    wait_for_ci: yes
+
+coverage:
+  precision: 2
+  round: down
+  range: "70...100"
+
+  status:
+    project:
+      flask-backend:
+        target: 95%
+        threshold: 1%
+        flags:
+          - flask-py3.13
+      icestreams-worker:
+        target: 90%
+        threshold: 2%
+        flags:
+          - icestreams-worker-py3.13
+      iceflows-worker:
+        target: 90%
+        threshold: 2%
+        flags:
+          - iceflows-worker-py3.13
+      iceruns-invoker:
+        target: 90%
+        threshold: 2%
+        flags:
+          - iceruns-invoker-py3.13
+      webui:
+        target: 80%
+        threshold: 3%
+        flags:
+          - webui-node20
+    patch:
+      default:
+        target: 80%
+        threshold: 5%
+
+comment:
+  layout: "reach,diff,flags,files"
+  behavior: default
+  require_changes: false
+
+flags:
+  flask-py3.13:
+    paths:
+      - services/flask-backend/app/
+    carryforward: false
+  flask-py3.12:
+    paths:
+      - services/flask-backend/app/
+    carryforward: false
+  icestreams-worker-py3.13:
+    paths:
+      - services/icestreams-worker/
+    carryforward: false
+  iceflows-worker-py3.13:
+    paths:
+      - services/iceflows-worker/
+    carryforward: false
+  iceruns-invoker-py3.13:
+    paths:
+      - services/iceruns-invoker/
+    carryforward: false
+  webui-node20:
+    paths:
+      - services/webui/src/
+    carryforward: false
+
+ignore:
+  - "services/flask-backend/app/storage/example.py"
+  - "*/__init__.py"
+  - "tests/**"
+  - "**/*.d.ts"
+  - "services/webui/src/main.tsx"
+  - "services/webui/src/vite-env.d.ts"

@@ -33,11 +33,15 @@ def user_can_admin_drawing(user_id: int, drawing_id: int) -> bool:
         return True
 
     # Check if has admin permission
-    share = db(
-        (db.drawing_shares.drawing_id == drawing_id) &
-        (db.drawing_shares.user_id == user_id) &
-        (db.drawing_shares.permission == "admin")
-    ).select().first()
+    share = (
+        db(
+            (db.drawing_shares.drawing_id == drawing_id)
+            & (db.drawing_shares.user_id == user_id)
+            & (db.drawing_shares.permission == "admin")
+        )
+        .select()
+        .first()
+    )
 
     return share is not None
 
@@ -60,19 +64,19 @@ def list_shares(drawing_id: int):
 
     # Get user shares
     user_shares = db(
-        (db.drawing_shares.drawing_id == drawing_id) &
-        (db.drawing_shares.user_id == db.users.id)
+        (db.drawing_shares.drawing_id == drawing_id)
+        & (db.drawing_shares.user_id == db.identities.id)
     ).select(
         db.drawing_shares.ALL,
-        db.users.id,
-        db.users.email,
-        db.users.full_name,
+        db.identities.id,
+        db.identities.email,
+        db.identities.full_name,
     )
 
     # Get group shares
     group_shares = db(
-        (db.drawing_shares.drawing_id == drawing_id) &
-        (db.drawing_shares.group_id == db.groups.id)
+        (db.drawing_shares.drawing_id == drawing_id)
+        & (db.drawing_shares.group_id == db.groups.id)
     ).select(
         db.drawing_shares.ALL,
         db.groups.id,
@@ -81,8 +85,8 @@ def list_shares(drawing_id: int):
 
     # Get public shares
     public_shares = db(
-        (db.drawing_shares.drawing_id == drawing_id) &
-        (db.drawing_shares.is_public == True)
+        (db.drawing_shares.drawing_id == drawing_id)
+        & (db.drawing_shares.is_public == True)
     ).select()
 
     shares = {
@@ -92,32 +96,46 @@ def list_shares(drawing_id: int):
     }
 
     for s in user_shares:
-        shares["user_shares"].append({
-            "id": s.drawing_shares.id,
-            "user_id": s.users.id,
-            "email": s.users.email,
-            "full_name": s.users.full_name,
-            "permission": s.drawing_shares.permission,
-            "created_at": s.drawing_shares.created_at.isoformat() if s.drawing_shares.created_at else None,
-        })
+        shares["user_shares"].append(
+            {
+                "id": s.drawing_shares.id,
+                "user_id": s.identities.id,
+                "email": s.identities.email,
+                "full_name": s.identities.full_name,
+                "permission": s.drawing_shares.permission,
+                "created_at": (
+                    s.drawing_shares.created_at.isoformat()
+                    if s.drawing_shares.created_at
+                    else None
+                ),
+            }
+        )
 
     for s in group_shares:
-        shares["group_shares"].append({
-            "id": s.drawing_shares.id,
-            "group_id": s.groups.id,
-            "group_name": s.groups.name,
-            "permission": s.drawing_shares.permission,
-            "created_at": s.drawing_shares.created_at.isoformat() if s.drawing_shares.created_at else None,
-        })
+        shares["group_shares"].append(
+            {
+                "id": s.drawing_shares.id,
+                "group_id": s.groups.id,
+                "group_name": s.groups.name,
+                "permission": s.drawing_shares.permission,
+                "created_at": (
+                    s.drawing_shares.created_at.isoformat()
+                    if s.drawing_shares.created_at
+                    else None
+                ),
+            }
+        )
 
     for s in public_shares:
-        shares["public_shares"].append({
-            "id": s.id,
-            "token": s.share_token,
-            "permission": s.permission,
-            "expires_at": s.expires_at.isoformat() if s.expires_at else None,
-            "created_at": s.created_at.isoformat() if s.created_at else None,
-        })
+        shares["public_shares"].append(
+            {
+                "id": s.id,
+                "token": s.share_token,
+                "permission": s.permission,
+                "expires_at": s.expires_at.isoformat() if s.expires_at else None,
+                "created_at": s.created_at.isoformat() if s.created_at else None,
+            }
+        )
 
     return jsonify({"shares": shares}), 200
 
@@ -160,10 +178,14 @@ def create_share(drawing_id: int):
             return jsonify({"error": "User not found"}), 404
 
         # Check if already shared
-        existing = db(
-            (db.drawing_shares.drawing_id == drawing_id) &
-            (db.drawing_shares.user_id == target_user_id)
-        ).select().first()
+        existing = (
+            db(
+                (db.drawing_shares.drawing_id == drawing_id)
+                & (db.drawing_shares.user_id == target_user_id)
+            )
+            .select()
+            .first()
+        )
 
         if existing:
             return jsonify({"error": "Drawing already shared with this user"}), 409
@@ -177,11 +199,16 @@ def create_share(drawing_id: int):
         )
         db.commit()
 
-        return jsonify({
-            "message": "Drawing shared successfully",
-            "share_id": share_id,
-            "type": "user",
-        }), 201
+        return (
+            jsonify(
+                {
+                    "message": "Drawing shared successfully",
+                    "share_id": share_id,
+                    "type": "user",
+                }
+            ),
+            201,
+        )
 
     elif share_type == "group":
         target_group_id = data.get("group_id")
@@ -194,10 +221,14 @@ def create_share(drawing_id: int):
             return jsonify({"error": "Group not found"}), 404
 
         # Check if already shared
-        existing = db(
-            (db.drawing_shares.drawing_id == drawing_id) &
-            (db.drawing_shares.group_id == target_group_id)
-        ).select().first()
+        existing = (
+            db(
+                (db.drawing_shares.drawing_id == drawing_id)
+                & (db.drawing_shares.group_id == target_group_id)
+            )
+            .select()
+            .first()
+        )
 
         if existing:
             return jsonify({"error": "Drawing already shared with this group"}), 409
@@ -211,11 +242,16 @@ def create_share(drawing_id: int):
         )
         db.commit()
 
-        return jsonify({
-            "message": "Drawing shared with group successfully",
-            "share_id": share_id,
-            "type": "group",
-        }), 201
+        return (
+            jsonify(
+                {
+                    "message": "Drawing shared with group successfully",
+                    "share_id": share_id,
+                    "type": "group",
+                }
+            ),
+            201,
+        )
 
     elif share_type == "public":
         # Generate share token
@@ -238,14 +274,19 @@ def create_share(drawing_id: int):
         )
         db.commit()
 
-        return jsonify({
-            "message": "Public share created successfully",
-            "share_id": share_id,
-            "type": "public",
-            "token": share_token,
-            "share_url": f"/api/v1/share/{share_token}",
-            "expires_at": expires_at.isoformat() if expires_at else None,
-        }), 201
+        return (
+            jsonify(
+                {
+                    "message": "Public share created successfully",
+                    "share_id": share_id,
+                    "type": "public",
+                    "token": share_token,
+                    "share_url": f"/api/v1/share/{share_token}",
+                    "expires_at": expires_at.isoformat() if expires_at else None,
+                }
+            ),
+            201,
+        )
 
     else:
         return jsonify({"error": "Invalid share type"}), 400
@@ -269,8 +310,8 @@ def delete_share(drawing_id: int, share_id: int):
 
     # Delete share
     deleted = db(
-        (db.drawing_shares.id == share_id) &
-        (db.drawing_shares.drawing_id == drawing_id)
+        (db.drawing_shares.id == share_id)
+        & (db.drawing_shares.drawing_id == drawing_id)
     ).delete()
 
     if not deleted:
@@ -278,9 +319,14 @@ def delete_share(drawing_id: int, share_id: int):
 
     db.commit()
 
-    return jsonify({
-        "message": "Share removed successfully",
-    }), 200
+    return (
+        jsonify(
+            {
+                "message": "Share removed successfully",
+            }
+        ),
+        200,
+    )
 
 
 @shares_v1_bp.route("/<int:drawing_id>/shares/<int:share_id>", methods=["PUT"])
@@ -309,8 +355,8 @@ def update_share(drawing_id: int, share_id: int):
 
     # Update share
     updated = db(
-        (db.drawing_shares.id == share_id) &
-        (db.drawing_shares.drawing_id == drawing_id)
+        (db.drawing_shares.id == share_id)
+        & (db.drawing_shares.drawing_id == drawing_id)
     ).update(permission=permission)
 
     if not updated:
@@ -318,10 +364,15 @@ def update_share(drawing_id: int, share_id: int):
 
     db.commit()
 
-    return jsonify({
-        "message": "Share permission updated successfully",
-        "permission": permission,
-    }), 200
+    return (
+        jsonify(
+            {
+                "message": "Share permission updated successfully",
+                "permission": permission,
+            }
+        ),
+        200,
+    )
 
 
 # Public share access endpoint (no auth required)
@@ -331,10 +382,14 @@ def access_shared_drawing(token: str):
     db = get_db()
 
     # Find share by token
-    share = db(
-        (db.drawing_shares.share_token == token) &
-        (db.drawing_shares.is_public == True)
-    ).select().first()
+    share = (
+        db(
+            (db.drawing_shares.share_token == token)
+            & (db.drawing_shares.is_public == True)
+        )
+        .select()
+        .first()
+    )
 
     if not share:
         return jsonify({"error": "Invalid or expired share link"}), 404
@@ -349,14 +404,19 @@ def access_shared_drawing(token: str):
         return jsonify({"error": "Drawing not found"}), 404
 
     # Return drawing with limited info
-    return jsonify({
-        "drawing": {
-            "id": drawing["id"],
-            "title": drawing["title"],
-            "content": drawing.get("content"),
-            "permission": share.permission,
-        },
-    }), 200
+    return (
+        jsonify(
+            {
+                "drawing": {
+                    "id": drawing["id"],
+                    "title": drawing["title"],
+                    "content": drawing.get("content"),
+                    "permission": share.permission,
+                },
+            }
+        ),
+        200,
+    )
 
 
 # New endpoint: Get shared drawing by token (enhanced public access)
@@ -383,19 +443,20 @@ def get_shared_drawing(token: str):
 
     # Get drawing by token using ShareService
     drawing = ShareService.get_drawing_by_token(
-        token=token,
-        user_id=user_id,
-        log_access=True
+        token=token, user_id=user_id, log_access=True
     )
 
     if not drawing:
-        return jsonify({"error": "Invalid, expired, or access-restricted share link"}), 404
+        return (
+            jsonify({"error": "Invalid, expired, or access-restricted share link"}),
+            404,
+        )
 
     # Return drawing data
-    return jsonify({
-        "drawing": drawing,
-        "message": "Drawing accessed via share link"
-    }), 200
+    return (
+        jsonify({"drawing": drawing, "message": "Drawing accessed via share link"}),
+        200,
+    )
 
 
 # New endpoint: Get analytics for shared drawing (owner/admin only)
@@ -433,8 +494,8 @@ def get_drawing_analytics(drawing_id: int):
 
     # Get analytics from share_analytics table
     analytics = db(
-        (db.share_analytics.share_type == "drawing") &
-        (db.share_analytics.share_id == drawing_id)
+        (db.share_analytics.share_type == "drawing")
+        & (db.share_analytics.share_id == drawing_id)
     ).select(orderby=~db.share_analytics.accessed_at)
 
     # Count total views
@@ -448,44 +509,59 @@ def get_drawing_analytics(drawing_id: int):
         if entry.access_ip:
             unique_ips.add(entry.access_ip)
 
-        recent_accesses.append({
-            "accessed_at": entry.accessed_at.isoformat() if entry.accessed_at else None,
-            "access_ip": entry.access_ip,
-            "user_agent": entry.user_agent,
-            "accessed_by_id": entry.accessed_by_id,
-            "accessed_by_username": None  # Will be populated if user_id exists
-        })
+        recent_accesses.append(
+            {
+                "accessed_at": (
+                    entry.accessed_at.isoformat() if entry.accessed_at else None
+                ),
+                "access_ip": entry.access_ip,
+                "user_agent": entry.user_agent,
+                "accessed_by_id": entry.accessed_by_id,
+                "accessed_by_username": None,  # Will be populated if user_id exists
+            }
+        )
 
     # Get usernames for authenticated accesses
     for access in recent_accesses:
         if access["accessed_by_id"]:
-            user_record = db(
-                db.identities.id == access["accessed_by_id"]
-            ).select().first()
+            user_record = (
+                db(db.identities.id == access["accessed_by_id"]).select().first()
+            )
             if user_record:
                 access["accessed_by_username"] = user_record.username
 
     # Get list of public share tokens for this drawing
     shares = db(
-        (db.drawing_shares.drawing_id == drawing_id) &
-        (db.drawing_shares.is_public == True)
+        (db.drawing_shares.drawing_id == drawing_id)
+        & (db.drawing_shares.is_public == True)
     ).select()
 
     public_shares = []
     for share in shares:
-        public_shares.append({
-            "id": share.id,
-            "token": share.share_token,
-            "permission": share.permission,
-            "expires_at": share.expires_at.isoformat() if share.expires_at else None,
-            "created_at": share.created_at.isoformat() if share.created_at else None,
-        })
+        public_shares.append(
+            {
+                "id": share.id,
+                "token": share.share_token,
+                "permission": share.permission,
+                "expires_at": (
+                    share.expires_at.isoformat() if share.expires_at else None
+                ),
+                "created_at": (
+                    share.created_at.isoformat() if share.created_at else None
+                ),
+            }
+        )
 
-    return jsonify({
-        "drawing_id": drawing_id,
-        "total_views": total_views,
-        "unique_ips": len(unique_ips),
-        "public_shares": public_shares,
-        "recent_accesses": recent_accesses[:100],  # Return last 100 accesses
-        "message": "Analytics for shared drawing"
-    }), 200
+    return (
+        jsonify(
+            {
+                "drawing_id": drawing_id,
+                "total_views": total_views,
+                "unique_ips": len(unique_ips),
+                "public_shares": public_shares,
+                "recent_accesses": recent_accesses[:100],  # Return last 100 accesses
+                "message": "Analytics for shared drawing",
+            }
+        ),
+        200,
+    )

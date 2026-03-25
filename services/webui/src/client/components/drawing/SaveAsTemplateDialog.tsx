@@ -1,6 +1,6 @@
 import React from 'react';
-import { FormModalBuilder } from '@penguin/react_libs';
-import type { FormField } from '@penguin/react_libs';
+import { FormModalBuilder } from '@penguintechinc/react-libs';
+import type { FormField } from '@penguintechinc/react-libs';
 import apiClient from '../../lib/api';
 
 interface SaveAsTemplateDialogProps {

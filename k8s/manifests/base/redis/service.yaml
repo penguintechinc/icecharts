@@ -1,0 +1,19 @@
+# Redis Headless Service
+# Provides stable DNS identity for StatefulSet pods
+apiVersion: v1
+kind: Service
+metadata:
+  name: redis
+  namespace: icecharts
+  labels:
+    app.kubernetes.io/name: icecharts
+    app.kubernetes.io/component: redis
+spec:
+  clusterIP: None  # Headless service for StatefulSet
+  selector:
+    app: redis
+  ports:
+  - name: redis
+    port: 6379
+    targetPort: redis
+    protocol: TCP

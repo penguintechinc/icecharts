@@ -38,7 +38,7 @@ class DrawingService:
         is_public: bool = False,
         is_template: bool = False,
         tags: Optional[list[str]] = None,
-        tenant_id: int = 1
+        tenant_id: int = 1,
     ) -> dict:
         """
         Create a new drawing.
@@ -135,7 +135,7 @@ class DrawingService:
         is_template: Optional[bool] = None,
         status: Optional[str] = None,
         tags: Optional[list[str]] = None,
-        thumbnail_url: Optional[str] = None
+        thumbnail_url: Optional[str] = None,
     ) -> Optional[dict]:
         """
         Update drawing information.
@@ -261,7 +261,7 @@ class DrawingService:
         is_template: Optional[bool] = None,
         tags: Optional[list[str]] = None,
         page: int = 1,
-        per_page: int = 20
+        per_page: int = 20,
     ) -> tuple[list[dict], int]:
         """
         List drawings accessible to the user.
@@ -284,34 +284,38 @@ class DrawingService:
         # Build query
         # Get drawings where user is owner, or drawings shared with user/groups
         query = (
-            (db.drawings.created_by_id == user_id) |
-            (db.drawings.is_public == True) |
-            (db.drawings.id.belongs(
-                db(db.drawing_shares.shared_with_id == user_id)._select(
-                    db.drawing_shares.drawing_id
+            (db.drawings.created_by_id == user_id)
+            | (db.drawings.is_public == True)
+            | (
+                db.drawings.id.belongs(
+                    db(db.drawing_shares.shared_with_id == user_id)._select(
+                        db.drawing_shares.drawing_id
+                    )
                 )
-            ))
+            )
         )
 
         # Add group shares
-        user_groups = db(
-            db.group_memberships.identity_id == user_id
-        ).select(db.group_memberships.group_id)
+        user_groups = db(db.group_memberships.identity_id == user_id).select(
+            db.group_memberships.group_id
+        )
         group_ids = [g.group_id for g in user_groups]
 
         if group_ids:
-            query = query | (db.drawings.id.belongs(
-                db(db.drawing_shares.shared_with_group_id.belongs(group_ids))._select(
-                    db.drawing_shares.drawing_id
+            query = query | (
+                db.drawings.id.belongs(
+                    db(
+                        db.drawing_shares.shared_with_group_id.belongs(group_ids)
+                    )._select(db.drawing_shares.drawing_id)
                 )
-            ))
+            )
 
         # Apply filters
         if search:
             search_term = f"%{search}%"
             query = query & (
-                (db.drawings.title.like(search_term)) |
-                (db.drawings.description.like(search_term))
+                (db.drawings.title.like(search_term))
+                | (db.drawings.description.like(search_term))
             )
 
         if status:
@@ -337,9 +341,7 @@ class DrawingService:
 
     @staticmethod
     def duplicate_drawing(
-        drawing_id: int,
-        user_id: int,
-        new_title: Optional[str] = None
+        drawing_id: int, user_id: int, new_title: Optional[str] = None
     ) -> dict:
         """
         Duplicate a drawing (copy with new owner).
@@ -358,9 +360,7 @@ class DrawingService:
         """
         # Check if user can view the original drawing
         if not PermissionService.can_view_drawing(user_id, drawing_id):
-            raise PermissionError(
-                "You don't have permission to duplicate this drawing"
-            )
+            raise PermissionError("You don't have permission to duplicate this drawing")
 
         db = get_db()
         original = db(db.drawings.id == drawing_id).select().first()

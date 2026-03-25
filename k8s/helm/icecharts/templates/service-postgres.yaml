@@ -1,0 +1,27 @@
+{{- /*
+PostgreSQL ClusterIP Service
+- Exposes PostgreSQL StatefulSet internally
+- Used by API and other components for database connections
+- Single port: 5432
+*/ -}}
+{{- if .Values.postgres.enabled }}
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "icecharts.postgres.fullname" . }}-service
+  namespace: {{ include "icecharts.namespace" . }}
+  labels:
+    {{- include "icecharts.postgres.labels" . | nindent 4 }}
+  annotations:
+    description: "PostgreSQL Database Service"
+spec:
+  type: ClusterIP
+  sessionAffinity: None
+  ports:
+    - port: {{ .Values.postgres.service.port }}
+      targetPort: {{ .Values.postgres.service.port }}
+      protocol: TCP
+      name: postgres
+  selector:
+    {{- include "icecharts.postgres.selectorLabels" . | nindent 4 }}
+{{- end }}

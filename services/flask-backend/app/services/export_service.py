@@ -17,6 +17,7 @@ from PIL import Image, ImageDraw
 # Optional PDF export support - requires weasyprint (heavy dependencies)
 try:
     from weasyprint import CSS, HTML
+
     PDF_EXPORT_AVAILABLE = True
 except ImportError:
     PDF_EXPORT_AVAILABLE = False
@@ -42,8 +43,17 @@ class ExportService:
 
     VALID_FORMATS = {"png", "jpg", "svg", "pdf", "json"}
     VALID_PAGE_SIZES = {
-        "A0", "A1", "A2", "A3", "A4", "A5", "A6",
-        "Letter", "Legal", "Tabloid", "Ledger"
+        "A0",
+        "A1",
+        "A2",
+        "A3",
+        "A4",
+        "A5",
+        "A6",
+        "Letter",
+        "Legal",
+        "Tabloid",
+        "Ledger",
     }
 
     @staticmethod
@@ -151,7 +161,14 @@ class ExportService:
                 if png_image.mode in ("RGBA", "LA", "P"):
                     # Convert RGBA to RGB with white background
                     rgb_image = Image.new("RGB", png_image.size, (255, 255, 255))
-                    rgb_image.paste(png_image, mask=png_image.split()[-1] if png_image.mode in ("RGBA", "LA") else None)
+                    rgb_image.paste(
+                        png_image,
+                        mask=(
+                            png_image.split()[-1]
+                            if png_image.mode in ("RGBA", "LA")
+                            else None
+                        ),
+                    )
                     png_image = rgb_image
                 jpg_bytes = io.BytesIO()
                 png_image.save(jpg_bytes, format="JPEG", quality=quality)
@@ -218,9 +235,7 @@ class ExportService:
 
                 # Add background if present
                 if drawing_data.get("include_background", True):
-                    bg_color = drawing_data.get(
-                        "background_color", "rgb(255,255,255)"
-                    )
+                    bg_color = drawing_data.get("background_color", "rgb(255,255,255)")
                     svg_lines.append(
                         f'<rect width="{width}" height="{height}" fill="{bg_color}"/>'
                     )
@@ -337,7 +352,9 @@ class ExportService:
             raise Exception(f"Failed to export to JSON: {str(e)}") from e
 
     @staticmethod
-    def export(options: ExportOptions, drawing_data: Union[dict, str]) -> Union[bytes, str]:
+    def export(
+        options: ExportOptions, drawing_data: Union[dict, str]
+    ) -> Union[bytes, str]:
         """Export drawing using specified format and options.
 
         Args:

@@ -6,8 +6,9 @@ and dependencies as shapes into IceCharts drawings.
 
 import logging
 from dataclasses import dataclass, field
-from typing import Optional, Dict, Any, List
 from enum import Enum
+from typing import Any, Dict, List, Optional
+
 import httpx
 
 logger = logging.getLogger(__name__)
@@ -20,43 +21,43 @@ class EntityTypeMapping(Enum):
         "node_type": "rectangle",
         "icon": "server",
         "color": "#3B82F6",
-        "description": "Compute Device"
+        "description": "Compute Device",
     }
     VPC = {
         "node_type": "rectangle",
         "icon": "network",
         "color": "#10B981",
-        "description": "Virtual Private Cloud"
+        "description": "Virtual Private Cloud",
     }
     SUBNET = {
         "node_type": "rectangle",
         "icon": "share-2",
         "color": "#6366F1",
-        "description": "Subnet"
+        "description": "Subnet",
     }
     DATACENTER = {
         "node_type": "rectangle",
         "icon": "database",
         "color": "#F59E0B",
-        "description": "Datacenter"
+        "description": "Datacenter",
     }
     NETWORK = {
         "node_type": "diamond",
         "icon": "router",
         "color": "#8B5CF6",
-        "description": "Network Device"
+        "description": "Network Device",
     }
     USER = {
         "node_type": "circle",
         "icon": "user",
         "color": "#EC4899",
-        "description": "User"
+        "description": "User",
     }
     SECURITY_ISSUE = {
         "node_type": "diamond",
         "icon": "alert-triangle",
         "color": "#EF4444",
-        "description": "Security Issue"
+        "description": "Security Issue",
     }
 
 

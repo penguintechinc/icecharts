@@ -2,7 +2,7 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: web
-  namespace: icecharts-beta
+  namespace: icecharts
   labels:
     app: web
     app.kubernetes.io/name: icecharts
@@ -26,7 +26,7 @@ spec:
         fsGroup: 1000
       containers:
       - name: web
-        image: registry-dal2.penguintech.io/icecharts-web:v1.0.2-beta
+        image: ghcr.io/penguintechinc/icecharts/icecharts-web:v1.0.2
         ports:
         - containerPort: 8080
           protocol: TCP

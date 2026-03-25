@@ -2,10 +2,10 @@
 
 import logging
 from dataclasses import dataclass
-from typing import Optional, Dict, List, Any
+from typing import Any, Dict, List, Optional
 
-from .saml_handler import SAMLConfig
 from .oidc_handler import OIDCConfig
+from .saml_handler import SAMLConfig
 
 logger = logging.getLogger(__name__)
 
@@ -13,8 +13,9 @@ logger = logging.getLogger(__name__)
 @dataclass(slots=True)
 class AttributeMapping:
     """SAML/OIDC attribute to user field mapping."""
-    email_field: str = 'email'
-    name_field: str = 'name'
+
+    email_field: str = "email"
+    name_field: str = "name"
     groups_field: Optional[str] = None
     custom_fields: Dict[str, str] = None
 
@@ -27,8 +28,9 @@ class AttributeMapping:
 @dataclass(slots=True)
 class JITConfig:
     """JIT provisioning configuration."""
+
     enabled: bool = True
-    auto_assign_role: str = 'viewer'
+    auto_assign_role: str = "viewer"
     attribute_mapping: AttributeMapping = None
     group_role_mapping: Dict[str, str] = None
 
@@ -52,9 +54,7 @@ class JITProvisioner:
         self.config = jit_config
 
     def get_or_create_saml_user(
-        self,
-        saml_attributes: Dict[str, Any],
-        saml_config: SAMLConfig
+        self, saml_attributes: Dict[str, Any], saml_config: SAMLConfig
     ) -> Dict[str, Any]:
         """Get or create user from SAML attributes.
 
@@ -68,17 +68,16 @@ class JITProvisioner:
         Raises:
             ValueError: If required attributes missing
         """
-        from ..models import get_user_by_email, create_user
+        from ..models import create_user, get_user_by_email
 
         # Map attributes to user identity
         user_identity = self.map_attributes_to_identity(
-            saml_attributes,
-            self.config.attribute_mapping
+            saml_attributes, self.config.attribute_mapping
         )
 
-        email = user_identity['email']
-        name = user_identity['name']
-        groups = user_identity.get('groups', [])
+        email = user_identity["email"]
+        name = user_identity["name"]
+        groups = user_identity.get("groups", [])
 
         # Check if user exists
         existing_user = get_user_by_email(email)
@@ -86,11 +85,11 @@ class JITProvisioner:
         if existing_user:
             logger.info(f"SAML user exists: {email}")
             return {
-                'id': existing_user['id'],
-                'email': existing_user['email'],
-                'full_name': existing_user.get('full_name', ''),
-                'role': existing_user['role'],
-                'is_new': False,
+                "id": existing_user["id"],
+                "email": existing_user["email"],
+                "full_name": existing_user.get("full_name", ""),
+                "role": existing_user["role"],
+                "is_new": False,
             }
 
         # Create new user if JIT enabled
@@ -106,6 +105,7 @@ class JITProvisioner:
 
         # Create user with placeholder password (won't be used)
         import secrets
+
         placeholder_password = secrets.token_urlsafe(32)
 
         new_user = create_user(
@@ -116,17 +116,15 @@ class JITProvisioner:
         )
 
         return {
-            'id': new_user['id'],
-            'email': new_user['email'],
-            'full_name': new_user.get('full_name', ''),
-            'role': new_user['role'],
-            'is_new': True,
+            "id": new_user["id"],
+            "email": new_user["email"],
+            "full_name": new_user.get("full_name", ""),
+            "role": new_user["role"],
+            "is_new": True,
         }
 
     def get_or_create_oidc_user(
-        self,
-        userinfo: Dict[str, Any],
-        oidc_config: OIDCConfig
+        self, userinfo: Dict[str, Any], oidc_config: OIDCConfig
     ) -> Dict[str, Any]:
         """Get or create user from OIDC userinfo.
 
@@ -140,17 +138,16 @@ class JITProvisioner:
         Raises:
             ValueError: If required attributes missing
         """
-        from ..models import get_user_by_email, create_user
+        from ..models import create_user, get_user_by_email
 
         # Map userinfo to user identity
         user_identity = self.map_oidc_userinfo_to_identity(
-            userinfo,
-            self.config.attribute_mapping
+            userinfo, self.config.attribute_mapping
         )
 
-        email = user_identity['email']
-        name = user_identity['name']
-        groups = user_identity.get('groups', [])
+        email = user_identity["email"]
+        name = user_identity["name"]
+        groups = user_identity.get("groups", [])
 
         # Check if user exists
         existing_user = get_user_by_email(email)
@@ -158,11 +155,11 @@ class JITProvisioner:
         if existing_user:
             logger.info(f"OIDC user exists: {email}")
             return {
-                'id': existing_user['id'],
-                'email': existing_user['email'],
-                'full_name': existing_user.get('full_name', ''),
-                'role': existing_user['role'],
-                'is_new': False,
+                "id": existing_user["id"],
+                "email": existing_user["email"],
+                "full_name": existing_user.get("full_name", ""),
+                "role": existing_user["role"],
+                "is_new": False,
             }
 
         # Create new user if JIT enabled
@@ -178,6 +175,7 @@ class JITProvisioner:
 
         # Create user with placeholder password (won't be used)
         import secrets
+
         placeholder_password = secrets.token_urlsafe(32)
 
         new_user = create_user(
@@ -188,17 +186,17 @@ class JITProvisioner:
         )
 
         return {
-            'id': new_user['id'],
-            'email': new_user['email'],
-            'full_name': new_user.get('full_name', ''),
-            'role': new_user['role'],
-            'is_new': True,
+            "id": new_user["id"],
+            "email": new_user["email"],
+            "full_name": new_user.get("full_name", ""),
+            "role": new_user["role"],
+            "is_new": True,
         }
 
     def map_attributes_to_identity(
         self,
         attributes: Dict[str, List[str]],
-        mapping: Optional[AttributeMapping] = None
+        mapping: Optional[AttributeMapping] = None,
     ) -> Dict[str, Any]:
         """Map SAML attributes to user identity fields.
 
@@ -235,15 +233,13 @@ class JITProvisioner:
             groups = attributes[mapping.groups_field]
 
         return {
-            'email': email,
-            'name': name,
-            'groups': groups,
+            "email": email,
+            "name": name,
+            "groups": groups,
         }
 
     def map_oidc_userinfo_to_identity(
-        self,
-        userinfo: Dict[str, Any],
-        mapping: Optional[AttributeMapping] = None
+        self, userinfo: Dict[str, Any], mapping: Optional[AttributeMapping] = None
     ) -> Dict[str, Any]:
         """Map OIDC userinfo to user identity fields.
 
@@ -259,14 +255,14 @@ class JITProvisioner:
 
         # Extract email
         email_field = mapping.email_field
-        email = userinfo.get(email_field, '').lower()
+        email = userinfo.get(email_field, "").lower()
 
         if not email:
             raise ValueError(f"Required field '{email_field}' not found in userinfo")
 
         # Extract name
         name_field = mapping.name_field
-        name = userinfo.get(name_field, '') or userinfo.get('name', '')
+        name = userinfo.get(name_field, "") or userinfo.get("name", "")
 
         # Extract groups if configured
         groups = []
@@ -278,9 +274,9 @@ class JITProvisioner:
                 groups = [str(groups_value)]
 
         return {
-            'email': email,
-            'name': name,
-            'groups': groups,
+            "email": email,
+            "name": name,
+            "groups": groups,
         }
 
     def _determine_role_from_groups(self, groups: List[str]) -> str:
@@ -300,11 +296,11 @@ class JITProvisioner:
         # Check for common admin/maintainer group names
         group_lower = [g.lower() for g in groups]
 
-        if any('admin' in g for g in group_lower):
-            return 'admin'
+        if any("admin" in g for g in group_lower):
+            return "admin"
 
-        if any('maintain' in g or 'editor' in g for g in group_lower):
-            return 'maintainer'
+        if any("maintain" in g or "editor" in g for g in group_lower):
+            return "maintainer"
 
         # Default role
         return self.config.auto_assign_role
@@ -313,14 +309,12 @@ class JITProvisioner:
     def _hash_password(password: str) -> str:
         """Hash password using bcrypt."""
         import bcrypt
-        return bcrypt.hashpw(
-            password.encode('utf-8'),
-            bcrypt.gensalt()
-        ).decode('utf-8')
+
+        return bcrypt.hashpw(password.encode("utf-8"), bcrypt.gensalt()).decode("utf-8")
 
 
 __all__ = [
-    'AttributeMapping',
-    'JITConfig',
-    'JITProvisioner',
+    "AttributeMapping",
+    "JITConfig",
+    "JITProvisioner",
 ]

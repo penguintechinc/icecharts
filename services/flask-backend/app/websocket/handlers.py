@@ -1,14 +1,15 @@
 """WebSocket event handlers for real-time collaboration."""
 
-from typing import Dict, Any
-from flask import request
-from flask_socketio import emit, join_room, leave_room, disconnect
-import jwt
 import os
+from typing import Any, Dict
 
+import jwt
+from flask import request
+from flask_socketio import disconnect, emit, join_room, leave_room
+
+from ..models import get_db
 from . import get_socketio
 from .collaboration import get_collaboration_manager
-from ..models import get_db
 
 
 def verify_token(token: str) -> Dict[str, Any]:
@@ -123,9 +124,7 @@ def handle_join_room(data: Dict[str, Any]) -> None:
         join_room(room_id)
 
         # Register in collaboration manager
-        collaborator = manager.join_room(
-            room_id, user_id, username, email, session_id
-        )
+        collaborator = manager.join_room(room_id, user_id, username, email, session_id)
 
         # Notify user of successful join
         emit(

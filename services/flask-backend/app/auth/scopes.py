@@ -2,10 +2,15 @@
 
 This module defines available scopes for service accounts and provides
 utility functions for scope validation.
+
+Role-Based Scope Assignments:
+- Admin: All scopes including iceruns:admin, iceflows:admin
+- Maintainer: Standard scopes including iceruns:read, iceruns:write, iceruns:execute, iceruns:logs,
+             iceflows:read, iceflows:write, iceflows:execute, iceflows:approve
+- Viewer: Read-only scopes including iceruns:read, iceruns:logs, iceflows:read
 """
 
 from typing import List, Set
-
 
 # Available scopes with descriptions
 AVAILABLE_SCOPES = {
@@ -13,18 +18,34 @@ AVAILABLE_SCOPES = {
     "drawings:read": "Read drawing metadata and content",
     "drawings:write": "Create and update drawings",
     "drawings:delete": "Delete drawings",
-
     # Exports
     "exports:create": "Generate exports (PNG, PDF, SVG, JSON)",
     "exports:read": "Download export results",
-
     # Templates
     "templates:read": "Read available templates",
     "templates:write": "Create and modify templates",
-
     # Collections
     "collections:read": "Read collections",
     "collections:write": "Manage collections",
+    # Playbooks (IceStreams)
+    "playbooks:read": "Read playbook metadata, canvas, and executions",
+    "playbooks:write": "Create, update, and configure playbooks",
+    "playbooks:delete": "Delete playbooks",
+    "playbooks:execute": "Execute playbooks and manage executions",
+    # IceRuns
+    "iceruns:read": "View IceRuns function definitions and configurations",
+    "iceruns:write": "Create and update IceRuns functions",
+    "iceruns:delete": "Delete IceRuns functions",
+    "iceruns:execute": "Execute IceRuns functions via API or webhook",
+    "iceruns:logs": "View IceRuns execution logs and outputs",
+    "iceruns:admin": "Full administrative access to IceRuns",
+    # IceFlows (CI/CD Pipelines)
+    "iceflows:read": "Read IceFlows pipelines, stages, and execution history",
+    "iceflows:write": "Create and modify IceFlows pipelines and stages",
+    "iceflows:delete": "Delete IceFlows pipelines and related resources",
+    "iceflows:execute": "Trigger IceFlows pipeline executions and promotions",
+    "iceflows:approve": "Approve or reject stage promotion requests",
+    "iceflows:admin": "Full administrative access to IceFlows",
 }
 
 # Convenience scope groups for common use cases
@@ -40,11 +61,54 @@ SCOPE_GROUPS = {
         "drawings:write",
         "drawings:delete",
     ],
+    "playbooks_full": [
+        "playbooks:read",
+        "playbooks:write",
+        "playbooks:delete",
+        "playbooks:execute",
+    ],
+    "automation": [
+        "playbooks:read",
+        "playbooks:execute",
+    ],
     "readonly": [
         "drawings:read",
         "exports:read",
         "templates:read",
         "collections:read",
+        "playbooks:read",
+    ],
+    "iceruns_full": [
+        "iceruns:read",
+        "iceruns:write",
+        "iceruns:delete",
+        "iceruns:execute",
+        "iceruns:logs",
+    ],
+    "iceruns_readonly": [
+        "iceruns:read",
+        "iceruns:logs",
+    ],
+    "iceruns_execute_only": [
+        "iceruns:execute",
+    ],
+    "iceflows_full": [
+        "iceflows:read",
+        "iceflows:write",
+        "iceflows:delete",
+        "iceflows:execute",
+        "iceflows:approve",
+    ],
+    "iceflows_admin": [
+        "iceflows:admin",
+    ],
+    "iceflows_operator": [
+        "iceflows:read",
+        "iceflows:execute",
+        "iceflows:approve",
+    ],
+    "iceflows_readonly": [
+        "iceflows:read",
     ],
 }
 
@@ -141,7 +205,9 @@ def has_any_scope(token_scopes: List[str], required_scopes: List[str]) -> bool:
     return bool(set(token_scopes) & set(required_scopes))
 
 
-def get_missing_scopes(token_scopes: List[str], required_scopes: List[str]) -> List[str]:
+def get_missing_scopes(
+    token_scopes: List[str], required_scopes: List[str]
+) -> List[str]:
     """
     Get the scopes that are required but missing from the token.
 

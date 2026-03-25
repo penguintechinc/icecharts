@@ -6,19 +6,19 @@ signed URLs, and comprehensive error handling.
 
 import asyncio
 from datetime import datetime, timedelta
-from typing import Dict, Any, Optional, List
+from typing import Any, Dict, List, Optional
 
 from google.cloud import storage
-from google.cloud.exceptions import NotFound, Forbidden
+from google.cloud.exceptions import Forbidden, NotFound
 from google.oauth2 import service_account
 
 from .base import (
-    StorageProvider,
-    StorageFile,
-    StorageError,
+    StorageAuthenticationError,
     StorageConfigError,
     StorageConnectionError,
-    StorageAuthenticationError
+    StorageError,
+    StorageFile,
+    StorageProvider,
 )
 
 
@@ -35,7 +35,7 @@ class GCSProvider(StorageProvider):
         Raises:
             StorageConfigError: If required configuration is missing
         """
-        required = ['bucket', 'project_id']
+        required = ["bucket", "project_id"]
         missing = [key for key in required if key not in self.config]
 
         if missing:
@@ -53,56 +53,47 @@ class GCSProvider(StorageProvider):
 
         try:
             # Initialize GCS client
-            credentials_path = self.config.get('credentials_path')
+            credentials_path = self.config.get("credentials_path")
 
             if credentials_path:
                 credentials = service_account.Credentials.from_service_account_file(
                     credentials_path
                 )
                 self.client = storage.Client(
-                    project=self.config['project_id'],
-                    credentials=credentials
+                    project=self.config["project_id"], credentials=credentials
                 )
             else:
                 # Use default credentials (Application Default Credentials)
-                self.client = storage.Client(
-                    project=self.config['project_id']
-                )
+                self.client = storage.Client(project=self.config["project_id"])
 
-            self.bucket_name = self.config['bucket']
+            self.bucket_name = self.config["bucket"]
             self.bucket = self.client.bucket(self.bucket_name)
 
             # Verify bucket access
             self._verify_connection()
 
         except Exception as e:
-            raise StorageConnectionError(
-                f"Failed to initialize GCS client: {e}"
-            )
+            raise StorageConnectionError(f"Failed to initialize GCS client: {e}")
 
     def _verify_connection(self) -> None:
         """Verify connection to GCS and bucket access."""
         try:
             self.bucket.reload()
         except NotFound:
-            raise StorageConfigError(
-                f"Bucket does not exist: {self.bucket_name}"
-            )
+            raise StorageConfigError(f"Bucket does not exist: {self.bucket_name}")
         except Forbidden as e:
             raise StorageAuthenticationError(
                 f"Access denied to bucket: {self.bucket_name}: {e}"
             )
         except Exception as e:
-            raise StorageConnectionError(
-                f"Failed to verify bucket access: {e}"
-            )
+            raise StorageConnectionError(f"Failed to verify bucket access: {e}")
 
     async def upload(
         self,
         key: str,
         data: bytes,
         content_type: str,
-        metadata: Optional[Dict[str, str]] = None
+        metadata: Optional[Dict[str, str]] = None,
     ) -> str:
         """Upload data to GCS.
 
@@ -127,8 +118,7 @@ class GCSProvider(StorageProvider):
 
             # Run blocking GCS operation in executor
             await asyncio.get_event_loop().run_in_executor(
-                None,
-                lambda: blob.upload_from_string(data)
+                None, lambda: blob.upload_from_string(data)
             )
 
             return key
@@ -156,8 +146,7 @@ class GCSProvider(StorageProvider):
 
             # Run blocking GCS operation in executor
             data = await asyncio.get_event_loop().run_in_executor(
-                None,
-                lambda: blob.download_as_bytes()
+                None, lambda: blob.download_as_bytes()
             )
 
             return data
@@ -184,10 +173,7 @@ class GCSProvider(StorageProvider):
         try:
             blob = self.bucket.blob(key)
 
-            await asyncio.get_event_loop().run_in_executor(
-                None,
-                lambda: blob.delete()
-            )
+            await asyncio.get_event_loop().run_in_executor(None, lambda: blob.delete())
             return True
 
         except NotFound:
@@ -197,11 +183,7 @@ class GCSProvider(StorageProvider):
         except Exception as e:
             raise StorageError(f"Failed to delete from GCS: {e}")
 
-    async def get_url(
-        self,
-        key: str,
-        expires_in: int = 3600
-    ) -> str:
+    async def get_url(self, key: str, expires_in: int = 3600) -> str:
         """Generate a signed URL for object access.
 
         Args:
@@ -226,10 +208,8 @@ class GCSProvider(StorageProvider):
             url = await asyncio.get_event_loop().run_in_executor(
                 None,
                 lambda: blob.generate_signed_url(
-                    version="v4",
-                    expiration=timedelta(seconds=expires_in),
-                    method="GET"
-                )
+                    version="v4", expiration=timedelta(seconds=expires_in), method="GET"
+                ),
             )
 
             return url
@@ -239,14 +219,9 @@ class GCSProvider(StorageProvider):
         except Forbidden as e:
             raise StorageAuthenticationError(f"Access denied: {e}")
         except Exception as e:
-            raise StorageError(
-                f"Failed to generate signed URL: {e}"
-            )
+            raise StorageError(f"Failed to generate signed URL: {e}")
 
-    async def list_files(
-        self,
-        prefix: Optional[str] = None
-    ) -> List[StorageFile]:
+    async def list_files(self, prefix: Optional[str] = None) -> List[StorageFile]:
         """List objects in GCS bucket with optional prefix filter.
 
         Args:
@@ -262,10 +237,11 @@ class GCSProvider(StorageProvider):
             # Run blocking GCS operation in executor
             blobs = await asyncio.get_event_loop().run_in_executor(
                 None,
-                lambda: list(self.client.list_blobs(
-                    bucket_or_name=self.bucket_name,
-                    prefix=prefix
-                ))
+                lambda: list(
+                    self.client.list_blobs(
+                        bucket_or_name=self.bucket_name, prefix=prefix
+                    )
+                ),
             )
 
             storage_files = []
@@ -273,10 +249,10 @@ class GCSProvider(StorageProvider):
                 storage_file = StorageFile(
                     key=blob.name,
                     size=blob.size,
-                    content_type=blob.content_type or 'application/octet-stream',
+                    content_type=blob.content_type or "application/octet-stream",
                     last_modified=blob.updated,
                     etag=blob.etag,
-                    metadata=blob.metadata
+                    metadata=blob.metadata,
                 )
                 storage_files.append(storage_file)
 
@@ -287,11 +263,7 @@ class GCSProvider(StorageProvider):
         except Exception as e:
             raise StorageError(f"Failed to list objects from GCS: {e}")
 
-    async def copy(
-        self,
-        source_key: str,
-        dest_key: str
-    ) -> bool:
+    async def copy(self, source_key: str, dest_key: str) -> bool:
         """Copy an object within GCS bucket.
 
         Args:
@@ -317,10 +289,8 @@ class GCSProvider(StorageProvider):
             await asyncio.get_event_loop().run_in_executor(
                 None,
                 lambda: self.bucket.copy_blob(
-                    blob=source_blob,
-                    destination_bucket=self.bucket,
-                    new_name=dest_key
-                )
+                    blob=source_blob, destination_bucket=self.bucket, new_name=dest_key
+                ),
             )
 
             return True
@@ -350,8 +320,7 @@ class GCSProvider(StorageProvider):
             blob = self.bucket.blob(key)
 
             exists = await asyncio.get_event_loop().run_in_executor(
-                None,
-                lambda: blob.exists()
+                None, lambda: blob.exists()
             )
 
             return exists
@@ -359,9 +328,7 @@ class GCSProvider(StorageProvider):
         except Forbidden as e:
             raise StorageAuthenticationError(f"Access denied: {e}")
         except Exception as e:
-            raise StorageError(
-                f"Unexpected error during existence check: {e}"
-            )
+            raise StorageError(f"Unexpected error during existence check: {e}")
 
     async def get_metadata(self, key: str) -> StorageFile:
         """Get metadata for an object without downloading it.
@@ -379,18 +346,15 @@ class GCSProvider(StorageProvider):
         try:
             blob = self.bucket.blob(key)
 
-            await asyncio.get_event_loop().run_in_executor(
-                None,
-                lambda: blob.reload()
-            )
+            await asyncio.get_event_loop().run_in_executor(None, lambda: blob.reload())
 
             return StorageFile(
                 key=key,
                 size=blob.size,
-                content_type=blob.content_type or 'application/octet-stream',
+                content_type=blob.content_type or "application/octet-stream",
                 last_modified=blob.updated,
                 etag=blob.etag,
-                metadata=blob.metadata
+                metadata=blob.metadata,
             )
 
         except NotFound:
@@ -398,6 +362,4 @@ class GCSProvider(StorageProvider):
         except Forbidden as e:
             raise StorageAuthenticationError(f"Access denied: {e}")
         except Exception as e:
-            raise StorageError(
-                f"Unexpected error during metadata retrieval: {e}"
-            )
+            raise StorageError(f"Unexpected error during metadata retrieval: {e}")

@@ -1,166 +1,690 @@
-# IceCharts Helm Chart Default Values
+# ============================================================================
+# IceCharts Helm Chart - Base Values Configuration
+# ============================================================================
+# This is the base values file with sensible defaults for all environments.
+# Override these values using environment-specific values files:
+#   - values-local.yaml  (Local testing with Traefik)
+#   - values-aws.yaml    (AWS with ALB)
+#   - values-gcp.yaml    (GCP with GCE)
+#   - values-azure.yaml  (Azure with Application Gateway)
+# ============================================================================
 
-nameOverride: ""
-fullnameOverride: ""
+# ============================================================================
+# Global Settings
+# ============================================================================
+global:
+  # Container image registry
+  imageRegistry: ""
 
-namespace: icecharts
+  # Image pull secrets for private registries
+  imagePullSecrets: []
 
-image:
-  registry: registry-dal2.penguintech.io
-  pullPolicy: IfNotPresent
-  tag: "v1.0.2-beta"
+  # Default storage class (override per environment)
+  storageClass: ""
 
-web:
-  replicaCount: 2
-  image:
-    repository: icecharts-web
-    tag: ""  # defaults to .Values.image.tag
-  port: 8080
-  resources:
-    requests:
-      cpu: 100m
-      memory: 256Mi
-    limits:
-      cpu: 500m
-      memory: 512Mi
-  livenessProbe:
-    httpGet:
-      path: /health
-      port: 8080
-    initialDelaySeconds: 10
-    periodSeconds: 10
-    timeoutSeconds: 3
-    failureThreshold: 3
-  readinessProbe:
-    httpGet:
-      path: /health
-      port: 8080
-    initialDelaySeconds: 5
-    periodSeconds: 5
-    timeoutSeconds: 3
-    failureThreshold: 3
+  # Common labels applied to all resources
+  labels: {}
 
-api:
-  replicaCount: 2
-  image:
-    repository: icecharts-api
-    tag: ""
-  port: 5000
-  resources:
-    requests:
-      cpu: 200m
-      memory: 512Mi
-    limits:
-      cpu: "1"
-      memory: 1Gi
-  livenessProbe:
-    httpGet:
-      path: /healthz
-      port: 5000
-    initialDelaySeconds: 40
-    periodSeconds: 30
-    timeoutSeconds: 5
-    failureThreshold: 3
-  readinessProbe:
-    httpGet:
-      path: /api/v1/health
-      port: 5000
-    initialDelaySeconds: 20
-    periodSeconds: 10
-    timeoutSeconds: 5
-    failureThreshold: 3
+  # Common annotations applied to all resources
+  annotations: {}
 
+# ============================================================================
+# Namespace Configuration
+# ============================================================================
+namespace:
+  # Create namespace if it doesn't exist
+  create: true
+  name: icecharts
+
+# ============================================================================
+# Secrets Management Configuration
+# ============================================================================
+secrets:
+  # Provider: "kubernetes" (native K8s secrets) or "external-secrets" (External Secrets Operator)
+  provider: kubernetes
+
+  # Native Kubernetes Secrets (used when provider=kubernetes)
+  # IMPORTANT: Change these in production or use external-secrets!
+  kubernetes:
+    postgresPassword: "changeme-postgres-prod"
+    postgresUser: "icecharts_user"
+    postgresDb: "icecharts"
+    redisPassword: "changeme-redis-prod"
+    minioRootUser: "minioadmin"
+    minioRootPassword: "changeme-minio-prod"
+    secretKey: "changeme-flask-secret-key-in-production"
+    securityPasswordSalt: "changeme-salt-in-production"
+    jwtSecretKey: "changeme-jwt-secret-in-production"
+    defaultAdminEmail: "admin@localhost.local"
+    defaultAdminPassword: "admin123"
+    licenseKey: ""
+    googleClientId: ""
+    googleClientSecret: ""
+    smtpPassword: ""
+    grafanaAdminPassword: ""
+
+  # External Secrets Operator Configuration (used when provider=external-secrets)
+  externalSecrets:
+    # Backend: aws | gcp | azure | infisical
+    backend: aws
+
+    # Refresh interval for syncing secrets
+    refreshInterval: 1h
+
+    # AWS Secrets Manager Configuration
+    aws:
+      region: us-west-2
+      # Prefix for secret paths in AWS Secrets Manager
+      secretsPrefix: "icecharts/prod/"
+      # IAM role ARN for IRSA (leave empty to use node IAM role)
+      roleArn: ""
+      # Secret names in AWS Secrets Manager
+      secrets:
+        postgres: "postgres-credentials"
+        redis: "redis-credentials"
+        minio: "minio-credentials"
+        api: "api-secrets"
+        admin: "admin-credentials"
+        oauth: "oauth-credentials"
+        smtp: "smtp-credentials"
+
+    # GCP Secret Manager Configuration
+    gcp:
+      projectId: ""
+      # Prefix for secret names
+      secretsPrefix: "icecharts-prod-"
+      # Service account email for Workload Identity (leave empty to use default)
+      serviceAccountEmail: ""
+      # Secret names in GCP Secret Manager
+      secrets:
+        postgres: "postgres-credentials"
+        redis: "redis-credentials"
+        minio: "minio-credentials"
+        api: "api-secrets"
+        admin: "admin-credentials"
+        oauth: "oauth-credentials"
+        smtp: "smtp-credentials"
+
+    # Azure Key Vault Configuration
+    azure:
+      vaultUrl: ""
+      tenantId: ""
+      # Client ID for Managed Identity (leave empty to use default)
+      clientId: ""
+      # Secret names in Azure Key Vault
+      secrets:
+        postgresPassword: "postgres-password"
+        postgresUser: "postgres-user"
+        postgresDb: "postgres-db"
+        redisPassword: "redis-password"
+        minioRootUser: "minio-root-user"
+        minioRootPassword: "minio-root-password"
+        secretKey: "flask-secret-key"
+        jwtSecretKey: "jwt-secret-key"
+        defaultAdminEmail: "admin-email"
+        defaultAdminPassword: "admin-password"
+        licenseKey: "license-key"
+
+    # Infisical Configuration
+    infisical:
+      # Infisical API URL
+      apiUrl: "https://app.infisical.com"
+      # Project ID in Infisical
+      projectId: ""
+      # Environment: dev | staging | prod
+      environment: "prod"
+      # Service token (create this manually and store in a K8s secret)
+      serviceTokenSecret:
+        name: "infisical-service-token"
+        key: "token"
+      # Secret paths in Infisical
+      secretsPath: "/icecharts"
+
+# ============================================================================
+# PostgreSQL Configuration
+# ============================================================================
 postgres:
   enabled: true
+
   image:
-    repository: postgres
+    registry: docker.io
+    repository: library/postgres
     tag: "17-alpine"
-  port: 5432
-  storage: 10Gi
+    pullPolicy: IfNotPresent
+
+  # Number of replicas (1 for single instance, 3+ for HA with replication)
+  replicaCount: 1
+
+  # Service configuration
+  service:
+    type: ClusterIP
+    port: 5432
+
+  # Persistence configuration
+  persistence:
+    enabled: true
+    size: 50Gi
+    storageClass: ""
+    accessMode: ReadWriteOnce
+
+  # Resource limits and requests
   resources:
     requests:
-      cpu: 200m
-      memory: 512Mi
+      memory: "500Mi"
+      cpu: "150m"
     limits:
-      cpu: "1"
-      memory: 2Gi
+      memory: "2Gi"
+      cpu: "1000m"
 
+  # Security context
+  securityContext:
+    runAsUser: 999
+    runAsGroup: 999
+    fsGroup: 999
+    runAsNonRoot: true
+
+  # Health check configuration
+  healthCheck:
+    readiness:
+      initialDelaySeconds: 10
+      periodSeconds: 10
+      timeoutSeconds: 5
+    liveness:
+      initialDelaySeconds: 30
+      periodSeconds: 10
+      timeoutSeconds: 5
+    startup:
+      initialDelaySeconds: 0
+      periodSeconds: 10
+      failureThreshold: 6
+
+# ============================================================================
+# Redis Configuration
+# ============================================================================
 redis:
   enabled: true
+
   image:
-    repository: redis
+    registry: docker.io
+    repository: library/redis
     tag: "7-alpine"
-  port: 6379
-  storage: 5Gi
+    pullPolicy: IfNotPresent
+
+  replicaCount: 1
+
+  service:
+    type: ClusterIP
+    port: 6379
+
+  persistence:
+    enabled: true
+    size: 20Gi
+    storageClass: ""
+    accessMode: ReadWriteOnce
+
   resources:
     requests:
-      cpu: 50m
-      memory: 128Mi
+      memory: "256Mi"
+      cpu: "50m"
     limits:
-      cpu: 200m
-      memory: 256Mi
+      memory: "1Gi"
+      cpu: "500m"
 
+  securityContext:
+    runAsUser: 999
+    runAsGroup: 999
+    fsGroup: 999
+    runAsNonRoot: true
+
+  healthCheck:
+    readiness:
+      initialDelaySeconds: 5
+      periodSeconds: 10
+      timeoutSeconds: 5
+    liveness:
+      initialDelaySeconds: 10
+      periodSeconds: 10
+      timeoutSeconds: 5
+
+# ============================================================================
+# MinIO Configuration
+# ============================================================================
 minio:
   enabled: true
+
   image:
+    registry: docker.io
     repository: minio/minio
     tag: "latest"
+    pullPolicy: IfNotPresent
+
+  replicaCount: 1
+
   ports:
     api: 9000
     console: 9001
-  storage: 20Gi
+
+  service:
+    type: ClusterIP
+    apiPort: 9000
+    consolePort: 9001
+
+  persistence:
+    enabled: true
+    size: 50Gi
+    storageClass: ""
+    accessMode: ReadWriteOnce
+
+  # MinIO bucket configuration
+  bucket: icecharts
+  secure: false
+
   resources:
     requests:
-      cpu: 100m
-      memory: 256Mi
+      memory: "512Mi"
+      cpu: "150m"
     limits:
-      cpu: 500m
-      memory: 1Gi
+      memory: "2Gi"
+      cpu: "1000m"
 
-ingress:
+  securityContext:
+    runAsUser: 1000
+    runAsGroup: 1000
+    fsGroup: 1000
+    runAsNonRoot: true
+
+  healthCheck:
+    readiness:
+      initialDelaySeconds: 10
+      periodSeconds: 10
+      timeoutSeconds: 5
+    liveness:
+      initialDelaySeconds: 30
+      periodSeconds: 10
+      timeoutSeconds: 5
+
+# ============================================================================
+# API (Flask Backend) Configuration
+# ============================================================================
+api:
   enabled: true
-  className: nginx
-  annotations:
-    nginx.ingress.kubernetes.io/proxy-body-size: "50m"
-    nginx.ingress.kubernetes.io/ssl-redirect: "true"
-    cert-manager.io/cluster-issuer: "letsencrypt-prod"
-  host: icecharts.penguintech.io
+
+  image:
+    registry: ghcr.io
+    repository: penguintechinc/icecharts-flask-backend
+    tag: "v1.0.3"
+    pullPolicy: Always
+
+  # Number of replicas
+  replicaCount: 1
+
+  # Service configuration
+  service:
+    type: ClusterIP
+    port: 80
+    targetPort: 5000
+    # Enable session affinity for WebSocket
+    sessionAffinity: ClientIP
+    sessionAffinityConfig:
+      clientIP:
+        timeoutSeconds: 10800
+
+  # Environment configuration
+  env:
+    # Flask settings
+    flaskEnv: production
+    flaskApp: app.py
+
+    # Database settings
+    dbType: postgres
+    dbPoolSize: 10
+
+    # JWT settings
+    jwtAccessTokenExpires: 3600
+    jwtRefreshTokenExpires: 2592000
+
+    # CORS settings
+    corsOrigins: "*"
+
+    # Logging settings
+    logLevel: info
+    logFormat: json
+
+    # License settings
+    productName: icecharts
+    licenseServerUrl: "https://license.penguintech.io"
+    releaseMode: "false"
+
+    # Security settings
+    bcryptRounds: 12
+    tlsEnabled: "false"
+
+    # Performance settings
+    maxConnections: 100
+    connectionTimeout: "30s"
+    idleTimeout: "15m"
+    readTimeout: "10s"
+    writeTimeout: "10s"
+
+    # Cache settings
+    cacheTtl: 300
+    cacheMaxSize: 1000
+    cacheCleanupInterval: "60s"
+
+    # Rate limiting
+    rateLimitEnabled: "true"
+    rateLimitMaxRequests: 100
+    rateLimitWindowMinutes: 15
+
+    # Feature flags
+    featureAdvancedAnalytics: "true"
+    featureEnterpriseReports: "false"
+    featureUserManagement: "true"
+
+    # Development tools
+    debug: "false"
+    enableProfiling: "false"
+    metricsEnabled: "true"
+
+  # Resource limits and requests
+  resources:
+    requests:
+      memory: "512Mi"
+      cpu: "150m"
+    limits:
+      memory: "2Gi"
+      cpu: "1000m"
+
+  # Security context
+  securityContext:
+    runAsUser: 1000
+    runAsGroup: 1000
+    fsGroup: 1000
+    runAsNonRoot: true
+    readOnlyRootFilesystem: false
+
+  # Health check configuration
+  healthCheck:
+    readiness:
+      path: /api/v1/health
+      initialDelaySeconds: 10
+      periodSeconds: 5
+      timeoutSeconds: 3
+    liveness:
+      path: /healthz
+      initialDelaySeconds: 30
+      periodSeconds: 10
+      timeoutSeconds: 3
+    startup:
+      path: /healthz
+      initialDelaySeconds: 0
+      periodSeconds: 5
+      failureThreshold: 12
+
+  # Pod anti-affinity for high availability
+  affinity:
+    podAntiAffinity:
+      preferredDuringSchedulingIgnoredDuringExecution:
+        - weight: 100
+          podAffinityTerm:
+            labelSelector:
+              matchExpressions:
+                - key: app.kubernetes.io/name
+                  operator: In
+                  values:
+                    - icecharts-api
+            topologyKey: kubernetes.io/hostname
+
+  # Autoscaling configuration
+  autoscaling:
+    enabled: false
+    minReplicas: 3
+    maxReplicas: 10
+    targetCPUUtilizationPercentage: 70
+    targetMemoryUtilizationPercentage: 80
+    scaleDownStabilizationWindowSeconds: 300
+    scaleUpStabilizationWindowSeconds: 60
+
+# ============================================================================
+# Web (React Frontend) Configuration
+# ============================================================================
+web:
+  enabled: true
+
+  image:
+    registry: ghcr.io
+    repository: penguintechinc/icecharts-webui
+    tag: "v1.0.3"
+    pullPolicy: Always
+
+  replicaCount: 1
+
+  service:
+    type: ClusterIP
+    port: 80
+    targetPort: 8080
+
+  # Environment configuration
+  env:
+    nodeEnv: production
+
+  resources:
+    requests:
+      memory: "256Mi"
+      cpu: "75m"
+    limits:
+      memory: "1Gi"
+      cpu: "500m"
+
+  securityContext:
+    runAsUser: 101
+    runAsGroup: 101
+    fsGroup: 101
+    runAsNonRoot: true
+    readOnlyRootFilesystem: true
+
+  healthCheck:
+    readiness:
+      path: /health
+      initialDelaySeconds: 5
+      periodSeconds: 5
+      timeoutSeconds: 3
+    liveness:
+      path: /health
+      initialDelaySeconds: 10
+      periodSeconds: 10
+      timeoutSeconds: 3
+
+  affinity:
+    podAntiAffinity:
+      preferredDuringSchedulingIgnoredDuringExecution:
+        - weight: 100
+          podAffinityTerm:
+            labelSelector:
+              matchExpressions:
+                - key: app.kubernetes.io/name
+                  operator: In
+                  values:
+                    - icecharts-web
+            topologyKey: kubernetes.io/hostname
+
+  autoscaling:
+    enabled: false
+    minReplicas: 3
+    maxReplicas: 10
+    targetCPUUtilizationPercentage: 70
+
+# ============================================================================
+# Ingress Configuration
+# ============================================================================
+ingress:
+  enabled: false
+
+  # Ingress class: traefik | alb | gce | azure/application-gateway
+  className: traefik
+
+  # Hostname for the ingress
+  host: icecharts.local
+
+  # TLS configuration
   tls:
-    enabled: true
+    enabled: false
     secretName: icecharts-tls
+    # AWS ALB - Certificate ARN
+    certificateArn: ""
+    # GCP GCE - Managed certificate name
+    managedCertificateName: icecharts-cert
+    # Azure App Gateway - Certificate name
+    azureCertificateName: ""
 
-config:
-  FLASK_ENV: "production"
-  FLASK_APP: "app.main:create_app"
-  DB_TYPE: "postgres"
-  DB_PORT: "5432"
-  DB_NAME: "icecharts"
-  DB_POOL_SIZE: "10"
-  REDIS_PORT: "6379"
-  STORAGE_PROVIDER: "minio"
-  MINIO_BUCKET: "icecharts"
-  MINIO_SECURE: "false"
-  CORS_ORIGINS: "https://icecharts.penguintech.io"
-  LICENSE_SERVER_URL: "https://license.penguintech.io"
-  PRODUCT_NAME: "icecharts"
-  RELEASE_MODE: "false"
-  LOG_LEVEL: "info"
-  LOG_FORMAT: "json"
-  NODE_ENV: "production"
-  VITE_API_URL: "/api/v1"
-  VITE_API_BASE_PATH: "/api/v1"
+  # Static IP configuration (GCP)
+  staticIpName: ""
 
-secrets:
-  SECRET_KEY: "CHANGE-ME-generate-a-random-secret-key"
-  SECURITY_PASSWORD_SALT: "CHANGE-ME-generate-a-random-salt"
-  JWT_SECRET_KEY: "CHANGE-ME-generate-a-jwt-secret"
-  JWT_ACCESS_TOKEN_EXPIRES: "3600"
-  JWT_REFRESH_TOKEN_EXPIRES: "2592000"
-  DB_USER: "icecharts_user"
-  DB_PASSWORD: "CHANGE-ME-database-password"
-  REDIS_PASSWORD: "CHANGE-ME-redis-password"
-  MINIO_ACCESS_KEY: "CHANGE-ME-minio-access-key"
-  MINIO_SECRET_KEY: "CHANGE-ME-minio-secret-key"
-  DEFAULT_ADMIN_EMAIL: "admin@penguintech.io"
-  DEFAULT_ADMIN_PASSWORD: "CHANGE-ME-admin-password"
-  LICENSE_KEY: ""
+  # Annotations (platform-specific, overridden in environment values files)
+  annotations: {}
+
+  # Path routing configuration
+  paths:
+    web: /
+    api: /api
+    socket: /socket.io
+
+# ============================================================================
+# Monitoring Configuration (Prometheus + Grafana)
+# ============================================================================
+monitoring:
+  enabled: false
+
+  prometheus:
+    enabled: false
+
+    image:
+      registry: docker.io
+      repository: prom/prometheus
+      tag: "latest"
+      pullPolicy: IfNotPresent
+
+    service:
+      type: ClusterIP
+      port: 9090
+
+    persistence:
+      enabled: true
+      size: 50Gi
+      storageClass: ""
+      accessMode: ReadWriteOnce
+
+    resources:
+      requests:
+        memory: "1Gi"
+        cpu: "500m"
+      limits:
+        memory: "4Gi"
+        cpu: "2000m"
+
+    # Scrape configuration
+    scrapeInterval: 30s
+    scrapeTimeout: 10s
+
+  grafana:
+    enabled: false
+
+    image:
+      registry: docker.io
+      repository: grafana/grafana
+      tag: "latest"
+      pullPolicy: IfNotPresent
+
+    service:
+      type: ClusterIP
+      port: 3000
+
+    persistence:
+      enabled: true
+      size: 10Gi
+      storageClass: ""
+      accessMode: ReadWriteOnce
+
+    resources:
+      requests:
+        memory: "512Mi"
+        cpu: "150m"
+      limits:
+        memory: "2Gi"
+        cpu: "1000m"
+
+    # Admin credentials
+    adminUser: admin
+    adminPassword: "changeme-grafana-admin-password"
+
+  # ServiceMonitor for Prometheus Operator
+  serviceMonitor:
+    enabled: false
+    scrapeInterval: 30s
+
+# ============================================================================
+# Network Policies
+# ============================================================================
+networkPolicies:
+  enabled: false
+
+  # Policy configuration
+  policyTypes:
+    - Ingress
+    - Egress
+
+  # Allow DNS resolution
+  allowDns: true
+
+# ============================================================================
+# Database Backup Configuration
+# ============================================================================
+backup:
+  enabled: false
+
+  # Backup schedule (cron format)
+  schedule: "0 2 * * *"
+
+  # Retention period in days
+  retention: 30
+
+  # Backup storage
+  persistence:
+    enabled: true
+    size: 100Gi
+    storageClass: ""
+    accessMode: ReadWriteOnce
+
+  # Resources for backup job
+  resources:
+    requests:
+      memory: "256Mi"
+      cpu: "100m"
+    limits:
+      memory: "1Gi"
+      cpu: "500m"
+
+# ============================================================================
+# Service Account Configuration
+# ============================================================================
+serviceAccount:
+  # Create service account
+  create: true
+
+  # Service account name
+  name: icecharts
+
+  # Annotations (for IRSA, Workload Identity, etc.)
+  annotations: {}
+
+# ============================================================================
+# Pod Disruption Budget
+# ============================================================================
+podDisruptionBudget:
+  enabled: false
+
+  api:
+    minAvailable: 1
+
+  web:
+    minAvailable: 1

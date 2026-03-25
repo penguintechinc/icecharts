@@ -8,7 +8,6 @@ from typing import Any, Dict, List, Optional
 
 import requests
 
-
 logger = logging.getLogger(__name__)
 
 
@@ -53,10 +52,12 @@ class PenguinTechLicenseClient:
 
         # Initialize HTTP session
         self.session = requests.Session()
-        self.session.headers.update({
-            "Authorization": f"Bearer {license_key}",
-            "Content-Type": "application/json",
-        })
+        self.session.headers.update(
+            {
+                "Authorization": f"Bearer {license_key}",
+                "Content-Type": "application/json",
+            }
+        )
 
         # Feature cache (5-minute TTL)
         self._feature_cache: Dict[str, bool] = {}
@@ -202,9 +203,7 @@ class PenguinTechLicenseClient:
             # Validate first to get server ID
             validation = self.validate()
             if not validation.get("valid"):
-                raise LicenseValidationError(
-                    "Failed to validate license for keepalive"
-                )
+                raise LicenseValidationError("Failed to validate license for keepalive")
 
         payload = {
             "product": self.product,

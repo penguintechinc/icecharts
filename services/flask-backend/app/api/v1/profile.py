@@ -28,19 +28,28 @@ def get_profile():
     """Get current user profile."""
     user = get_current_user()
 
-    return jsonify({
-        "id": user["id"],
-        "email": user["email"],
-        "full_name": user.get("full_name", ""),
-        "role": user["role"],
-        "is_active": user["is_active"],
-        "avatar_url": user.get("avatar_url"),
-        "bio": user.get("bio", ""),
-        "preferences": user.get("preferences", {}),
-        "mfa_enabled": user.get("mfa_enabled", False),
-        "created_at": user["created_at"].isoformat() if user.get("created_at") else None,
-        "updated_at": user["updated_at"].isoformat() if user.get("updated_at") else None,
-    }), 200
+    return (
+        jsonify(
+            {
+                "id": user["id"],
+                "email": user["email"],
+                "full_name": user.get("full_name", ""),
+                "role": user["role"],
+                "is_active": user["is_active"],
+                "avatar_url": user.get("avatar_url"),
+                "bio": user.get("bio", ""),
+                "preferences": user.get("preferences", {}),
+                "mfa_enabled": user.get("mfa_enabled", False),
+                "created_at": (
+                    user["created_at"].isoformat() if user.get("created_at") else None
+                ),
+                "updated_at": (
+                    user["updated_at"].isoformat() if user.get("updated_at") else None
+                ),
+            }
+        ),
+        200,
+    )
 
 
 @profile_v1_bp.route("/me", methods=["PATCH"])
@@ -66,16 +75,21 @@ def update_profile():
     if not updated_user:
         return jsonify({"error": "Failed to update profile"}), 500
 
-    return jsonify({
-        "message": "Profile updated successfully",
-        "user": {
-            "id": updated_user["id"],
-            "email": updated_user["email"],
-            "full_name": updated_user.get("full_name", ""),
-            "bio": updated_user.get("bio", ""),
-            "preferences": updated_user.get("preferences", {}),
-        },
-    }), 200
+    return (
+        jsonify(
+            {
+                "message": "Profile updated successfully",
+                "user": {
+                    "id": updated_user["id"],
+                    "email": updated_user["email"],
+                    "full_name": updated_user.get("full_name", ""),
+                    "bio": updated_user.get("bio", ""),
+                    "preferences": updated_user.get("preferences", {}),
+                },
+            }
+        ),
+        200,
+    )
 
 
 @profile_v1_bp.route("/avatar", methods=["PUT"])
@@ -96,10 +110,15 @@ def upload_avatar():
 
     # Validate file
     if not allowed_file(file.filename):
-        return jsonify({
-            "error": "Invalid file type",
-            "allowed_types": list(ALLOWED_EXTENSIONS),
-        }), 400
+        return (
+            jsonify(
+                {
+                    "error": "Invalid file type",
+                    "allowed_types": list(ALLOWED_EXTENSIONS),
+                }
+            ),
+            400,
+        )
 
     # Check file size
     file.seek(0, os.SEEK_END)
@@ -107,10 +126,15 @@ def upload_avatar():
     file.seek(0)
 
     if file_size > MAX_AVATAR_SIZE:
-        return jsonify({
-            "error": "File too large",
-            "max_size_mb": MAX_AVATAR_SIZE / (1024 * 1024),
-        }), 400
+        return (
+            jsonify(
+                {
+                    "error": "File too large",
+                    "max_size_mb": MAX_AVATAR_SIZE / (1024 * 1024),
+                }
+            ),
+            400,
+        )
 
     # Generate secure filename
     timestamp = datetime.utcnow().strftime("%Y%m%d_%H%M%S")
@@ -128,10 +152,15 @@ def upload_avatar():
     avatar_url = f"/api/v1/profile/avatars/{new_filename}"
     update_user(user["id"], avatar_url=avatar_url)
 
-    return jsonify({
-        "message": "Avatar uploaded successfully",
-        "avatar_url": avatar_url,
-    }), 200
+    return (
+        jsonify(
+            {
+                "message": "Avatar uploaded successfully",
+                "avatar_url": avatar_url,
+            }
+        ),
+        200,
+    )
 
 
 @profile_v1_bp.route("/avatar", methods=["DELETE"])
@@ -145,9 +174,14 @@ def delete_avatar():
 
     # TODO: Also delete physical file if stored locally
 
-    return jsonify({
-        "message": "Avatar deleted successfully",
-    }), 200
+    return (
+        jsonify(
+            {
+                "message": "Avatar deleted successfully",
+            }
+        ),
+        200,
+    )
 
 
 @profile_v1_bp.route("/preferences", methods=["GET"])
@@ -156,9 +190,14 @@ def get_preferences():
     """Get user preferences."""
     user = get_current_user()
 
-    return jsonify({
-        "preferences": user.get("preferences", {}),
-    }), 200
+    return (
+        jsonify(
+            {
+                "preferences": user.get("preferences", {}),
+            }
+        ),
+        200,
+    )
 
 
 @profile_v1_bp.route("/preferences", methods=["PUT"])
@@ -171,13 +210,22 @@ def update_preferences():
     if not data:
         return jsonify({"error": "Request body required"}), 400
 
+    # Validate preferences format (must be a dictionary)
+    if not isinstance(data, dict):
+        return jsonify({"error": "Preferences must be a JSON object"}), 400
+
     # Store preferences as JSON
     update_user(user["id"], preferences=data)
 
-    return jsonify({
-        "message": "Preferences updated successfully",
-        "preferences": data,
-    }), 200
+    return (
+        jsonify(
+            {
+                "message": "Preferences updated successfully",
+                "preferences": data,
+            }
+        ),
+        200,
+    )
 
 
 @profile_v1_bp.route("/preferences", methods=["PATCH"])
@@ -196,10 +244,15 @@ def patch_preferences():
 
     update_user(user["id"], preferences=updated_prefs)
 
-    return jsonify({
-        "message": "Preferences updated successfully",
-        "preferences": updated_prefs,
-    }), 200
+    return (
+        jsonify(
+            {
+                "message": "Preferences updated successfully",
+                "preferences": updated_prefs,
+            }
+        ),
+        200,
+    )
 
 
 @profile_v1_bp.route("/password", methods=["PUT"])
@@ -223,16 +276,21 @@ def change_password():
         return jsonify({"error": "New password must be at least 8 characters"}), 400
 
     # Verify current password
-    from .auth import verify_password, hash_password
+    from .auth import hash_password, verify_password
 
     user_record = get_user_by_id(user["id"])
     if not verify_password(current_password, user_record["password_hash"]):
-        return jsonify({"error": "Current password is incorrect"}), 401
+        return jsonify({"error": "Current password is incorrect"}), 400
 
     # Update password
     new_password_hash = hash_password(new_password)
     update_user(user["id"], password_hash=new_password_hash)
 
-    return jsonify({
-        "message": "Password changed successfully",
-    }), 200
+    return (
+        jsonify(
+            {
+                "message": "Password changed successfully",
+            }
+        ),
+        200,
+    )

@@ -203,7 +203,12 @@ test_delete() {
 extract_json_field() {
     local json="$1"
     local field="$2"
-    echo "$json" | grep -o "\"$field\":\"[^\"]*\"" | cut -d'"' -f4 || echo "$json" | grep -o "\"$field\":[0-9]*" | cut -d':' -f2
+    # Try string format first: "field":"value"
+    echo "$json" | grep -o "\"$field\":\"[^\"]*\"" | cut -d'"' -f4 && return 0
+    # Then try number format: "field":123
+    echo "$json" | grep -o "\"$field\":[0-9]*" | cut -d':' -f2 && return 0
+    # If both fail, return empty
+    return 1
 }
 
 # Main Test Suite
@@ -234,28 +239,21 @@ main() {
     echo "=== Authentication Setup ==="
 
     TIMESTAMP=$(date +%s)
-    ADMIN_EMAIL="admin-test-${TIMESTAMP}@example.com"
+    ADMIN_EMAIL="admin@localhost.local"
+    ADMIN_PASSWORD="admin123"
     USER_EMAIL="regular-user-${TIMESTAMP}@example.com"
     TEST_PASSWORD="Admin123"
 
-    # Register admin user
-    log_info "Registering admin user: $ADMIN_EMAIL"
-    register_response=$(test_post "/api/v1/auth/register" \
-        "{\"email\":\"$ADMIN_EMAIL\",\"password\":\"$TEST_PASSWORD\",\"full_name\":\"Admin Test User\",\"role\":\"admin\"}" \
-        201 \
-        "POST /api/v1/auth/register - Admin registration")
+    # Login with default admin account (created at application startup)
+    log_info "Logging in with default admin account: $ADMIN_EMAIL"
+    login_response=$(test_post "/api/v1/auth/login" \
+        "{\"email\":\"$ADMIN_EMAIL\",\"password\":\"$ADMIN_PASSWORD\"}" \
+        200 \
+        "POST /api/v1/auth/login - Admin login")
 
     if [ $? -eq 0 ]; then
-        ADMIN_USER_ID=$(echo "$register_response" | grep -o '{.*}' | python3 -c "import sys,json; d=json.load(sys.stdin); print(d.get('user',{}).get('id', d.get('id','')))" 2>/dev/null)
-        login_response=$(test_post "/api/v1/auth/login" \
-            "{\"email\":\"$ADMIN_EMAIL\",\"password\":\"$TEST_PASSWORD\"}" \
-            200 \
-            "POST /api/v1/auth/login - Admin login")
-
-        if [ $? -eq 0 ]; then
-            ADMIN_TOKEN=$(extract_json_field "$login_response" "access_token")
-            log_info "Admin access token obtained"
-        fi
+        ADMIN_TOKEN=$(extract_json_field "$login_response" "access_token")
+        log_info "Admin access token obtained"
     fi
 
     # Register regular user
@@ -545,15 +543,14 @@ main() {
     log_section "Cleanup"
     echo "=== Cleanup ==="
 
-    # Delete test user (admin cleanup)
-    if [ -n "$ADMIN_TOKEN" ] && [ -n "$TEST_USER_ID" ]; then
-        log_info "Deleting test user..."
-        test_delete "/api/v1/admin/users/$TEST_USER_ID" 200 \
-            "DELETE /api/v1/admin/users/{id} - Delete test user" \
-            "$ADMIN_TOKEN" > /dev/null || true
+    # Logout users (before deleting the user)
+    if [ -n "$USER_TOKEN" ]; then
+        log_info "Logging out regular user..."
+        test_post "/api/v1/auth/logout" "{}" 200 \
+            "POST /api/v1/auth/logout - User logout" \
+            "$USER_TOKEN" > /dev/null || true
     fi
 
-    # Logout users
     if [ -n "$ADMIN_TOKEN" ]; then
         log_info "Logging out admin user..."
         test_post "/api/v1/auth/logout" "{}" 200 \
@@ -561,11 +558,12 @@ main() {
             "$ADMIN_TOKEN" > /dev/null || true
     fi
 
-    if [ -n "$USER_TOKEN" ]; then
-        log_info "Logging out regular user..."
-        test_post "/api/v1/auth/logout" "{}" 200 \
-            "POST /api/v1/auth/logout - User logout" \
-            "$USER_TOKEN" > /dev/null || true
+    # Delete test user (admin cleanup - after logout)
+    if [ -n "$ADMIN_TOKEN" ] && [ -n "$TEST_USER_ID" ]; then
+        log_info "Deleting test user..."
+        test_delete "/api/v1/admin/users/$TEST_USER_ID" 200 \
+            "DELETE /api/v1/admin/users/{id} - Delete test user" \
+            "$ADMIN_TOKEN" > /dev/null || true
     fi
     echo ""
 

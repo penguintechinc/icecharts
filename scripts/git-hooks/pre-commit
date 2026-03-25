@@ -1,0 +1,45 @@
+#!/usr/bin/env bash
+# Fast lint-only pre-commit hook for IceCharts
+# Runs flake8 on staged Python files and eslint on staged TS/TSX files only.
+# Designed to complete in under 5 seconds.
+
+set -euo pipefail
+
+RED='\033[0;31m'
+GREEN='\033[0;32m'
+YELLOW='\033[1;33m'
+NC='\033[0m' # No Color
+
+PASS=0
+
+# ── Python: flake8 on staged .py files ──────────────────────────────────────
+STAGED_PY=$(git diff --cached --name-only --diff-filter=ACMR | grep -E '\.py$' || true)
+
+if [[ -n "$STAGED_PY" ]]; then
+    echo -e "${YELLOW}[pre-commit] Running flake8 on staged Python files...${NC}"
+    if flake8 $STAGED_PY; then
+        echo -e "${GREEN}[pre-commit] flake8 passed.${NC}"
+    else
+        echo -e "${RED}[pre-commit] flake8 failed. Fix lint errors before committing.${NC}"
+        PASS=1
+    fi
+else
+    echo -e "${GREEN}[pre-commit] No staged Python files — skipping flake8.${NC}"
+fi
+
+# ── TypeScript/TSX: eslint on staged .ts/.tsx files ─────────────────────────
+STAGED_TS=$(git diff --cached --name-only --diff-filter=ACMR | grep -E '\.(ts|tsx)$' || true)
+
+if [[ -n "$STAGED_TS" ]]; then
+    echo -e "${YELLOW}[pre-commit] Running eslint on staged TypeScript/TSX files...${NC}"
+    if npx eslint --max-warnings=0 $STAGED_TS; then
+        echo -e "${GREEN}[pre-commit] eslint passed.${NC}"
+    else
+        echo -e "${RED}[pre-commit] eslint failed. Fix lint errors before committing.${NC}"
+        PASS=1
+    fi
+else
+    echo -e "${GREEN}[pre-commit] No staged TypeScript/TSX files — skipping eslint.${NC}"
+fi
+
+exit $PASS

@@ -30,9 +30,7 @@ class PermissionService:
             True if user has admin role
         """
         db = get_db()
-        user = db(db.identities.id == user_id).select(
-            db.identities.role
-        ).first()
+        user = db(db.identities.id == user_id).select(db.identities.role).first()
 
         if not user:
             return False
@@ -52,10 +50,14 @@ class PermissionService:
             Role string or None if not a member
         """
         db = get_db()
-        membership = db(
-            (db.group_memberships.identity_id == user_id) &
-            (db.group_memberships.group_id == group_id)
-        ).select().first()
+        membership = (
+            db(
+                (db.group_memberships.identity_id == user_id)
+                & (db.group_memberships.group_id == group_id)
+            )
+            .select()
+            .first()
+        )
 
         return membership.role if membership else None
 
@@ -77,10 +79,14 @@ class PermissionService:
 
         # Check if user is group admin
         db = get_db()
-        membership = db(
-            (db.group_memberships.identity_id == user_id) &
-            (db.group_memberships.group_id == group_id)
-        ).select().first()
+        membership = (
+            db(
+                (db.group_memberships.identity_id == user_id)
+                & (db.group_memberships.group_id == group_id)
+            )
+            .select()
+            .first()
+        )
 
         if not membership:
             return False
@@ -120,26 +126,34 @@ class PermissionService:
             return True
 
         # Check if drawing is shared with user
-        share = db(
-            (db.drawing_shares.drawing_id == drawing_id) &
-            (db.drawing_shares.shared_with_id == user_id)
-        ).select().first()
+        share = (
+            db(
+                (db.drawing_shares.drawing_id == drawing_id)
+                & (db.drawing_shares.shared_with_id == user_id)
+            )
+            .select()
+            .first()
+        )
 
         if share:
             return True
 
         # Check if drawing is shared with any of user's groups
-        user_groups = db(
-            db.group_memberships.identity_id == user_id
-        ).select(db.group_memberships.group_id)
+        user_groups = db(db.group_memberships.identity_id == user_id).select(
+            db.group_memberships.group_id
+        )
 
         group_ids = [g.group_id for g in user_groups]
 
         if group_ids:
-            group_share = db(
-                (db.drawing_shares.drawing_id == drawing_id) &
-                (db.drawing_shares.shared_with_group_id.belongs(group_ids))
-            ).select().first()
+            group_share = (
+                db(
+                    (db.drawing_shares.drawing_id == drawing_id)
+                    & (db.drawing_shares.shared_with_group_id.belongs(group_ids))
+                )
+                .select()
+                .first()
+            )
 
             if group_share:
                 return True
@@ -174,28 +188,44 @@ class PermissionService:
             return True
 
         # Check if drawing is shared with user with edit permission
-        share = db(
-            (db.drawing_shares.drawing_id == drawing_id) &
-            (db.drawing_shares.shared_with_id == user_id) &
-            (db.drawing_shares.permission.belongs([Permission.EDIT, Permission.ADMIN]))
-        ).select().first()
+        share = (
+            db(
+                (db.drawing_shares.drawing_id == drawing_id)
+                & (db.drawing_shares.shared_with_id == user_id)
+                & (
+                    db.drawing_shares.permission.belongs(
+                        [Permission.EDIT, Permission.ADMIN]
+                    )
+                )
+            )
+            .select()
+            .first()
+        )
 
         if share:
             return True
 
         # Check if drawing is shared with any of user's groups with edit permission
-        user_groups = db(
-            db.group_memberships.identity_id == user_id
-        ).select(db.group_memberships.group_id)
+        user_groups = db(db.group_memberships.identity_id == user_id).select(
+            db.group_memberships.group_id
+        )
 
         group_ids = [g.group_id for g in user_groups]
 
         if group_ids:
-            group_share = db(
-                (db.drawing_shares.drawing_id == drawing_id) &
-                (db.drawing_shares.shared_with_group_id.belongs(group_ids)) &
-                (db.drawing_shares.permission.belongs([Permission.EDIT, Permission.ADMIN]))
-            ).select().first()
+            group_share = (
+                db(
+                    (db.drawing_shares.drawing_id == drawing_id)
+                    & (db.drawing_shares.shared_with_group_id.belongs(group_ids))
+                    & (
+                        db.drawing_shares.permission.belongs(
+                            [Permission.EDIT, Permission.ADMIN]
+                        )
+                    )
+                )
+                .select()
+                .first()
+            )
 
             if group_share:
                 return True
@@ -258,28 +288,36 @@ class PermissionService:
             return True
 
         # Check if user has admin permission on the drawing share
-        share = db(
-            (db.drawing_shares.drawing_id == drawing_id) &
-            (db.drawing_shares.shared_with_id == user_id) &
-            (db.drawing_shares.permission == Permission.ADMIN)
-        ).select().first()
+        share = (
+            db(
+                (db.drawing_shares.drawing_id == drawing_id)
+                & (db.drawing_shares.shared_with_id == user_id)
+                & (db.drawing_shares.permission == Permission.ADMIN)
+            )
+            .select()
+            .first()
+        )
 
         if share:
             return True
 
         # Check if user's group has admin permission
-        user_groups = db(
-            db.group_memberships.identity_id == user_id
-        ).select(db.group_memberships.group_id)
+        user_groups = db(db.group_memberships.identity_id == user_id).select(
+            db.group_memberships.group_id
+        )
 
         group_ids = [g.group_id for g in user_groups]
 
         if group_ids:
-            group_share = db(
-                (db.drawing_shares.drawing_id == drawing_id) &
-                (db.drawing_shares.shared_with_group_id.belongs(group_ids)) &
-                (db.drawing_shares.permission == Permission.ADMIN)
-            ).select().first()
+            group_share = (
+                db(
+                    (db.drawing_shares.drawing_id == drawing_id)
+                    & (db.drawing_shares.shared_with_group_id.belongs(group_ids))
+                    & (db.drawing_shares.permission == Permission.ADMIN)
+                )
+                .select()
+                .first()
+            )
 
             if group_share:
                 return True
@@ -314,24 +352,28 @@ class PermissionService:
             return Permission.ADMIN
 
         # Check direct share
-        share = db(
-            (db.drawing_shares.drawing_id == drawing_id) &
-            (db.drawing_shares.shared_with_id == user_id)
-        ).select(db.drawing_shares.permission).first()
+        share = (
+            db(
+                (db.drawing_shares.drawing_id == drawing_id)
+                & (db.drawing_shares.shared_with_id == user_id)
+            )
+            .select(db.drawing_shares.permission)
+            .first()
+        )
 
         highest_permission = share.permission if share else None
 
         # Check group shares
-        user_groups = db(
-            db.group_memberships.identity_id == user_id
-        ).select(db.group_memberships.group_id)
+        user_groups = db(db.group_memberships.identity_id == user_id).select(
+            db.group_memberships.group_id
+        )
 
         group_ids = [g.group_id for g in user_groups]
 
         if group_ids:
             group_shares = db(
-                (db.drawing_shares.drawing_id == drawing_id) &
-                (db.drawing_shares.shared_with_group_id.belongs(group_ids))
+                (db.drawing_shares.drawing_id == drawing_id)
+                & (db.drawing_shares.shared_with_group_id.belongs(group_ids))
             ).select(db.drawing_shares.permission)
 
             # Get highest permission from group shares
@@ -340,7 +382,10 @@ class PermissionService:
                     highest_permission = gs.permission
                 elif gs.permission == Permission.ADMIN:
                     highest_permission = Permission.ADMIN
-                elif gs.permission == Permission.EDIT and highest_permission == Permission.VIEW:
+                elif (
+                    gs.permission == Permission.EDIT
+                    and highest_permission == Permission.VIEW
+                ):
                     highest_permission = Permission.EDIT
 
         # If no shares found but drawing is public, grant view permission

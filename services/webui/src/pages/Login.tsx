@@ -27,7 +27,7 @@ const Login: React.FC = () => {
         <div className="bg-gray-800 border border-ice-navy-700 rounded-lg p-8 shadow-lg">
           <div className="flex justify-center mb-6">
             <img
-              src="/logo-transparent.png"
+              src="/logo.jpg"
               alt="IceCharts"
               className="h-80 w-auto"
             />

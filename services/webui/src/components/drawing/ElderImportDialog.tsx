@@ -15,7 +15,7 @@ interface ElderImportDialogProps {
   onImport: (nodes: unknown[], connectors: unknown[]) => void;
 }
 
-type DialogStep = 'connect' | 'browse' | 'select' | 'preview' | 'importing';
+type DialogStep = 'connect' | 'browse' | 'select' | 'preview' | 'importing' | 'success';
 
 const ElderImportDialog: React.FC<ElderImportDialogProps> = ({
   drawingId,
@@ -98,8 +98,12 @@ const ElderImportDialog: React.FC<ElderImportDialogProps> = ({
     );
 
     if (result) {
-      onImport(result.nodes, result.connectors);
-      onClose();
+      setStep('success');
+      // Auto-close after 2 seconds
+      setTimeout(() => {
+        onImport(result.nodes, result.connectors);
+        onClose();
+      }, 2000);
     } else {
       setStep('select');
     }
@@ -309,6 +313,20 @@ const ElderImportDialog: React.FC<ElderImportDialogProps> = ({
               <div className="elder-loading-container">
                 <div className="elder-spinner"></div>
                 <p>Importing entities and relationships...</p>
+              </div>
+            </div>
+          )}
+
+          {/* Success Step */}
+          {step === 'success' && (
+            <div className="elder-step">
+              <div className="elder-success-container">
+                <div className="elder-success-icon">✓</div>
+                <p className="elder-success-title">Import Successful!</p>
+                <p className="elder-success-message">
+                  {selectedEntities.size} entities and relationships have been imported
+                </p>
+                <p className="elder-success-note">Closing dialog...</p>
               </div>
             </div>
           )}
@@ -642,6 +660,48 @@ const ElderImportDialog: React.FC<ElderImportDialogProps> = ({
         .elder-button:disabled {
           opacity: 0.5;
           cursor: not-allowed;
+        }
+
+        .elder-success-container {
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          gap: 16px;
+          padding: 40px 20px;
+        }
+
+        .elder-success-icon {
+          width: 60px;
+          height: 60px;
+          border-radius: 50%;
+          background-color: #d1fae5;
+          color: #059669;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          font-size: 32px;
+          font-weight: bold;
+        }
+
+        .elder-success-title {
+          font-size: 18px;
+          font-weight: 600;
+          color: #059669;
+          margin: 0;
+        }
+
+        .elder-success-message {
+          font-size: 14px;
+          color: #374151;
+          margin: 0;
+          text-align: center;
+        }
+
+        .elder-success-note {
+          font-size: 12px;
+          color: #9ca3af;
+          margin: 0;
+          font-style: italic;
         }
       `}</style>
     </div>

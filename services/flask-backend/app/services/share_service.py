@@ -8,7 +8,7 @@ from typing import Optional
 from flask import request
 
 from app.models import get_db
-from app.services.permission_service import PermissionService, Permission
+from app.services.permission_service import Permission, PermissionService
 
 
 @dataclass(slots=True)
@@ -46,7 +46,7 @@ class ShareService:
         shared_with_id: Optional[int] = None,
         shared_with_group_id: Optional[int] = None,
         expires_at: Optional[datetime.datetime] = None,
-        generate_token: bool = False
+        generate_token: bool = False,
     ) -> dict:
         """
         Create a share for a drawing.
@@ -74,16 +74,18 @@ class ShareService:
                 "or generate_token=True for public share"
             )
 
-        if (shared_with_id and shared_with_group_id) or \
-           (shared_with_id and generate_token) or \
-           (shared_with_group_id and generate_token):
-            raise ValueError("Share can only be for one target (user, group, or public)")
+        if (
+            (shared_with_id and shared_with_group_id)
+            or (shared_with_id and generate_token)
+            or (shared_with_group_id and generate_token)
+        ):
+            raise ValueError(
+                "Share can only be for one target (user, group, or public)"
+            )
 
         # Check if user can share the drawing
         if not PermissionService.can_share_drawing(created_by_id, drawing_id):
-            raise PermissionError(
-                "You don't have permission to share this drawing"
-            )
+            raise PermissionError("You don't have permission to share this drawing")
 
         # Validate permission level
         if permission not in [Permission.VIEW, Permission.EDIT, Permission.ADMIN]:
@@ -101,10 +103,14 @@ class ShareService:
                 raise ValueError("Target user not found")
 
             # Check if share already exists for this user
-            existing = db(
-                (db.drawing_shares.drawing_id == drawing_id) &
-                (db.drawing_shares.shared_with_id == shared_with_id)
-            ).select().first()
+            existing = (
+                db(
+                    (db.drawing_shares.drawing_id == drawing_id)
+                    & (db.drawing_shares.shared_with_id == shared_with_id)
+                )
+                .select()
+                .first()
+            )
             if existing:
                 raise ValueError("Drawing is already shared with this user")
 
@@ -113,10 +119,14 @@ class ShareService:
                 raise ValueError("Target group not found")
 
             # Check if share already exists for this group
-            existing = db(
-                (db.drawing_shares.drawing_id == drawing_id) &
-                (db.drawing_shares.shared_with_group_id == shared_with_group_id)
-            ).select().first()
+            existing = (
+                db(
+                    (db.drawing_shares.drawing_id == drawing_id)
+                    & (db.drawing_shares.shared_with_group_id == shared_with_group_id)
+                )
+                .select()
+                .first()
+            )
             if existing:
                 raise ValueError("Drawing is already shared with this group")
 
@@ -257,7 +267,7 @@ class ShareService:
         share_id: int,
         user_id: int,
         permission: Optional[str] = None,
-        expires_at: Optional[datetime.datetime] = None
+        expires_at: Optional[datetime.datetime] = None,
     ) -> Optional[dict]:
         """
         Update an existing share.
@@ -284,9 +294,7 @@ class ShareService:
 
         # Check if user can update this share
         if not PermissionService.can_share_drawing(user_id, share["drawing_id"]):
-            raise PermissionError(
-                "You don't have permission to update this share"
-            )
+            raise PermissionError("You don't have permission to update this share")
 
         update_data = {}
         if permission is not None:
@@ -334,9 +342,7 @@ class ShareService:
 
         # Check if user can revoke this share
         if not PermissionService.can_share_drawing(user_id, share["drawing_id"]):
-            raise PermissionError(
-                "You don't have permission to revoke this share"
-            )
+            raise PermissionError("You don't have permission to revoke this share")
 
         try:
             deleted = db(db.drawing_shares.id == share_id).delete()
@@ -348,10 +354,7 @@ class ShareService:
             raise ValueError(f"Failed to revoke share: {str(e)}")
 
     @staticmethod
-    def check_share_permission(
-        drawing_id: int,
-        user_id: int
-    ) -> Optional[str]:
+    def check_share_permission(drawing_id: int, user_id: int) -> Optional[str]:
         """
         Check the permission level a user has via shares.
 
@@ -365,24 +368,28 @@ class ShareService:
         db = get_db()
 
         # Check direct user share
-        user_share = db(
-            (db.drawing_shares.drawing_id == drawing_id) &
-            (db.drawing_shares.shared_with_id == user_id)
-        ).select().first()
+        user_share = (
+            db(
+                (db.drawing_shares.drawing_id == drawing_id)
+                & (db.drawing_shares.shared_with_id == user_id)
+            )
+            .select()
+            .first()
+        )
 
         highest_permission = user_share.permission if user_share else None
 
         # Check group shares
-        user_groups = db(
-            db.group_memberships.identity_id == user_id
-        ).select(db.group_memberships.group_id)
+        user_groups = db(db.group_memberships.identity_id == user_id).select(
+            db.group_memberships.group_id
+        )
 
         group_ids = [g.group_id for g in user_groups]
 
         if group_ids:
             group_shares = db(
-                (db.drawing_shares.drawing_id == drawing_id) &
-                (db.drawing_shares.shared_with_group_id.belongs(group_ids))
+                (db.drawing_shares.drawing_id == drawing_id)
+                & (db.drawing_shares.shared_with_group_id.belongs(group_ids))
             ).select()
 
             # Get highest permission from group shares
@@ -391,8 +398,10 @@ class ShareService:
                     highest_permission = share.permission
                 elif share.permission == Permission.ADMIN:
                     highest_permission = Permission.ADMIN
-                elif share.permission == Permission.EDIT and \
-                     highest_permission == Permission.VIEW:
+                elif (
+                    share.permission == Permission.EDIT
+                    and highest_permission == Permission.VIEW
+                ):
                     highest_permission = Permission.EDIT
 
         return highest_permission
@@ -444,9 +453,7 @@ class ShareService:
 
     @staticmethod
     def get_shared_drawings(
-        user_id: int,
-        page: int = 1,
-        per_page: int = 20
+        user_id: int, page: int = 1, per_page: int = 20
     ) -> tuple[list[dict], int]:
         """
         Get all drawings shared with a user (directly or via groups).
@@ -463,24 +470,21 @@ class ShareService:
         offset = (page - 1) * per_page
 
         # Get user's groups
-        user_groups = db(
-            db.group_memberships.identity_id == user_id
-        ).select(db.group_memberships.group_id)
+        user_groups = db(db.group_memberships.identity_id == user_id).select(
+            db.group_memberships.group_id
+        )
         group_ids = [g.group_id for g in user_groups]
 
         # Build query for shared drawings
         query = (
-            (db.drawing_shares.shared_with_id == user_id) |
-            (db.drawing_shares.shared_with_group_id.belongs(group_ids))
-            if group_ids else
             (db.drawing_shares.shared_with_id == user_id)
+            | (db.drawing_shares.shared_with_group_id.belongs(group_ids))
+            if group_ids
+            else (db.drawing_shares.shared_with_id == user_id)
         )
 
         # Get unique drawing IDs
-        shares = db(query).select(
-            db.drawing_shares.drawing_id,
-            distinct=True
-        )
+        shares = db(query).select(db.drawing_shares.drawing_id, distinct=True)
         drawing_ids = [s.drawing_id for s in shares]
 
         if not drawing_ids:
@@ -498,9 +502,7 @@ class ShareService:
 
     @staticmethod
     def get_drawing_by_token(
-        token: str,
-        user_id: Optional[int] = None,
-        log_access: bool = True
+        token: str, user_id: Optional[int] = None, log_access: bool = True
     ) -> Optional[dict]:
         """
         Access drawing via public share token.
@@ -542,7 +544,11 @@ class ShareService:
             return None
 
         # Determine share mode (default to link_only for backwards compatibility)
-        share_mode = share.get("share_mode", "link_only") if hasattr(share, "get") else "link_only"
+        share_mode = (
+            share.get("share_mode", "link_only")
+            if hasattr(share, "get")
+            else "link_only"
+        )
 
         # Check access permissions
         if share_mode == "registered_users" and user_id is None:

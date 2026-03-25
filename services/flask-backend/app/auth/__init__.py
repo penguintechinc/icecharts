@@ -35,13 +35,13 @@ def verify_password(password: str, password_hash: str) -> bool:
 
 
 __all__ = [
-    'SAMLConfig',
-    'SAMLHandler',
-    'OIDCConfig',
-    'OIDCHandler',
-    'AttributeMapping',
-    'JITConfig',
-    'JITProvisioner',
-    'hash_password',
-    'verify_password',
+    "SAMLConfig",
+    "SAMLHandler",
+    "OIDCConfig",
+    "OIDCHandler",
+    "AttributeMapping",
+    "JITConfig",
+    "JITProvisioner",
+    "hash_password",
+    "verify_password",
 ]

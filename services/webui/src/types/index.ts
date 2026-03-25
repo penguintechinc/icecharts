@@ -295,3 +295,50 @@ export interface DrawingFormData {
   description?: string;
   is_public?: boolean;
 }
+
+// Elder integration types
+export interface ElderEntity {
+  id: number;
+  unique_id: number;
+  name: string;
+  entity_type: string;
+  description?: string;
+  metadata?: Record<string, unknown>;
+  owner_id?: number;
+  organization_id?: number;
+}
+
+export interface ElderRelationship {
+  id: number;
+  source_entity_id: number;
+  target_entity_id: number;
+  dependency_type: string;
+  description?: string;
+  strength?: number;
+}
+
+export interface ElderImportRequest {
+  drawing_id: string;
+  base_url: string;
+  api_key: string;
+  org_id: number;
+  entity_ids: number[];
+  include_dependencies?: boolean;
+  canvas_width?: number;
+  canvas_height?: number;
+}
+
+export interface ElderImportResult {
+  success: boolean;
+  message: string;
+  nodes: Node[];
+  connectors: Edge[];
+  entity_count: number;
+  relationship_count: number;
+}
+
+export interface ElderConnectionConfig {
+  base_url: string;
+  api_key: string;
+  org_id: number;
+}

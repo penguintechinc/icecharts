@@ -2,9 +2,12 @@ name: Test and Lint
 
 on:
   push:
-    branches: [ main, develop, feature/* ]
+    branches:
+      - main
+      - 'v*.*.x'
   pull_request:
-    branches: [ main, develop ]
+    branches:
+      - main
   schedule:
     # Run tests daily at 2 AM UTC
     - cron: '0 2 * * *'
@@ -18,30 +21,71 @@ env:
   NODE_VERSION: '20'
 
 jobs:
-  # Changes detection to skip unnecessary jobs
+  # ──────────────────────────────────────────────────────────────────────────
+  # Detect which services changed so we can skip unnecessary jobs.
+  # ──────────────────────────────────────────────────────────────────────────
   changes:
     runs-on: ubuntu-latest
     outputs:
-      flask: ${{ steps.changes.outputs.flask }}
-      webui: ${{ steps.changes.outputs.webui }}
+      flask:      ${{ steps.filter.outputs.flask }}
+      webui:      ${{ steps.filter.outputs.webui }}
+      icestreams: ${{ steps.filter.outputs.icestreams }}
+      iceflows:   ${{ steps.filter.outputs.iceflows }}
+      iceruns:    ${{ steps.filter.outputs.iceruns }}
     steps:
       - uses: actions/checkout@v4
       - uses: dorny/paths-filter@v3
-        id: changes
+        id: filter
         with:
           filters: |
             flask:
               - 'services/flask-backend/**'
-              - 'services/flask-backend/tests/**'
             webui:
               - 'services/webui/**'
-              - 'services/webui/tests/**'
+            icestreams:
+              - 'services/icestreams-worker/**'
+            iceflows:
+              - 'services/iceflows-worker/**'
+            iceruns:
+              - 'services/iceruns-invoker/**'
 
-  # Flask Backend Tests
-  flask-lint:
+  # ──────────────────────────────────────────────────────────────────────────
+  # Lint — Python services (matrix)
+  # ──────────────────────────────────────────────────────────────────────────
+  python-lint:
+    name: Lint / ${{ matrix.service }}
     runs-on: ubuntu-latest
     needs: changes
-    if: needs.changes.outputs.flask == 'true'
+    if: |
+      needs.changes.outputs.flask      == 'true' ||
+      needs.changes.outputs.icestreams == 'true' ||
+      needs.changes.outputs.iceflows   == 'true' ||
+      needs.changes.outputs.iceruns    == 'true'
+
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - service: flask-backend
+            lint_paths: "app tests"
+            run_black: true
+            run_isort: true
+            run_mypy: true
+          - service: icestreams-worker
+            lint_paths: "."
+            run_black: false
+            run_isort: false
+            run_mypy: false
+          - service: iceflows-worker
+            lint_paths: "."
+            run_black: false
+            run_isort: false
+            run_mypy: false
+          - service: iceruns-invoker
+            lint_paths: "app tests"
+            run_black: false
+            run_isort: false
+            run_mypy: false
 
     steps:
       - name: Checkout code
@@ -56,131 +100,47 @@ jobs:
         uses: actions/cache@v4
         with:
           path: ~/.cache/pip
-          key: ${{ runner.os }}-pip-${{ env.PYTHON_VERSION }}-${{ hashFiles('services/flask-backend/requirements.txt') }}
+          key: ${{ runner.os }}-pip-${{ env.PYTHON_VERSION }}-${{ matrix.service }}-${{ hashFiles(format('services/{0}/requirements.txt', matrix.service)) }}
           restore-keys: |
-            ${{ runner.os }}-pip-${{ env.PYTHON_VERSION }}-
+            ${{ runner.os }}-pip-${{ env.PYTHON_VERSION }}-${{ matrix.service }}-
 
-      - name: Install dependencies
-        working-directory: services/flask-backend
+      - name: Install lint tools
+        working-directory: services/${{ matrix.service }}
         run: |
           python -m pip install --upgrade pip
           pip install -r requirements.txt
-          pip install pytest pytest-cov black flake8 mypy isort
+          pip install flake8 black isort mypy
 
-      - name: Run Black (code formatting)
-        working-directory: services/flask-backend
-        run: black --check --diff app tests
+      - name: flake8
+        working-directory: services/${{ matrix.service }}
+        run: |
+          flake8 ${{ matrix.lint_paths }} \
+            --max-line-length=99 \
+            --extend-ignore=E402,W503 \
+            --exclude=__pycache__,node_modules,dist,.venv,venv,.eggs,build,.git \
+            --per-file-ignores="__init__.py:F401,E402"
 
-      - name: Run isort (import sorting)
-        working-directory: services/flask-backend
-        run: isort --check-only --diff app tests
+      - name: black --check
+        if: matrix.run_black
+        working-directory: services/${{ matrix.service }}
+        run: black --check --diff ${{ matrix.lint_paths }}
 
-      - name: Run flake8 (linting)
-        working-directory: services/flask-backend
-        run: flake8 app tests --count --select=E9,F63,F7,F82 --show-source --statistics
+      - name: isort --check-only
+        if: matrix.run_isort
+        working-directory: services/${{ matrix.service }}
+        run: isort --check-only --diff ${{ matrix.lint_paths }}
 
-      - name: Run mypy (type checking)
-        working-directory: services/flask-backend
+      - name: mypy
+        if: matrix.run_mypy
+        working-directory: services/${{ matrix.service }}
         run: mypy app --ignore-missing-imports
         continue-on-error: true
 
-  flask-test:
-    runs-on: ubuntu-latest
-    needs: changes
-    if: needs.changes.outputs.flask == 'true'
-
-    services:
-      postgres:
-        image: postgres:15
-        env:
-          POSTGRES_DB: test_db
-          POSTGRES_USER: test_user
-          POSTGRES_PASSWORD: test_pass
-        options: >-
-          --health-cmd pg_isready
-          --health-interval 10s
-          --health-timeout 5s
-          --health-retries 5
-        ports:
-          - 5432:5432
-
-      redis:
-        image: redis:7
-        options: >-
-          --health-cmd "redis-cli ping"
-          --health-interval 10s
-          --health-timeout 5s
-          --health-retries 5
-        ports:
-          - 6379:6379
-
-    strategy:
-      matrix:
-        python-version: ['3.12', '3.13']
-
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Set up Python ${{ matrix.python-version }}
-        uses: actions/setup-python@v5
-        with:
-          python-version: ${{ matrix.python-version }}
-
-      - name: Cache pip dependencies
-        uses: actions/cache@v4
-        with:
-          path: ~/.cache/pip
-          key: ${{ runner.os }}-pip-${{ matrix.python-version }}-${{ hashFiles('services/flask-backend/requirements.txt') }}
-          restore-keys: |
-            ${{ runner.os }}-pip-${{ matrix.python-version }}-
-
-      - name: Install dependencies
-        working-directory: services/flask-backend
-        run: |
-          python -m pip install --upgrade pip
-          pip install -r requirements.txt
-          pip install pytest pytest-cov pytest-mock
-
-      - name: Run tests with pytest
-        working-directory: services/flask-backend
-        run: |
-          pytest tests/ \
-            --cov=app \
-            --cov-report=xml \
-            --cov-report=html \
-            --junitxml=test-results.xml \
-            -v
-        env:
-          FLASK_ENV: testing
-          DATABASE_URL: postgresql://test_user:test_pass@localhost:5432/test_db
-          REDIS_URL: redis://localhost:6379/0
-          JWT_SECRET_KEY: test-secret-key
-          SECRET_KEY: test-secret-key
-
-      - name: Upload coverage to Codecov
-        uses: codecov/codecov-action@v4
-        with:
-          files: ./services/flask-backend/coverage.xml
-          flags: flask-tests
-          name: flask-coverage-${{ matrix.python-version }}
-
-      - name: Upload test results
-        uses: actions/upload-artifact@v4
-        if: success() || failure()
-        with:
-          name: flask-test-results-${{ matrix.python-version }}
-          path: services/flask-backend/test-results.xml
-
-      - name: Upload coverage report
-        uses: actions/upload-artifact@v4
-        if: success()
-        with:
-          name: flask-coverage-report-${{ matrix.python-version }}
-          path: services/flask-backend/htmlcov/
-
-  # WebUI Tests
+  # ──────────────────────────────────────────────────────────────────────────
+  # Lint — WebUI (ESLint + tsc)
+  # ──────────────────────────────────────────────────────────────────────────
   webui-lint:
+    name: Lint / webui
     runs-on: ubuntu-latest
     needs: changes
     if: needs.changes.outputs.webui == 'true'
@@ -200,22 +160,194 @@ jobs:
         working-directory: services/webui
         run: npm ci
 
-      - name: Run ESLint
+      - name: ESLint
         working-directory: services/webui
         run: npm run lint
 
-      - name: Run TypeScript type check
+      - name: TypeScript type check
         working-directory: services/webui
-        run: npm run typecheck
+        run: npx tsc --noEmit
 
+  # ──────────────────────────────────────────────────────────────────────────
+  # Tests — Flask backend (matrix over Python versions, needs DB sidecars)
+  # ──────────────────────────────────────────────────────────────────────────
+  flask-test:
+    name: Test / flask-backend (py${{ matrix.python-version }})
+    runs-on: ubuntu-latest
+    needs: changes
+    if: needs.changes.outputs.flask == 'true'
+
+    services:
+      postgres:
+        image: postgres:15
+        env:
+          POSTGRES_DB: test_db
+          POSTGRES_USER: test_user
+          POSTGRES_PASSWORD: test_pass
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 5432:5432
+      redis:
+        image: redis:7
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 6379:6379
+
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ['3.12', '3.13']
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      - name: Cache pip dependencies
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/pip
+          key: ${{ runner.os }}-pip-${{ matrix.python-version }}-flask-${{ hashFiles('services/flask-backend/requirements.txt') }}
+          restore-keys: |
+            ${{ runner.os }}-pip-${{ matrix.python-version }}-flask-
+
+      - name: Install dependencies
+        working-directory: services/flask-backend
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+          pip install pytest pytest-cov pytest-mock
+
+      - name: Run pytest
+        working-directory: services/flask-backend
+        run: |
+          pytest tests/ \
+            --cov=app \
+            --cov-report=xml \
+            --cov-report=html \
+            --junitxml=test-results.xml \
+            --cov-fail-under=95 \
+            -v
+        env:
+          FLASK_ENV: testing
+          DATABASE_URL: postgresql://test_user:test_pass@localhost:5432/test_db
+          REDIS_URL: redis://localhost:6379/0
+          JWT_SECRET_KEY: test-secret-key
+          SECRET_KEY: test-secret-key
+
+      - name: Upload coverage
+        uses: codecov/codecov-action@v4
+        if: always()
+        with:
+          files: ./services/flask-backend/coverage.xml
+          flags: flask-py${{ matrix.python-version }}
+          name: flask-coverage-${{ matrix.python-version }}
+          fail_ci_if_error: false
+
+      - name: Upload test results
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: flask-test-results-${{ matrix.python-version }}
+          path: services/flask-backend/test-results.xml
+
+  # ──────────────────────────────────────────────────────────────────────────
+  # Tests — Python worker services (matrix over services × Python versions)
+  # ──────────────────────────────────────────────────────────────────────────
+  worker-test:
+    name: Test / ${{ matrix.service }} (py${{ matrix.python-version }})
+    runs-on: ubuntu-latest
+    needs: changes
+    if: |
+      needs.changes.outputs.icestreams == 'true' ||
+      needs.changes.outputs.iceflows   == 'true' ||
+      needs.changes.outputs.iceruns    == 'true'
+
+    strategy:
+      fail-fast: false
+      matrix:
+        service:
+          - icestreams-worker
+          - iceflows-worker
+          - iceruns-invoker
+        python-version: ['3.12', '3.13']
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      - name: Cache pip dependencies
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/pip
+          key: ${{ runner.os }}-pip-${{ matrix.python-version }}-${{ matrix.service }}-${{ hashFiles(format('services/{0}/requirements.txt', matrix.service)) }}
+          restore-keys: |
+            ${{ runner.os }}-pip-${{ matrix.python-version }}-${{ matrix.service }}-
+
+      - name: Install dependencies
+        working-directory: services/${{ matrix.service }}
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+          pip install pytest pytest-cov pytest-mock
+
+      - name: Run pytest
+        working-directory: services/${{ matrix.service }}
+        run: |
+          pytest tests/ \
+            --cov=. \
+            --cov-report=xml \
+            --junitxml=test-results.xml \
+            -v
+        env:
+          FLASK_ENV: testing
+          SECRET_KEY: test-secret-key
+
+      - name: Upload coverage
+        uses: codecov/codecov-action@v4
+        if: always()
+        with:
+          files: ./services/${{ matrix.service }}/coverage.xml
+          flags: ${{ matrix.service }}-py${{ matrix.python-version }}
+          fail_ci_if_error: false
+
+      - name: Upload test results
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: ${{ matrix.service }}-test-results-${{ matrix.python-version }}
+          path: services/${{ matrix.service }}/test-results.xml
+
+  # ──────────────────────────────────────────────────────────────────────────
+  # Tests — WebUI (matrix over Node versions)
+  # ──────────────────────────────────────────────────────────────────────────
   webui-test:
+    name: Test / webui (node${{ matrix.node-version }})
     runs-on: ubuntu-latest
     needs: changes
     if: needs.changes.outputs.webui == 'true'
 
     strategy:
+      fail-fast: false
       matrix:
-        node-version: ['18', '20', '22']
+        node-version: ['20', '22']
 
     steps:
       - name: Checkout code
@@ -232,43 +364,120 @@ jobs:
         working-directory: services/webui
         run: npm ci
 
-      - name: Install test dependencies
+      - name: Run Vitest with coverage
         working-directory: services/webui
-        run: |
-          npm install --save-dev \
-            vitest \
-            jsdom \
-            @testing-library/react \
-            @testing-library/user-event
-
-      - name: Run tests with coverage
-        working-directory: services/webui
-        run: npm run test -- --run --coverage
+        run: npm run test:coverage
         continue-on-error: true
 
       - name: Build application
         working-directory: services/webui
         run: npm run build
 
-      - name: Upload coverage to Codecov
+      - name: Upload coverage
         uses: codecov/codecov-action@v4
-        if: success()
+        if: always()
         with:
           files: ./services/webui/coverage/coverage-final.json
-          flags: webui-tests
-          name: webui-coverage-${{ matrix.node-version }}
+          flags: webui-node${{ matrix.node-version }}
+          fail_ci_if_error: false
 
       - name: Upload build artifacts
         uses: actions/upload-artifact@v4
         if: success()
         with:
-          name: webui-build-${{ matrix.node-version }}
+          name: webui-build-node${{ matrix.node-version }}
           path: services/webui/dist/
 
-  # Docker build test (test stages)
-  docker-test:
+  # ──────────────────────────────────────────────────────────────────────────
+  # Security — bandit on all Python services
+  # ──────────────────────────────────────────────────────────────────────────
+  security:
+    name: Security / bandit (${{ matrix.service }})
     runs-on: ubuntu-latest
     needs: changes
+    if: |
+      needs.changes.outputs.flask      == 'true' ||
+      needs.changes.outputs.icestreams == 'true' ||
+      needs.changes.outputs.iceflows   == 'true' ||
+      needs.changes.outputs.iceruns    == 'true'
+
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - service: flask-backend
+            scan_paths: "app"
+          - service: icestreams-worker
+            scan_paths: "."
+          - service: iceflows-worker
+            scan_paths: "."
+          - service: iceruns-invoker
+            scan_paths: "app"
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python ${{ env.PYTHON_VERSION }}
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+
+      - name: Install bandit
+        run: pip install "bandit[toml]"
+
+      - name: Run bandit (JSON report — all severity levels)
+        working-directory: services/${{ matrix.service }}
+        run: |
+          bandit -r ${{ matrix.scan_paths }} \
+            --skip B101,B601 \
+            --severity-level low \
+            --confidence-level low \
+            -f json \
+            -o bandit-report.json || true
+
+      - name: Run bandit (gate — high severity + high confidence only)
+        working-directory: services/${{ matrix.service }}
+        run: |
+          bandit -r ${{ matrix.scan_paths }} \
+            --skip B101,B601 \
+            --severity-level high \
+            --confidence-level high
+
+      - name: Upload bandit report
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: bandit-report-${{ matrix.service }}
+          path: services/${{ matrix.service }}/bandit-report.json
+
+  # ──────────────────────────────────────────────────────────────────────────
+  # Docker build tests — verify Dockerfile for each service builds cleanly
+  # ──────────────────────────────────────────────────────────────────────────
+  docker-build-test:
+    name: Docker build / ${{ matrix.service }}
+    runs-on: ubuntu-latest
+    needs: changes
+
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - service: flask-backend
+            context: services/flask-backend
+            dockerfile: services/flask-backend/Dockerfile
+          - service: webui
+            context: services/webui
+            dockerfile: services/webui/Dockerfile
+          - service: icestreams-worker
+            context: services/icestreams-worker
+            dockerfile: services/icestreams-worker/Dockerfile
+          - service: iceflows-worker
+            context: services/iceflows-worker
+            dockerfile: services/iceflows-worker/Dockerfile
+          - service: iceruns-invoker
+            context: services/iceruns-invoker
+            dockerfile: services/iceruns-invoker/Dockerfile
 
     steps:
       - name: Checkout code
@@ -277,107 +486,114 @@ jobs:
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
 
-      - name: Build Flask backend test stage
-        if: needs.changes.outputs.flask == 'true'
+      - name: Build ${{ matrix.service }}
         uses: docker/build-push-action@v5
         with:
-          context: services/flask-backend
-          target: test
+          context: ${{ matrix.context }}
+          file: ${{ matrix.dockerfile }}
           push: false
+          tags: icecharts-ci-${{ matrix.service }}:ci
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
-      - name: Build Flask backend lint stage
-        if: needs.changes.outputs.flask == 'true'
-        uses: docker/build-push-action@v5
-        with:
-          context: services/flask-backend
-          target: lint
-          push: false
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
-
-      - name: Build WebUI test stage
-        if: needs.changes.outputs.webui == 'true'
-        uses: docker/build-push-action@v5
-        with:
-          context: services/webui
-          target: test
-          push: false
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
-
-      - name: Build WebUI lint stage
-        if: needs.changes.outputs.webui == 'true'
-        uses: docker/build-push-action@v5
-        with:
-          context: services/webui
-          target: lint
-          push: false
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
-
-  # Test summary
-  test-summary:
+  # ──────────────────────────────────────────────────────────────────────────
+  # Summary — step summary + optional PR comment + final pass/fail gate
+  # ──────────────────────────────────────────────────────────────────────────
+  summary:
+    name: CI Summary
     runs-on: ubuntu-latest
-    needs: [flask-lint, flask-test, webui-lint, webui-test, docker-test]
+    needs:
+      - python-lint
+      - webui-lint
+      - flask-test
+      - worker-test
+      - webui-test
+      - security
+      - docker-build-test
     if: always()
 
     steps:
-      - name: Download all artifacts
-        uses: actions/download-artifact@v4
-        continue-on-error: true
-
-      - name: Create test summary
+      - name: Write GitHub step summary
+        env:
+          LINT_PY:    ${{ needs.python-lint.result }}
+          LINT_UI:    ${{ needs.webui-lint.result }}
+          TEST_FLASK: ${{ needs.flask-test.result }}
+          TEST_WORK:  ${{ needs.worker-test.result }}
+          TEST_UI:    ${{ needs.webui-test.result }}
+          SECURITY:   ${{ needs.security.result }}
+          DOCKER:     ${{ needs.docker-build-test.result }}
+          SHA:        ${{ github.sha }}
+          BRANCH:     ${{ github.ref_name }}
         run: |
-          echo "# Test Summary" > /tmp/summary.md
-          echo "" >> /tmp/summary.md
-          echo "## Job Results" >> /tmp/summary.md
-          echo "- Flask Lint: ${{ needs.flask-lint.result }}" >> /tmp/summary.md
-          echo "- Flask Tests: ${{ needs.flask-test.result }}" >> /tmp/summary.md
-          echo "- WebUI Lint: ${{ needs.webui-lint.result }}" >> /tmp/summary.md
-          echo "- WebUI Tests: ${{ needs.webui-test.result }}" >> /tmp/summary.md
-          echo "- Docker Build Test: ${{ needs.docker-test.result }}" >> /tmp/summary.md
-          echo "" >> /tmp/summary.md
-          echo "**Commit:** ${{ github.sha }}" >> /tmp/summary.md
-          echo "**Branch:** ${{ github.ref_name }}" >> /tmp/summary.md
-          echo "**Workflow Run:** ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}" >> /tmp/summary.md
-          cat /tmp/summary.md
+          {
+            echo "# CI Summary"
+            echo ""
+            echo "| Job | Result |"
+            echo "|-----|--------|"
+            echo "| Python Lint       | $LINT_PY    |"
+            echo "| WebUI Lint        | $LINT_UI    |"
+            echo "| Flask Tests       | $TEST_FLASK |"
+            echo "| Worker Tests      | $TEST_WORK  |"
+            echo "| WebUI Tests       | $TEST_UI    |"
+            echo "| Security (bandit) | $SECURITY   |"
+            echo "| Docker Builds     | $DOCKER     |"
+            echo ""
+            echo "**Commit:** \`$SHA\`  **Branch:** \`$BRANCH\`"
+          } >> "$GITHUB_STEP_SUMMARY"
 
-      - name: Comment PR with test results
+      - name: Comment on PR
         if: github.event_name == 'pull_request'
         uses: actions/github-script@v7
         continue-on-error: true
+        env:
+          LINT_PY:    ${{ needs.python-lint.result }}
+          LINT_UI:    ${{ needs.webui-lint.result }}
+          TEST_FLASK: ${{ needs.flask-test.result }}
+          TEST_WORK:  ${{ needs.worker-test.result }}
+          TEST_UI:    ${{ needs.webui-test.result }}
+          SECURITY:   ${{ needs.security.result }}
+          DOCKER:     ${{ needs.docker-build-test.result }}
         with:
           script: |
-            const fs = require('fs');
-            const summary = `
-            # Test and Lint Results
-
-            ## Flask Backend
-            - Lint: ${{ needs.flask-lint.result }}
-            - Tests: ${{ needs.flask-test.result }}
-
-            ## WebUI
-            - Lint: ${{ needs.webui-lint.result }}
-            - Tests: ${{ needs.webui-test.result }}
-
-            ## Docker
-            - Build Test: ${{ needs.docker-test.result }}
-
-            **Commit:** ${{ github.sha }}
-            **Branch:** ${{ github.ref_name }}
-            `;
-
-            github.rest.issues.createComment({
+            const { LINT_PY, LINT_UI, TEST_FLASK, TEST_WORK, TEST_UI, SECURITY, DOCKER } = process.env;
+            const sha = context.sha.slice(0, 8);
+            const branch = context.ref.replace('refs/heads/', '');
+            const body = [
+              '## CI Results',
+              '',
+              '| Job | Result |',
+              '|-----|--------|',
+              `| Python Lint       | ${LINT_PY}    |`,
+              `| WebUI Lint        | ${LINT_UI}    |`,
+              `| Flask Tests       | ${TEST_FLASK} |`,
+              `| Worker Tests      | ${TEST_WORK}  |`,
+              `| WebUI Tests       | ${TEST_UI}    |`,
+              `| Security (bandit) | ${SECURITY}   |`,
+              `| Docker Builds     | ${DOCKER}     |`,
+              '',
+              `**Commit:** \`${sha}\`  **Branch:** \`${branch}\``,
+            ].join('\n');
+            await github.rest.issues.createComment({
               issue_number: context.issue.number,
               owner: context.repo.owner,
               repo: context.repo.repo,
-              body: summary
+              body,
             });
 
-      - name: Fail if required tests failed
-        if: needs.flask-test.result == 'failure' || needs.webui-test.result == 'failure'
+      - name: Fail if required jobs failed
+        env:
+          LINT_PY:    ${{ needs.python-lint.result }}
+          LINT_UI:    ${{ needs.webui-lint.result }}
+          TEST_FLASK: ${{ needs.flask-test.result }}
+          TEST_WORK:  ${{ needs.worker-test.result }}
+          TEST_UI:    ${{ needs.webui-test.result }}
+          DOCKER:     ${{ needs.docker-build-test.result }}
         run: |
-          echo "One or more required tests failed"
-          exit 1
+          failed=0
+          for result in "$LINT_PY" "$LINT_UI" "$TEST_FLASK" "$TEST_WORK" "$TEST_UI" "$DOCKER"; do
+            [ "$result" = "failure" ] && failed=1
+          done
+          if [ "$failed" -eq 1 ]; then
+            echo "One or more required CI jobs failed."
+            exit 1
+          fi

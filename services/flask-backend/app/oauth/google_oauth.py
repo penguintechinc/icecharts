@@ -108,9 +108,7 @@ class GoogleOAuthHandler:
 
         try:
             response = requests.get(
-                cls.GOOGLE_USERINFO_URL,
-                headers=headers,
-                timeout=10
+                cls.GOOGLE_USERINFO_URL, headers=headers, timeout=10
             )
             response.raise_for_status()
             data = response.json()
@@ -127,10 +125,7 @@ class GoogleOAuthHandler:
             raise ValueError(f"Failed to fetch user info: {str(e)}") from e
 
     @classmethod
-    def create_or_link_user(
-        cls,
-        google_user: GoogleUserInfo
-    ) -> tuple[dict, bool]:
+    def create_or_link_user(cls, google_user: GoogleUserInfo) -> tuple[dict, bool]:
         """Create new user or link Google identity to existing user.
 
         Handles account linking when email already exists.
@@ -163,9 +158,11 @@ class GoogleOAuthHandler:
 
         # Generate a random password for OAuth users (they won't use it)
         import secrets
+
         random_password = secrets.token_urlsafe(32)
 
         from ..auth import hash_password
+
         password_hash = hash_password(random_password)
 
         try:

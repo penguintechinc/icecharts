@@ -43,11 +43,15 @@ class SystemSettingsService:
                 SystemSettingsService._cache[key] = value
 
             SystemSettingsService._cache_initialized = True
-            logger.info(f"Settings cache initialized with {len(SystemSettingsService._cache)} settings")
+            logger.info(
+                f"Settings cache initialized with {len(SystemSettingsService._cache)} settings"
+            )
 
         except Exception as e:
             logger.error(f"Failed to initialize settings cache: {str(e)}")
-            SystemSettingsService._cache_initialized = True  # Mark as initialized to prevent loops
+            SystemSettingsService._cache_initialized = (
+                True  # Mark as initialized to prevent loops
+            )
 
     @staticmethod
     def get_setting(key: str, default: Any = None) -> Any:
@@ -143,7 +147,9 @@ class SystemSettingsService:
         return {
             "enabled": SystemSettingsService.get_setting("signup_enabled", True),
             "mode": SystemSettingsService.get_setting("signup_mode", "open"),
-            "allowed_domains": SystemSettingsService.get_setting("signup_allowed_domains", []),
+            "allowed_domains": SystemSettingsService.get_setting(
+                "signup_allowed_domains", []
+            ),
             "email_verification_required": SystemSettingsService.get_setting(
                 "email_verification_required", False
             ),
@@ -162,8 +168,12 @@ class SystemSettingsService:
         """
         return {
             "provider": SystemSettingsService.get_setting("email_provider", "sendmail"),
-            "from_email": SystemSettingsService.get_setting("email_from", "noreply@icecharts.com"),
-            "from_name": SystemSettingsService.get_setting("email_from_name", "IceCharts"),
+            "from_email": SystemSettingsService.get_setting(
+                "email_from", "noreply@icecharts.com"
+            ),
+            "from_name": SystemSettingsService.get_setting(
+                "email_from_name", "IceCharts"
+            ),
         }
 
     @staticmethod
@@ -198,7 +208,9 @@ class SystemSettingsService:
                 SystemSettingsService.set_setting("signup_mode", mode, user_id)
 
             if allowed_domains is not None:
-                SystemSettingsService.set_setting("signup_allowed_domains", allowed_domains, user_id)
+                SystemSettingsService.set_setting(
+                    "signup_allowed_domains", allowed_domains, user_id
+                )
 
             if email_verification_required is not None:
                 SystemSettingsService.set_setting(
@@ -232,7 +244,14 @@ class SystemSettingsService:
         """
         try:
             if provider is not None:
-                valid_providers = ("sendmail", "smtp", "sendgrid", "aws_ses", "mailgun", "gmail")
+                valid_providers = (
+                    "sendmail",
+                    "smtp",
+                    "sendgrid",
+                    "aws_ses",
+                    "mailgun",
+                    "gmail",
+                )
                 if provider not in valid_providers:
                     logger.error(f"Invalid email provider: {provider}")
                     return False

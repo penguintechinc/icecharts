@@ -1,0 +1,97 @@
+{{- /*
+React Frontend Web Deployment Template
+- Manages the IceCharts React/Vite frontend application
+- Scales based on replicaCount
+- Configured with health checks, security context, and read-only filesystem
+- Uses tmpfs volumes for dynamic files (nginx cache, runtime)
+- Includes pod anti-affinity for high availability
+*/ -}}
+{{- if .Values.web.enabled }}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "icecharts.web.fullname" . }}
+  namespace: {{ include "icecharts.namespace" . }}
+  labels:
+    {{- include "icecharts.web.labels" . | nindent 4 }}
+  annotations:
+    description: "React Frontend Web UI for IceCharts"
+spec:
+  replicas: {{ .Values.web.replicaCount }}
+  selector:
+    matchLabels:
+      {{- include "icecharts.web.selectorLabels" . | nindent 6 }}
+  template:
+    metadata:
+      labels:
+        {{- include "icecharts.web.labels" . | nindent 8 }}
+      annotations:
+        prometheus.io/scrape: "false"
+    spec:
+      {{- with .Values.global.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      serviceAccountName: {{ include "icecharts.serviceAccountName" . }}
+      securityContext:
+        runAsUser: {{ .Values.web.securityContext.runAsUser }}
+        runAsGroup: {{ .Values.web.securityContext.runAsGroup }}
+        fsGroup: {{ .Values.web.securityContext.fsGroup }}
+        runAsNonRoot: {{ .Values.web.securityContext.runAsNonRoot }}
+      containers:
+        - name: web
+          image: {{ include "icecharts.web.image" . }}
+          imagePullPolicy: {{ .Values.web.image.pullPolicy }}
+          ports:
+            - name: http
+              containerPort: 8080
+              protocol: TCP
+          env:
+            - name: NODE_ENV
+              value: {{ .Values.web.env.nodeEnv | quote }}
+          envFrom:
+            - configMapRef:
+                name: {{ include "icecharts.fullname" . }}-config
+          volumeMounts:
+            - name: nginx-cache
+              mountPath: /var/cache/nginx
+            - name: nginx-run
+              mountPath: /var/run
+          readinessProbe:
+            httpGet:
+              path: {{ .Values.web.healthCheck.readiness.path }}
+              port: http
+              scheme: HTTP
+            initialDelaySeconds: {{ .Values.web.healthCheck.readiness.initialDelaySeconds }}
+            periodSeconds: {{ .Values.web.healthCheck.readiness.periodSeconds }}
+            timeoutSeconds: {{ .Values.web.healthCheck.readiness.timeoutSeconds }}
+            successThreshold: 1
+            failureThreshold: 3
+          livenessProbe:
+            httpGet:
+              path: {{ .Values.web.healthCheck.liveness.path }}
+              port: http
+              scheme: HTTP
+            initialDelaySeconds: {{ .Values.web.healthCheck.liveness.initialDelaySeconds }}
+            periodSeconds: {{ .Values.web.healthCheck.liveness.periodSeconds }}
+            timeoutSeconds: {{ .Values.web.healthCheck.liveness.timeoutSeconds }}
+            failureThreshold: 3
+          resources:
+            {{- toYaml .Values.web.resources | nindent 12 }}
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: {{ .Values.web.securityContext.readOnlyRootFilesystem }}
+            capabilities:
+              drop:
+                - ALL
+      volumes:
+        - name: nginx-cache
+          emptyDir: {}
+        - name: nginx-run
+          emptyDir: {}
+      {{- with .Values.web.affinity }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      terminationGracePeriodSeconds: 30
+{{- end }}

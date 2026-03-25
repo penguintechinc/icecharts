@@ -16,6 +16,7 @@ export default defineConfig({
     coverage: {
       provider: 'v8',
       reporter: ['text', 'json', 'html', 'lcov'],
+      reportsDirectory: './coverage',
       include: ['src/**/*.{ts,tsx}'],
       exclude: [
         'node_modules/',
@@ -23,7 +24,15 @@ export default defineConfig({
         '**/*.d.ts',
         '**/index.ts',
         '**/*.test.{ts,tsx}',
+        'src/main.tsx',
+        'src/vite-env.d.ts',
       ],
+      thresholds: {
+        lines: 80,
+        functions: 80,
+        branches: 75,
+        statements: 80,
+      },
     },
   },
 });

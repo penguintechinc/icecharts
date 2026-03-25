@@ -4,6 +4,13 @@ FROM node:20-slim AS dependencies
 
 WORKDIR /app
 
+# GitHub token for private package access
+ARG GITHUB_TOKEN
+RUN if [ -n "$GITHUB_TOKEN" ]; then \
+      echo "@penguintechinc:registry=https://npm.pkg.github.com" > .npmrc && \
+      echo "//npm.pkg.github.com/:_authToken=${GITHUB_TOKEN}" >> .npmrc; \
+    fi
+
 # Copy package files
 COPY package*.json ./
 
@@ -26,15 +33,7 @@ FROM dependencies AS test
 
 WORKDIR /app
 
-# Install test dependencies
-RUN npm install --save-dev \
-    vitest \
-    @vitest/ui \
-    jsdom \
-    @testing-library/react \
-    @testing-library/user-event
-
-# Copy source code and tests
+# Copy source code and tests (test deps already installed via npm ci)
 COPY . .
 
 # Run tests
@@ -43,13 +42,18 @@ RUN npm run test -- --run --coverage
 # Stage 4: Build
 FROM dependencies AS builder
 
+# Build arguments for Vite (production defaults)
+ARG VITE_API_URL=""
+ARG VITE_API_BASE_PATH="/api/v1"
+
 WORKDIR /app
 
 # Copy source code
 COPY . .
 
-# Build application
-RUN npm run build
+# Build application with environment variables
+# Production uses empty API_URL (relative paths) and /api/v1 base path
+RUN VITE_API_URL="" VITE_API_BASE_PATH="/api/v1" npm run build
 
 # Stage 5: Production
 FROM nginx:1.25 AS production

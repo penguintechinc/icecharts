@@ -38,39 +38,38 @@ def search_users():
 
         # Search by email or full name
         search_query = db(
-            (db.identities.email.contains(query)) |
-            (db.identities.full_name.contains(query))
+            (db.identities.email.contains(query))
+            | (db.identities.full_name.contains(query))
         )
 
         # Exclude current user
-        search_query = db(
-            search_query._query &
-            (db.identities.id != user["id"])
-        )
+        search_query = db(search_query._query & (db.identities.id != user["id"]))
 
         # Get users
-        users = search_query.select(
-            orderby=db.identities.email,
-            limitby=(0, limit)
-        )
+        users = search_query.select(orderby=db.identities.email, limitby=(0, limit))
 
         results = []
         for u in users:
             # If exclude_group is provided, skip users already in that group
             if exclude_group:
-                is_member = db(
-                    (db.group_members.user_id == u.id) &
-                    (db.group_members.group_id == exclude_group)
-                ).count() > 0
+                is_member = (
+                    db(
+                        (db.group_members.user_id == u.id)
+                        & (db.group_members.group_id == exclude_group)
+                    ).count()
+                    > 0
+                )
 
                 if is_member:
                     continue
 
-            results.append({
-                "id": u.id,
-                "email": u.email,
-                "full_name": u.full_name,
-            })
+            results.append(
+                {
+                    "id": u.id,
+                    "email": u.email,
+                    "full_name": u.full_name,
+                }
+            )
 
         return jsonify({"users": results}), 200
 
@@ -96,13 +95,18 @@ def get_user(user_id: int):
         if not user:
             return jsonify({"error": "User not found"}), 404
 
-        return jsonify({
-            "user": {
-                "id": user.id,
-                "email": user.email,
-                "full_name": user.full_name,
-            }
-        }), 200
+        return (
+            jsonify(
+                {
+                    "user": {
+                        "id": user.id,
+                        "email": user.email,
+                        "full_name": user.full_name,
+                    }
+                }
+            ),
+            200,
+        )
 
     except Exception as e:
         return jsonify({"error": str(e)}), 500

@@ -28,23 +28,37 @@ def init_db(app: Flask) -> DAL:
     # Define users table
     db.define_table(
         "users",
-        Field("email", "string", length=255, unique=True, requires=[
-            IS_NOT_EMPTY(error_message="Email is required"),
-            IS_EMAIL(error_message="Invalid email format"),
-        ]),
+        Field(
+            "email",
+            "string",
+            length=255,
+            unique=True,
+            requires=[
+                IS_NOT_EMPTY(error_message="Email is required"),
+                IS_EMAIL(error_message="Invalid email format"),
+            ],
+        ),
         Field("password_hash", "string", length=255, requires=IS_NOT_EMPTY()),
         Field("full_name", "string", length=255),
-        Field("role", "string", length=50, default="viewer", requires=IS_IN_SET(
-            VALID_ROLES,
-            error_message=f"Role must be one of: {', '.join(VALID_ROLES)}"
-        )),
+        Field(
+            "role",
+            "string",
+            length=50,
+            default="viewer",
+            requires=IS_IN_SET(
+                VALID_ROLES,
+                error_message=f"Role must be one of: {', '.join(VALID_ROLES)}",
+            ),
+        ),
         Field("is_active", "boolean", default=True),
         # OAuth fields
         Field("google_id", "string", length=255, unique=True),
         Field("oauth_provider", "string", length=50),  # 'google', 'github', etc.
         Field("profile_picture_url", "string", length=500),
         Field("created_at", "datetime", default=datetime.utcnow),
-        Field("updated_at", "datetime", default=datetime.utcnow, update=datetime.utcnow),
+        Field(
+            "updated_at", "datetime", default=datetime.utcnow, update=datetime.utcnow
+        ),
     )
 
     # Define refresh tokens table for token invalidation
@@ -96,9 +110,14 @@ def get_user_by_google_id(google_id: str) -> Optional[dict]:
     return user.as_dict() if user else None
 
 
-def create_user(email: str, password_hash: str, full_name: str = "",
-                role: str = "viewer", google_id: str = None,
-                oauth_provider: str = None) -> dict:
+def create_user(
+    email: str,
+    password_hash: str,
+    full_name: str = "",
+    role: str = "viewer",
+    google_id: str = None,
+    oauth_provider: str = None,
+) -> dict:
     """Create a new user."""
     db = get_db()
     user_id = db.users.insert(
@@ -119,8 +138,16 @@ def update_user(user_id: int, **kwargs) -> Optional[dict]:
     db = get_db()
 
     # Filter allowed fields
-    allowed_fields = {"email", "password_hash", "full_name", "role", "is_active",
-                      "google_id", "oauth_provider", "profile_picture_url"}
+    allowed_fields = {
+        "email",
+        "password_hash",
+        "full_name",
+        "role",
+        "is_active",
+        "google_id",
+        "oauth_provider",
+        "profile_picture_url",
+    }
     update_data = {k: v for k, v in kwargs.items() if k in allowed_fields}
 
     if not update_data:
@@ -176,11 +203,15 @@ def revoke_refresh_token(token_hash: str) -> bool:
 def is_refresh_token_valid(token_hash: str) -> bool:
     """Check if refresh token is valid (not revoked and not expired)."""
     db = get_db()
-    token = db(
-        (db.refresh_tokens.token_hash == token_hash) &
-        (db.refresh_tokens.revoked == False) &
-        (db.refresh_tokens.expires_at > datetime.utcnow())
-    ).select().first()
+    token = (
+        db(
+            (db.refresh_tokens.token_hash == token_hash)
+            & (db.refresh_tokens.revoked == False)
+            & (db.refresh_tokens.expires_at > datetime.utcnow())
+        )
+        .select()
+        .first()
+    )
     return token is not None
 
 
@@ -196,6 +227,7 @@ def revoke_all_user_tokens(user_id: int) -> int:
 # DRAWINGS, COMMENTS, AND METADATA MODELS
 # ============================================================================
 
+
 def init_drawing_tables(db: DAL) -> None:
     """Initialize drawing-related tables (drawings, comments, metadata)."""
 
@@ -209,7 +241,9 @@ def init_drawing_tables(db: DAL) -> None:
         Field("thumbnail_url", "string", length=500),
         Field("is_public", "boolean", default=False),
         Field("created_at", "datetime", default=datetime.utcnow),
-        Field("updated_at", "datetime", default=datetime.utcnow, update=datetime.utcnow),
+        Field(
+            "updated_at", "datetime", default=datetime.utcnow, update=datetime.utcnow
+        ),
     )
 
     # Define comments table
@@ -218,13 +252,17 @@ def init_drawing_tables(db: DAL) -> None:
         Field("drawing_id", "reference drawings", requires=IS_NOT_EMPTY()),
         Field("author_id", "reference users", requires=IS_NOT_EMPTY()),
         Field("content", "text", requires=IS_NOT_EMPTY()),
-        Field("shape_id", "string", length=255),  # Optional: reference to specific shape/node
+        Field(
+            "shape_id", "string", length=255
+        ),  # Optional: reference to specific shape/node
         Field("parent_comment_id", "reference comments"),  # For threaded replies
         Field("is_resolved", "boolean", default=False),
         Field("resolved_by_id", "reference users"),
         Field("resolved_at", "datetime"),
         Field("created_at", "datetime", default=datetime.utcnow),
-        Field("updated_at", "datetime", default=datetime.utcnow, update=datetime.utcnow),
+        Field(
+            "updated_at", "datetime", default=datetime.utcnow, update=datetime.utcnow
+        ),
     )
 
     # Define drawing metadata table
@@ -237,7 +275,9 @@ def init_drawing_tables(db: DAL) -> None:
         Field("snap_to_grid", "boolean", default=True),
         Field("last_modified_by_id", "reference users"),
         Field("created_at", "datetime", default=datetime.utcnow),
-        Field("updated_at", "datetime", default=datetime.utcnow, update=datetime.utcnow),
+        Field(
+            "updated_at", "datetime", default=datetime.utcnow, update=datetime.utcnow
+        ),
     )
 
     db.commit()
@@ -247,6 +287,7 @@ def init_drawing_tables(db: DAL) -> None:
 # DRAWING HELPERS
 # ============================================================================
 
+
 def get_drawing_by_id(drawing_id: int) -> Optional[dict]:
     """Get drawing by ID with access control check."""
     db = get_db()
@@ -254,15 +295,17 @@ def get_drawing_by_id(drawing_id: int) -> Optional[dict]:
     return drawing.as_dict() if drawing else None
 
 
-def create_drawing(owner_id: int, name: str, description: str = "",
-                   data: dict = None) -> dict:
+def create_drawing(
+    owner_id: int, name: str, description: str = "", data: dict = None
+) -> dict:
     """Create a new drawing."""
     db = get_db()
     drawing_id = db.drawings.insert(
         owner_id=owner_id,
         name=name,
         description=description,
-        data=data or {"nodes": [], "edges": [], "viewport": {"x": 0, "y": 0, "zoom": 1}},
+        data=data
+        or {"nodes": [], "edges": [], "viewport": {"x": 0, "y": 0, "zoom": 1}},
         is_public=False,
     )
     db.commit()
@@ -308,8 +351,9 @@ def delete_drawing(drawing_id: int) -> bool:
     return deleted > 0
 
 
-def list_drawings(owner_id: int = None, page: int = 1,
-                  per_page: int = 20) -> tuple[list[dict], int]:
+def list_drawings(
+    owner_id: int = None, page: int = 1, per_page: int = 20
+) -> tuple[list[dict], int]:
     """List drawings owned by user or public drawings."""
     db = get_db()
     offset = (page - 1) * per_page
@@ -331,8 +375,14 @@ def list_drawings(owner_id: int = None, page: int = 1,
 # COMMENT HELPERS
 # ============================================================================
 
-def create_comment(drawing_id: int, author_id: int, content: str,
-                   shape_id: str = None, parent_comment_id: int = None) -> dict:
+
+def create_comment(
+    drawing_id: int,
+    author_id: int,
+    content: str,
+    shape_id: str = None,
+    parent_comment_id: int = None,
+) -> dict:
     """Create a new comment."""
     db = get_db()
     comment_id = db.comments.insert(
@@ -378,8 +428,9 @@ def get_comment_by_id(comment_id: int) -> Optional[dict]:
     return comment_dict
 
 
-def get_comments_by_drawing(drawing_id: int, shape_id: str = None,
-                            only_unresolved: bool = False) -> list[dict]:
+def get_comments_by_drawing(
+    drawing_id: int, shape_id: str = None, only_unresolved: bool = False
+) -> list[dict]:
     """Get all comments for a drawing, optionally filtered by shape."""
     db = get_db()
 
@@ -486,6 +537,7 @@ def unresolve_comment(comment_id: int) -> Optional[dict]:
 # DRAWING METADATA HELPERS
 # ============================================================================
 
+
 def get_drawing_metadata(drawing_id: int) -> Optional[dict]:
     """Get metadata for a drawing."""
     db = get_db()
@@ -497,7 +549,13 @@ def update_drawing_metadata(drawing_id: int, **kwargs) -> Optional[dict]:
     """Update drawing metadata."""
     db = get_db()
 
-    allowed_fields = {"version", "tags", "grid_size", "snap_to_grid", "last_modified_by_id"}
+    allowed_fields = {
+        "version",
+        "tags",
+        "grid_size",
+        "snap_to_grid",
+        "last_modified_by_id",
+    }
     update_data = {k: v for k, v in kwargs.items() if k in allowed_fields}
 
     if not update_data:

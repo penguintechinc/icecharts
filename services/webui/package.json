@@ -14,7 +14,9 @@
     "typecheck": "tsc --noEmit",
     "test": "vitest",
     "test:ui": "vitest --ui",
-    "test:coverage": "vitest --run --coverage"
+    "test:coverage": "vitest --run --coverage",
+    "generate-icons": "node scripts/generate-iconoir-icons.js",
+    "process-cloud-icons": "node scripts/process-cloud-icons.js"
   },
   "dependencies": {
     "@carbon/icons-react": "^11.71.0",
@@ -30,7 +32,7 @@
     "recharts": "^2.10.0",
     "socket.io-client": "^4.7.4",
     "zustand": "^5.0.2",
-    "@penguin/react_libs": "file:../../shared/react_libs"
+    "@penguintechinc/react-libs": "^1.1.0"
   },
   "devDependencies": {
     "@svgr/cli": "^8.1.0",

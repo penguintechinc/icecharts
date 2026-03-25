@@ -141,9 +141,7 @@ class UpdateShareRequest(BaseModel):
 class CreateShareRequest(BaseModel):
     """Schema for creating a share (drawing or collection)."""
 
-    share_type: str = Field(
-        ..., description="Type of share: 'drawing' or 'collection'"
-    )
+    share_type: str = Field(..., description="Type of share: 'drawing' or 'collection'")
     shared_with_id: Optional[int] = Field(
         None, gt=0, description="ID of user to share with (for user sharing)"
     )

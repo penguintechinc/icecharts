@@ -10,7 +10,9 @@ from app.services.system_settings_service import SystemSettingsService
 
 logger = logging.getLogger(__name__)
 
-admin_settings_v1_bp = Blueprint("admin_settings_v1", __name__, url_prefix="/admin/settings")
+admin_settings_v1_bp = Blueprint(
+    "admin_settings_v1", __name__, url_prefix="/admin/settings"
+)
 
 
 @admin_settings_v1_bp.route("/signup", methods=["GET"])
@@ -29,9 +31,7 @@ def get_signup_settings():
     try:
         signup_config = SystemSettingsService.get_signup_config()
 
-        return jsonify({
-            "signup": signup_config
-        }), 200
+        return jsonify({"signup": signup_config}), 200
 
     except Exception as e:
         logger.error(f"Failed to get signup settings: {str(e)}")
@@ -68,9 +68,14 @@ def update_signup_settings():
         if mode is not None:
             valid_modes = ["open", "domain_restricted", "sso_only", "disabled"]
             if mode not in valid_modes:
-                return jsonify({
-                    "error": f"Invalid signup mode. Must be one of: {', '.join(valid_modes)}"
-                }), 400
+                return (
+                    jsonify(
+                        {
+                            "error": f"Invalid signup mode. Must be one of: {', '.join(valid_modes)}"
+                        }
+                    ),
+                    400,
+                )
 
         # Validate allowed_domains if provided
         if allowed_domains is not None:
@@ -99,10 +104,15 @@ def update_signup_settings():
 
         logger.info(f"Signup settings updated by user {current_user['id']}")
 
-        return jsonify({
-            "message": "Signup settings updated successfully",
-            "signup": signup_config
-        }), 200
+        return (
+            jsonify(
+                {
+                    "message": "Signup settings updated successfully",
+                    "signup": signup_config,
+                }
+            ),
+            200,
+        )
 
     except Exception as e:
         logger.error(f"Failed to update signup settings: {str(e)}")
@@ -135,9 +145,7 @@ def get_email_settings():
             {"value": "gmail", "label": "Gmail"},
         ]
 
-        return jsonify({
-            "email": email_config
-        }), 200
+        return jsonify({"email": email_config}), 200
 
     except Exception as e:
         logger.error(f"Failed to get email settings: {str(e)}")
@@ -174,11 +182,23 @@ def update_email_settings():
 
         # Validate provider if provided
         if provider is not None:
-            valid_providers = ["sendmail", "smtp", "sendgrid", "aws_ses", "mailgun", "gmail"]
+            valid_providers = [
+                "sendmail",
+                "smtp",
+                "sendgrid",
+                "aws_ses",
+                "mailgun",
+                "gmail",
+            ]
             if provider not in valid_providers:
-                return jsonify({
-                    "error": f"Invalid email provider. Must be one of: {', '.join(valid_providers)}"
-                }), 400
+                return (
+                    jsonify(
+                        {
+                            "error": f"Invalid email provider. Must be one of: {', '.join(valid_providers)}"
+                        }
+                    ),
+                    400,
+                )
 
         # Validate from_email if provided
         if from_email is not None:
@@ -204,10 +224,15 @@ def update_email_settings():
 
         logger.info(f"Email settings updated by user {current_user['id']}")
 
-        return jsonify({
-            "message": "Email settings updated successfully",
-            "email": email_config
-        }), 200
+        return (
+            jsonify(
+                {
+                    "message": "Email settings updated successfully",
+                    "email": email_config,
+                }
+            ),
+            200,
+        )
 
     except Exception as e:
         logger.error(f"Failed to update email settings: {str(e)}")
@@ -287,13 +312,19 @@ def test_email():
 
         if success:
             logger.info(f"Test email sent to {to_email} by user {current_user['id']}")
-            return jsonify({
-                "message": f"Test email sent successfully to {to_email}"
-            }), 200
+            return (
+                jsonify({"message": f"Test email sent successfully to {to_email}"}),
+                200,
+            )
         else:
-            return jsonify({
-                "error": "Failed to send test email. Check server logs for details."
-            }), 500
+            return (
+                jsonify(
+                    {
+                        "error": "Failed to send test email. Check server logs for details."
+                    }
+                ),
+                500,
+            )
 
     except Exception as e:
         logger.error(f"Failed to send test email: {str(e)}")
@@ -314,12 +345,12 @@ def get_site_settings():
     try:
         site_config = {
             "site_url": SystemSettingsService.get_setting("site_url", Config.SITE_URL),
-            "site_name": SystemSettingsService.get_setting("site_name", Config.APP_NAME),
+            "site_name": SystemSettingsService.get_setting(
+                "site_name", Config.APP_NAME
+            ),
         }
 
-        return jsonify({
-            "site": site_config
-        }), 200
+        return jsonify({"site": site_config}), 200
 
     except Exception as e:
         logger.error(f"Failed to get site settings: {str(e)}")
@@ -354,27 +385,38 @@ def update_site_settings():
                 return jsonify({"error": "site_url must be a non-empty string"}), 400
             # Basic URL validation
             if not site_url.startswith(("http://", "https://")):
-                return jsonify({"error": "site_url must start with http:// or https://"}), 400
-            SystemSettingsService.set_setting("site_url", site_url.rstrip("/"), current_user["id"])
+                return (
+                    jsonify({"error": "site_url must start with http:// or https://"}),
+                    400,
+                )
+            SystemSettingsService.set_setting(
+                "site_url", site_url.rstrip("/"), current_user["id"]
+            )
 
         # Validate and update site_name
         if site_name is not None:
             if not isinstance(site_name, str) or not site_name.strip():
                 return jsonify({"error": "site_name must be a non-empty string"}), 400
-            SystemSettingsService.set_setting("site_name", site_name, current_user["id"])
+            SystemSettingsService.set_setting(
+                "site_name", site_name, current_user["id"]
+            )
 
         # Return updated config
         site_config = {
             "site_url": SystemSettingsService.get_setting("site_url", Config.SITE_URL),
-            "site_name": SystemSettingsService.get_setting("site_name", Config.APP_NAME),
+            "site_name": SystemSettingsService.get_setting(
+                "site_name", Config.APP_NAME
+            ),
         }
 
         logger.info(f"Site settings updated by user {current_user['id']}")
 
-        return jsonify({
-            "message": "Site settings updated successfully",
-            "site": site_config
-        }), 200
+        return (
+            jsonify(
+                {"message": "Site settings updated successfully", "site": site_config}
+            ),
+            200,
+        )
 
     except Exception as e:
         logger.error(f"Failed to update site settings: {str(e)}")

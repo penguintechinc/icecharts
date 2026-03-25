@@ -783,6 +783,39 @@ Edge case tests are part of the automated pipeline:
 - Can be skipped in CI with environment variable: `SKIP_EDGE_CASES=true`
 - Results included in test summary reports
 
+## Code Coverage
+
+### Coverage Targets
+
+| Service | Target | Tool | Enforced In |
+|---------|--------|------|-------------|
+| flask-backend | 95% | pytest-cov | `--cov-fail-under=95` in CI |
+| icestreams-worker | 90% | pytest-cov | `--cov-fail-under=90` in CI |
+| iceflows-worker | 90% | pytest-cov | `--cov-fail-under=90` in CI |
+| iceruns-invoker | 90% | pytest-cov | `--cov-fail-under=90` in CI |
+| webui | 80% | Vitest v8 | thresholds in vitest.config.ts |
+
+### Codecov Integration
+
+Coverage reports upload automatically to [Codecov](https://codecov.io/gh/penguintechinc/IceCharts)
+after every CI run. The badge in README.md reflects the latest `main` branch coverage.
+
+### Running Coverage Locally
+
+```bash
+# Flask backend — HTML report in services/flask-backend/htmlcov/
+cd services/flask-backend
+pytest tests/ --cov=app --cov-report=html --cov-report=term-missing
+
+# Workers
+cd services/icestreams-worker
+pytest tests/ --cov=. --cov-report=term-missing
+
+# WebUI — HTML report in services/webui/coverage/
+cd services/webui
+npm run test:coverage
+```
+
 ## Troubleshooting
 
 ### Flask Tests

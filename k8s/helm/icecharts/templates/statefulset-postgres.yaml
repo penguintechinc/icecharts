@@ -1,0 +1,115 @@
+{{- /*
+PostgreSQL StatefulSet Template
+- Manages PostgreSQL 17 database with persistent storage
+- Single replica for production (can be scaled for replication)
+- Uses VolumeClaimTemplate for persistence
+- Includes health checks and security context
+*/ -}}
+{{- if .Values.postgres.enabled }}
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: {{ include "icecharts.postgres.fullname" . }}
+  namespace: {{ include "icecharts.namespace" . }}
+  labels:
+    {{- include "icecharts.postgres.labels" . | nindent 4 }}
+  annotations:
+    description: "PostgreSQL 17 database for IceCharts"
+spec:
+  serviceName: {{ include "icecharts.postgres.fullname" . }}-service
+  replicas: {{ .Values.postgres.replicaCount }}
+  selector:
+    matchLabels:
+      {{- include "icecharts.postgres.selectorLabels" . | nindent 6 }}
+  template:
+    metadata:
+      labels:
+        {{- include "icecharts.postgres.labels" . | nindent 8 }}
+      annotations:
+        prometheus.io/scrape: "false"
+    spec:
+      {{- with .Values.global.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      serviceAccountName: {{ include "icecharts.serviceAccountName" . }}
+      securityContext:
+        runAsUser: {{ .Values.postgres.securityContext.runAsUser }}
+        runAsGroup: {{ .Values.postgres.securityContext.runAsGroup }}
+        fsGroup: {{ .Values.postgres.securityContext.fsGroup }}
+        runAsNonRoot: {{ .Values.postgres.securityContext.runAsNonRoot }}
+      containers:
+        - name: postgres
+          image: {{ include "icecharts.postgres.image" . }}
+          imagePullPolicy: {{ .Values.postgres.image.pullPolicy }}
+          ports:
+            - name: postgres
+              containerPort: 5432
+              protocol: TCP
+          env:
+            - name: PGDATA
+              value: /var/lib/postgresql/data/pgdata
+            - name: POSTGRES_USER
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "icecharts.secretName" . }}
+                  key: postgres-user
+            - name: POSTGRES_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "icecharts.secretName" . }}
+                  key: postgres-password
+            - name: POSTGRES_DB
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "icecharts.secretName" . }}
+                  key: postgres-db
+          volumeMounts:
+            - name: data
+              mountPath: /var/lib/postgresql/data
+          readinessProbe:
+            tcpSocket:
+              port: 5432
+            initialDelaySeconds: {{ .Values.postgres.healthCheck.readiness.initialDelaySeconds }}
+            periodSeconds: {{ .Values.postgres.healthCheck.readiness.periodSeconds }}
+            timeoutSeconds: {{ .Values.postgres.healthCheck.readiness.timeoutSeconds }}
+            successThreshold: 1
+            failureThreshold: 3
+          livenessProbe:
+            tcpSocket:
+              port: 5432
+            initialDelaySeconds: {{ .Values.postgres.healthCheck.liveness.initialDelaySeconds }}
+            periodSeconds: {{ .Values.postgres.healthCheck.liveness.periodSeconds }}
+            timeoutSeconds: {{ .Values.postgres.healthCheck.liveness.timeoutSeconds }}
+            failureThreshold: 3
+          startupProbe:
+            tcpSocket:
+              port: 5432
+            initialDelaySeconds: {{ .Values.postgres.healthCheck.startup.initialDelaySeconds }}
+            periodSeconds: {{ .Values.postgres.healthCheck.startup.periodSeconds }}
+            failureThreshold: {{ .Values.postgres.healthCheck.startup.failureThreshold }}
+          resources:
+            {{- toYaml .Values.postgres.resources | nindent 12 }}
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: false
+            capabilities:
+              drop:
+                - ALL
+  volumeClaimTemplates:
+    - metadata:
+        name: data
+        labels:
+          {{- include "icecharts.postgres.selectorLabels" . | nindent 10 }}
+      spec:
+        accessModes:
+          - {{ .Values.postgres.persistence.accessMode }}
+        {{- if .Values.postgres.persistence.storageClass }}
+        storageClassName: {{ .Values.postgres.persistence.storageClass }}
+        {{- else if .Values.global.storageClass }}
+        storageClassName: {{ .Values.global.storageClass }}
+        {{- end }}
+        resources:
+          requests:
+            storage: {{ .Values.postgres.persistence.size }}
+{{- end }}
