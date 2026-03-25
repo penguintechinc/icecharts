@@ -1,3 +1,4 @@
+# TODO: migrate to pip-compile --generate-hashes
 # IceCharts Flask Backend - Requirements
 # Python 3.13+ required (optimized for 3.13 performance features)
 

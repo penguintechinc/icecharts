@@ -4,7 +4,7 @@
   "description": "IceRuns example: Image resizing with Node.js",
   "main": "index.js",
   "dependencies": {
-    "sharp": "^0.33.0"
+    "sharp": "0.33.0"
   },
   "engines": {
     "node": ">=20.0.0"
