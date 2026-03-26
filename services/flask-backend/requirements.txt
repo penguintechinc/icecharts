@@ -30,7 +30,7 @@ authlib==1.6.0
 # lxml==5.3.0  # Commented out: only needed for python3-saml
 
 # HTTP & API Clients
-requests==2.32.4
+requests==2.33.0
 httpx==0.28.1
 
 # Configuration Management
