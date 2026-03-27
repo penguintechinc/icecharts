@@ -50,7 +50,7 @@ mypy==1.14.0
 # Image & Document Export
 Pillow==10.4.0
 cairosvg==2.7.2
-WeasyPrint==62.0
+WeasyPrint==68.0
 
 # License Server Integration
 # (Using requests for HTTP client - already included above)
