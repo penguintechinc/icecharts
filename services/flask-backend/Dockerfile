@@ -3,7 +3,7 @@
 # Python 3.13 for performance optimizations (dataclasses with slots, asyncio)
 
 # Builder stage
-FROM python:3.13-slim AS builder
+FROM python:3.13-slim-bookworm@sha256:01f42367a0a94ad4bc17111776fd66e3500c1d87c15bbd6055b7371d39c124fb AS builder
 
 # Set working directory
 WORKDIR /build
@@ -70,7 +70,7 @@ RUN flake8 app/ tests/ --count --select=E9,F63,F7,F82 --show-source --statistics
     mypy app/ --ignore-missing-imports || true
 
 # Runtime stage
-FROM python:3.13-slim
+FROM python:3.13-slim-bookworm@sha256:01f42367a0a94ad4bc17111776fd66e3500c1d87c15bbd6055b7371d39c124fb
 
 # Build arguments for JWT token expiration
 ARG JWT_ACCESS_TOKEN_HOURS=4

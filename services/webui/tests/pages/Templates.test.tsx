@@ -124,8 +124,8 @@ describe('Templates Page', () => {
   it('shows category filter buttons extracted from templates', async () => {
     renderWithRouter(<Templates />);
     await waitFor(() => {
-      // Category buttons in the filter area
-      expect(screen.getByText('Process')).toBeDefined();
+      // Category buttons in the filter area (use role to distinguish from card text)
+      expect(screen.getByRole('button', { name: 'Process' })).toBeDefined();
     });
   });
 
@@ -143,7 +143,7 @@ describe('Templates Page', () => {
       expect(screen.getByText('Network Diagram')).toBeDefined();
     });
 
-    const processButton = screen.getByText('Process');
+    const processButton = screen.getByRole('button', { name: 'Process' });
     fireEvent.click(processButton);
 
     await waitFor(() => {

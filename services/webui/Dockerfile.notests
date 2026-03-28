@@ -2,7 +2,7 @@
 # Use this for alpha/development builds where tests run separately
 
 # Stage 1: Dependencies
-FROM node:20-slim AS dependencies
+FROM node:20-bookworm-slim@sha256:1e85773c98c31d4fe5b545e4cb17379e617b348832fb3738b22a08f68dec30f3 AS dependencies
 
 WORKDIR /app
 
@@ -25,7 +25,7 @@ COPY . .
 RUN npx vite build
 
 # Stage 3: Production
-FROM nginx:1.25 AS production
+FROM nginx:1.25-bookworm@sha256:a484819eb60211f5299034ac80f6a681b06f89e65866ce91f356ed7c72af059c AS production
 
 # Install curl for healthcheck
 RUN apt-get update && apt-get install -y --no-install-recommends curl && \

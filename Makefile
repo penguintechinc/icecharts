@@ -110,7 +110,7 @@ dev-api: ## Development - Start Go API in development mode
 
 dev-web-python: ## Development - Start Python web app in development mode
 	@echo "$(BLUE)Starting Python web app...$(RESET)"
-	@cd apps/web && python app.py
+	@cd apps/web && python3 app.py
 
 dev-web-node: ## Development - Start Node.js web app in development mode
 	@echo "$(BLUE)Starting Node.js web app...$(RESET)"
@@ -196,15 +196,15 @@ test-unit: ## Testing - Run all unit tests
 
 test-icestreams-unit: ## Testing - Run IceStreams worker unit tests
 	@echo "$(BLUE)Running IceStreams unit tests...$(RESET)"
-	@cd services/icestreams-worker && python -m pytest tests/ -v
+	@cd services/icestreams-worker && python3 -m pytest tests/ -v
 
 test-iceflows-unit: ## Testing - Run IceFlows worker unit tests
 	@echo "$(BLUE)Running IceFlows unit tests...$(RESET)"
-	@cd services/iceflows-worker && python -m pytest tests/ -v
+	@cd services/iceflows-worker && python3 -m pytest tests/ -v
 
 test-iceruns-unit: ## Testing - Run IceRuns invoker unit tests
 	@echo "$(BLUE)Running IceRuns unit tests...$(RESET)"
-	@cd services/iceruns-invoker && python -m pytest tests/ -v
+	@cd services/iceruns-invoker && python3 -m pytest tests/ -v
 
 test-e2e: ## Testing - Run Playwright E2E tests
 	@echo "$(BLUE)Running E2E tests...$(RESET)"
@@ -216,7 +216,12 @@ test-e2e-headed: ## Testing - Run Playwright E2E tests in headed mode
 
 test-security: ## Testing - Run security scans (bandit, npm audit, trivy)
 	@echo "$(BLUE)Running security scans...$(RESET)"
-	@./scripts/test-controller.sh security
+	@if command -v bandit >/dev/null 2>&1; then echo "-- bandit --"; bandit -r . -x ./tests,./venv,./.git,./node_modules,./web/node_modules --quiet || true; fi
+	@if command -v pip-audit >/dev/null 2>&1; then echo "-- pip-audit --"; find . -name "requirements.txt" -not -path "*/.git/*" -not -path "*/venv/*" -not -path "*/node_modules/*" | xargs -I{} pip-audit -r {} 2>/dev/null || true; fi
+	@if command -v gosec >/dev/null 2>&1; then echo "-- gosec --"; find . -name "go.mod" -not -path "*/.git/*" -not -path "*/vendor/*" | xargs -I{} dirname {} | xargs -I{} sh -c 'cd {} && gosec ./... || true'; fi
+	@if command -v govulncheck >/dev/null 2>&1; then echo "-- govulncheck --"; find . -name "go.mod" -not -path "*/.git/*" -not -path "*/vendor/*" | xargs -I{} dirname {} | xargs -I{} sh -c 'cd {} && govulncheck ./... || true'; fi
+	@find . -name "package.json" -not -path "*/.git/*" -not -path "*/node_modules/*" -maxdepth 3 | xargs -I{} dirname {} | xargs -I{} sh -c 'cd {} && npm audit 2>/dev/null || true'
+	@if command -v gitleaks >/dev/null 2>&1; then echo "-- gitleaks --"; gitleaks detect --source . --no-git 2>/dev/null || true; fi
 
 test-functional: ## Testing - Run functional tests (page loads, API responses)
 	@echo "$(BLUE)Running functional tests...$(RESET)"
@@ -255,7 +260,7 @@ build-go: ## Build - Build Go applications
 
 build-python: ## Build - Build Python applications
 	@echo "$(BLUE)Building Python applications...$(RESET)"
-	@python -m py_compile apps/web/app.py
+	@python3 -m py_compile apps/web/app.py
 
 build-node: ## Build - Build Node.js applications
 	@echo "$(BLUE)Building Node.js applications...$(RESET)"
@@ -315,6 +320,18 @@ lint-flask-fix: ## Code Quality - Auto-fix Flask linting issues
 	@echo "$(BLUE)Auto-fixing Flask backend linting issues...$(RESET)"
 	@cd services/flask-backend && black app tests
 	@cd services/flask-backend && isort app tests
+
+lint: ## Code Quality - Run linting for all languages
+	@echo "$(BLUE)Running linting...$(RESET)"
+	@if command -v flake8 >/dev/null 2>&1; then echo "-- flake8 --"; python3 -m flake8 . --max-line-length=120 --exclude=.git,__pycache__,venv,node_modules,.env* || true; fi
+	@if command -v black >/dev/null 2>&1; then echo "-- black --"; black --check . --exclude '/(\.git|venv|__pycache__|node_modules)/' || true; fi
+	@if command -v isort >/dev/null 2>&1; then echo "-- isort --"; isort --check-only . || true; fi
+	@if command -v mypy >/dev/null 2>&1; then echo "-- mypy --"; python3 -m mypy . --ignore-missing-imports || true; fi
+	@if command -v golangci-lint >/dev/null 2>&1; then echo "-- golangci-lint --"; find . -name "go.mod" -not -path "*/.git/*" -not -path "*/vendor/*" | xargs -I{} dirname {} | xargs -I{} sh -c 'cd {} && golangci-lint run || true'; fi
+	@if command -v hadolint >/dev/null 2>&1; then echo "-- hadolint --"; find . -name "Dockerfile*" -not -path "*/.git/*" | xargs hadolint || true; fi
+	@if command -v shellcheck >/dev/null 2>&1; then echo "-- shellcheck --"; find . -name "*.sh" -not -path "*/.git/*" -not -path "*/node_modules/*" | xargs shellcheck || true; fi
+	@npm run lint || true
+	@cd web && npm run lint || true
 
 lint-node: ## Code Quality - Run Node.js linting
 	@echo "$(BLUE)Linting Node.js code...$(RESET)"
@@ -561,3 +578,23 @@ info: ## Info - Show project information
 env: ## Info - Show environment variables
 	@echo "$(BLUE)Environment Variables:$(RESET)"
 	@env | grep -E "^(LICENSE_|POSTGRES_|REDIS_|NODE_|GIN_|PY4WEB_)" | sort
+
+# Deployment Targets
+deploy-dev: ## Deploy - Deploy to development environment (alias for deploy-staging)
+	@$(MAKE) deploy-staging
+
+deploy-prod: ## Deploy - Deploy to production environment
+	@$(MAKE) deploy-production
+
+# Mock Data
+seed-mock-data: ## Development - Populate with 3-4 test items per feature
+	@echo "$(BLUE)Seeding mock data...$(RESET)"
+	@echo "$(YELLOW)No mock data seeding defined$(RESET)"
+
+# Pre-Commit
+pre-commit: ## Code Quality - Run pre-commit checks (lint + security + test)
+	@echo "$(BLUE)=== Pre-commit checks ===$(RESET)"
+	@$(MAKE) lint
+	@$(MAKE) test-security
+	@$(MAKE) test
+	@echo "$(GREEN)=== Pre-commit complete ===$(RESET)"

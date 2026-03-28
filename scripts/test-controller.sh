@@ -225,7 +225,7 @@ run_python_unit() {
     fi
 
     log_step "Unit tests: $service_name"
-    if (cd "$full_dir" && python -m pytest tests/ -v); then
+    if (cd "$full_dir" && python3 -m pytest tests/ -v); then
         log_pass "Unit: $service_name"
         record_result "PASS" "Unit: $service_name"
     else

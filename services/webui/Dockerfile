@@ -1,6 +1,6 @@
 # Multi-stage build for IceCharts WebUI
 # Stage 1: Dependencies
-FROM node:20-slim AS dependencies
+FROM node:20-bookworm-slim@sha256:1e85773c98c31d4fe5b545e4cb17379e617b348832fb3738b22a08f68dec30f3 AS dependencies
 
 WORKDIR /app
 
@@ -56,7 +56,7 @@ COPY . .
 RUN VITE_API_URL="" VITE_API_BASE_PATH="/api/v1" npm run build
 
 # Stage 5: Production
-FROM nginx:1.25 AS production
+FROM nginx:stable-bookworm@sha256:552e7481ca93ffccd046aa658dbbed22caefbc09c66fa7cd247cbb90b8a5c609 AS production
 
 # Install curl for healthcheck
 RUN apt-get update && apt-get install -y --no-install-recommends curl && \

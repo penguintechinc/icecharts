@@ -97,7 +97,7 @@ describe('Collections Page', () => {
     renderWithRouter(<Collections />);
     await waitFor(() => {
       expect(screen.getByText('Link sharing')).toBeDefined();
-      expect(screen.getByText('Private')).toBeDefined();
+      expect(screen.getAllByText('Private').length).toBeGreaterThan(0);
     });
   });
 

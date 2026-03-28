@@ -1,5 +1,5 @@
 # Multi-arch Dockerfile for IceRuns Invoker (ARM64 + AMD64)
-FROM debian:12-slim
+FROM debian:bookworm-slim@sha256:f06537653ac770703bc45b4b113475bd402f451e85223f0f2837acbf89ab020a
 
 ARG TARGETPLATFORM
 ARG BUILDPLATFORM

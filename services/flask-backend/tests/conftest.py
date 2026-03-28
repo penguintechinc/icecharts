@@ -4,8 +4,29 @@ import os
 import sys
 
 # PostgreSQL test database connection details - MUST be set before app imports
-# Uses the icecharts-postgres Docker container
-_PG_HOST = os.environ.get("TEST_DB_HOST", "172.18.0.7")
+# Uses the icecharts-postgres Docker container.
+# TEST_DB_HOST env var overrides; otherwise auto-discovers via docker inspect.
+def _discover_pg_host() -> str:
+    if "TEST_DB_HOST" in os.environ:
+        return os.environ["TEST_DB_HOST"]
+    try:
+        import subprocess
+        ip = subprocess.check_output(
+            [
+                "docker", "inspect", "icecharts-postgres",
+                "--format={{range .NetworkSettings.Networks}}{{.IPAddress}}{{end}}",
+            ],
+            text=True,
+            stderr=subprocess.DEVNULL,
+        ).strip()
+        if ip:
+            return ip
+    except Exception:
+        pass
+    return "172.18.0.4"  # fallback: known Docker bridge IP
+
+
+_PG_HOST = _discover_pg_host()
 _PG_PORT = os.environ.get("TEST_DB_PORT", "5432")
 _PG_DB = os.environ.get("TEST_DB_NAME", "icecharts_test")
 _PG_USER = os.environ.get("TEST_DB_USER", "icecharts_user")
