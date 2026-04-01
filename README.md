@@ -88,6 +88,7 @@ IceCharts is a modern, web-based collaborative diagramming platform designed for
 - **Rich shape library** for system components, infrastructure, and flowchart elements
 - **Smart connectors** with automatic routing and customizable styling
 - **Grid & snap-to-grid** for precise alignment and professional layouts
+- **Element metadata & technical notes** manageable via double-click modal
 
 ### Real-Time Collaboration
 - **Multi-user editing** with WebSocket-powered real-time synchronization

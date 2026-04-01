@@ -6,6 +6,7 @@ Real-time collaborative diagramming and flowchart creation interface built with 
 
 - **Real-time Collaboration**: Multiple users can edit diagrams simultaneously via WebSocket
 - **Flow Diagram Editor**: Powered by @xyflow/react for interactive node-based diagrams
+- **Properties Management**: Double-click any node or edge to open a comprehensive properties modal for editing labels, styles, metadata, and technical comments
 - **Authentication**: JWT-based authentication with role-based access control
 - **Modern UI**: Dark mode with gold/navy color scheme using Tailwind CSS
 - **Type Safety**: Full TypeScript support with strict type checking
@@ -125,6 +126,17 @@ docker run -p 80:80 icecharts-webui
 | `VITE_API_URL` | Backend API URL | `http://localhost:5000` |
 | `VITE_WS_URL` | WebSocket server URL | `http://localhost:5000` |
 | `NODE_ENV` | Environment mode | `development` |
+
+## User Interactions
+
+### Diagram Canvas
+- **Selection**: Click a node or edge to select it
+- **Multi-select**: Hold `Shift` and drag a box or click multiple elements
+- **Double Click**: Open the **Properties Modal** for nodes or edges to edit labels, colors, metadata, and comments
+- **Delete**: Press `Delete` or `Backspace` to remove selected elements
+- **Undo/Redo**: Use `Ctrl+Z` (Undo) and `Ctrl+Shift+Z` or `Ctrl+Y` (Redo)
+- **Panning**: Click and drag the background to pan the view
+- **Zooming**: Use the mouse wheel or the controls panel to zoom in/out
 
 ## Browser Support
 
