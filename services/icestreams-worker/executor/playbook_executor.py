@@ -157,8 +157,6 @@ class ExecutionResult:
         }
 
 
-
-
 class BaseNode:
     """
     Base class for all node implementations.
@@ -328,11 +326,7 @@ class PlaybookExecutor:
             result = ExecutionResult(
                 success=success,
                 node_results=node_results,
-                error=(
-                    f"{len(failed_nodes)} node(s) failed"
-                    if failed_nodes
-                    else None
-                ),
+                error=(f"{len(failed_nodes)} node(s) failed" if failed_nodes else None),
                 execution_time_ms=execution_time_ms,
                 completed_nodes=completed_nodes,
                 failed_nodes=failed_nodes,

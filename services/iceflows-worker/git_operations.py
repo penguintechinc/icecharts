@@ -17,12 +17,12 @@ from urllib.parse import urlparse, urlunparse
 
 import requests
 
-
 logger = logging.getLogger(__name__)
 
 
 class GitOperationError(Exception):
     """Custom exception for git operation failures"""
+
     pass
 
 
@@ -42,7 +42,7 @@ class GitOperations:
     API_TIMEOUT = 30
 
     # Valid branch name pattern (prevent injection)
-    BRANCH_NAME_PATTERN = re.compile(r'^[a-zA-Z0-9._/-]+$')
+    BRANCH_NAME_PATTERN = re.compile(r"^[a-zA-Z0-9._/-]+$")
 
     def __init__(self, provider: str, api_token: str, repo_url: str):
         """
@@ -100,13 +100,13 @@ class GitOperations:
         """
         try:
             parsed = urlparse(url)
-            path = parsed.path.strip('/')
+            path = parsed.path.strip("/")
 
             # Remove .git suffix if present
-            if path.endswith('.git'):
+            if path.endswith(".git"):
                 path = path[:-4]
 
-            parts = path.split('/')
+            parts = path.split("/")
             if len(parts) < 2:
                 raise ValueError("URL must contain owner and repository name")
 
@@ -117,15 +117,13 @@ class GitOperations:
                 repo = parts[1]
             else:
                 # GitLab: take last part as repo, everything else as owner
-                owner = '/'.join(parts[:-1])
+                owner = "/".join(parts[:-1])
                 repo = parts[-1]
 
             return owner, repo
 
         except Exception as e:
-            raise GitOperationError(
-                f"Failed to parse repository URL '{url}': {str(e)}"
-            )
+            raise GitOperationError(f"Failed to parse repository URL '{url}': {str(e)}")
 
     def _validate_branch_name(self, branch: str) -> None:
         """
@@ -164,22 +162,20 @@ class GitOperations:
         if parsed.port:
             netloc = f"{netloc}:{parsed.port}"
 
-        auth_url = urlunparse((
-            parsed.scheme,
-            netloc,
-            parsed.path if parsed.path.endswith('.git') else f"{parsed.path}.git",
-            parsed.params,
-            parsed.query,
-            parsed.fragment
-        ))
+        auth_url = urlunparse(
+            (
+                parsed.scheme,
+                netloc,
+                parsed.path if parsed.path.endswith(".git") else f"{parsed.path}.git",
+                parsed.params,
+                parsed.query,
+                parsed.fragment,
+            )
+        )
 
         return auth_url
 
-    def _run_git_command(
-        self,
-        repo_path: str,
-        *args
-    ) -> Tuple[str, str, int]:
+    def _run_git_command(self, repo_path: str, *args) -> Tuple[str, str, int]:
         """
         Execute git command safely using subprocess.
 
@@ -193,13 +189,14 @@ class GitOperations:
         Raises:
             GitOperationError: If command execution fails
         """
-        cmd = ['git', '-C', repo_path] + list(args)
+        cmd = ["git", "-C", repo_path] + list(args)
 
         # Log command (but not if it contains tokens)
         log_cmd = cmd.copy()
-        if any('http' in str(arg) for arg in cmd):
-            log_cmd = [arg if 'http' not in str(arg) else '[REDACTED_URL]'
-                      for arg in cmd]
+        if any("http" in str(arg) for arg in cmd):
+            log_cmd = [
+                arg if "http" not in str(arg) else "[REDACTED_URL]" for arg in cmd
+            ]
         logger.debug(f"Executing git command: {' '.join(log_cmd)}")
 
         try:
@@ -208,7 +205,7 @@ class GitOperations:
                 capture_output=True,
                 text=True,
                 timeout=300,  # 5 minute timeout for git operations
-                check=False
+                check=False,
             )
 
             if result.returncode != 0:
@@ -224,15 +221,10 @@ class GitOperations:
                 f"Git command timed out after 300 seconds: {' '.join(log_cmd)}"
             )
         except Exception as e:
-            raise GitOperationError(
-                f"Failed to execute git command: {str(e)}"
-            )
+            raise GitOperationError(f"Failed to execute git command: {str(e)}")
 
     def _github_request(
-        self,
-        method: str,
-        endpoint: str,
-        **kwargs
+        self, method: str, endpoint: str, **kwargs
     ) -> requests.Response:
         """
         Make authenticated request to GitHub API.
@@ -249,19 +241,17 @@ class GitOperations:
             GitOperationError: If request fails
         """
         url = f"{self.api_base}{endpoint}"
-        headers = kwargs.pop('headers', {})
-        headers.update({
-            'Authorization': f'token {self.api_token}',
-            'Accept': 'application/vnd.github.v3+json'
-        })
+        headers = kwargs.pop("headers", {})
+        headers.update(
+            {
+                "Authorization": f"token {self.api_token}",
+                "Accept": "application/vnd.github.v3+json",
+            }
+        )
 
         try:
             response = requests.request(
-                method,
-                url,
-                headers=headers,
-                timeout=self.API_TIMEOUT,
-                **kwargs
+                method, url, headers=headers, timeout=self.API_TIMEOUT, **kwargs
             )
             response.raise_for_status()
             return response
@@ -271,15 +261,10 @@ class GitOperations:
                 f"GitHub API request timed out after {self.API_TIMEOUT} seconds"
             )
         except requests.exceptions.RequestException as e:
-            raise GitOperationError(
-                f"GitHub API request failed: {str(e)}"
-            )
+            raise GitOperationError(f"GitHub API request failed: {str(e)}")
 
     def _gitlab_request(
-        self,
-        method: str,
-        endpoint: str,
-        **kwargs
+        self, method: str, endpoint: str, **kwargs
     ) -> requests.Response:
         """
         Make authenticated request to GitLab API.
@@ -296,18 +281,12 @@ class GitOperations:
             GitOperationError: If request fails
         """
         url = f"{self.api_base}{endpoint}"
-        headers = kwargs.pop('headers', {})
-        headers.update({
-            'PRIVATE-TOKEN': self.api_token
-        })
+        headers = kwargs.pop("headers", {})
+        headers.update({"PRIVATE-TOKEN": self.api_token})
 
         try:
             response = requests.request(
-                method,
-                url,
-                headers=headers,
-                timeout=self.API_TIMEOUT,
-                **kwargs
+                method, url, headers=headers, timeout=self.API_TIMEOUT, **kwargs
             )
             response.raise_for_status()
             return response
@@ -317,15 +296,9 @@ class GitOperations:
                 f"GitLab API request timed out after {self.API_TIMEOUT} seconds"
             )
         except requests.exceptions.RequestException as e:
-            raise GitOperationError(
-                f"GitLab API request failed: {str(e)}"
-            )
+            raise GitOperationError(f"GitLab API request failed: {str(e)}")
 
-    def clone_repo(
-        self,
-        target_path: str,
-        branch: Optional[str] = None
-    ) -> str:
+    def clone_repo(self, target_path: str, branch: Optional[str] = None) -> str:
         """
         Clone repository with authentication.
 
@@ -348,16 +321,14 @@ class GitOperations:
         # Clone with authentication
         auth_url = self._get_auth_url()
 
-        args = ['clone', auth_url, target_path]
+        args = ["clone", auth_url, target_path]
         if branch:
-            args.extend(['--branch', branch])
+            args.extend(["--branch", branch])
 
-        stdout, stderr, returncode = self._run_git_command('.', *args)
+        stdout, stderr, returncode = self._run_git_command(".", *args)
 
         if returncode != 0:
-            raise GitOperationError(
-                f"Failed to clone repository: {stderr}"
-            )
+            raise GitOperationError(f"Failed to clone repository: {stderr}")
 
         logger.info(f"Successfully cloned repository to {target_path}")
         return target_path
@@ -376,21 +347,15 @@ class GitOperations:
         self._validate_branch_name(branch)
 
         stdout, stderr, returncode = self._run_git_command(
-            repo_path, 'checkout', branch
+            repo_path, "checkout", branch
         )
 
         if returncode != 0:
-            raise GitOperationError(
-                f"Failed to checkout branch '{branch}': {stderr}"
-            )
+            raise GitOperationError(f"Failed to checkout branch '{branch}': {stderr}")
 
         logger.info(f"Checked out branch: {branch}")
 
-    def get_commit_sha(
-        self,
-        repo_path: str,
-        branch: str = "HEAD"
-    ) -> str:
+    def get_commit_sha(self, repo_path: str, branch: str = "HEAD") -> str:
         """
         Get commit SHA for specified branch or HEAD.
 
@@ -408,7 +373,7 @@ class GitOperations:
             self._validate_branch_name(branch)
 
         stdout, stderr, returncode = self._run_git_command(
-            repo_path, 'rev-parse', branch
+            repo_path, "rev-parse", branch
         )
 
         if returncode != 0:
@@ -425,7 +390,7 @@ class GitOperations:
         repo_path: str,
         source_branch: str,
         target_branch: str,
-        commit_message: str
+        commit_message: str,
     ) -> dict:
         """
         Perform local merge of source branch into target branch.
@@ -450,7 +415,7 @@ class GitOperations:
 
         # Perform merge
         stdout, stderr, returncode = self._run_git_command(
-            repo_path, 'merge', source_branch, '-m', commit_message
+            repo_path, "merge", source_branch, "-m", commit_message
         )
 
         if returncode != 0:
@@ -463,24 +428,18 @@ class GitOperations:
         merge_sha = self.get_commit_sha(repo_path, "HEAD")
 
         result = {
-            'source_branch': source_branch,
-            'target_branch': target_branch,
-            'merge_commit': merge_sha,
-            'message': commit_message
+            "source_branch": source_branch,
+            "target_branch": target_branch,
+            "merge_commit": merge_sha,
+            "message": commit_message,
         }
 
         logger.info(
-            f"Successfully merged {source_branch} into {target_branch}: "
-            f"{merge_sha}"
+            f"Successfully merged {source_branch} into {target_branch}: " f"{merge_sha}"
         )
         return result
 
-    def push_changes(
-        self,
-        repo_path: str,
-        branch: str,
-        force: bool = False
-    ) -> None:
+    def push_changes(self, repo_path: str, branch: str, force: bool = False) -> None:
         """
         Push changes to remote repository.
 
@@ -494,16 +453,14 @@ class GitOperations:
         """
         self._validate_branch_name(branch)
 
-        args = ['push', 'origin', branch]
+        args = ["push", "origin", branch]
         if force:
-            args.append('--force')
+            args.append("--force")
 
         stdout, stderr, returncode = self._run_git_command(repo_path, *args)
 
         if returncode != 0:
-            raise GitOperationError(
-                f"Failed to push branch '{branch}': {stderr}"
-            )
+            raise GitOperationError(f"Failed to push branch '{branch}': {stderr}")
 
         logger.info(f"Successfully pushed branch: {branch}")
 
@@ -524,12 +481,12 @@ class GitOperations:
 
         if self.provider == "github":
             endpoint = f"/repos/{self.repo_owner}/{self.repo_name}/branches/{branch}"
-            response = self._github_request('GET', endpoint)
+            response = self._github_request("GET", endpoint)
         else:
             # GitLab uses project ID (URL encoded namespace/repo)
             project_id = f"{self.repo_owner}%2F{self.repo_name}"
             endpoint = f"/projects/{project_id}/repository/branches/{branch}"
-            response = self._gitlab_request('GET', endpoint)
+            response = self._gitlab_request("GET", endpoint)
 
         return response.json()
 
@@ -548,20 +505,16 @@ class GitOperations:
         """
         if self.provider == "github":
             endpoint = f"/repos/{self.repo_owner}/{self.repo_name}/commits/{sha}"
-            response = self._github_request('GET', endpoint)
+            response = self._github_request("GET", endpoint)
         else:
             project_id = f"{self.repo_owner}%2F{self.repo_name}"
             endpoint = f"/projects/{project_id}/repository/commits/{sha}"
-            response = self._gitlab_request('GET', endpoint)
+            response = self._gitlab_request("GET", endpoint)
 
         return response.json()
 
     def create_pull_request(
-        self,
-        title: str,
-        source_branch: str,
-        target_branch: str,
-        body: str = ""
+        self, title: str, source_branch: str, target_branch: str, body: str = ""
     ) -> dict:
         """
         Create pull request (GitHub) or merge request (GitLab).
@@ -584,25 +537,25 @@ class GitOperations:
         if self.provider == "github":
             endpoint = f"/repos/{self.repo_owner}/{self.repo_name}/pulls"
             data = {
-                'title': title,
-                'head': source_branch,
-                'base': target_branch,
-                'body': body
+                "title": title,
+                "head": source_branch,
+                "base": target_branch,
+                "body": body,
             }
-            response = self._github_request('POST', endpoint, json=data)
+            response = self._github_request("POST", endpoint, json=data)
         else:
             project_id = f"{self.repo_owner}%2F{self.repo_name}"
             endpoint = f"/projects/{project_id}/merge_requests"
             data = {
-                'title': title,
-                'source_branch': source_branch,
-                'target_branch': target_branch,
-                'description': body
+                "title": title,
+                "source_branch": source_branch,
+                "target_branch": target_branch,
+                "description": body,
             }
-            response = self._gitlab_request('POST', endpoint, json=data)
+            response = self._gitlab_request("POST", endpoint, json=data)
 
         result = response.json()
-        pr_number = result.get('number') or result.get('iid')
+        pr_number = result.get("number") or result.get("iid")
         logger.info(
             f"Created {'pull request' if self.provider == 'github' else 'merge request'} "
             f"#{pr_number}: {title}"
@@ -624,19 +577,15 @@ class GitOperations:
         """
         if self.provider == "github":
             endpoint = f"/repos/{self.repo_owner}/{self.repo_name}/pulls/{pr_number}"
-            response = self._github_request('GET', endpoint)
+            response = self._github_request("GET", endpoint)
         else:
             project_id = f"{self.repo_owner}%2F{self.repo_name}"
             endpoint = f"/projects/{project_id}/merge_requests/{pr_number}"
-            response = self._gitlab_request('GET', endpoint)
+            response = self._gitlab_request("GET", endpoint)
 
         return response.json()
 
-    def merge_pull_request(
-        self,
-        pr_number: int,
-        merge_method: str = "merge"
-    ) -> dict:
+    def merge_pull_request(self, pr_number: int, merge_method: str = "merge") -> dict:
         """
         Merge pull request or merge request via API.
 
@@ -658,25 +607,27 @@ class GitOperations:
             )
 
         if self.provider == "github":
-            endpoint = f"/repos/{self.repo_owner}/{self.repo_name}/pulls/{pr_number}/merge"
-            data = {'merge_method': merge_method}
-            response = self._github_request('PUT', endpoint, json=data)
+            endpoint = (
+                f"/repos/{self.repo_owner}/{self.repo_name}/pulls/{pr_number}/merge"
+            )
+            data = {"merge_method": merge_method}
+            response = self._github_request("PUT", endpoint, json=data)
         else:
             project_id = f"{self.repo_owner}%2F{self.repo_name}"
             endpoint = f"/projects/{project_id}/merge_requests/{pr_number}/merge"
             # GitLab uses different parameter names
             gitlab_method_map = {
-                'merge': 'merge',
-                'squash': 'merge',  # Squash is a parameter, not method
-                'rebase': 'rebase_merge'
+                "merge": "merge",
+                "squash": "merge",  # Squash is a parameter, not method
+                "rebase": "rebase_merge",
             }
             data = {}
-            if merge_method == 'squash':
-                data['squash'] = True
+            if merge_method == "squash":
+                data["squash"] = True
             else:
-                data['merge_when_pipeline_succeeds'] = False
+                data["merge_when_pipeline_succeeds"] = False
 
-            response = self._gitlab_request('PUT', endpoint, json=data)
+            response = self._gitlab_request("PUT", endpoint, json=data)
 
         result = response.json()
         logger.info(

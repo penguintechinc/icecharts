@@ -48,17 +48,21 @@ class TestGcpCloudRunAuthentication:
         self, mock_oidc_class, gcp_cloudrun_node, node_context
     ):
         """Test authentication with service account JSON string."""
-        service_account_json = json.dumps({
-            "type": "service_account",
-            "project_id": "test-project",
-            "private_key": "-----BEGIN RSA PRIVATE KEY-----\ntest\n-----END RSA PRIVATE KEY-----",
-        })
+        service_account_json = json.dumps(
+            {
+                "type": "service_account",
+                "project_id": "test-project",
+                "private_key": "-----BEGIN RSA PRIVATE KEY-----\ntest\n-----END RSA PRIVATE KEY-----",
+            }
+        )
 
         config_map = {
             "service_account_json": service_account_json,
             "service_url": "https://test-service-abc123-us-central1.a.run.app",
         }
-        node_context.get_config_value.side_effect = lambda key, default=None: config_map.get(key, default)
+        node_context.get_config_value.side_effect = (
+            lambda key, default=None: config_map.get(key, default)
+        )
 
         mock_oidc_instance = MockOIDCClient()
         mock_oidc_class.create_from_json_string.return_value = mock_oidc_instance
@@ -77,7 +81,9 @@ class TestGcpCloudRunAuthentication:
             "service_account_json": "/path/to/service-account.json",
             "service_url": "https://test-service-abc123-us-central1.a.run.app",
         }
-        node_context.get_config_value.side_effect = lambda key, default=None: config_map.get(key, default)
+        node_context.get_config_value.side_effect = (
+            lambda key, default=None: config_map.get(key, default)
+        )
 
         mock_oidc_instance = MockOIDCClient()
         mock_oidc_class.return_value = mock_oidc_instance
@@ -101,7 +107,9 @@ class TestGcpCloudRunAuthentication:
             "service_account_json": service_account_dict,
             "service_url": "https://test-service-abc123-us-central1.a.run.app",
         }
-        node_context.get_config_value.side_effect = lambda key, default=None: config_map.get(key, default)
+        node_context.get_config_value.side_effect = (
+            lambda key, default=None: config_map.get(key, default)
+        )
 
         mock_oidc_instance = MockOIDCClient()
         mock_oidc_class.create_from_json_string.return_value = mock_oidc_instance
@@ -118,20 +126,22 @@ class TestGcpCloudRunAuthentication:
             "service_account_json": None,
             "service_url": "https://test-service.run.app",
         }
-        node_context.get_config_value.side_effect = lambda key, default=None: config_map.get(key, default)
+        node_context.get_config_value.side_effect = (
+            lambda key, default=None: config_map.get(key, default)
+        )
 
         with pytest.raises(ValueError, match="service_account_json"):
             asyncio.run(gcp_cloudrun_node._authenticate(node_context))
 
-    def test_authenticate_missing_service_url(
-        self, gcp_cloudrun_node, node_context
-    ):
+    def test_authenticate_missing_service_url(self, gcp_cloudrun_node, node_context):
         """Test authentication fails without service URL."""
         config_map = {
             "service_account_json": '{"type":"service_account"}',
             "service_url": None,
         }
-        node_context.get_config_value.side_effect = lambda key, default=None: config_map.get(key, default)
+        node_context.get_config_value.side_effect = (
+            lambda key, default=None: config_map.get(key, default)
+        )
 
         with pytest.raises(ValueError, match="service_url"):
             asyncio.run(gcp_cloudrun_node._authenticate(node_context))

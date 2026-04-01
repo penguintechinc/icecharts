@@ -5,9 +5,13 @@ import sys
 import pytest
 from unittest.mock import MagicMock, patch
 
-sys.path.insert(0, os.path.join(
-    os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))), 'app'
-))
+sys.path.insert(
+    0,
+    os.path.join(
+        os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))),
+        "app",
+    ),
+)
 
 
 @pytest.fixture
@@ -15,6 +19,7 @@ def go_runtime():
     """Create GoRuntime with mocked docker client."""
     with patch("app.action_runtime.docker.from_env"):
         from app.runtimes.go_runtime import GoRuntime
+
         rt = GoRuntime.__new__(GoRuntime)
         rt.docker_client = MagicMock()
         return rt

@@ -218,9 +218,11 @@ class TestHandleDisconnect:
 
             with patch("app.websocket.handlers.request") as mock_request:
                 mock_request.sid = "session-123"
-                delattr(mock_request, "sid_user_data") if hasattr(
-                    mock_request, "sid_user_data"
-                ) else None
+                (
+                    delattr(mock_request, "sid_user_data")
+                    if hasattr(mock_request, "sid_user_data")
+                    else None
+                )
 
                 # Should not raise any exception
                 handle_disconnect()
@@ -246,9 +248,7 @@ class TestHandleJoinRoom:
 
             with patch("app.websocket.handlers.request") as mock_request:
                 with patch("app.websocket.handlers.emit") as mock_emit:
-                    with patch(
-                        "app.websocket.handlers.join_room"
-                    ) as mock_join:
+                    with patch("app.websocket.handlers.join_room") as mock_join:
                         with patch(
                             "app.websocket.handlers.manager",
                             mock_collaboration_manager,
@@ -283,8 +283,7 @@ class TestHandleJoinRoom:
 
                     # Verify error was emitted
                     assert any(
-                        call[0][0] == "error"
-                        for call in mock_emit.call_args_list
+                        call[0][0] == "error" for call in mock_emit.call_args_list
                     )
 
     def test_join_room_not_authenticated_returns_error(self, app):
@@ -301,22 +300,17 @@ class TestHandleJoinRoom:
 
                     # Verify error was emitted
                     assert any(
-                        call[0][0] == "error"
-                        for call in mock_emit.call_args_list
+                        call[0][0] == "error" for call in mock_emit.call_args_list
                     )
 
-    def test_join_room_broadcasts_presence(
-        self, app, mock_collaboration_manager
-    ):
+    def test_join_room_broadcasts_presence(self, app, mock_collaboration_manager):
         """Test join_room broadcasts presence update to room."""
         with app.app_context():
             from app.websocket.handlers import handle_join_room
 
             with patch("app.websocket.handlers.request") as mock_request:
                 with patch("app.websocket.handlers.emit") as mock_emit:
-                    with patch(
-                        "app.websocket.handlers.join_room"
-                    ):
+                    with patch("app.websocket.handlers.join_room"):
                         with patch(
                             "app.websocket.handlers.manager",
                             mock_collaboration_manager,
@@ -349,18 +343,14 @@ class TestHandleLeaveRoom:
         manager.get_room_users.return_value = []
         return manager
 
-    def test_leave_room_valid_room_leaves(
-        self, app, mock_collaboration_manager
-    ):
+    def test_leave_room_valid_room_leaves(self, app, mock_collaboration_manager):
         """Test leave_room with valid room_id leaves successfully."""
         with app.app_context():
             from app.websocket.handlers import handle_leave_room
 
             with patch("app.websocket.handlers.request") as mock_request:
                 with patch("app.websocket.handlers.emit") as mock_emit:
-                    with patch(
-                        "app.websocket.handlers.leave_room"
-                    ) as mock_leave:
+                    with patch("app.websocket.handlers.leave_room") as mock_leave:
                         with patch(
                             "app.websocket.handlers.manager",
                             mock_collaboration_manager,
@@ -397,9 +387,7 @@ class TestHandleCursorMove:
         manager = MagicMock()
         return manager
 
-    def test_cursor_move_broadcasts_to_room(
-        self, app, mock_collaboration_manager
-    ):
+    def test_cursor_move_broadcasts_to_room(self, app, mock_collaboration_manager):
         """Test cursor_move broadcasts position to room."""
         with app.app_context():
             from app.websocket.handlers import handle_cursor_move
@@ -508,17 +496,13 @@ class TestHandleShapeLock:
                             for call in mock_emit.call_args_list
                         )
 
-    def test_lock_shape_already_locked(
-        self, app, mock_collaboration_manager
-    ):
+    def test_lock_shape_already_locked(self, app, mock_collaboration_manager):
         """Test lock_shape when shape is already locked."""
         with app.app_context():
             from app.websocket.handlers import handle_shape_lock
 
             mock_collaboration_manager.lock_shape.return_value = False
-            mock_collaboration_manager.get_shape_lock.return_value = {
-                "user_id": 2
-            }
+            mock_collaboration_manager.get_shape_lock.return_value = {"user_id": 2}
 
             with patch("app.websocket.handlers.request") as mock_request:
                 with patch("app.websocket.handlers.emit") as mock_emit:
@@ -556,8 +540,7 @@ class TestHandleShapeLock:
 
                     # Verify error was emitted
                     assert any(
-                        call[0][0] == "error"
-                        for call in mock_emit.call_args_list
+                        call[0][0] == "error" for call in mock_emit.call_args_list
                     )
 
     def test_lock_shape_no_shape_id_returns_error(self, app):
@@ -574,8 +557,7 @@ class TestHandleShapeLock:
 
                     # Verify error was emitted
                     assert any(
-                        call[0][0] == "error"
-                        for call in mock_emit.call_args_list
+                        call[0][0] == "error" for call in mock_emit.call_args_list
                     )
 
 
@@ -671,9 +653,7 @@ class TestHandleShapeUpdate:
         manager.get_shape_lock.return_value = {"session_id": "session-123"}
         return manager
 
-    def test_shape_update_with_lock_broadcasts(
-        self, app, mock_collaboration_manager
-    ):
+    def test_shape_update_with_lock_broadcasts(self, app, mock_collaboration_manager):
         """Test shape_update with valid lock broadcasts update."""
         with app.app_context():
             from app.websocket.handlers import handle_shape_update
@@ -729,8 +709,7 @@ class TestHandleShapeUpdate:
 
                         # Verify error was emitted
                         assert any(
-                            call[0][0] == "error"
-                            for call in mock_emit.call_args_list
+                            call[0][0] == "error" for call in mock_emit.call_args_list
                         )
 
     def test_shape_update_missing_room_id_returns_gracefully(self, app):
@@ -767,9 +746,7 @@ class TestHandleRequestPresence:
         ]
         return manager
 
-    def test_request_presence_returns_users(
-        self, app, mock_collaboration_manager
-    ):
+    def test_request_presence_returns_users(self, app, mock_collaboration_manager):
         """Test request_presence returns current room users."""
         with app.app_context():
             from app.websocket.handlers import handle_request_presence

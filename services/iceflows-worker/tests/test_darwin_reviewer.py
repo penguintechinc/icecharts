@@ -65,9 +65,13 @@ class TestDarwinReviewerInit:
     def test_timeout_must_be_positive(self):
         """Non-positive timeout raises ValueError."""
         with pytest.raises(ValueError, match="timeout_seconds must be positive"):
-            DarwinReviewer(api_url="http://darwin:8080", api_key="key", timeout_seconds=0)
+            DarwinReviewer(
+                api_url="http://darwin:8080", api_key="key", timeout_seconds=0
+            )
         with pytest.raises(ValueError, match="timeout_seconds must be positive"):
-            DarwinReviewer(api_url="http://darwin:8080", api_key="key", timeout_seconds=-5)
+            DarwinReviewer(
+                api_url="http://darwin:8080", api_key="key", timeout_seconds=-5
+            )
 
     def test_trailing_slash_stripped(self):
         """Trailing slash stripped from api_url."""
@@ -106,13 +110,18 @@ class TestSubmitReview:
 
     def test_submit_review_timeout_raises(self, reviewer):
         """Timeout raises DarwinReviewerTimeoutError."""
-        with patch("requests.request", side_effect=req_module.exceptions.Timeout("timed out")):
+        with patch(
+            "requests.request", side_effect=req_module.exceptions.Timeout("timed out")
+        ):
             with pytest.raises(DarwinReviewerTimeoutError):
                 reviewer.submit_review("diff", {})
 
     def test_submit_review_connection_error_raises(self, reviewer):
         """ConnectionError raises DarwinReviewerConnectionError."""
-        with patch("requests.request", side_effect=req_module.exceptions.ConnectionError("conn refused")):
+        with patch(
+            "requests.request",
+            side_effect=req_module.exceptions.ConnectionError("conn refused"),
+        ):
             with pytest.raises(DarwinReviewerConnectionError):
                 reviewer.submit_review("diff", {})
 
@@ -194,7 +203,9 @@ class TestWaitForReview:
 
         with patch("requests.request", side_effect=side_effect):
             with patch("time.sleep"):
-                result = reviewer.wait_for_review("rev-123", timeout=60, poll_interval=1)
+                result = reviewer.wait_for_review(
+                    "rev-123", timeout=60, poll_interval=1
+                )
         assert isinstance(result, ReviewResult)
         assert result.status == "completed"
 

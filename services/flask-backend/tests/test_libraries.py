@@ -1,4 +1,5 @@
 """Tests for Shape Libraries API endpoints."""
+
 import pytest
 
 
@@ -34,15 +35,11 @@ class TestListLibraries:
 
 class TestCreateLibrary:
     def test_create_requires_auth(self, client):
-        response = client.post(
-            "/api/v1/libraries", json={"name": "My Library"}
-        )
+        response = client.post("/api/v1/libraries", json={"name": "My Library"})
         assert response.status_code == 401
 
     def test_create_missing_name_returns_400(self, client, auth_headers):
-        response = client.post(
-            "/api/v1/libraries", json={}, headers=auth_headers
-        )
+        response = client.post("/api/v1/libraries", json={}, headers=auth_headers)
         assert response.status_code == 400
 
     def test_create_with_valid_data(self, client, auth_headers):
@@ -80,6 +77,7 @@ class TestGetLibrary:
     def test_get_existing_library(self, client, auth_headers, app):
         with app.app_context():
             from app.models import get_db
+
             db = get_db()
             lib_id = db.shape_libraries.insert(
                 name="Test Lib for Get",
@@ -97,9 +95,7 @@ class TestGetLibrary:
 
 class TestUpdateLibrary:
     def test_update_requires_auth(self, client):
-        response = client.put(
-            "/api/v1/libraries/1", json={"name": "Updated"}
-        )
+        response = client.put("/api/v1/libraries/1", json={"name": "Updated"})
         assert response.status_code == 401
 
     def test_update_nonexistent_returns_404(self, client, auth_headers):
@@ -113,6 +109,7 @@ class TestUpdateLibrary:
     def test_update_missing_body_returns_400(self, client, auth_headers, app):
         with app.app_context():
             from app.models import get_db
+
             db = get_db()
             lib_id = db.shape_libraries.insert(
                 name="Test Lib for Update",
@@ -142,6 +139,7 @@ class TestDeleteLibrary:
     def test_delete_existing_library(self, client, auth_headers, app):
         with app.app_context():
             from app.models import get_db
+
             db = get_db()
             lib_id = db.shape_libraries.insert(
                 name="Library to Delete",
@@ -160,14 +158,13 @@ class TestListShapes:
         assert response.status_code == 401
 
     def test_list_shapes_nonexistent_library_returns_404(self, client, auth_headers):
-        response = client.get(
-            "/api/v1/libraries/999999/shapes", headers=auth_headers
-        )
+        response = client.get("/api/v1/libraries/999999/shapes", headers=auth_headers)
         assert response.status_code == 404
 
     def test_list_shapes_existing_library(self, client, auth_headers, app):
         with app.app_context():
             from app.models import get_db
+
             db = get_db()
             lib_id = db.shape_libraries.insert(
                 name="Library for Shape List",
@@ -176,7 +173,9 @@ class TestListShapes:
             )
             db.commit()
 
-        response = client.get(f"/api/v1/libraries/{lib_id}/shapes", headers=auth_headers)
+        response = client.get(
+            f"/api/v1/libraries/{lib_id}/shapes", headers=auth_headers
+        )
         assert response.status_code == 200
         data = response.get_json()
         assert "shapes" in data
@@ -201,6 +200,7 @@ class TestAddShape:
     def test_add_shape_missing_name_returns_400(self, client, auth_headers, app):
         with app.app_context():
             from app.models import get_db
+
             db = get_db()
             lib_id = db.shape_libraries.insert(
                 name="Library for Add Shape",
@@ -219,6 +219,7 @@ class TestAddShape:
     def test_add_shape_with_valid_data(self, client, auth_headers, app):
         with app.app_context():
             from app.models import get_db
+
             db = get_db()
             lib_id = db.shape_libraries.insert(
                 name="Library for Valid Add Shape",
@@ -246,17 +247,13 @@ class TestGetShape:
         assert response.status_code == 401
 
     def test_get_shape_nonexistent_library_returns_404(self, client, auth_headers):
-        response = client.get(
-            "/api/v1/libraries/999999/shapes/1", headers=auth_headers
-        )
+        response = client.get("/api/v1/libraries/999999/shapes/1", headers=auth_headers)
         assert response.status_code == 404
 
 
 class TestUpdateShape:
     def test_update_shape_requires_auth(self, client):
-        response = client.put(
-            "/api/v1/libraries/1/shapes/1", json={"name": "Updated"}
-        )
+        response = client.put("/api/v1/libraries/1/shapes/1", json={"name": "Updated"})
         assert response.status_code == 401
 
     def test_update_shape_nonexistent_library_returns_404(self, client, auth_headers):
@@ -294,6 +291,7 @@ class TestDuplicateLibrary:
     def test_duplicate_existing_library(self, client, auth_headers, app):
         with app.app_context():
             from app.models import get_db
+
             db = get_db()
             lib_id = db.shape_libraries.insert(
                 name="Library to Duplicate",

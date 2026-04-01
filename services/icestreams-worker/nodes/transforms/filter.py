@@ -166,9 +166,7 @@ class FilterTransform(BaseNode):
         except Exception:
             return False
 
-    def _matches(
-        self, data: Dict, conditions: List[Dict], logic: str
-    ) -> bool:
+    def _matches(self, data: Dict, conditions: List[Dict], logic: str) -> bool:
         """
         Check if data matches all or any conditions based on logic.
 
@@ -190,9 +188,7 @@ class FilterTransform(BaseNode):
         else:  # or
             return any(results)
 
-    async def execute(
-        self, context: NodeContext, inputs: Dict[str, Any]
-    ) -> NodeResult:
+    async def execute(self, context: NodeContext, inputs: Dict[str, Any]) -> NodeResult:
         """
         Execute the filter transform.
 

@@ -13,7 +13,6 @@ import pytest
 import jwt
 from datetime import datetime, timedelta
 
-
 REVOCATION_STUBBED = pytest.mark.xfail(
     reason="revoke_refresh_token() currently stubbed — refresh_tokens table not yet implemented"
 )
@@ -105,9 +104,7 @@ class TestRevocationEnforcement:
         assert refresh_response.status_code == 401
 
     @REVOCATION_STUBBED
-    def test_revoke_all_user_tokens_invalidates_all(
-        self, app, client, test_user
-    ):
+    def test_revoke_all_user_tokens_invalidates_all(self, app, client, test_user):
         """revoke_all_user_tokens() must invalidate all tokens for the user."""
         with app.app_context():
             from app.models import (
@@ -156,9 +153,7 @@ class TestStatelessAccessTokens:
         assert response.status_code == 200
 
     @REVOCATION_STUBBED
-    def test_per_token_revocation_leaves_others_valid(
-        self, app, client, test_user
-    ):
+    def test_per_token_revocation_leaves_others_valid(self, app, client, test_user):
         """Revoking one refresh token must not invalidate other tokens for the same user."""
         with app.app_context():
             from app.models import is_refresh_token_valid, revoke_refresh_token

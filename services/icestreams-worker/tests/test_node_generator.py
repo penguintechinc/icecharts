@@ -68,12 +68,8 @@ def _make_action(action_id: str = "send_message") -> ActionDefinition:
         description="Sends a message",
         endpoint="/api/send",
         method="POST",
-        inputs=(
-            PortDefinition(name="in", type="any", description="Input data"),
-        ),
-        outputs=(
-            PortDefinition(name="out", type="object", description="Result"),
-        ),
+        inputs=(PortDefinition(name="in", type="any", description="Input data"),),
+        outputs=(PortDefinition(name="out", type="object", description="Result"),),
         config_schema=(),
     )
 
@@ -86,12 +82,8 @@ def _make_transform(transform_id: str = "get_data") -> TransformDefinition:
         description="Fetches data",
         endpoint="/api/data",
         method="GET",
-        inputs=(
-            PortDefinition(name="in", type="any", description="Input"),
-        ),
-        outputs=(
-            PortDefinition(name="out", type="object", description="Data"),
-        ),
+        inputs=(PortDefinition(name="in", type="any", description="Input"),),
+        outputs=(PortDefinition(name="out", type="object", description="Data"),),
         config_schema=(),
     )
 
@@ -372,7 +364,9 @@ class TestGenerateNodesFromConnector:
                     id="fire",
                     name="Fire",
                     description="Fires",
-                    outputs=(PortDefinition(name="out", type="any", description="Output"),),
+                    outputs=(
+                        PortDefinition(name="out", type="any", description="Output"),
+                    ),
                     config_schema=(),
                 ),
             ),

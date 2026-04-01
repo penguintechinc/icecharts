@@ -24,7 +24,7 @@ from ....executor.node_registry import register_node
     node_type="openwhisk_action",
     category="cloud",
     display_name="OpenWhisk Action",
-    description="Invoke Apache OpenWhisk action with payload"
+    description="Invoke Apache OpenWhisk action with payload",
 )
 class OpenWhiskAction(BaseCloudFunction):
     """
@@ -176,6 +176,7 @@ class OpenWhiskAction(BaseCloudFunction):
         elif auth_key:
             # Basic authentication (UUID:KEY format)
             import base64
+
             encoded = base64.b64encode(auth_key.encode("utf-8")).decode("utf-8")
             headers["Authorization"] = f"Basic {encoded}"
         else:
@@ -224,11 +225,17 @@ class OpenWhiskAction(BaseCloudFunction):
                             namespace,
                             activation_id,
                             headers,
-                            function_config.get("poll_timeout", self.DEFAULT_POLL_TIMEOUT),
-                            function_config.get("poll_interval", self.DEFAULT_POLL_INTERVAL),
+                            function_config.get(
+                                "poll_timeout", self.DEFAULT_POLL_TIMEOUT
+                            ),
+                            function_config.get(
+                                "poll_interval", self.DEFAULT_POLL_INTERVAL
+                            ),
                         )
 
-                context.log_info(f"OpenWhisk action '{action_name}' completed successfully")
+                context.log_info(
+                    f"OpenWhisk action '{action_name}' completed successfully"
+                )
                 return result
 
     async def _poll_activation(
@@ -274,7 +281,9 @@ class OpenWhiskAction(BaseCloudFunction):
                         # Check if activation is complete
                         if activation.get("end"):
                             result = activation.get("response", {}).get("result", {})
-                            success = activation.get("response", {}).get("success", False)
+                            success = activation.get("response", {}).get(
+                                "success", False
+                            )
 
                             if not success:
                                 error = activation.get("response", {}).get("error")
@@ -293,11 +302,7 @@ class OpenWhiskAction(BaseCloudFunction):
             f"Activation {activation_id} did not complete within {timeout}s"
         )
 
-    async def execute(
-        self,
-        context: NodeContext,
-        inputs: Dict[str, Any]
-    ) -> NodeResult:
+    async def execute(self, context: NodeContext, inputs: Dict[str, Any]) -> NodeResult:
         """
         Execute OpenWhisk action invocation.
 
@@ -309,6 +314,7 @@ class OpenWhiskAction(BaseCloudFunction):
             NodeResult with action response or error.
         """
         import time
+
         start_time = time.time()
 
         try:
@@ -363,7 +369,9 @@ class OpenWhiskAction(BaseCloudFunction):
             standardized = self._standardize_response(response, success=True)
 
             execution_time_ms = (time.time() - start_time) * 1000
-            context.log_info(f"OpenWhisk invocation completed in {execution_time_ms:.2f}ms")
+            context.log_info(
+                f"OpenWhisk invocation completed in {execution_time_ms:.2f}ms"
+            )
 
             return NodeResult.success_result(
                 outputs={"result": standardized},

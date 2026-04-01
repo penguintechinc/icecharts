@@ -46,13 +46,9 @@ class IceFlowsWorker:
             worker_id: Unique identifier for this worker instance
             concurrency: Number of concurrent tasks to process
         """
-        self.redis_url = redis_url or os.getenv(
-            "REDIS_URL", "redis://localhost:6379/0"
-        )
+        self.redis_url = redis_url or os.getenv("REDIS_URL", "redis://localhost:6379/0")
         self.worker_id = worker_id or os.getenv("WORKER_ID", "iceflows-worker-1")
-        self.concurrency = concurrency or int(
-            os.getenv("WORKER_CONCURRENCY", "1")
-        )
+        self.concurrency = concurrency or int(os.getenv("WORKER_CONCURRENCY", "1"))
 
         self.redis_client: Optional[aioredis.Redis] = None
         self.running = False
@@ -100,9 +96,7 @@ class IceFlowsWorker:
             )
         except redis.ResponseError as e:
             if "BUSYGROUP" in str(e):
-                logger.info(
-                    f"Consumer group '{self.CONSUMER_GROUP}' already exists"
-                )
+                logger.info(f"Consumer group '{self.CONSUMER_GROUP}' already exists")
             else:
                 raise
 
@@ -147,9 +141,7 @@ class IceFlowsWorker:
             return True
 
         except Exception as e:
-            logger.error(
-                f"Error processing message {message_id}: {e}", exc_info=True
-            )
+            logger.error(f"Error processing message {message_id}: {e}", exc_info=True)
             return False
 
     async def _handle_pipeline_execute(
@@ -180,9 +172,7 @@ class IceFlowsWorker:
         await asyncio.sleep(0.1)
         logger.info(f"Pipeline execution completed for promotion_id={promotion_id}")
 
-    async def _handle_run_tests(
-        self, message_id: str, payload: Dict[str, Any]
-    ) -> None:
+    async def _handle_run_tests(self, message_id: str, payload: Dict[str, Any]) -> None:
         """
         Handle test execution task.
 
@@ -205,9 +195,7 @@ class IceFlowsWorker:
         await asyncio.sleep(0.15)
         logger.info(f"Test execution completed for stage_id={stage_id}")
 
-    async def _handle_run_merge(
-        self, message_id: str, payload: Dict[str, Any]
-    ) -> None:
+    async def _handle_run_merge(self, message_id: str, payload: Dict[str, Any]) -> None:
         """
         Handle git merge task.
 
@@ -233,9 +221,7 @@ class IceFlowsWorker:
         await asyncio.sleep(0.1)
         logger.info(f"Git merge completed successfully")
 
-    async def _handle_run_calls(
-        self, message_id: str, payload: Dict[str, Any]
-    ) -> None:
+    async def _handle_run_calls(self, message_id: str, payload: Dict[str, Any]) -> None:
         """
         Handle external service call task.
 

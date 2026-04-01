@@ -397,7 +397,9 @@ class TestRunTestsParallel:
         ]
 
         # Mock asyncio.run to raise RuntimeError
-        with patch("test_runner.asyncio.run", side_effect=RuntimeError("Event loop running")):
+        with patch(
+            "test_runner.asyncio.run", side_effect=RuntimeError("Event loop running")
+        ):
             results = runner.run_tests_parallel(test_configs)
 
         assert len(results) == 1

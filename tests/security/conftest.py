@@ -1,4 +1,5 @@
 """Security test fixtures."""
+
 import os
 import sys
 import pytest

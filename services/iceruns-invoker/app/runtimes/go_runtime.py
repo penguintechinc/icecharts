@@ -25,4 +25,4 @@ class GoRuntime(BaseRuntime):
         """
         # Go runtime expects pre-compiled binary
         # Handler is the function to call in main package
-        return ['./main']
+        return ["./main"]

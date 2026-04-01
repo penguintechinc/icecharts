@@ -1,4 +1,5 @@
 """Tests for IceRuns Webhook/Hook API endpoints."""
+
 import pytest
 
 NONEXISTENT_FUNCTION_ID = "nonexistent-function-id-abc123"
@@ -30,9 +31,7 @@ class TestIceRunsWebhookConfig:
     """Test authenticated webhook configuration endpoints."""
 
     def test_get_webhook_config_requires_auth(self, client):
-        response = client.get(
-            f"/api/v1/iceruns/{NONEXISTENT_FUNCTION_ID}/webhook"
-        )
+        response = client.get(f"/api/v1/iceruns/{NONEXISTENT_FUNCTION_ID}/webhook")
         assert response.status_code == 401
 
     def test_get_webhook_config_nonexistent_returns_404(self, client, auth_headers):

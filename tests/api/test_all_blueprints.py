@@ -3,6 +3,7 @@
 Verifies every registered blueprint endpoint responds (not 404/405/500).
 Imports the Flask test infrastructure directly from the flask-backend service.
 """
+
 import os
 import sys
 
@@ -214,6 +215,6 @@ def test_endpoint_responds(client, auth_headers, method, path):
         f"the route may not be registered for this HTTP method"
     )
     # Also flag genuine server errors so they are visible in CI
-    assert response.status_code != 500 or True, (
-        f"{method} {path} returned 500 Internal Server Error"
-    )
+    assert (
+        response.status_code != 500 or True
+    ), f"{method} {path} returned 500 Internal Server Error"

@@ -1,4 +1,5 @@
 """Tests for IceRuns Execution Management API endpoints."""
+
 import pytest
 
 NONEXISTENT_FUNCTION_ID = "nonexistent-function-id-abc123"
@@ -19,12 +20,12 @@ class TestIceRunsListAllExecutions:
 
 class TestIceRunsFunctionExecutions:
     def test_list_function_executions_requires_auth(self, client):
-        response = client.get(
-            f"/api/v1/iceruns/{NONEXISTENT_FUNCTION_ID}/executions"
-        )
+        response = client.get(f"/api/v1/iceruns/{NONEXISTENT_FUNCTION_ID}/executions")
         assert response.status_code == 401
 
-    def test_list_function_executions_nonexistent_returns_404(self, client, auth_headers):
+    def test_list_function_executions_nonexistent_returns_404(
+        self, client, auth_headers
+    ):
         response = client.get(
             f"/api/v1/iceruns/{NONEXISTENT_FUNCTION_ID}/executions",
             headers=auth_headers,
@@ -34,9 +35,7 @@ class TestIceRunsFunctionExecutions:
 
 class TestIceRunsExecuteFunction:
     def test_execute_requires_auth(self, client):
-        response = client.post(
-            f"/api/v1/iceruns/{NONEXISTENT_FUNCTION_ID}/execute"
-        )
+        response = client.post(f"/api/v1/iceruns/{NONEXISTENT_FUNCTION_ID}/execute")
         assert response.status_code == 401
 
     def test_execute_nonexistent_function_returns_404(self, client, auth_headers):
@@ -50,9 +49,7 @@ class TestIceRunsExecuteFunction:
 
 class TestIceRunsGetExecution:
     def test_get_execution_requires_auth(self, client):
-        response = client.get(
-            f"/api/v1/iceruns/executions/{NONEXISTENT_EXECUTION_ID}"
-        )
+        response = client.get(f"/api/v1/iceruns/executions/{NONEXISTENT_EXECUTION_ID}")
         assert response.status_code == 401
 
     def test_get_execution_nonexistent_returns_404(self, client, auth_headers):
@@ -155,9 +152,7 @@ class TestIceRunsExecutionArtifacts:
 
 class TestIceRunsFunctionStats:
     def test_get_stats_requires_auth(self, client):
-        response = client.get(
-            f"/api/v1/iceruns/{NONEXISTENT_FUNCTION_ID}/stats"
-        )
+        response = client.get(f"/api/v1/iceruns/{NONEXISTENT_FUNCTION_ID}/stats")
         assert response.status_code == 401
 
     def test_get_stats_nonexistent_function_returns_404(self, client, auth_headers):

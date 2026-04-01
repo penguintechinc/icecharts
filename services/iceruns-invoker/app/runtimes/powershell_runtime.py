@@ -25,4 +25,4 @@ class PowerShellRuntime(BaseRuntime):
         """
         # PowerShell receives input via ICERUN_INPUT environment variable
         # Output should be printed with __ICERUN_OUTPUT__: prefix
-        return ['pwsh', '-File', handler]
+        return ["pwsh", "-File", handler]

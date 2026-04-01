@@ -15,6 +15,7 @@ logger = logging.getLogger(__name__)
 @dataclass(slots=True)
 class LLMConfig:
     """Configuration for LLM provider."""
+
     provider: str  # "anthropic", "openai", "waddle"
     model: str
     api_key: str
@@ -35,8 +36,18 @@ class AskAiTransform(BaseNode):
     @classmethod
     def inputs(cls) -> List[NodeInput]:
         return [
-            NodeInput(name="in", description="Input data to send to AI", required=True, data_type="any"),
-            NodeInput(name="context", description="Additional context (optional)", required=False, data_type="string"),
+            NodeInput(
+                name="in",
+                description="Input data to send to AI",
+                required=True,
+                data_type="any",
+            ),
+            NodeInput(
+                name="context",
+                description="Additional context (optional)",
+                required=False,
+                data_type="string",
+            ),
         ]
 
     @classmethod
@@ -44,7 +55,9 @@ class AskAiTransform(BaseNode):
         return [
             NodeOutput(name="out", description="AI response", data_type="any"),
             NodeOutput(name="raw", description="Raw response text", data_type="string"),
-            NodeOutput(name="usage", description="Token usage statistics", data_type="object"),
+            NodeOutput(
+                name="usage", description="Token usage statistics", data_type="object"
+            ),
         ]
 
     @classmethod
@@ -62,14 +75,20 @@ class AskAiTransform(BaseNode):
 
         output_format = config.get("outputFormat", "text")
         if output_format not in ("text", "json"):
-            errors.append(f"Invalid outputFormat: {output_format}. Must be 'text' or 'json'")
+            errors.append(
+                f"Invalid outputFormat: {output_format}. Must be 'text' or 'json'"
+            )
 
         max_tokens = config.get("maxTokens", 4096)
         if not isinstance(max_tokens, int) or max_tokens < 1 or max_tokens > 100000:
             errors.append("maxTokens must be an integer between 1 and 100000")
 
         temperature = config.get("temperature", 0.7)
-        if not isinstance(temperature, (int, float)) or temperature < 0 or temperature > 2:
+        if (
+            not isinstance(temperature, (int, float))
+            or temperature < 0
+            or temperature > 2
+        ):
             errors.append("temperature must be a number between 0 and 2")
 
         return errors
@@ -118,7 +137,9 @@ class AskAiTransform(BaseNode):
             temperature=config.get("temperature", 0.7),
         )
 
-    def _build_prompt(self, template: str, input_data: Any, extra_context: str = "") -> str:
+    def _build_prompt(
+        self, template: str, input_data: Any, extra_context: str = ""
+    ) -> str:
         """Build the final prompt from template and data."""
         # Convert input data to string representation
         if isinstance(input_data, (dict, list)):
@@ -137,7 +158,9 @@ class AskAiTransform(BaseNode):
 
         return prompt
 
-    async def _call_anthropic(self, llm_config: LLMConfig, prompt: str, system: str = "") -> Dict[str, Any]:
+    async def _call_anthropic(
+        self, llm_config: LLMConfig, prompt: str, system: str = ""
+    ) -> Dict[str, Any]:
         """Call Anthropic Claude API."""
         import httpx
 
@@ -175,7 +198,9 @@ class AskAiTransform(BaseNode):
             "model": data.get("model", llm_config.model),
         }
 
-    async def _call_openai(self, llm_config: LLMConfig, prompt: str, system: str = "") -> Dict[str, Any]:
+    async def _call_openai(
+        self, llm_config: LLMConfig, prompt: str, system: str = ""
+    ) -> Dict[str, Any]:
         """Call OpenAI API."""
         import httpx
 
@@ -206,7 +231,9 @@ class AskAiTransform(BaseNode):
             data = response.json()
 
         return {
-            "content": data["choices"][0]["message"]["content"] if data.get("choices") else "",
+            "content": (
+                data["choices"][0]["message"]["content"] if data.get("choices") else ""
+            ),
             "usage": {
                 "input_tokens": data.get("usage", {}).get("prompt_tokens", 0),
                 "output_tokens": data.get("usage", {}).get("completion_tokens", 0),
@@ -214,7 +241,9 @@ class AskAiTransform(BaseNode):
             "model": data.get("model", llm_config.model),
         }
 
-    async def _call_ollama(self, llm_config: LLMConfig, prompt: str, system: str = "") -> Dict[str, Any]:
+    async def _call_ollama(
+        self, llm_config: LLMConfig, prompt: str, system: str = ""
+    ) -> Dict[str, Any]:
         """Call local Ollama API."""
         import httpx
 
@@ -248,7 +277,9 @@ class AskAiTransform(BaseNode):
             "model": llm_config.model,
         }
 
-    async def _call_waddle(self, llm_config: LLMConfig, prompt: str, system: str = "") -> Dict[str, Any]:
+    async def _call_waddle(
+        self, llm_config: LLMConfig, prompt: str, system: str = ""
+    ) -> Dict[str, Any]:
         """Call WaddleAI API."""
         import httpx
 
@@ -285,6 +316,7 @@ class AskAiTransform(BaseNode):
     async def execute(self, context: NodeContext, inputs: Dict[str, Any]) -> NodeResult:
         """Execute the Ask AI transform."""
         import time
+
         start_time = time.perf_counter()
 
         input_data = inputs.get("in")
@@ -300,7 +332,7 @@ class AskAiTransform(BaseNode):
         if llm_config.provider != "ollama" and not llm_config.api_key:
             return NodeResult.failure_result(
                 error=f"No API key configured for provider: {llm_config.provider}",
-                execution_time_ms=(time.perf_counter() - start_time) * 1000
+                execution_time_ms=(time.perf_counter() - start_time) * 1000,
             )
 
         # Build prompt
@@ -325,7 +357,7 @@ class AskAiTransform(BaseNode):
             else:
                 return NodeResult.failure_result(
                     error=f"Unknown provider: {llm_config.provider}",
-                    execution_time_ms=(time.perf_counter() - start_time) * 1000
+                    execution_time_ms=(time.perf_counter() - start_time) * 1000,
                 )
 
             raw_content = response["content"]
@@ -343,11 +375,16 @@ class AskAiTransform(BaseNode):
                         content = content[:-3]
                     parsed = json.loads(content.strip())
                 except json.JSONDecodeError:
-                    parsed = {"raw": raw_content, "parse_error": "Failed to parse as JSON"}
+                    parsed = {
+                        "raw": raw_content,
+                        "parse_error": "Failed to parse as JSON",
+                    }
             else:
                 parsed = raw_content
 
-            context.log_info(f"AI response received ({response['usage'].get('output_tokens', 0)} tokens)")
+            context.log_info(
+                f"AI response received ({response['usage'].get('output_tokens', 0)} tokens)"
+            )
 
             return NodeResult.success_result(
                 outputs={
@@ -355,12 +392,12 @@ class AskAiTransform(BaseNode):
                     "raw": raw_content,
                     "usage": response["usage"],
                 },
-                execution_time_ms=(time.perf_counter() - start_time) * 1000
+                execution_time_ms=(time.perf_counter() - start_time) * 1000,
             )
 
         except Exception as e:
             context.error(f"AI call failed: {e}")
             return NodeResult.failure_result(
                 error=f"AI call failed: {str(e)}",
-                execution_time_ms=(time.perf_counter() - start_time) * 1000
+                execution_time_ms=(time.perf_counter() - start_time) * 1000,
             )

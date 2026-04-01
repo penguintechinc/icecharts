@@ -40,9 +40,7 @@ def verify_github_signature(payload: bytes, signature: str, secret: str) -> bool
         return False
 
     expected_sig = signature[7:]  # Remove 'sha256=' prefix
-    computed_sig = hmac.new(
-        secret.encode("utf-8"), payload, hashlib.sha256
-    ).hexdigest()
+    computed_sig = hmac.new(secret.encode("utf-8"), payload, hashlib.sha256).hexdigest()
 
     return hmac.compare_digest(expected_sig, computed_sig)
 
@@ -106,10 +104,14 @@ def handle_push_event(
             return {"status": "error", "message": "Flow not found"}
 
         # Check if this branch is a tracked stage
-        source_stage = db(
-            (db.iceflows_stages.flow_id == flow.id)
-            & (db.iceflows_stages.branch_name == branch)
-        ).select().first()
+        source_stage = (
+            db(
+                (db.iceflows_stages.flow_id == flow.id)
+                & (db.iceflows_stages.branch_name == branch)
+            )
+            .select()
+            .first()
+        )
 
         if not source_stage:
             current_app.logger.info(
@@ -118,10 +120,14 @@ def handle_push_event(
             return {"status": "skipped", "message": f"Branch {branch} not tracked"}
 
         # Find the next stage for auto-promotion
-        target_stage = db(
-            (db.iceflows_stages.flow_id == flow.id)
-            & (db.iceflows_stages.stage_order == source_stage.stage_order + 1)
-        ).select().first()
+        target_stage = (
+            db(
+                (db.iceflows_stages.flow_id == flow.id)
+                & (db.iceflows_stages.stage_order == source_stage.stage_order + 1)
+            )
+            .select()
+            .first()
+        )
 
         if not target_stage:
             current_app.logger.info(
@@ -176,27 +182,43 @@ def handle_pr_event(
             action = payload.get("action", "")
             pr_number = payload.get("number")
             pr_title = payload.get("pull_request", {}).get("title", "")
-            source_branch = payload.get("pull_request", {}).get("head", {}).get("ref", "")
-            target_branch = payload.get("pull_request", {}).get("base", {}).get("ref", "")
+            source_branch = (
+                payload.get("pull_request", {}).get("head", {}).get("ref", "")
+            )
+            target_branch = (
+                payload.get("pull_request", {}).get("base", {}).get("ref", "")
+            )
             pr_url = payload.get("pull_request", {}).get("html_url", "")
-            author = payload.get("pull_request", {}).get("user", {}).get("login", "unknown")
+            author = (
+                payload.get("pull_request", {}).get("user", {}).get("login", "unknown")
+            )
 
             # Only process opened or synchronize actions
             if action not in ["opened", "synchronize"]:
-                return {"status": "skipped", "message": f"Action '{action}' not tracked"}
+                return {
+                    "status": "skipped",
+                    "message": f"Action '{action}' not tracked",
+                }
 
         elif provider == "gitlab":
             action = payload.get("object_attributes", {}).get("action", "")
             mr_number = payload.get("object_attributes", {}).get("iid")
             pr_title = payload.get("object_attributes", {}).get("title", "")
-            source_branch = payload.get("object_attributes", {}).get("source_branch", "")
-            target_branch = payload.get("object_attributes", {}).get("target_branch", "")
+            source_branch = payload.get("object_attributes", {}).get(
+                "source_branch", ""
+            )
+            target_branch = payload.get("object_attributes", {}).get(
+                "target_branch", ""
+            )
             pr_url = payload.get("object_attributes", {}).get("url", "")
             author = payload.get("user", {}).get("username", "unknown")
 
             # Only process opened or updated actions
             if action not in ["open", "update"]:
-                return {"status": "skipped", "message": f"Action '{action}' not tracked"}
+                return {
+                    "status": "skipped",
+                    "message": f"Action '{action}' not tracked",
+                }
         else:
             return {"status": "error", "message": "Unknown provider"}
 
@@ -205,16 +227,23 @@ def handle_pr_event(
             return {"status": "error", "message": "Flow not found"}
 
         # Check if target branch is a tracked stage
-        target_stage = db(
-            (db.iceflows_stages.flow_id == flow.id)
-            & (db.iceflows_stages.branch_name == target_branch)
-        ).select().first()
+        target_stage = (
+            db(
+                (db.iceflows_stages.flow_id == flow.id)
+                & (db.iceflows_stages.branch_name == target_branch)
+            )
+            .select()
+            .first()
+        )
 
         if not target_stage:
             current_app.logger.info(
                 f"PR/MR #{pr_number} targeting {target_branch} - branch not tracked"
             )
-            return {"status": "skipped", "message": f"Branch {target_branch} not tracked"}
+            return {
+                "status": "skipped",
+                "message": f"Branch {target_branch} not tracked",
+            }
 
         # Log PR/MR event - in a real implementation, this would trigger review workflows
         current_app.logger.info(
@@ -331,7 +360,9 @@ def github_webhook(webhook_id: str):
 
         # Verify signature
         if not verify_github_signature(payload, signature, webhook.webhook_secret):
-            current_app.logger.warning(f"Invalid GitHub signature for webhook {webhook_id}")
+            current_app.logger.warning(
+                f"Invalid GitHub signature for webhook {webhook_id}"
+            )
             return jsonify({"error": "Invalid signature"}), 401
 
         # Get event type
@@ -355,7 +386,10 @@ def github_webhook(webhook_id: str):
             return jsonify({"error": "Invalid JSON payload"}), 400
 
         # Route to appropriate handler
-        result = {"status": "unhandled", "message": f"Event type '{event_type}' not handled"}
+        result = {
+            "status": "unhandled",
+            "message": f"Event type '{event_type}' not handled",
+        }
 
         if event_type == "push":
             result = handle_push_event(webhook, payload_json, "github")
@@ -437,7 +471,10 @@ def gitlab_webhook(webhook_id: str):
             return jsonify({"error": "Invalid JSON payload"}), 400
 
         # Route to appropriate handler
-        result = {"status": "unhandled", "message": f"Event type '{event_type}' not handled"}
+        result = {
+            "status": "unhandled",
+            "message": f"Event type '{event_type}' not handled",
+        }
 
         if event_type == "Push Hook":
             result = handle_push_event(webhook, payload_json, "gitlab")

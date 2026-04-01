@@ -1,8 +1,11 @@
 """Tests for IceFlows Promotions and Approvals API endpoints."""
+
 import pytest
 
 NONEXISTENT_FLOW_ID = "nonexistent-flow-id-00000000-0000-0000-0000-000000000000"
-NONEXISTENT_PROMOTION_ID = "nonexistent-promotion-id-00000000-0000-0000-0000-000000000000"
+NONEXISTENT_PROMOTION_ID = (
+    "nonexistent-promotion-id-00000000-0000-0000-0000-000000000000"
+)
 
 
 class TestListPromotions:
@@ -52,9 +55,7 @@ class TestCreatePromotion:
 
 class TestGetPromotion:
     def test_get_promotion_requires_auth(self, client):
-        response = client.get(
-            f"/api/v1/iceflows/promotions/{NONEXISTENT_PROMOTION_ID}"
-        )
+        response = client.get(f"/api/v1/iceflows/promotions/{NONEXISTENT_PROMOTION_ID}")
         assert response.status_code == 401
 
     def test_get_promotion_nonexistent_returns_404(self, client, auth_headers):

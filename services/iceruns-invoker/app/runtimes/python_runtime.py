@@ -23,10 +23,12 @@ class PythonRuntime(BaseRuntime):
         Returns:
             Command list
         """
-        if '.' not in handler:
-            raise ValueError(f"Invalid handler format: {handler}. Expected: module.function")
+        if "." not in handler:
+            raise ValueError(
+                f"Invalid handler format: {handler}. Expected: module.function"
+            )
 
-        module, function = handler.rsplit('.', 1)
+        module, function = handler.rsplit(".", 1)
 
         # Wrapper script to invoke handler and capture output
         wrapper = f"""
@@ -59,4 +61,4 @@ except Exception as e:
     sys.exit(1)
 """
 
-        return ['python3', '-c', wrapper]
+        return ["python3", "-c", wrapper]

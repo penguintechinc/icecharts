@@ -30,10 +30,24 @@ class MergeTransform(BaseNode):
     def inputs(cls) -> List[NodeInput]:
         """Define input ports for merge node."""
         return [
-            NodeInput(name="in1", description="First input", required=True, data_type="any"),
-            NodeInput(name="in2", description="Second input", required=False, data_type="any"),
-            NodeInput(name="in3", description="Third input (optional)", required=False, data_type="any"),
-            NodeInput(name="in4", description="Fourth input (optional)", required=False, data_type="any"),
+            NodeInput(
+                name="in1", description="First input", required=True, data_type="any"
+            ),
+            NodeInput(
+                name="in2", description="Second input", required=False, data_type="any"
+            ),
+            NodeInput(
+                name="in3",
+                description="Third input (optional)",
+                required=False,
+                data_type="any",
+            ),
+            NodeInput(
+                name="in4",
+                description="Fourth input (optional)",
+                required=False,
+                data_type="any",
+            ),
         ]
 
     @classmethod
@@ -51,7 +65,9 @@ class MergeTransform(BaseNode):
         mode = config.get("mode", "object")
         valid_modes = {"object", "array", "concat", "deep"}
         if mode not in valid_modes:
-            errors.append(f"Invalid mode: {mode}. Valid modes: {', '.join(sorted(valid_modes))}")
+            errors.append(
+                f"Invalid mode: {mode}. Valid modes: {', '.join(sorted(valid_modes))}"
+            )
 
         # Validate separator for concat mode
         if mode == "concat":
@@ -65,7 +81,11 @@ class MergeTransform(BaseNode):
         """Recursively merge two dictionaries with override taking precedence."""
         result = dict(base)
         for key, value in override.items():
-            if key in result and isinstance(result[key], dict) and isinstance(value, dict):
+            if (
+                key in result
+                and isinstance(result[key], dict)
+                and isinstance(value, dict)
+            ):
                 result[key] = self._deep_merge(result[key], value)
             else:
                 result[key] = value
@@ -80,7 +100,7 @@ class MergeTransform(BaseNode):
         if errors:
             return NodeResult.failure_result(
                 error="; ".join(errors),
-                execution_time_ms=(time.perf_counter() - start_time) * 1000
+                execution_time_ms=(time.perf_counter() - start_time) * 1000,
             )
 
         mode = context.get_config_value("mode", "object")
@@ -93,7 +113,7 @@ class MergeTransform(BaseNode):
             context.log_info("No inputs provided, returning None")
             return NodeResult.success_result(
                 outputs={"out": None},
-                execution_time_ms=(time.perf_counter() - start_time) * 1000
+                execution_time_ms=(time.perf_counter() - start_time) * 1000,
             )
 
         try:
@@ -150,12 +170,12 @@ class MergeTransform(BaseNode):
 
             return NodeResult.success_result(
                 outputs={"out": result},
-                execution_time_ms=(time.perf_counter() - start_time) * 1000
+                execution_time_ms=(time.perf_counter() - start_time) * 1000,
             )
 
         except Exception as e:
             context.log_error(f"Merge operation failed: {e}")
             return NodeResult.failure_result(
                 error=f"Merge failed: {str(e)}",
-                execution_time_ms=(time.perf_counter() - start_time) * 1000
+                execution_time_ms=(time.perf_counter() - start_time) * 1000,
             )

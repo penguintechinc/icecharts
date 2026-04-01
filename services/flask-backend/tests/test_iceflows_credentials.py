@@ -1,4 +1,5 @@
 """Tests for IceFlows Credentials (Git Provider Token Management) API endpoints."""
+
 import pytest
 
 NONEXISTENT_CRED_ID = "nonexistent-cred-id-00000000-0000-0000-0000-000000000000"
@@ -114,9 +115,7 @@ class TestCredentialsUpdate:
 
 class TestCredentialsDelete:
     def test_delete_requires_auth(self, client):
-        response = client.delete(
-            f"/api/v1/iceflows/credentials/{NONEXISTENT_CRED_ID}"
-        )
+        response = client.delete(f"/api/v1/iceflows/credentials/{NONEXISTENT_CRED_ID}")
         assert response.status_code == 401
 
     def test_delete_nonexistent_returns_404(self, client, auth_headers):

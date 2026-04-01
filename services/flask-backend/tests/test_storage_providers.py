@@ -1,4 +1,5 @@
 """Tests for Storage Providers API endpoints."""
+
 import pytest
 
 
@@ -367,13 +368,18 @@ class TestMinIOProviderUnitTests:
         from app.storage.base import StorageConfigError
 
         with pytest.raises(StorageConfigError) as exc_info:
-            MinIOProvider(config={
-                "access_key": "minioaccess",
-                "secret_key": "miniosecret",
-                "bucket": "test-bucket",
-                # 'endpoint' deliberately omitted
-            })
-        assert "endpoint" in str(exc_info.value).lower() or "missing" in str(exc_info.value).lower()
+            MinIOProvider(
+                config={
+                    "access_key": "minioaccess",
+                    "secret_key": "miniosecret",
+                    "bucket": "test-bucket",
+                    # 'endpoint' deliberately omitted
+                }
+            )
+        assert (
+            "endpoint" in str(exc_info.value).lower()
+            or "missing" in str(exc_info.value).lower()
+        )
 
     def test_minio_validate_config_missing_bucket_raises(self):
         """MinIOProvider raises StorageConfigError when bucket is missing."""
@@ -383,13 +389,18 @@ class TestMinIOProviderUnitTests:
         from app.storage.base import StorageConfigError
 
         with pytest.raises(StorageConfigError) as exc_info:
-            MinIOProvider(config={
-                "endpoint": "localhost:9000",
-                "access_key": "minioaccess",
-                "secret_key": "miniosecret",
-                # 'bucket' deliberately omitted
-            })
-        assert "bucket" in str(exc_info.value).lower() or "missing" in str(exc_info.value).lower()
+            MinIOProvider(
+                config={
+                    "endpoint": "localhost:9000",
+                    "access_key": "minioaccess",
+                    "secret_key": "miniosecret",
+                    # 'bucket' deliberately omitted
+                }
+            )
+        assert (
+            "bucket" in str(exc_info.value).lower()
+            or "missing" in str(exc_info.value).lower()
+        )
 
     def test_minio_validate_config_empty_endpoint_raises(self):
         """MinIOProvider raises StorageConfigError when endpoint is empty string."""
@@ -399,12 +410,14 @@ class TestMinIOProviderUnitTests:
         from app.storage.base import StorageConfigError
 
         with pytest.raises(StorageConfigError):
-            MinIOProvider(config={
-                "endpoint": "",
-                "access_key": "minioaccess",
-                "secret_key": "miniosecret",
-                "bucket": "test-bucket",
-            })
+            MinIOProvider(
+                config={
+                    "endpoint": "",
+                    "access_key": "minioaccess",
+                    "secret_key": "miniosecret",
+                    "bucket": "test-bucket",
+                }
+            )
 
     def test_minio_init_connection_error_raises_storage_connection_error(self):
         """MinIOProvider raises StorageConnectionError when Minio client fails."""
@@ -417,12 +430,14 @@ class TestMinIOProviderUnitTests:
             mock_minio_cls.side_effect = Exception("Connection refused")
 
             with pytest.raises(StorageConnectionError) as exc_info:
-                MinIOProvider(config={
-                    "endpoint": "localhost:9000",
-                    "access_key": "minioaccess",
-                    "secret_key": "miniosecret",
-                    "bucket": "test-bucket",
-                })
+                MinIOProvider(
+                    config={
+                        "endpoint": "localhost:9000",
+                        "access_key": "minioaccess",
+                        "secret_key": "miniosecret",
+                        "bucket": "test-bucket",
+                    }
+                )
             assert "Failed to initialize MinIO client" in str(exc_info.value)
 
     def test_minio_protocol_stripping_from_endpoint(self):
@@ -436,12 +451,14 @@ class TestMinIOProviderUnitTests:
             mock_minio_cls.return_value = mock_instance
             mock_instance.bucket_exists.return_value = True
 
-            provider = MinIOProvider(config={
-                "endpoint": "https://minio.example.com",
-                "access_key": "key",
-                "secret_key": "secret",
-                "bucket": "my-bucket",
-            })
+            provider = MinIOProvider(
+                config={
+                    "endpoint": "https://minio.example.com",
+                    "access_key": "key",
+                    "secret_key": "secret",
+                    "bucket": "my-bucket",
+                }
+            )
 
             # After init, endpoint should have protocol stripped
             assert "://" not in provider.config["endpoint"]
@@ -459,12 +476,14 @@ class TestMinIOProviderUnitTests:
             mock_minio_cls.return_value = mock_instance
             mock_instance.bucket_exists.return_value = True
 
-            provider = MinIOProvider(config={
-                "endpoint": "http://localhost:9000",
-                "access_key": "key",
-                "secret_key": "secret",
-                "bucket": "my-bucket",
-            })
+            provider = MinIOProvider(
+                config={
+                    "endpoint": "http://localhost:9000",
+                    "access_key": "key",
+                    "secret_key": "secret",
+                    "bucket": "my-bucket",
+                }
+            )
 
             assert provider.config.get("secure") is False
 
@@ -479,12 +498,14 @@ class TestMinIOProviderUnitTests:
             mock_minio_cls.return_value = mock_instance
             mock_instance.bucket_exists.return_value = False
 
-            provider = MinIOProvider(config={
-                "endpoint": "localhost:9000",
-                "access_key": "key",
-                "secret_key": "secret",
-                "bucket": "new-bucket",
-            })
+            provider = MinIOProvider(
+                config={
+                    "endpoint": "localhost:9000",
+                    "access_key": "key",
+                    "secret_key": "secret",
+                    "bucket": "new-bucket",
+                }
+            )
 
             mock_instance.make_bucket.assert_called_once_with("new-bucket")
 
@@ -502,12 +523,14 @@ class TestMinIOProviderUnitTests:
             mock_instance.bucket_exists.return_value = True
             mock_instance.put_object.side_effect = Exception("Network error")
 
-            provider = MinIOProvider(config={
-                "endpoint": "localhost:9000",
-                "access_key": "key",
-                "secret_key": "secret",
-                "bucket": "test-bucket",
-            })
+            provider = MinIOProvider(
+                config={
+                    "endpoint": "localhost:9000",
+                    "access_key": "key",
+                    "secret_key": "secret",
+                    "bucket": "test-bucket",
+                }
+            )
 
             with pytest.raises(StorageError):
                 asyncio.get_event_loop().run_until_complete(
@@ -526,12 +549,17 @@ class TestS3ProviderUnitTests:
         from app.storage.base import StorageConfigError
 
         with pytest.raises(StorageConfigError) as exc_info:
-            S3Provider(config={
-                "secret_key": "supersecret",
-                "bucket": "my-bucket",
-                # 'access_key' deliberately omitted
-            })
-        assert "access_key" in str(exc_info.value).lower() or "missing" in str(exc_info.value).lower()
+            S3Provider(
+                config={
+                    "secret_key": "supersecret",
+                    "bucket": "my-bucket",
+                    # 'access_key' deliberately omitted
+                }
+            )
+        assert (
+            "access_key" in str(exc_info.value).lower()
+            or "missing" in str(exc_info.value).lower()
+        )
 
     def test_s3_validate_config_missing_bucket_raises(self):
         """S3Provider raises StorageConfigError when bucket is missing."""
@@ -541,12 +569,17 @@ class TestS3ProviderUnitTests:
         from app.storage.base import StorageConfigError
 
         with pytest.raises(StorageConfigError) as exc_info:
-            S3Provider(config={
-                "access_key": "AKIAIOSFODNN7EXAMPLE",
-                "secret_key": "supersecret",
-                # 'bucket' deliberately omitted
-            })
-        assert "bucket" in str(exc_info.value).lower() or "missing" in str(exc_info.value).lower()
+            S3Provider(
+                config={
+                    "access_key": "AKIAIOSFODNN7EXAMPLE",
+                    "secret_key": "supersecret",
+                    # 'bucket' deliberately omitted
+                }
+            )
+        assert (
+            "bucket" in str(exc_info.value).lower()
+            or "missing" in str(exc_info.value).lower()
+        )
 
     def test_s3_validate_config_missing_secret_key_raises(self):
         """S3Provider raises StorageConfigError when secret_key is missing."""
@@ -554,11 +587,13 @@ class TestS3ProviderUnitTests:
         from app.storage.base import StorageConfigError
 
         with pytest.raises(StorageConfigError):
-            S3Provider(config={
-                "access_key": "AKIAIOSFODNN7EXAMPLE",
-                "bucket": "my-bucket",
-                # 'secret_key' deliberately omitted
-            })
+            S3Provider(
+                config={
+                    "access_key": "AKIAIOSFODNN7EXAMPLE",
+                    "bucket": "my-bucket",
+                    # 'secret_key' deliberately omitted
+                }
+            )
 
     def test_s3_bucket_not_found_raises_storage_config_error(self):
         """S3Provider raises StorageConfigError when the bucket does not exist (404)."""
@@ -581,12 +616,17 @@ class TestS3ProviderUnitTests:
             )
 
             with pytest.raises(StorageConfigError) as exc_info:
-                S3Provider(config={
-                    "access_key": "AKIAIOSFODNN7EXAMPLE",
-                    "secret_key": "supersecret",
-                    "bucket": "nonexistent-bucket",
-                })
-            assert "does not exist" in str(exc_info.value).lower() or "bucket" in str(exc_info.value).lower()
+                S3Provider(
+                    config={
+                        "access_key": "AKIAIOSFODNN7EXAMPLE",
+                        "secret_key": "supersecret",
+                        "bucket": "nonexistent-bucket",
+                    }
+                )
+            assert (
+                "does not exist" in str(exc_info.value).lower()
+                or "bucket" in str(exc_info.value).lower()
+            )
 
     def test_s3_bucket_access_denied_raises_auth_error(self):
         """S3Provider raises StorageAuthenticationError when access to bucket is denied (403)."""
@@ -608,12 +648,18 @@ class TestS3ProviderUnitTests:
             )
 
             with pytest.raises(StorageAuthenticationError) as exc_info:
-                S3Provider(config={
-                    "access_key": "AKIAIOSFODNN7EXAMPLE",
-                    "secret_key": "supersecret",
-                    "bucket": "my-bucket",
-                })
-            assert "access denied" in str(exc_info.value).lower() or "forbidden" in str(exc_info.value).lower() or "bucket" in str(exc_info.value).lower()
+                S3Provider(
+                    config={
+                        "access_key": "AKIAIOSFODNN7EXAMPLE",
+                        "secret_key": "supersecret",
+                        "bucket": "my-bucket",
+                    }
+                )
+            assert (
+                "access denied" in str(exc_info.value).lower()
+                or "forbidden" in str(exc_info.value).lower()
+                or "bucket" in str(exc_info.value).lower()
+            )
 
     def test_s3_init_uses_default_region(self):
         """S3Provider defaults to us-east-1 when no region is specified."""
@@ -628,11 +674,13 @@ class TestS3ProviderUnitTests:
             mock_session.client.return_value = mock_s3_client
             mock_s3_client.head_bucket.return_value = {}
 
-            S3Provider(config={
-                "access_key": "AKIAIOSFODNN7EXAMPLE",
-                "secret_key": "supersecret",
-                "bucket": "my-bucket",
-            })
+            S3Provider(
+                config={
+                    "access_key": "AKIAIOSFODNN7EXAMPLE",
+                    "secret_key": "supersecret",
+                    "bucket": "my-bucket",
+                }
+            )
 
             mock_boto3.Session.assert_called_once_with(
                 aws_access_key_id="AKIAIOSFODNN7EXAMPLE",
@@ -653,12 +701,14 @@ class TestS3ProviderUnitTests:
             mock_session.client.return_value = mock_s3_client
             mock_s3_client.head_bucket.return_value = {}
 
-            S3Provider(config={
-                "access_key": "AKIAIOSFODNN7EXAMPLE",
-                "secret_key": "supersecret",
-                "bucket": "my-bucket",
-                "region": "eu-west-1",
-            })
+            S3Provider(
+                config={
+                    "access_key": "AKIAIOSFODNN7EXAMPLE",
+                    "secret_key": "supersecret",
+                    "bucket": "my-bucket",
+                    "region": "eu-west-1",
+                }
+            )
 
             mock_boto3.Session.assert_called_once_with(
                 aws_access_key_id="AKIAIOSFODNN7EXAMPLE",
@@ -682,16 +732,20 @@ class TestS3ProviderUnitTests:
             mock_session.client.return_value = mock_s3_client
             mock_s3_client.head_bucket.return_value = {}
 
-            error_response = {"Error": {"Code": "AccessDenied", "Message": "Access Denied"}}
+            error_response = {
+                "Error": {"Code": "AccessDenied", "Message": "Access Denied"}
+            }
             mock_s3_client.put_object.side_effect = ClientError(
                 error_response, "PutObject"
             )
 
-            provider = S3Provider(config={
-                "access_key": "AKIAIOSFODNN7EXAMPLE",
-                "secret_key": "supersecret",
-                "bucket": "my-bucket",
-            })
+            provider = S3Provider(
+                config={
+                    "access_key": "AKIAIOSFODNN7EXAMPLE",
+                    "secret_key": "supersecret",
+                    "bucket": "my-bucket",
+                }
+            )
 
             with pytest.raises(StorageAuthenticationError):
                 asyncio.get_event_loop().run_until_complete(

@@ -1,4 +1,5 @@
 """Tests for SSO (SAML 2.0 / OIDC) API endpoints."""
+
 import pytest
 
 

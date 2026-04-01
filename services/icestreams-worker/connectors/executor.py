@@ -46,9 +46,7 @@ class ConnectorActionExecutor:
         if connector_id not in self._connectors:
             connector = ConnectorRegistry.get_instance(connector_id)
             if connector is None:
-                raise ConnectorExecutionError(
-                    f"Connector '{connector_id}' not found"
-                )
+                raise ConnectorExecutionError(f"Connector '{connector_id}' not found")
             self._connectors[connector_id] = connector
         return self._connectors[connector_id]
 
@@ -129,11 +127,15 @@ class ConnectorActionExecutor:
                 result[key] = self._interpolate_dict(value, inputs, variables, config)
             elif isinstance(value, list):
                 result[key] = [
-                    self._interpolate_value(item, inputs, variables, config)
-                    if isinstance(item, str)
-                    else self._interpolate_dict(item, inputs, variables, config)
-                    if isinstance(item, dict)
-                    else item
+                    (
+                        self._interpolate_value(item, inputs, variables, config)
+                        if isinstance(item, str)
+                        else (
+                            self._interpolate_dict(item, inputs, variables, config)
+                            if isinstance(item, dict)
+                            else item
+                        )
+                    )
                     for item in value
                 ]
             else:
@@ -229,9 +231,7 @@ class ConnectorActionExecutor:
             )
 
         # Build request
-        endpoint = self._interpolate_value(
-            action.endpoint, inputs, variables, config
-        )
+        endpoint = self._interpolate_value(action.endpoint, inputs, variables, config)
         body = self._build_request_body(action, config, inputs, variables)
 
         logger.debug(

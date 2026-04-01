@@ -1698,7 +1698,9 @@ def define_all_tables(db):
         Field("description", "text"),
         Field("require_approval", "boolean", default=True, notnull=True),
         Field("min_approvers", "integer", default=1),  # Minimum approvals required
-        Field("approvers", "list:reference identities"),  # List of user IDs who can approve
+        Field(
+            "approvers", "list:reference identities"
+        ),  # List of user IDs who can approve
         Field("approver_groups", "list:reference groups"),  # List of group IDs
         Field("timeout_minutes", "integer"),  # Auto-reject after timeout (optional)
         Field("is_enabled", "boolean", default=True, notnull=True),
@@ -1775,7 +1777,11 @@ def define_all_tables(db):
         Field("name", "string", length=255, notnull=True, requires=IS_NOT_EMPTY()),
         Field("description", "text"),
         Field(
-            "repository_url", "string", length=1024, notnull=True, requires=IS_NOT_EMPTY()
+            "repository_url",
+            "string",
+            length=1024,
+            notnull=True,
+            requires=IS_NOT_EMPTY(),
         ),
         Field(
             "repository_provider",
@@ -1803,7 +1809,9 @@ def define_all_tables(db):
             requires=IS_IN_SET(["draft", "active", "paused", "archived"]),
         ),
         Field("is_enabled", "boolean", default=True),
-        Field("created_by_id", "reference identities", notnull=True, ondelete="CASCADE"),
+        Field(
+            "created_by_id", "reference identities", notnull=True, ondelete="CASCADE"
+        ),
         Field("tags", "list:string"),
         Field(
             "created_at",
@@ -1839,11 +1847,15 @@ def define_all_tables(db):
             requires=IS_IN_SET(["github", "gitlab"]),
         ),
         Field("access_token", "password", length=512, notnull=True),  # Encrypted
-        Field("token_type", "string", length=50, default="personal"),  # personal, oauth, app
+        Field(
+            "token_type", "string", length=50, default="personal"
+        ),  # personal, oauth, app
         Field("scopes", "list:string"),  # Token permissions/scopes
         Field("expires_at", "datetime"),  # Token expiration (optional)
         Field("is_active", "boolean", default=True),
-        Field("created_by_id", "reference identities", notnull=True, ondelete="CASCADE"),
+        Field(
+            "created_by_id", "reference identities", notnull=True, ondelete="CASCADE"
+        ),
         Field("last_used_at", "datetime"),
         Field(
             "created_at",
@@ -1862,9 +1874,7 @@ def define_all_tables(db):
     db.define_table(
         "iceflows_stages",
         Field("stage_id", "string", length=36, unique=True, notnull=True),  # UUID
-        Field(
-            "flow_id", "reference iceflows", notnull=True, ondelete="CASCADE"
-        ),
+        Field("flow_id", "reference iceflows", notnull=True, ondelete="CASCADE"),
         Field("stage_order", "integer", notnull=True),
         Field("branch_name", "string", length=255, notnull=True),
         Field("display_name", "string", length=255),
@@ -2023,9 +2033,7 @@ def define_all_tables(db):
     db.define_table(
         "iceflows_darwin_config",
         Field("config_id", "string", length=36, unique=True, notnull=True),  # UUID
-        Field(
-            "flow_id", "reference iceflows", notnull=True, ondelete="CASCADE"
-        ),
+        Field("flow_id", "reference iceflows", notnull=True, ondelete="CASCADE"),
         Field("darwin_api_url", "string", length=1024),
         Field("darwin_api_key", "password"),
         Field("default_review_type", "string", default="standard"),
@@ -2049,15 +2057,9 @@ def define_all_tables(db):
     db.define_table(
         "iceflows_promotions",
         Field("promotion_id", "string", length=36, unique=True, notnull=True),  # UUID
-        Field(
-            "flow_id", "reference iceflows", notnull=True, ondelete="CASCADE"
-        ),
-        Field(
-            "source_stage_id", "reference iceflows_stages", notnull=True
-        ),
-        Field(
-            "target_stage_id", "reference iceflows_stages", notnull=True
-        ),
+        Field("flow_id", "reference iceflows", notnull=True, ondelete="CASCADE"),
+        Field("source_stage_id", "reference iceflows_stages", notnull=True),
+        Field("target_stage_id", "reference iceflows_stages", notnull=True),
         Field("source_branch", "string", length=255, notnull=True),
         Field("target_branch", "string", length=255, notnull=True),
         Field("source_commit", "string", length=40),
@@ -2067,9 +2069,7 @@ def define_all_tables(db):
             "string",
             length=50,
             default="pending",
-            requires=IS_IN_SET(
-                ["pending", "approved", "rejected", "merged", "failed"]
-            ),
+            requires=IS_IN_SET(["pending", "approved", "rejected", "merged", "failed"]),
         ),
         Field("requested_by_id", "reference identities", ondelete="SET NULL"),
         Field("git_pr_url", "string", length=1024),
@@ -2124,19 +2124,13 @@ def define_all_tables(db):
         "iceflows_executions",
         Field("execution_id", "string", length=36, unique=True, notnull=True),  # UUID
         Field("promotion_id", "reference iceflows_promotions", ondelete="CASCADE"),
-        Field(
-            "flow_id", "reference iceflows", notnull=True, ondelete="CASCADE"
-        ),
-        Field(
-            "stage_id", "reference iceflows_stages", notnull=True
-        ),
+        Field("flow_id", "reference iceflows", notnull=True, ondelete="CASCADE"),
+        Field("stage_id", "reference iceflows_stages", notnull=True),
         Field(
             "trigger_type",
             "string",
             length=50,
-            requires=IS_IN_SET(
-                ["git_push", "promotion", "manual", "webhook"]
-            ),
+            requires=IS_IN_SET(["git_push", "promotion", "manual", "webhook"]),
         ),
         Field("git_event_type", "string", length=50),
         Field("git_ref", "string", length=255),
@@ -2210,9 +2204,7 @@ def define_all_tables(db):
     db.define_table(
         "iceflows_webhooks",
         Field("webhook_id", "string", length=36, unique=True, notnull=True),  # UUID
-        Field(
-            "flow_id", "reference iceflows", notnull=True, ondelete="CASCADE"
-        ),
+        Field("flow_id", "reference iceflows", notnull=True, ondelete="CASCADE"),
         Field(
             "provider",
             "string",
@@ -2236,10 +2228,10 @@ def define_all_tables(db):
     # IceFlows notification channel configurations
     db.define_table(
         "iceflows_notifications",
-        Field("notification_id", "string", length=36, unique=True, notnull=True),  # UUID
         Field(
-            "flow_id", "reference iceflows", notnull=True, ondelete="CASCADE"
-        ),
+            "notification_id", "string", length=36, unique=True, notnull=True
+        ),  # UUID
+        Field("flow_id", "reference iceflows", notnull=True, ondelete="CASCADE"),
         Field(
             "channel_type",
             "string",
@@ -2268,9 +2260,7 @@ def define_all_tables(db):
             "reference iceflows_notifications",
             ondelete="SET NULL",
         ),
-        Field(
-            "flow_id", "reference iceflows", notnull=True, ondelete="CASCADE"
-        ),
+        Field("flow_id", "reference iceflows", notnull=True, ondelete="CASCADE"),
         Field("event_type", "string", length=100),
         Field("channel_type", "string", length=50),
         Field("recipient", "string", length=500),

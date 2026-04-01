@@ -65,7 +65,9 @@ class MockLambdaClient:
             response["FunctionError"] = self.function_error
 
         if kwargs.get("InvocationType") == "RequestResponse":
-            response["Payload"] = MockLambdaResponse({"message": "success", "data": "test"})
+            response["Payload"] = MockLambdaResponse(
+                {"message": "success", "data": "test"}
+            )
 
         return response
 
@@ -100,7 +102,9 @@ class TestAwsLambdaAuthentication:
             "aws_secret_access_key": "wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY",
             "aws_region": "us-east-1",
         }
-        node_context.get_config_value.side_effect = lambda key, default=None: config_map.get(key, default)
+        node_context.get_config_value.side_effect = (
+            lambda key, default=None: config_map.get(key, default)
+        )
 
         mock_sts_instance = MockAWSSTSClient()
         mock_sts_class.return_value = mock_sts_instance
@@ -132,7 +136,9 @@ class TestAwsLambdaAuthentication:
             "role_arn": "arn:aws:iam::123456789012:role/test-role",
             "session_duration": 7200,
         }
-        node_context.get_config_value.side_effect = lambda key, default=None: config_map.get(key, default)
+        node_context.get_config_value.side_effect = (
+            lambda key, default=None: config_map.get(key, default)
+        )
 
         mock_sts_instance = MockAWSSTSClient()
         mock_sts_class.return_value = mock_sts_instance
@@ -145,9 +151,7 @@ class TestAwsLambdaAuthentication:
 class TestAwsLambdaInvocation:
     """Test AWS Lambda function invocation."""
 
-    def test_invoke_lambda_success_synchronous(
-        self, aws_lambda_node, node_context
-    ):
+    def test_invoke_lambda_success_synchronous(self, aws_lambda_node, node_context):
         """Test successful synchronous Lambda invocation."""
         mock_lambda_client = MockLambdaClient(status_code=200)
 
@@ -163,13 +167,19 @@ class TestAwsLambdaInvocation:
         with patch("asyncio.get_event_loop") as mock_loop:
             mock_event_loop = Mock()
             mock_loop.return_value = mock_event_loop
-            mock_event_loop.run_in_executor = AsyncMock(return_value=mock_lambda_client.invoke(**{
-                "FunctionName": "test-function",
-                "InvocationType": "RequestResponse",
-                "Payload": json.dumps(payload).encode("utf-8"),
-            }))
+            mock_event_loop.run_in_executor = AsyncMock(
+                return_value=mock_lambda_client.invoke(
+                    **{
+                        "FunctionName": "test-function",
+                        "InvocationType": "RequestResponse",
+                        "Payload": json.dumps(payload).encode("utf-8"),
+                    }
+                )
+            )
 
-            with patch.dict("sys.modules", {"boto3": Mock(), "botocore.exceptions": Mock()}):
+            with patch.dict(
+                "sys.modules", {"boto3": Mock(), "botocore.exceptions": Mock()}
+            ):
                 result = asyncio.run(
                     aws_lambda_node._invoke_function(
                         node_context, auth_client, function_config, payload
@@ -180,9 +190,7 @@ class TestAwsLambdaInvocation:
                 assert result["request_id"] == "mock-request-id-12345"
 
     @patch.dict("sys.modules", {"boto3": Mock(), "botocore.exceptions": Mock()})
-    def test_invoke_lambda_missing_function_name(
-        self, aws_lambda_node, node_context
-    ):
+    def test_invoke_lambda_missing_function_name(self, aws_lambda_node, node_context):
         """Test invocation fails when function_name is missing."""
         auth_client = MockAWSSTSClient()
         function_config = {
@@ -200,9 +208,7 @@ class TestAwsLambdaInvocation:
             )
 
     @patch.dict("sys.modules", {"boto3": Mock(), "botocore.exceptions": Mock()})
-    def test_invoke_lambda_invalid_invocation_type(
-        self, aws_lambda_node, node_context
-    ):
+    def test_invoke_lambda_invalid_invocation_type(self, aws_lambda_node, node_context):
         """Test invocation fails with invalid invocation type."""
         auth_client = MockAWSSTSClient()
         function_config = {
@@ -224,7 +230,9 @@ class TestAwsLambdaExecute:
     """Test AWS Lambda execute method."""
 
     @patch("nodes.actions.cloud.aws_lambda.AWSSTSClient")
-    def test_execute_missing_required_input(self, mock_sts_class, aws_lambda_node, node_context):
+    def test_execute_missing_required_input(
+        self, mock_sts_class, aws_lambda_node, node_context
+    ):
         """Test execution fails with missing required input."""
         inputs = {}  # Missing required payload
 

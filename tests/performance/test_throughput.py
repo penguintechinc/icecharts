@@ -1,4 +1,5 @@
 """Performance tests for IceRuns throughput and capacity."""
+
 import pytest
 import time
 import concurrent.futures
@@ -7,18 +8,20 @@ import concurrent.futures
 class TestThroughput:
     """Test IceRuns throughput and capacity."""
 
-    def test_requests_per_second_capacity(self, api_client, auth_token, sample_function):
+    def test_requests_per_second_capacity(
+        self, api_client, auth_token, sample_function
+    ):
         """Test maximum requests per second capacity."""
         create_response = api_client.post(
-            '/api/v1/iceruns',
+            "/api/v1/iceruns",
             json=sample_function,
-            headers={'Authorization': auth_token}
+            headers={"Authorization": auth_token},
         )
-        function_id = create_response.get_json()['function_id']
+        function_id = create_response.get_json()["function_id"]
 
         api_client.put(
-            f'/api/v1/iceruns/{function_id}/activate',
-            headers={'Authorization': auth_token}
+            f"/api/v1/iceruns/{function_id}/activate",
+            headers={"Authorization": auth_token},
         )
 
         # Execute 50 requests as fast as possible
@@ -27,9 +30,9 @@ class TestThroughput:
 
         for i in range(50):
             response = api_client.post(
-                f'/api/v1/iceruns/{function_id}/execute',
-                json={'input': {'id': i}},
-                headers={'Authorization': auth_token}
+                f"/api/v1/iceruns/{function_id}/execute",
+                json={"input": {"id": i}},
+                headers={"Authorization": auth_token},
             )
             if response.status_code in [200, 202]:
                 request_count += 1
@@ -43,23 +46,23 @@ class TestThroughput:
     def test_concurrent_request_handling(self, api_client, auth_token, sample_function):
         """Test handling multiple concurrent requests."""
         create_response = api_client.post(
-            '/api/v1/iceruns',
+            "/api/v1/iceruns",
             json=sample_function,
-            headers={'Authorization': auth_token}
+            headers={"Authorization": auth_token},
         )
-        function_id = create_response.get_json()['function_id']
+        function_id = create_response.get_json()["function_id"]
 
         api_client.put(
-            f'/api/v1/iceruns/{function_id}/activate',
-            headers={'Authorization': auth_token}
+            f"/api/v1/iceruns/{function_id}/activate",
+            headers={"Authorization": auth_token},
         )
 
         def execute_request(index):
             start = time.time()
             response = api_client.post(
-                f'/api/v1/iceruns/{function_id}/execute',
-                json={'input': {'id': index}},
-                headers={'Authorization': auth_token}
+                f"/api/v1/iceruns/{function_id}/execute",
+                json={"input": {"id": index}},
+                headers={"Authorization": auth_token},
             )
             elapsed = time.time() - start
             return response.status_code, elapsed
@@ -80,27 +83,27 @@ class TestThroughput:
     def test_queue_processing_rate(self, api_client, auth_token, sample_function):
         """Test how fast the queue processes tasks."""
         create_response = api_client.post(
-            '/api/v1/iceruns',
+            "/api/v1/iceruns",
             json=sample_function,
-            headers={'Authorization': auth_token}
+            headers={"Authorization": auth_token},
         )
-        function_id = create_response.get_json()['function_id']
+        function_id = create_response.get_json()["function_id"]
 
         api_client.put(
-            f'/api/v1/iceruns/{function_id}/activate',
-            headers={'Authorization': auth_token}
+            f"/api/v1/iceruns/{function_id}/activate",
+            headers={"Authorization": auth_token},
         )
 
         # Queue 30 tasks
         execution_ids = []
         for i in range(30):
             response = api_client.post(
-                f'/api/v1/iceruns/{function_id}/execute',
-                json={'input': {'task': i}},
-                headers={'Authorization': auth_token}
+                f"/api/v1/iceruns/{function_id}/execute",
+                json={"input": {"task": i}},
+                headers={"Authorization": auth_token},
             )
             if response.status_code in [200, 202]:
-                execution_ids.append(response.get_json()['execution_id'])
+                execution_ids.append(response.get_json()["execution_id"])
 
         # Measure how many complete per second
         start_time = time.time()
@@ -111,10 +114,10 @@ class TestThroughput:
             check_start = time.time()
             for attempt in range(60):  # Check for up to 60 seconds
                 status_response = api_client.get(
-                    f'/api/v1/iceruns/executions/{exec_id}/status',
-                    headers={'Authorization': auth_token}
+                    f"/api/v1/iceruns/executions/{exec_id}/status",
+                    headers={"Authorization": auth_token},
                 )
-                if status_response.get_json().get('status') == 'completed':
+                if status_response.get_json().get("status") == "completed":
                     completion_times.append(time.time() - check_start)
                     completed += 1
                     break
@@ -127,18 +130,20 @@ class TestThroughput:
             # Should process at least 1 task per second
             assert processing_rate >= 0.5, f"Processing rate {processing_rate}/sec"
 
-    def test_api_response_time_under_load(self, api_client, auth_token, sample_function):
+    def test_api_response_time_under_load(
+        self, api_client, auth_token, sample_function
+    ):
         """Test API response time under load."""
         create_response = api_client.post(
-            '/api/v1/iceruns',
+            "/api/v1/iceruns",
             json=sample_function,
-            headers={'Authorization': auth_token}
+            headers={"Authorization": auth_token},
         )
-        function_id = create_response.get_json()['function_id']
+        function_id = create_response.get_json()["function_id"]
 
         api_client.put(
-            f'/api/v1/iceruns/{function_id}/activate',
-            headers={'Authorization': auth_token}
+            f"/api/v1/iceruns/{function_id}/activate",
+            headers={"Authorization": auth_token},
         )
 
         response_times = []
@@ -147,9 +152,9 @@ class TestThroughput:
         for i in range(50):
             start = time.time()
             api_client.post(
-                f'/api/v1/iceruns/{function_id}/execute',
-                json={'input': {'batch': i}},
-                headers={'Authorization': auth_token}
+                f"/api/v1/iceruns/{function_id}/execute",
+                json={"input": {"batch": i}},
+                headers={"Authorization": auth_token},
             )
             response_times.append(time.time() - start)
 
@@ -166,40 +171,42 @@ class TestThroughput:
         # P99 should be under 1 second
         assert p99 < 1.0, f"P99 response time: {p99}s"
 
-    def test_memory_efficiency_under_load(self, api_client, auth_token, sample_function):
+    def test_memory_efficiency_under_load(
+        self, api_client, auth_token, sample_function
+    ):
         """Test memory efficiency handling many concurrent executions."""
         create_response = api_client.post(
-            '/api/v1/iceruns',
+            "/api/v1/iceruns",
             json=sample_function,
-            headers={'Authorization': auth_token}
+            headers={"Authorization": auth_token},
         )
-        function_id = create_response.get_json()['function_id']
+        function_id = create_response.get_json()["function_id"]
 
         api_client.put(
-            f'/api/v1/iceruns/{function_id}/activate',
-            headers={'Authorization': auth_token}
+            f"/api/v1/iceruns/{function_id}/activate",
+            headers={"Authorization": auth_token},
         )
 
         # Execute 100 lightweight tasks
         execution_ids = []
         for i in range(100):
             response = api_client.post(
-                f'/api/v1/iceruns/{function_id}/execute',
-                json={'input': {'id': i}},
-                headers={'Authorization': auth_token}
+                f"/api/v1/iceruns/{function_id}/execute",
+                json={"input": {"id": i}},
+                headers={"Authorization": auth_token},
             )
             if response.status_code in [200, 202]:
-                execution_ids.append(response.get_json()['execution_id'])
+                execution_ids.append(response.get_json()["execution_id"])
 
         # Check system health after heavy load
-        health_response = api_client.get('/healthz')
+        health_response = api_client.get("/healthz")
         assert health_response.status_code == 200
 
         # Should still be responsive
         start = time.time()
         status_response = api_client.get(
-            f'/api/v1/iceruns/executions/{execution_ids[0]}/status',
-            headers={'Authorization': auth_token}
+            f"/api/v1/iceruns/executions/{execution_ids[0]}/status",
+            headers={"Authorization": auth_token},
         )
         response_time = time.time() - start
 
@@ -209,15 +216,15 @@ class TestThroughput:
     def test_sustained_throughput(self, api_client, auth_token, sample_function):
         """Test sustained throughput over time."""
         create_response = api_client.post(
-            '/api/v1/iceruns',
+            "/api/v1/iceruns",
             json=sample_function,
-            headers={'Authorization': auth_token}
+            headers={"Authorization": auth_token},
         )
-        function_id = create_response.get_json()['function_id']
+        function_id = create_response.get_json()["function_id"]
 
         api_client.put(
-            f'/api/v1/iceruns/{function_id}/activate',
-            headers={'Authorization': auth_token}
+            f"/api/v1/iceruns/{function_id}/activate",
+            headers={"Authorization": auth_token},
         )
 
         # Execute in batches and measure throughput
@@ -229,24 +236,26 @@ class TestThroughput:
 
             for i in range(20):
                 response = api_client.post(
-                    f'/api/v1/iceruns/{function_id}/execute',
-                    json={'input': {'batch': batch_num, 'item': i}},
-                    headers={'Authorization': auth_token}
+                    f"/api/v1/iceruns/{function_id}/execute",
+                    json={"input": {"batch": batch_num, "item": i}},
+                    headers={"Authorization": auth_token},
                 )
                 if response.status_code in [200, 202]:
                     successful += 1
 
             batch_time = time.time() - start
-            batch_results.append({
-                'successful': successful,
-                'time': batch_time,
-                'rps': successful / batch_time if batch_time > 0 else 0
-            })
+            batch_results.append(
+                {
+                    "successful": successful,
+                    "time": batch_time,
+                    "rps": successful / batch_time if batch_time > 0 else 0,
+                }
+            )
 
             time.sleep(1)  # Pause between batches
 
         # Verify consistent throughput across batches
-        rps_values = [b['rps'] for b in batch_results]
+        rps_values = [b["rps"] for b in batch_results]
         avg_rps = sum(rps_values) / len(rps_values)
 
         # Should maintain at least 5 RPS consistently
@@ -254,5 +263,5 @@ class TestThroughput:
 
         # Variance shouldn't be too high
         variance = sum((r - avg_rps) ** 2 for r in rps_values) / len(rps_values)
-        std_dev = variance ** 0.5
+        std_dev = variance**0.5
         assert std_dev < avg_rps * 0.5  # Within 50% of mean

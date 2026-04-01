@@ -15,9 +15,7 @@ class TestStoragePath:
 
     def test_get_storage_path_format(self):
         """Test that storage path follows correct format."""
-        path = ContentService._get_storage_path(
-            tenant_id=1, drawing_id=42, version=3
-        )
+        path = ContentService._get_storage_path(tenant_id=1, drawing_id=42, version=3)
         assert path == "tenants/1/drawings/42/versions/v3.json"
 
     def test_get_storage_path_with_large_ids(self):
@@ -46,7 +44,9 @@ class TestSaveContent:
             db.commit()
 
             # Mock storage provider
-            with patch("app.services.content_service.get_storage_provider") as mock_storage:
+            with patch(
+                "app.services.content_service.get_storage_provider"
+            ) as mock_storage:
                 mock_storage_instance = MagicMock()
                 mock_storage.return_value = mock_storage_instance
 
@@ -61,9 +61,9 @@ class TestSaveContent:
 
                 # Verify version was created
                 assert version == 1
-                version_record = db(
-                    db.drawing_versions.drawing_id == drawing
-                ).select().first()
+                version_record = (
+                    db(db.drawing_versions.drawing_id == drawing).select().first()
+                )
                 assert version_record is not None
                 assert version_record.version_number == 1
                 assert version_record.change_summary == "Initial version"
@@ -160,9 +160,7 @@ class TestSaveContent:
                     user_id=user["id"],
                 )
 
-    def test_save_content_storage_failure_raises_error(
-        self, app, db, create_test_user
-    ):
+    def test_save_content_storage_failure_raises_error(self, app, db, create_test_user):
         """Test that storage failure raises StorageError."""
         user = create_test_user(email="test@example.com")
 
@@ -174,7 +172,9 @@ class TestSaveContent:
             )
             db.commit()
 
-            with patch("app.services.content_service.get_storage_provider") as mock_storage:
+            with patch(
+                "app.services.content_service.get_storage_provider"
+            ) as mock_storage:
                 mock_storage_instance = MagicMock()
                 mock_storage_instance.upload.side_effect = Exception("Upload failed")
                 mock_storage.return_value = mock_storage_instance
@@ -187,9 +187,7 @@ class TestSaveContent:
                         user_id=user["id"],
                     )
 
-    def test_save_content_updates_drawing_updated_by(
-        self, app, db, create_test_user
-    ):
+    def test_save_content_updates_drawing_updated_by(self, app, db, create_test_user):
         """Test that saving content updates drawing's updated_by_id."""
         user1 = create_test_user(email="user1@example.com")
         user2 = create_test_user(email="user2@example.com")
@@ -503,9 +501,7 @@ class TestListVersions:
 class TestRestoreVersion:
     """Test restoring previous versions."""
 
-    def test_restore_version_creates_new_version(
-        self, app, db, create_test_user
-    ):
+    def test_restore_version_creates_new_version(self, app, db, create_test_user):
         """Test that restoring a version creates a new version."""
         user = create_test_user(email="test@example.com")
 
@@ -623,9 +619,7 @@ class TestDeleteVersion:
                         version=1,
                     )
 
-    def test_delete_version_not_found_returns_false(
-        self, app, db, create_test_user
-    ):
+    def test_delete_version_not_found_returns_false(self, app, db, create_test_user):
         """Test that deleting nonexistent version returns False."""
         user = create_test_user(email="test@example.com")
 
@@ -675,9 +669,7 @@ class TestDeleteVersion:
 class TestCompareVersions:
     """Test comparing versions."""
 
-    def test_compare_versions_returns_both_contents(
-        self, app, db, create_test_user
-    ):
+    def test_compare_versions_returns_both_contents(self, app, db, create_test_user):
         """Test that compare returns both version contents."""
         user = create_test_user(email="test@example.com")
 
@@ -733,9 +725,7 @@ class TestGetLatestVersionNumber:
             latest = ContentService.get_latest_version_number(drawing_id=drawing)
             assert latest == 0
 
-    def test_get_latest_version_number_with_versions(
-        self, app, db, create_test_user
-    ):
+    def test_get_latest_version_number_with_versions(self, app, db, create_test_user):
         """Test that latest version returns highest version number."""
         user = create_test_user(email="test@example.com")
 
@@ -755,7 +745,5 @@ class TestGetLatestVersionNumber:
                         user_id=user["id"],
                     )
 
-                latest = ContentService.get_latest_version_number(
-                    drawing_id=drawing
-                )
+                latest = ContentService.get_latest_version_number(drawing_id=drawing)
                 assert latest == 5

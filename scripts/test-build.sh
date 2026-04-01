@@ -109,16 +109,17 @@ log_head "Runtime Image Builds — iceruns-invoker"
 
 RUNTIME_IMAGES_DIR="$ICERUNS_DIR/runtime-images"
 if [ -d "$RUNTIME_IMAGES_DIR" ]; then
-    # Discover all Dockerfile.* files in the runtime-images directory
+    # Discover all *.dockerfile files in the runtime-images directory
     shopt -s nullglob
-    runtime_dockerfiles=("$RUNTIME_IMAGES_DIR"/Dockerfile.*)
+    runtime_dockerfiles=("$RUNTIME_IMAGES_DIR"/*.dockerfile)
     shopt -u nullglob
 
     if [ ${#runtime_dockerfiles[@]} -eq 0 ]; then
-        skip_build "runtime-images" "no Dockerfile.* found in runtime-images/"
+        skip_build "runtime-images" "no *.dockerfile found in runtime-images/"
     else
         for dockerfile in "${runtime_dockerfiles[@]}"; do
-            lang="${dockerfile##*.}"   # extract the language suffix
+            filename=$(basename "$dockerfile")
+            lang="${filename%.dockerfile}"   # extract the language name
             build_image "runtime-image/$lang" "$dockerfile" "$RUNTIME_IMAGES_DIR"
         done
     fi

@@ -1,4 +1,5 @@
 """Tests for Admin SSO Configuration API endpoints."""
+
 import pytest
 
 

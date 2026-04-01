@@ -8,7 +8,6 @@ them or returning dangerous content.
 import pytest
 import json
 
-
 # Payloads grouped by attack type
 SQL_INJECTION_PAYLOADS = [
     "'; DROP TABLE drawings; --",
@@ -229,9 +228,7 @@ class TestCommandAndPathInjection:
         assert response.status_code in (400, 404, 422)
 
     @pytest.mark.parametrize("cmd", COMMAND_INJECTION_PAYLOADS)
-    def test_command_injection_variants_in_search(
-        self, client, auth_headers, cmd
-    ):
+    def test_command_injection_variants_in_search(self, client, auth_headers, cmd):
         """Command injection payloads in search must not execute system commands."""
         response = client.get(
             "/api/v1/users/search",
@@ -257,9 +254,7 @@ class TestHeaderInjection:
                 "exp": datetime.utcnow() + timedelta(hours=1),
                 "iat": datetime.utcnow(),
             }
-            token = jwt.encode(
-                payload, app.config["JWT_SECRET_KEY"], algorithm="HS256"
-            )
+            token = jwt.encode(payload, app.config["JWT_SECRET_KEY"], algorithm="HS256")
 
         # Append CRLF injection attempt to the token value
         malicious_header = f"Bearer {token}\r\nX-Injected: evil"

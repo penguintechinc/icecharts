@@ -147,7 +147,10 @@ class IceFlowsNotificationService:
                         flow_id,
                         event_type,
                         channel_type,
-                        config.get("recipient", config.get("email", config.get("webhook_url", ""))),
+                        config.get(
+                            "recipient",
+                            config.get("email", config.get("webhook_url", "")),
+                        ),
                         subject,
                         body,
                         result.get("status", "failed"),
@@ -169,9 +172,7 @@ class IceFlowsNotificationService:
                     )
 
         except Exception as e:
-            logger.error(
-                f"Error processing notifications for flow {flow_id}: {str(e)}"
-            )
+            logger.error(f"Error processing notifications for flow {flow_id}: {str(e)}")
 
         return results
 
@@ -199,12 +200,14 @@ class IceFlowsNotificationService:
         try:
             email = config.get("email")
             if not email:
-                return {"channel": "email", "status": "failed", "error": "No email configured"}
+                return {
+                    "channel": "email",
+                    "status": "failed",
+                    "error": "No email configured",
+                }
 
             # Generate HTML body
-            template = IceFlowsNotificationService.EVENT_TEMPLATES.get(
-                event_type, {}
-            )
+            template = IceFlowsNotificationService.EVENT_TEMPLATES.get(event_type, {})
             emoji = template.get("emoji", "📧")
             title = template.get("title", "Notification")
 
@@ -294,9 +297,7 @@ class IceFlowsNotificationService:
                     "error": "No webhook URL configured",
                 }
 
-            template = IceFlowsNotificationService.EVENT_TEMPLATES.get(
-                event_type, {}
-            )
+            template = IceFlowsNotificationService.EVENT_TEMPLATES.get(event_type, {})
             color = template.get("color", "#808080")
             emoji = template.get("emoji", "📧")
             title = template.get("title", "Notification")
@@ -339,13 +340,16 @@ class IceFlowsNotificationService:
 
             # Add error details if present
             if data.get("error"):
-                message["blocks"].insert(4, {
-                    "type": "section",
-                    "text": {
-                        "type": "mrkdwn",
-                        "text": f"*Error:*\n```{data.get('error')}```"
-                    }
-                })
+                message["blocks"].insert(
+                    4,
+                    {
+                        "type": "section",
+                        "text": {
+                            "type": "mrkdwn",
+                            "text": f"*Error:*\n```{data.get('error')}```",
+                        },
+                    },
+                )
 
             response = requests.post(webhook_url, json=message, timeout=10)
 
@@ -456,7 +460,7 @@ class IceFlowsNotificationService:
 
             # Wait before retry with exponential backoff
             if attempt < IceFlowsNotificationService.MAX_RETRIES - 1:
-                wait_time = IceFlowsNotificationService.RETRY_BACKOFF_FACTOR ** attempt
+                wait_time = IceFlowsNotificationService.RETRY_BACKOFF_FACTOR**attempt
                 logger.warning(
                     f"Webhook send attempt {attempt + 1} failed: {last_error}. "
                     f"Retrying in {wait_time}s..."
@@ -565,9 +569,7 @@ class IceFlowsNotificationService:
                 body=body,
                 status=status,
                 error_message=error_message if error_message else None,
-                sent_at=(
-                    datetime.now(timezone.utc) if status == "sent" else None
-                ),
+                sent_at=(datetime.now(timezone.utc) if status == "sent" else None),
             )
             db.commit()
         except Exception as e:

@@ -1,4 +1,5 @@
 """Tests for Drawing Templates API endpoints."""
+
 import pytest
 
 
@@ -67,6 +68,7 @@ class TestCreateTemplate:
     def test_create_with_valid_drawing(self, client, auth_headers, app):
         with app.app_context():
             from app.models import get_db
+
             db = get_db()
             drawing_id = db.drawings.insert(
                 tenant_id=1,
@@ -89,9 +91,7 @@ class TestCreateTemplate:
 
 class TestUpdateTemplate:
     def test_update_requires_auth(self, client):
-        response = client.put(
-            "/api/v1/templates/1", json={"name": "Updated"}
-        )
+        response = client.put("/api/v1/templates/1", json={"name": "Updated"})
         assert response.status_code == 401
 
     def test_update_nonexistent_returns_404(self, client, auth_headers):
@@ -132,6 +132,7 @@ class TestUseTemplate:
     def test_use_missing_name_returns_400(self, client, auth_headers, app):
         with app.app_context():
             from app.models import get_db
+
             db = get_db()
             template_id = db.drawings.insert(
                 tenant_id=1,

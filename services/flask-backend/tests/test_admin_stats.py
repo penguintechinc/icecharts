@@ -1,4 +1,5 @@
 """Tests for Admin Statistics API endpoints."""
+
 import pytest
 
 
@@ -76,9 +77,7 @@ class TestLatencyStats:
 
     def test_latency_requires_admin(self, client, auth_headers):
         """Getting latency metrics requires admin role."""
-        response = client.get(
-            "/api/v1/admin/statistics/latency", headers=auth_headers
-        )
+        response = client.get("/api/v1/admin/statistics/latency", headers=auth_headers)
         assert response.status_code == 403
 
     def test_latency_as_admin(self, client, admin_auth_headers):

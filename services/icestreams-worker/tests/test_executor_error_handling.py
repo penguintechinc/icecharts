@@ -44,7 +44,9 @@ def clean_registries():
     NodeRegistry.clear()
 
 
-def _make_config(auth_type: AuthType = AuthType.NONE, api_key: str = None, oauth_token: str = None):
+def _make_config(
+    auth_type: AuthType = AuthType.NONE, api_key: str = None, oauth_token: str = None
+):
     return ConnectorConfig(
         connector_id="testconn",
         base_url="http://localhost:9000",
@@ -68,7 +70,9 @@ def _make_manifest_with_action(
         version="1.0.0",
         vendor="test",
         auth_methods=(
-            AuthMethod(type=AuthType.API_KEY, header="X-API-Key", env_var="TEST_API_KEY"),
+            AuthMethod(
+                type=AuthType.API_KEY, header="X-API-Key", env_var="TEST_API_KEY"
+            ),
         ),
         actions=(
             ActionDefinition(

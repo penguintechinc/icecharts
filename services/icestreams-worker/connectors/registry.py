@@ -362,7 +362,4 @@ def get_connectors_for_api() -> List[Dict]:
     Returns:
         List of connector dictionaries ready for JSON serialization.
     """
-    return [
-        manifest.to_dict()
-        for manifest in ConnectorRegistry.get_all_manifests()
-    ]
+    return [manifest.to_dict() for manifest in ConnectorRegistry.get_all_manifests()]

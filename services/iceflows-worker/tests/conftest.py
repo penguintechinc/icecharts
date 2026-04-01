@@ -23,7 +23,9 @@ def mock_redis():
 def mock_pipeline_executor():
     """Mock PipelineExecutor with common methods."""
     mock = AsyncMock()
-    mock.execute_pipeline = AsyncMock(return_value={"status": "completed", "stages": []})
+    mock.execute_pipeline = AsyncMock(
+        return_value={"status": "completed", "stages": []}
+    )
     mock.run_stage_tests = AsyncMock(return_value=True)
     mock.execute_git_merge = AsyncMock(return_value=True)
     mock.execute_calls = AsyncMock(return_value=True)
@@ -49,6 +51,7 @@ def mock_requests_session():
 def worker_instance(mock_redis):
     """Create an IceFlowsWorker with mocked Redis."""
     from worker import IceFlowsWorker
+
     worker = IceFlowsWorker(redis_url="redis://localhost:6379", worker_id="test-worker")
     worker.redis_client = mock_redis
     return worker
@@ -67,13 +70,13 @@ def sample_pipeline_config():
                     "type": "test",
                     "test_configs": [
                         {"test_id": "t1", "name": "Unit Tests", "command": "pytest"}
-                    ]
+                    ],
                 },
                 {
                     "id": "stage-2",
                     "type": "merge",
                     "source_branch": "feature/x",
-                    "target_branch": "main"
+                    "target_branch": "main",
                 },
                 {
                     "id": "stage-3",
@@ -81,24 +84,28 @@ def sample_pipeline_config():
                     "call_configs": [
                         {"call_id": "c1", "name": "Notify", "call_type": "icestreams"}
                     ],
-                    "context": {}
-                }
+                    "context": {},
+                },
             ]
-        }
+        },
     }
 
 
 @pytest.fixture
 def git_operations():
     """Create GitOperations with mocked subprocess and requests."""
-    with patch('git_operations.subprocess') as mock_sub, \
-         patch('git_operations.requests') as mock_req:  # noqa: F841
-        mock_sub.run.return_value = MagicMock(stdout="abc123\n", stderr="", returncode=0)
+    with patch("git_operations.subprocess") as mock_sub, patch(
+        "git_operations.requests"
+    ) as mock_req:  # noqa: F841
+        mock_sub.run.return_value = MagicMock(
+            stdout="abc123\n", stderr="", returncode=0
+        )
         from git_operations import GitOperations
+
         ops = GitOperations(
             provider="github",
             api_token="test-token",
-            repo_url="https://github.com/org/repo"
+            repo_url="https://github.com/org/repo",
         )
         yield ops
 
@@ -106,9 +113,12 @@ def git_operations():
 @pytest.fixture
 def call_handler(mock_requests_session):
     """Create CallHandler with mocked HTTP session."""
-    with patch('call_handler.requests.Session', return_value=mock_requests_session):
+    with patch("call_handler.requests.Session", return_value=mock_requests_session):
         from call_handler import CallHandler
-        handler = CallHandler(api_base_url="http://localhost:5000", api_token="test-token")
+
+        handler = CallHandler(
+            api_base_url="http://localhost:5000", api_token="test-token"
+        )
         return handler
 
 
@@ -123,7 +133,7 @@ def sample_call_config():
         "input_template": {"key": "value"},
         "timeout_seconds": 30,
         "is_blocking": True,
-        "trigger_on": "post_merge"
+        "trigger_on": "post_merge",
     }
 
 

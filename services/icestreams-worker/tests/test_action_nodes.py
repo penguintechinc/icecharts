@@ -62,6 +62,7 @@ class TestHttpRequestAction:
     @pytest.fixture(autouse=True)
     def import_node(self):
         from nodes.actions.http_request import HttpRequestAction
+
         self.node_class = HttpRequestAction
         self.node = HttpRequestAction()
 
@@ -113,11 +114,14 @@ class TestHttpRequestAction:
             mock_client.request = AsyncMock(return_value=mock_resp)
             mock_client_class.return_value = mock_client
 
-            result = await self.node.execute(ctx, {
-                "url": "http://example.com/api",
-                "method": "POST",
-                "body": {"name": "test"},
-            })
+            result = await self.node.execute(
+                ctx,
+                {
+                    "url": "http://example.com/api",
+                    "method": "POST",
+                    "body": {"name": "test"},
+                },
+            )
 
         assert result.success is True
         assert result.outputs["status"] == 201
@@ -141,10 +145,13 @@ class TestHttpRequestAction:
             mock_client.request = AsyncMock(side_effect=capture_request)
             mock_client_class.return_value = mock_client
 
-            result = await self.node.execute(ctx, {
-                "url": "http://example.com/api",
-                "headers": {"X-Custom": "MyValue"},
-            })
+            result = await self.node.execute(
+                ctx,
+                {
+                    "url": "http://example.com/api",
+                    "headers": {"X-Custom": "MyValue"},
+                },
+            )
 
         assert result.success is True
         assert captured_kwargs.get("headers", {}).get("X-Custom") == "MyValue"
@@ -179,7 +186,9 @@ class TestHttpRequestAction:
             return mock_500 if call_count < 3 else mock_200
 
         with patch("nodes.actions.http_request.asyncio.sleep", new_callable=AsyncMock):
-            with patch("nodes.actions.http_request.httpx.AsyncClient") as mock_client_class:
+            with patch(
+                "nodes.actions.http_request.httpx.AsyncClient"
+            ) as mock_client_class:
                 mock_client = AsyncMock()
                 mock_client.__aenter__ = AsyncMock(return_value=mock_client)
                 mock_client.__aexit__ = AsyncMock(return_value=False)
@@ -220,10 +229,14 @@ class TestHttpRequestAction:
             mock_client = AsyncMock()
             mock_client.__aenter__ = AsyncMock(return_value=mock_client)
             mock_client.__aexit__ = AsyncMock(return_value=False)
-            mock_client.request = AsyncMock(side_effect=httpx.NetworkError("Connection refused"))
+            mock_client.request = AsyncMock(
+                side_effect=httpx.NetworkError("Connection refused")
+            )
             mock_client_class.return_value = mock_client
 
-            result = await self.node.execute(ctx, {"url": "http://unreachable.example.com"})
+            result = await self.node.execute(
+                ctx, {"url": "http://unreachable.example.com"}
+            )
 
         assert result.success is False
 
@@ -237,7 +250,9 @@ class TestHttpRequestAction:
             mock_client = AsyncMock()
             mock_client.__aenter__ = AsyncMock(return_value=mock_client)
             mock_client.__aexit__ = AsyncMock(return_value=False)
-            mock_client.request = AsyncMock(side_effect=httpx.TimeoutException("Timeout"))
+            mock_client.request = AsyncMock(
+                side_effect=httpx.TimeoutException("Timeout")
+            )
             mock_client_class.return_value = mock_client
 
             result = await self.node.execute(ctx, {"url": "http://slow.example.com"})
@@ -266,6 +281,7 @@ class TestWebhookOutAction:
     @pytest.fixture(autouse=True)
     def import_node(self):
         from nodes.actions.webhook_out import WebhookOutAction
+
         self.node_class = WebhookOutAction
         self.node = WebhookOutAction()
 
@@ -300,10 +316,13 @@ class TestWebhookOutAction:
             mock_client.post = AsyncMock(return_value=mock_resp)
             mock_client_class.return_value = mock_client
 
-            result = await self.node.execute(ctx, {
-                "url": "http://example.com/webhook",
-                "payload": {"event": "test"},
-            })
+            result = await self.node.execute(
+                ctx,
+                {
+                    "url": "http://example.com/webhook",
+                    "payload": {"event": "test"},
+                },
+            )
 
         assert isinstance(result, NodeResult)
         assert result.success is True
@@ -313,11 +332,13 @@ class TestWebhookOutAction:
     @pytest.mark.asyncio
     async def test_webhook_with_bearer_auth(self):
         """Webhook with bearer auth must include Authorization header."""
-        ctx = _make_context(config={
-            "authType": "bearer",
-            "bearerToken": "my-token-123",
-            "maxRetries": 0,
-        })
+        ctx = _make_context(
+            config={
+                "authType": "bearer",
+                "bearerToken": "my-token-123",
+                "maxRetries": 0,
+            }
+        )
         mock_resp = MagicMock()
         mock_resp.status_code = 204
 
@@ -334,10 +355,13 @@ class TestWebhookOutAction:
             mock_client.post = AsyncMock(side_effect=capture_post)
             mock_client_class.return_value = mock_client
 
-            result = await self.node.execute(ctx, {
-                "url": "http://example.com/webhook",
-                "payload": {"data": "test"},
-            })
+            result = await self.node.execute(
+                ctx,
+                {
+                    "url": "http://example.com/webhook",
+                    "payload": {"data": "test"},
+                },
+            )
 
         assert captured_headers.get("Authorization") == "Bearer my-token-123"
 
@@ -345,12 +369,15 @@ class TestWebhookOutAction:
     async def test_webhook_with_basic_auth(self):
         """Webhook with basic auth must include base64 Authorization header."""
         import base64
-        ctx = _make_context(config={
-            "authType": "basic",
-            "basicUsername": "user",
-            "basicPassword": "pass",
-            "maxRetries": 0,
-        })
+
+        ctx = _make_context(
+            config={
+                "authType": "basic",
+                "basicUsername": "user",
+                "basicPassword": "pass",
+                "maxRetries": 0,
+            }
+        )
         mock_resp = MagicMock()
         mock_resp.status_code = 200
 
@@ -367,10 +394,13 @@ class TestWebhookOutAction:
             mock_client.post = AsyncMock(side_effect=capture_post)
             mock_client_class.return_value = mock_client
 
-            result = await self.node.execute(ctx, {
-                "url": "http://example.com/webhook",
-                "payload": {},
-            })
+            result = await self.node.execute(
+                ctx,
+                {
+                    "url": "http://example.com/webhook",
+                    "payload": {},
+                },
+            )
 
         expected_b64 = base64.b64encode(b"user:pass").decode()
         assert captured_headers.get("Authorization") == f"Basic {expected_b64}"
@@ -378,12 +408,14 @@ class TestWebhookOutAction:
     @pytest.mark.asyncio
     async def test_webhook_with_apikey_auth(self):
         """Webhook with apikey auth must include custom header."""
-        ctx = _make_context(config={
-            "authType": "apikey",
-            "apiKeyHeader": "X-Auth-Token",
-            "apiKeyValue": "secret-key-abc",
-            "maxRetries": 0,
-        })
+        ctx = _make_context(
+            config={
+                "authType": "apikey",
+                "apiKeyHeader": "X-Auth-Token",
+                "apiKeyValue": "secret-key-abc",
+                "maxRetries": 0,
+            }
+        )
         mock_resp = MagicMock()
         mock_resp.status_code = 200
 
@@ -400,10 +432,13 @@ class TestWebhookOutAction:
             mock_client.post = AsyncMock(side_effect=capture_post)
             mock_client_class.return_value = mock_client
 
-            result = await self.node.execute(ctx, {
-                "url": "http://example.com/webhook",
-                "payload": {},
-            })
+            result = await self.node.execute(
+                ctx,
+                {
+                    "url": "http://example.com/webhook",
+                    "payload": {},
+                },
+            )
 
         assert captured_headers.get("X-Auth-Token") == "secret-key-abc"
 
@@ -427,11 +462,14 @@ class TestWebhookOutAction:
             mock_client.post = AsyncMock(side_effect=capture_post)
             mock_client_class.return_value = mock_client
 
-            result = await self.node.execute(ctx, {
-                "url": "http://example.com/webhook",
-                "payload": {"key": "val"},
-                "headers": {"X-Request-ID": "req-001"},
-            })
+            result = await self.node.execute(
+                ctx,
+                {
+                    "url": "http://example.com/webhook",
+                    "payload": {"key": "val"},
+                    "headers": {"X-Request-ID": "req-001"},
+                },
+            )
 
         assert captured_headers.get("X-Request-ID") == "req-001"
 
@@ -456,22 +494,27 @@ class TestWebhookOutAction:
             mock_client.post = AsyncMock(return_value=mock_resp)
             mock_client_class.return_value = mock_client
 
-            result = await self.node.execute(ctx, {
-                "url": "http://example.com/webhook",
-                "payload": {},
-            })
+            result = await self.node.execute(
+                ctx,
+                {
+                    "url": "http://example.com/webhook",
+                    "payload": {},
+                },
+            )
 
         # NodeResult should succeed (we handled the error), but webhook failed
         assert isinstance(result, NodeResult)
 
     def test_validate_config_valid_bearer(self):
         """Valid bearer config must produce no errors."""
-        errors = self.node_class.validate_config({
-            "authType": "bearer",
-            "bearerToken": "mytoken",
-            "timeout": 30,
-            "maxRetries": 3,
-        })
+        errors = self.node_class.validate_config(
+            {
+                "authType": "bearer",
+                "bearerToken": "mytoken",
+                "timeout": 30,
+                "maxRetries": 3,
+            }
+        )
         assert errors == []
 
     def test_validate_config_bearer_missing_token(self):
@@ -481,10 +524,12 @@ class TestWebhookOutAction:
 
     def test_validate_config_basic_missing_password(self):
         """Basic auth without password must produce validation error."""
-        errors = self.node_class.validate_config({
-            "authType": "basic",
-            "basicUsername": "user",
-        })
+        errors = self.node_class.validate_config(
+            {
+                "authType": "basic",
+                "basicUsername": "user",
+            }
+        )
         assert len(errors) > 0
 
     def test_validate_config_invalid_auth_type(self):

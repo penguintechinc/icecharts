@@ -139,9 +139,7 @@ class SwitchConditional(BaseNode):
                 return None
         return value
 
-    def _find_matching_output(
-        self, field_value: Any, cases: List[Dict]
-    ) -> str:
+    def _find_matching_output(self, field_value: Any, cases: List[Dict]) -> str:
         """
         Find the first matching case output for a field value.
 
@@ -160,9 +158,7 @@ class SwitchConditional(BaseNode):
                 return case.get("output", "default")
         return "default"
 
-    async def execute(
-        self, context: NodeContext, inputs: Dict[str, Any]
-    ) -> NodeResult:
+    async def execute(self, context: NodeContext, inputs: Dict[str, Any]) -> NodeResult:
         """
         Execute the switch conditional.
 

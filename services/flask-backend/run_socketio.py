@@ -19,29 +19,29 @@ from app import create_app
 def main():
     """Main entry point for running Flask with SocketIO."""
     parser = argparse.ArgumentParser(
-        description='Run Flask application with SocketIO support'
+        description="Run Flask application with SocketIO support"
     )
     parser.add_argument(
-        '--host',
-        default=os.getenv('FLASK_HOST', '0.0.0.0'),
-        help='Host to bind to (default: 0.0.0.0)'
+        "--host",
+        default=os.getenv("FLASK_HOST", "0.0.0.0"),
+        help="Host to bind to (default: 0.0.0.0)",
     )
     parser.add_argument(
-        '--port',
+        "--port",
         type=int,
-        default=int(os.getenv('PORT', os.getenv('FLASK_PORT', '5000'))),
-        help='Port to bind to (default: $PORT or 5000)'
+        default=int(os.getenv("PORT", os.getenv("FLASK_PORT", "5000"))),
+        help="Port to bind to (default: $PORT or 5000)",
     )
     parser.add_argument(
-        '--debug',
-        action='store_true',
-        default=os.getenv('FLASK_DEBUG', 'false').lower() == 'true',
-        help='Enable debug mode'
+        "--debug",
+        action="store_true",
+        default=os.getenv("FLASK_DEBUG", "false").lower() == "true",
+        help="Enable debug mode",
     )
     parser.add_argument(
-        '--allow-unsafe-werkzeug',
-        action='store_true',
-        help='Allow running with Werkzeug (not recommended for production)'
+        "--allow-unsafe-werkzeug",
+        action="store_true",
+        help="Allow running with Werkzeug (not recommended for production)",
     )
 
     args = parser.parse_args()
@@ -84,5 +84,5 @@ def main():
     return 0
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     exit(main())

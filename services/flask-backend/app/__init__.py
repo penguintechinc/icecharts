@@ -27,6 +27,7 @@ def create_app(config_class=None):
     """
     if config_class is None:
         from .config import get_config
+
         config_class = get_config(os.getenv("FLASK_ENV", "development"))
 
     app = Flask(__name__)
@@ -85,7 +86,8 @@ def create_app(config_class=None):
         try:
             from prometheus_client import generate_latest
             from flask import Response
-            return Response(generate_latest(), mimetype='text/plain; version=0.0.4')
+
+            return Response(generate_latest(), mimetype="text/plain; version=0.0.4")
         except Exception as e:
             logger.error(f"Metrics endpoint error: {e}")
             return {"error": "Unable to generate metrics"}, 500

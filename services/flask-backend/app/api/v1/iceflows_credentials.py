@@ -52,7 +52,9 @@ def serialize_credential(cred, include_token=False):
     else:
         # Show masked token for security
         if cred.access_token:
-            result["access_token_preview"] = f"{cred.access_token[:8]}...{cred.access_token[-4:]}"
+            result["access_token_preview"] = (
+                f"{cred.access_token[:8]}...{cred.access_token[-4:]}"
+            )
         else:
             result["access_token_preview"] = None
 
@@ -140,7 +142,12 @@ def create_credential():
         if not data.get("provider"):
             return jsonify({"success": False, "error": "provider is required"}), 400
         if data["provider"] not in ["github", "gitlab"]:
-            return jsonify({"success": False, "error": "provider must be github or gitlab"}), 400
+            return (
+                jsonify(
+                    {"success": False, "error": "provider must be github or gitlab"}
+                ),
+                400,
+            )
         if not data.get("access_token"):
             return jsonify({"success": False, "error": "access_token is required"}), 400
 
@@ -151,9 +158,14 @@ def create_credential():
         expires_at = None
         if data.get("expires_at"):
             try:
-                expires_at = datetime.datetime.fromisoformat(data["expires_at"].replace("Z", "+00:00"))
+                expires_at = datetime.datetime.fromisoformat(
+                    data["expires_at"].replace("Z", "+00:00")
+                )
             except ValueError:
-                return jsonify({"success": False, "error": "Invalid expires_at format"}), 400
+                return (
+                    jsonify({"success": False, "error": "Invalid expires_at format"}),
+                    400,
+                )
 
         # Create credential record
         db_id = db.iceflows_credentials.insert(
@@ -205,9 +217,11 @@ def get_credential(credential_id: str):
         user_id = user["id"]
         db = get_db()
 
-        cred = db(
-            (db.iceflows_credentials.credential_id == credential_id)
-        ).select().first()
+        cred = (
+            db((db.iceflows_credentials.credential_id == credential_id))
+            .select()
+            .first()
+        )
 
         if not cred:
             return (
@@ -255,9 +269,11 @@ def update_credential(credential_id: str):
         db = get_db()
         data = request.get_json() or {}
 
-        cred = db(
-            (db.iceflows_credentials.credential_id == credential_id)
-        ).select().first()
+        cred = (
+            db((db.iceflows_credentials.credential_id == credential_id))
+            .select()
+            .first()
+        )
 
         if not cred:
             return (
@@ -292,7 +308,12 @@ def update_credential(credential_id: str):
                         data["expires_at"].replace("Z", "+00:00")
                     )
                 except ValueError:
-                    return jsonify({"success": False, "error": "Invalid expires_at format"}), 400
+                    return (
+                        jsonify(
+                            {"success": False, "error": "Invalid expires_at format"}
+                        ),
+                        400,
+                    )
             else:
                 update_data["expires_at"] = None
         if "is_active" in data:
@@ -302,9 +323,11 @@ def update_credential(credential_id: str):
         db.commit()
 
         # Fetch updated credential
-        updated_cred = db(
-            (db.iceflows_credentials.credential_id == credential_id)
-        ).select().first()
+        updated_cred = (
+            db((db.iceflows_credentials.credential_id == credential_id))
+            .select()
+            .first()
+        )
 
         return (
             jsonify(
@@ -338,9 +361,11 @@ def delete_credential(credential_id: str):
         user_id = user["id"]
         db = get_db()
 
-        cred = db(
-            (db.iceflows_credentials.credential_id == credential_id)
-        ).select().first()
+        cred = (
+            db((db.iceflows_credentials.credential_id == credential_id))
+            .select()
+            .first()
+        )
 
         if not cred:
             return (
@@ -404,9 +429,11 @@ def test_credential(credential_id: str):
         user_id = user["id"]
         db = get_db()
 
-        cred = db(
-            (db.iceflows_credentials.credential_id == credential_id)
-        ).select().first()
+        cred = (
+            db((db.iceflows_credentials.credential_id == credential_id))
+            .select()
+            .first()
+        )
 
         if not cred:
             return (
@@ -423,9 +450,7 @@ def test_credential(credential_id: str):
 
         # TODO: Implement actual API test calls to GitHub/GitLab
         # For now, just update last_used_at
-        cred.update_record(
-            last_used_at=datetime.datetime.now(datetime.timezone.utc)
-        )
+        cred.update_record(last_used_at=datetime.datetime.now(datetime.timezone.utc))
         db.commit()
 
         return (

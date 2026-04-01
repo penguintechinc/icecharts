@@ -17,13 +17,17 @@ from ...services.redis_streams import RedisStreams
 iceruns_hooks_v1_bp = Blueprint("iceruns_hooks_v1", __name__, url_prefix="/iceruns")
 
 
-def validate_hmac_signature(webhook_secret: str, body: bytes, signature_header: str) -> bool:
+def validate_hmac_signature(
+    webhook_secret: str, body: bytes, signature_header: str
+) -> bool:
     """Validate HMAC signature for webhook request."""
     if not signature_header or not signature_header.startswith("sha256="):
         return False
 
     expected_signature = signature_header.split("=", 1)[1]
-    computed_signature = hmac.new(webhook_secret.encode(), body, hashlib.sha256).hexdigest()
+    computed_signature = hmac.new(
+        webhook_secret.encode(), body, hashlib.sha256
+    ).hexdigest()
 
     return hmac.compare_digest(expected_signature, computed_signature)
 
@@ -50,7 +54,9 @@ def check_rate_limit(redis, function_id: str, rate_limit: int) -> bool:
     return True
 
 
-@iceruns_hooks_v1_bp.route("/hook/<token>", methods=["GET", "POST", "PUT", "DELETE", "PATCH"])
+@iceruns_hooks_v1_bp.route(
+    "/hook/<token>", methods=["GET", "POST", "PUT", "DELETE", "PATCH"]
+)
 def webhook_handler(token: str):
     """Public webhook endpoint for executing functions.
 
@@ -67,7 +73,10 @@ def webhook_handler(token: str):
 
         # Check function status
         if func.status != "active":
-            return jsonify({"error": f"Function is not active (status: {func.status})"}), 400
+            return (
+                jsonify({"error": f"Function is not active (status: {func.status})"}),
+                400,
+            )
 
         # Validate HTTP method
         if func.allowed_methods and request.method not in func.allowed_methods:
@@ -88,7 +97,9 @@ def webhook_handler(token: str):
         # Validate HMAC signature if required
         if func.validate_signature:
             signature = request.headers.get("X-IceRuns-Signature")
-            if not validate_hmac_signature(func.webhook_secret, request.get_data(), signature):
+            if not validate_hmac_signature(
+                func.webhook_secret, request.get_data(), signature
+            ):
                 return jsonify({"error": "Invalid signature"}), 403
 
         # Parse input from various sources
@@ -175,7 +186,14 @@ def get_webhook_config(function_id: str):
         user_id = user["id"]
         db = get_db()
 
-        func = db((db.iceruns.function_id == function_id) & (db.iceruns.created_by_id == user_id)).select().first()
+        func = (
+            db(
+                (db.iceruns.function_id == function_id)
+                & (db.iceruns.created_by_id == user_id)
+            )
+            .select()
+            .first()
+        )
 
         if not func:
             return jsonify({"error": "Function not found"}), 404
@@ -214,7 +232,14 @@ def update_webhook_config(function_id: str):
         data = request.get_json()
         db = get_db()
 
-        func = db((db.iceruns.function_id == function_id) & (db.iceruns.created_by_id == user_id)).select().first()
+        func = (
+            db(
+                (db.iceruns.function_id == function_id)
+                & (db.iceruns.created_by_id == user_id)
+            )
+            .select()
+            .first()
+        )
 
         if not func:
             return jsonify({"error": "Function not found"}), 404
@@ -240,7 +265,10 @@ def update_webhook_config(function_id: str):
         db(db.iceruns.id == func.id).update(**update_fields)
         db.commit()
 
-        return jsonify({"success": True, "message": "Webhook configuration updated"}), 200
+        return (
+            jsonify({"success": True, "message": "Webhook configuration updated"}),
+            200,
+        )
 
     except Exception as e:
         current_app.logger.error(f"Error updating webhook config: {e}")
@@ -258,7 +286,14 @@ def test_webhook(function_id: str):
         data = request.get_json() or {}
         db = get_db()
 
-        func = db((db.iceruns.function_id == function_id) & (db.iceruns.created_by_id == user_id)).select().first()
+        func = (
+            db(
+                (db.iceruns.function_id == function_id)
+                & (db.iceruns.created_by_id == user_id)
+            )
+            .select()
+            .first()
+        )
 
         if not func:
             return jsonify({"error": "Function not found"}), 404
@@ -266,7 +301,9 @@ def test_webhook(function_id: str):
         # Generate test HMAC signature
         test_payload = data.get("payload", {"test": True})
         payload_bytes = str(test_payload).encode()
-        signature = hmac.new(func.webhook_secret.encode(), payload_bytes, hashlib.sha256).hexdigest()
+        signature = hmac.new(
+            func.webhook_secret.encode(), payload_bytes, hashlib.sha256
+        ).hexdigest()
 
         return (
             jsonify(

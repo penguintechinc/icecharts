@@ -33,6 +33,7 @@ class NodeInfo:
         display_name: Human-readable name for UI display
         description: Brief description of what this node does
     """
+
     node_type: str
     node_class: NodeClassType
     category: str
@@ -42,16 +43,19 @@ class NodeInfo:
 
 class NodeRegistryError(Exception):
     """Base exception for node registry errors."""
+
     pass
 
 
 class NodeNotFoundError(NodeRegistryError):
     """Raised when a requested node type is not registered."""
+
     pass
 
 
 class DuplicateNodeError(NodeRegistryError):
     """Raised when attempting to register a node type that already exists."""
+
     pass
 
 
@@ -131,7 +135,8 @@ class NodeRegistry:
             final_display_name = display_name or node_type.replace("_", " ").title()
             final_description = description or (
                 node_class.__doc__.strip().split("\n")[0]
-                if node_class.__doc__ else f"{node_type} node"
+                if node_class.__doc__
+                else f"{node_type} node"
             )
 
             # Create node info
@@ -153,7 +158,9 @@ class NodeRegistry:
             )
 
     @classmethod
-    def get(cls, node_type: str, raise_on_missing: bool = True) -> Optional[NodeClassType]:
+    def get(
+        cls, node_type: str, raise_on_missing: bool = True
+    ) -> Optional[NodeClassType]:
         """
         Get a node class by its type identifier.
 
@@ -212,8 +219,7 @@ class NodeRegistry:
         """
         with cls._lock:
             return {
-                node_type: info.node_class
-                for node_type, info in cls._registry.items()
+                node_type: info.node_class for node_type, info in cls._registry.items()
             }
 
     @classmethod
@@ -244,8 +250,7 @@ class NodeRegistry:
         """
         with cls._lock:
             return [
-                info for info in cls._registry.values()
-                if info.category == category
+                info for info in cls._registry.values() if info.category == category
             ]
 
     @classmethod
@@ -352,7 +357,9 @@ class NodeRegistry:
         """
         with cls._lock:
             cls._initialized = True
-            logger.info(f"Node registry marked as initialized ({len(cls._registry)} nodes)")
+            logger.info(
+                f"Node registry marked as initialized ({len(cls._registry)} nodes)"
+            )
 
 
 def register_node(
@@ -385,6 +392,7 @@ def register_node(
     Raises:
         DuplicateNodeError: If node_type is already registered
     """
+
     def decorator(node_class: NodeClassType) -> NodeClassType:
         # Register the node class
         NodeRegistry.register(

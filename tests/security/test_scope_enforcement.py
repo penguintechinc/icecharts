@@ -285,9 +285,7 @@ class TestMultipleScopesAndEdgeCases:
                 "exp": datetime.utcnow() + timedelta(days=1),
                 "iat": datetime.utcnow(),
             }
-            token = jwt.encode(
-                payload, app.config["JWT_SECRET_KEY"], algorithm="HS256"
-            )
+            token = jwt.encode(payload, app.config["JWT_SECRET_KEY"], algorithm="HS256")
 
         response = client.get(
             "/api/v1/drawings",

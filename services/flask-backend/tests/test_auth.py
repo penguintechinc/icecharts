@@ -352,9 +352,7 @@ class TestAuthEdgeCases:
         )
         assert response.status_code == 200
 
-    def test_login_after_logout_gets_new_token(
-        self, client, test_user, auth_headers
-    ):
+    def test_login_after_logout_gets_new_token(self, client, test_user, auth_headers):
         """User should get a new token after logout and re-login."""
         # Logout
         logout_response = client.post("/api/v1/auth/logout", headers=auth_headers)
@@ -407,9 +405,7 @@ class TestAuthEdgeCases:
 class TestAuthSecurityEdgeCases:
     """Security-focused edge case tests for authentication."""
 
-    def test_login_with_expired_token_returns_401(
-        self, client, expired_jwt_token
-    ):
+    def test_login_with_expired_token_returns_401(self, client, expired_jwt_token):
         """Accessing a protected endpoint with an expired token must return 401."""
         headers = {"Authorization": f"Bearer {expired_jwt_token}"}
         response = client.get("/api/v1/auth/me", headers=headers)
@@ -426,9 +422,9 @@ class TestAuthSecurityEdgeCases:
             "/api/v1/auth/refresh",
             json={"refresh_token": refresh_token},
         )
-        assert first_response.status_code == 200, (
-            f"First refresh failed: {first_response.data}"
-        )
+        assert (
+            first_response.status_code == 200
+        ), f"First refresh failed: {first_response.data}"
 
         # Second use of the same (now consumed) token must be rejected
         second_response = client.post(
@@ -436,9 +432,10 @@ class TestAuthSecurityEdgeCases:
             json={"refresh_token": refresh_token},
         )
         # The original token should no longer be valid after first use
-        assert second_response.status_code in [401, 400], (
-            "Replay of already-used refresh token should be rejected"
-        )
+        assert second_response.status_code in [
+            401,
+            400,
+        ], "Replay of already-used refresh token should be rejected"
 
     def test_auth_required_tampered_signature(self, client, valid_jwt_token):
         """A JWT with a tampered signature must be rejected with 401."""

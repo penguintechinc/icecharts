@@ -25,4 +25,4 @@ class BashRuntime(BaseRuntime):
         """
         # Bash receives input via ICERUN_INPUT environment variable
         # Output should be printed to stdout with __ICERUN_OUTPUT__: prefix
-        return ['/bin/bash', handler]
+        return ["/bin/bash", handler]

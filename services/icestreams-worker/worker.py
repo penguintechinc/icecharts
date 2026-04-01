@@ -49,13 +49,9 @@ class IceStreamsWorker:
             worker_id: Unique identifier for this worker instance
             concurrency: Number of concurrent tasks to process
         """
-        self.redis_url = redis_url or os.getenv(
-            "REDIS_URL", "redis://localhost:6379/0"
-        )
+        self.redis_url = redis_url or os.getenv("REDIS_URL", "redis://localhost:6379/0")
         self.worker_id = worker_id or os.getenv("WORKER_ID", "worker-1")
-        self.concurrency = concurrency or int(
-            os.getenv("WORKER_CONCURRENCY", "1")
-        )
+        self.concurrency = concurrency or int(os.getenv("WORKER_CONCURRENCY", "1"))
 
         self.redis_client: Optional[aioredis.Redis] = None
         self.running = False
@@ -103,9 +99,7 @@ class IceStreamsWorker:
             )
         except redis.ResponseError as e:
             if "BUSYGROUP" in str(e):
-                logger.info(
-                    f"Consumer group '{self.CONSUMER_GROUP}' already exists"
-                )
+                logger.info(f"Consumer group '{self.CONSUMER_GROUP}' already exists")
             else:
                 raise
 
@@ -146,9 +140,7 @@ class IceStreamsWorker:
             return True
 
         except Exception as e:
-            logger.error(
-                f"Error processing message {message_id}: {e}", exc_info=True
-            )
+            logger.error(f"Error processing message {message_id}: {e}", exc_info=True)
             return False
 
     async def _handle_playbook_execute(
@@ -189,9 +181,7 @@ class IceStreamsWorker:
                 redis_client=self.redis_client,
                 execution_id=execution_id,
                 playbook_id=playbook_id,
-                node_timeout_seconds=float(
-                    payload.get("node_timeout_seconds", 30.0)
-                ),
+                node_timeout_seconds=float(payload.get("node_timeout_seconds", 30.0)),
             )
 
             # Publish execution started status
@@ -219,9 +209,7 @@ class IceStreamsWorker:
             )
 
         except Exception as e:
-            logger.error(
-                f"Error executing playbook {playbook_id}: {e}", exc_info=True
-            )
+            logger.error(f"Error executing playbook {playbook_id}: {e}", exc_info=True)
             await self._publish_error(
                 execution_id, f"Playbook execution error: {str(e)}"
             )
@@ -352,9 +340,7 @@ class IceStreamsWorker:
         except Exception as e:
             logger.error(f"Failed to publish status: {e}")
 
-    async def _publish_result(
-        self, execution_id: str, result: ExecutionResult
-    ) -> None:
+    async def _publish_result(self, execution_id: str, result: ExecutionResult) -> None:
         """
         Publish execution result to Redis Stream.
 

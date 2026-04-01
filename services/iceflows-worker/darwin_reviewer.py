@@ -355,7 +355,9 @@ class DarwinReviewer:
                     )
                     continue
 
-            logger.info(f"Retrieved {len(issues)} issue(s) from review: review_id={review_id}")
+            logger.info(
+                f"Retrieved {len(issues)} issue(s) from review: review_id={review_id}"
+            )
             return issues
 
         except requests.exceptions.Timeout as e:
@@ -424,9 +426,7 @@ class DarwinReviewer:
 
                 elif status.status == "failed":
                     logger.error(f"Review failed: review_id={review_id}")
-                    raise DarwinReviewerException(
-                        f"Review failed: {review_id}"
-                    )
+                    raise DarwinReviewerException(f"Review failed: {review_id}")
 
                 logger.debug(
                     f"Review in progress: status={status.status}, "
@@ -438,18 +438,12 @@ class DarwinReviewer:
 
             except DarwinReviewerConnectionError:
                 # Retry on connection errors
-                logger.warning(
-                    f"Connection error, retrying in {poll_interval}s..."
-                )
+                logger.warning(f"Connection error, retrying in {poll_interval}s...")
                 time.sleep(poll_interval)
                 elapsed_time = time.time() - start_time
 
-        logger.error(
-            f"Review wait timeout: review_id={review_id}, timeout={timeout}s"
-        )
-        raise DarwinReviewerTimeoutError(
-            f"Review did not complete within {timeout}s"
-        )
+        logger.error(f"Review wait timeout: review_id={review_id}, timeout={timeout}s")
+        raise DarwinReviewerTimeoutError(f"Review did not complete within {timeout}s")
 
     def check_review_passes(
         self,
@@ -663,9 +657,7 @@ class DarwinReviewer:
 
         # Calculate duration
         completed_at = datetime.now()
-        duration_seconds = (
-            completed_at - status.started_at
-        ).total_seconds()
+        duration_seconds = (completed_at - status.started_at).total_seconds()
 
         result = ReviewResult(
             review_id=review_id,

@@ -83,10 +83,12 @@ class CallHandler:
     def _create_session(self) -> requests.Session:
         """Create and configure requests session with auth headers."""
         session = requests.Session()
-        session.headers.update({
-            "Authorization": f"Bearer {self.api_token}",
-            "Content-Type": "application/json",
-        })
+        session.headers.update(
+            {
+                "Authorization": f"Bearer {self.api_token}",
+                "Content-Type": "application/json",
+            }
+        )
         return session
 
     def execute_call(
@@ -110,9 +112,7 @@ class CallHandler:
         call_type = call_config.get("call_type", "unknown")
         target_id = call_config.get("target_id")
         input_template = call_config.get("input_template", {})
-        timeout_seconds = call_config.get(
-            "timeout_seconds", self.timeout_seconds
-        )
+        timeout_seconds = call_config.get("timeout_seconds", self.timeout_seconds)
         is_blocking = call_config.get("is_blocking", True)
 
         logger.info(
@@ -147,9 +147,7 @@ class CallHandler:
                 result = self._trigger_iceruns(target_id, input_data)
 
             execution_id = result.get("execution_id")
-            logger.info(
-                f"Call triggered successfully: execution_id={execution_id}"
-            )
+            logger.info(f"Call triggered successfully: execution_id={execution_id}")
 
             # Poll for completion if blocking
             if is_blocking:
@@ -163,9 +161,7 @@ class CallHandler:
                 output = status_result.get("output")
                 error_message = status_result.get("error_message")
 
-                logger.info(
-                    f"Polling completed: status={status}, success={success}"
-                )
+                logger.info(f"Polling completed: status={status}, success={success}")
             else:
                 # Non-blocking call is considered successful if triggered
                 status = "triggered"
@@ -181,7 +177,9 @@ class CallHandler:
             error_message = f"Configuration error: {str(e)}"
             status = "error"
         except Exception as e:
-            logger.error(f"Unexpected error executing call {call_id}: {e}", exc_info=True)
+            logger.error(
+                f"Unexpected error executing call {call_id}: {e}", exc_info=True
+            )
             error_message = f"Unexpected error: {str(e)}"
             status = "error"
 
@@ -227,16 +225,13 @@ class CallHandler:
         Returns:
             List of CallResult objects
         """
-        logger.info(
-            f"Executing {len(call_configs)} call(s) for phase: {trigger_phase}"
-        )
+        logger.info(f"Executing {len(call_configs)} call(s) for phase: {trigger_phase}")
 
         results = []
 
         # Filter calls by trigger phase
         filtered_calls = [
-            call for call in call_configs
-            if call.get("trigger_on") == trigger_phase
+            call for call in call_configs if call.get("trigger_on") == trigger_phase
         ]
 
         logger.info(
@@ -255,8 +250,7 @@ class CallHandler:
             # If call is blocking and failed, log warning but continue
             if result.is_blocking and not result.success:
                 logger.warning(
-                    f"Blocking call {result.name} failed: "
-                    f"{result.error_message}"
+                    f"Blocking call {result.name} failed: " f"{result.error_message}"
                 )
 
         logger.info(
@@ -302,13 +296,9 @@ class CallHandler:
             execution_id = data.get("execution_id")
 
             if not execution_id:
-                raise ValueError(
-                    "API response missing execution_id"
-                )
+                raise ValueError("API response missing execution_id")
 
-            logger.info(
-                f"IceStreams playbook triggered: execution_id={execution_id}"
-            )
+            logger.info(f"IceStreams playbook triggered: execution_id={execution_id}")
 
             return {
                 "execution_id": execution_id,
@@ -316,9 +306,7 @@ class CallHandler:
             }
 
         except requests.RequestException as e:
-            logger.error(
-                f"Failed to trigger IceStreams playbook {playbook_id}: {e}"
-            )
+            logger.error(f"Failed to trigger IceStreams playbook {playbook_id}: {e}")
             raise
 
     def _trigger_iceruns(
@@ -357,13 +345,9 @@ class CallHandler:
             execution_id = data.get("execution_id")
 
             if not execution_id:
-                raise ValueError(
-                    "API response missing execution_id"
-                )
+                raise ValueError("API response missing execution_id")
 
-            logger.info(
-                f"IceRuns function triggered: execution_id={execution_id}"
-            )
+            logger.info(f"IceRuns function triggered: execution_id={execution_id}")
 
             return {
                 "execution_id": execution_id,
@@ -371,9 +355,7 @@ class CallHandler:
             }
 
         except requests.RequestException as e:
-            logger.error(
-                f"Failed to trigger IceRuns function {function_id}: {e}"
-            )
+            logger.error(f"Failed to trigger IceRuns function {function_id}: {e}")
             raise
 
     def _poll_execution_status(
@@ -497,10 +479,7 @@ class CallHandler:
 
         elif isinstance(template, list):
             # Recursively render list items
-            return [
-                self._render_template(item, context)
-                for item in template
-            ]
+            return [self._render_template(item, context) for item in template]
 
         else:
             # Return non-string/dict/list values as-is

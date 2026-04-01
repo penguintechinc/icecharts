@@ -12,6 +12,7 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 def executor():
     """Create a PipelineExecutor instance."""
     from executor import PipelineExecutor
+
     return PipelineExecutor()
 
 
@@ -103,7 +104,9 @@ class TestExecutePipeline:
     async def test_exception_in_pipeline_returns_error_status(self, executor):
         """Unexpected exception during pipeline returns 'error' status."""
         config = {"stages": [{"id": "s1", "type": "test", "test_configs": []}]}
-        with patch.object(executor, "_execute_stage", side_effect=RuntimeError("crash")):
+        with patch.object(
+            executor, "_execute_stage", side_effect=RuntimeError("crash")
+        ):
             result = await executor.execute_pipeline("flow-1", "promo-1", config)
         assert result["status"] == "error"
         assert len(result["errors"]) == 1
@@ -166,9 +169,7 @@ class TestExecuteCalls:
     @pytest.mark.asyncio
     async def test_single_call_executes(self, executor):
         """Single call config executes and returns True."""
-        calls = [
-            {"service": "icestreams", "endpoint": "/api/v1/playbooks/p1/execute"}
-        ]
+        calls = [{"service": "icestreams", "endpoint": "/api/v1/playbooks/p1/execute"}]
         result = await executor.execute_calls(calls, {"flow_id": "f1"})
         assert result is True
 

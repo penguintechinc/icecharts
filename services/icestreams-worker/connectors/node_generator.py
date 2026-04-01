@@ -68,7 +68,9 @@ def create_trigger_node(
     _outputs = [_port_to_node_output(p) for p in trigger.outputs]
     if not _outputs:
         # Default output if none specified
-        _outputs = [NodeOutput(name="out", description="Trigger output", data_type="any")]
+        _outputs = [
+            NodeOutput(name="out", description="Trigger output", data_type="any")
+        ]
 
     # Pre-compute config schema for validation
     required_fields = [f.field for f in trigger.config_schema if f.required]
@@ -137,7 +139,9 @@ def create_trigger_node(
             )
 
     # Set unique class name
-    GeneratedTriggerNode.__name__ = f"{connector_name.replace(' ', '')}_{trigger.id}_Trigger"
+    GeneratedTriggerNode.__name__ = (
+        f"{connector_name.replace(' ', '')}_{trigger.id}_Trigger"
+    )
 
     return GeneratedTriggerNode
 
@@ -172,7 +176,9 @@ def create_action_node(
     outputs_list = [_port_to_node_output(p) for p in action.outputs]
     if not outputs_list:
         # Default output if none specified
-        outputs_list = [NodeOutput(name="out", description="Action result", data_type="object")]
+        outputs_list = [
+            NodeOutput(name="out", description="Action result", data_type="object")
+        ]
 
     # Pre-compute config schema for validation
     required_fields = [f.field for f in action.config_schema if f.required]
@@ -245,7 +251,9 @@ def create_action_node(
                     execution_time_ms=(time.perf_counter() - start_time) * 1000,
                 )
 
-    GeneratedActionNode.__name__ = f"{connector_name.replace(' ', '')}_{action.id}_Action"
+    GeneratedActionNode.__name__ = (
+        f"{connector_name.replace(' ', '')}_{action.id}_Action"
+    )
 
     return GeneratedActionNode
 
@@ -278,7 +286,9 @@ def create_transform_node(
 
     outputs_list = [_port_to_node_output(p) for p in transform.outputs]
     if not outputs_list:
-        outputs_list = [NodeOutput(name="out", description="Transform result", data_type="any")]
+        outputs_list = [
+            NodeOutput(name="out", description="Transform result", data_type="any")
+        ]
 
     required_fields = [f.field for f in transform.config_schema if f.required]
 
@@ -353,7 +363,9 @@ def create_transform_node(
                     execution_time_ms=(time.perf_counter() - start_time) * 1000,
                 )
 
-    GeneratedTransformNode.__name__ = f"{connector_name.replace(' ', '')}_{transform.id}_Transform"
+    GeneratedTransformNode.__name__ = (
+        f"{connector_name.replace(' ', '')}_{transform.id}_Transform"
+    )
 
     return GeneratedTransformNode
 

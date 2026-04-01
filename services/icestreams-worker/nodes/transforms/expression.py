@@ -97,7 +97,7 @@ class ExpressionTransform(BaseNode):
                 name="in",
                 description="Input data (accessible as 'data' in expression)",
                 required=True,
-                data_type="any"
+                data_type="any",
             ),
         ]
 
@@ -105,11 +105,7 @@ class ExpressionTransform(BaseNode):
     def outputs(cls) -> List[NodeOutput]:
         """Define output ports for this node."""
         return [
-            NodeOutput(
-                name="out",
-                description="Expression result",
-                data_type="any"
-            ),
+            NodeOutput(name="out", description="Expression result", data_type="any"),
         ]
 
     @classmethod
@@ -310,7 +306,7 @@ class ExpressionTransform(BaseNode):
 
             return NodeResult.success_result(
                 outputs={"out": result},
-                execution_time_ms=(time.perf_counter() - start_time) * 1000
+                execution_time_ms=(time.perf_counter() - start_time) * 1000,
             )
 
         except Exception as e:
@@ -318,5 +314,5 @@ class ExpressionTransform(BaseNode):
             context.log_error(f"Expression failed: {e}")
             return NodeResult.failure_result(
                 error=f"Expression evaluation failed: {str(e)}",
-                execution_time_ms=(time.perf_counter() - start_time) * 1000
+                execution_time_ms=(time.perf_counter() - start_time) * 1000,
             )

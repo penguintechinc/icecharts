@@ -1,4 +1,5 @@
 """Tests for IceRuns (serverless function management) API endpoints."""
+
 import pytest
 
 NONEXISTENT_FUNCTION_ID = "nonexistent-function-id-abc123"
@@ -22,7 +23,11 @@ class TestIceRunsCreate:
         assert response.status_code == 401
 
     def test_create_missing_name_returns_400(self, client, auth_headers):
-        payload = {"runtime": "python3.13", "entrypoint": "main.py", "handler": "handler"}
+        payload = {
+            "runtime": "python3.13",
+            "entrypoint": "main.py",
+            "handler": "handler",
+        }
         response = client.post("/api/v1/iceruns", json=payload, headers=auth_headers)
         assert response.status_code == 400
 

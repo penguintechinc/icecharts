@@ -19,25 +19,18 @@ def handler(event):
         dict: Greeting message and metadata
     """
     # Get name from input, default to 'World'
-    name = event.get('name', 'World')
+    name = event.get("name", "World")
 
     # Validate input
     if not isinstance(name, str):
-        return {
-            'error': 'name must be a string',
-            'success': False
-        }
+        return {"error": "name must be a string", "success": False}
 
     # Return result
-    return {
-        'message': f'Hello, {name}!',
-        'input': event,
-        'success': True
-    }
+    return {"message": f"Hello, {name}!", "input": event, "success": True}
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     # Local testing
-    test_event = {'name': 'IceRuns'}
+    test_event = {"name": "IceRuns"}
     result = handler(test_event)
     print(result)

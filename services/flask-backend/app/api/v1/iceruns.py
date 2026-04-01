@@ -40,9 +40,13 @@ def serialize_function(func):
         "created_by_id": str(func.created_by_id) if func.created_by_id else None,
         "created_at": func.created_at.isoformat() if func.created_at else None,
         "updated_at": func.updated_at.isoformat() if func.updated_at else None,
-        "last_executed_at": func.last_executed_at.isoformat() if func.last_executed_at else None,
+        "last_executed_at": (
+            func.last_executed_at.isoformat() if func.last_executed_at else None
+        ),
         "execution_count": func.execution_count or 0,
-        "webhook_url": f"/api/v1/iceruns/hook/{func.webhook_token}" if func.webhook_token else None,
+        "webhook_url": (
+            f"/api/v1/iceruns/hook/{func.webhook_token}" if func.webhook_token else None
+        ),
     }
 
 
@@ -72,7 +76,9 @@ def list_functions():
             for tag in tags:
                 query &= db.iceruns.tags.contains(tag)
         if search:
-            query &= (db.iceruns.name.contains(search) | db.iceruns.description.contains(search))
+            query &= db.iceruns.name.contains(search) | db.iceruns.description.contains(
+                search
+            )
 
         functions = db(query).select(orderby=~db.iceruns.updated_at)
         result = [serialize_function(f) for f in functions]
@@ -107,7 +113,10 @@ def create_function():
         # Resource limits validation
         memory_limit = data.get("memory_limit_mb", 128)
         if not (128 <= memory_limit <= 4096):
-            return jsonify({"error": "memory_limit_mb must be between 128 and 4096"}), 400
+            return (
+                jsonify({"error": "memory_limit_mb must be between 128 and 4096"}),
+                400,
+            )
 
         timeout = data.get("timeout_seconds", 60)
         if not (1 <= timeout <= 900):
@@ -171,7 +180,14 @@ def get_function(function_id: str):
         user_id = user["id"]
         db = get_db()
 
-        func = db((db.iceruns.function_id == function_id) & (db.iceruns.created_by_id == user_id)).select().first()
+        func = (
+            db(
+                (db.iceruns.function_id == function_id)
+                & (db.iceruns.created_by_id == user_id)
+            )
+            .select()
+            .first()
+        )
 
         if not func:
             return jsonify({"error": "Function not found"}), 404
@@ -194,7 +210,14 @@ def update_function(function_id: str):
         data = request.get_json()
         db = get_db()
 
-        func = db((db.iceruns.function_id == function_id) & (db.iceruns.created_by_id == user_id)).select().first()
+        func = (
+            db(
+                (db.iceruns.function_id == function_id)
+                & (db.iceruns.created_by_id == user_id)
+            )
+            .select()
+            .first()
+        )
 
         if not func:
             return jsonify({"error": "Function not found"}), 404
@@ -217,11 +240,17 @@ def update_function(function_id: str):
             update_fields["secrets"] = data["secrets"]
         if "memory_limit_mb" in data:
             if not (128 <= data["memory_limit_mb"] <= 4096):
-                return jsonify({"error": "memory_limit_mb must be between 128 and 4096"}), 400
+                return (
+                    jsonify({"error": "memory_limit_mb must be between 128 and 4096"}),
+                    400,
+                )
             update_fields["memory_limit_mb"] = data["memory_limit_mb"]
         if "timeout_seconds" in data:
             if not (1 <= data["timeout_seconds"] <= 900):
-                return jsonify({"error": "timeout_seconds must be between 1 and 900"}), 400
+                return (
+                    jsonify({"error": "timeout_seconds must be between 1 and 900"}),
+                    400,
+                )
             update_fields["timeout_seconds"] = data["timeout_seconds"]
         if "cpu_limit" in data:
             if not (0.1 <= data["cpu_limit"] <= 4.0):
@@ -238,7 +267,10 @@ def update_function(function_id: str):
         db.commit()
 
         updated_func = db.iceruns[func.id]
-        return jsonify({"success": True, "function": serialize_function(updated_func)}), 200
+        return (
+            jsonify({"success": True, "function": serialize_function(updated_func)}),
+            200,
+        )
 
     except Exception as e:
         current_app.logger.error(f"Error updating function: {e}")
@@ -255,7 +287,14 @@ def delete_function(function_id: str):
         user_id = user["id"]
         db = get_db()
 
-        func = db((db.iceruns.function_id == function_id) & (db.iceruns.created_by_id == user_id)).select().first()
+        func = (
+            db(
+                (db.iceruns.function_id == function_id)
+                & (db.iceruns.created_by_id == user_id)
+            )
+            .select()
+            .first()
+        )
 
         if not func:
             return jsonify({"error": "Function not found"}), 404
@@ -285,7 +324,14 @@ def upload_package(function_id: str):
         user_id = user["id"]
         db = get_db()
 
-        func = db((db.iceruns.function_id == function_id) & (db.iceruns.created_by_id == user_id)).select().first()
+        func = (
+            db(
+                (db.iceruns.function_id == function_id)
+                & (db.iceruns.created_by_id == user_id)
+            )
+            .select()
+            .first()
+        )
 
         if not func:
             return jsonify({"error": "Function not found"}), 404
@@ -298,7 +344,9 @@ def upload_package(function_id: str):
             return jsonify({"error": "Empty filename"}), 400
 
         # Upload to S3
-        result = IceRunsStorageService.save_package(function_id, file.stream, file.filename)
+        result = IceRunsStorageService.save_package(
+            function_id, file.stream, file.filename
+        )
 
         # Update database
         db(db.iceruns.id == func.id).update(
@@ -326,7 +374,14 @@ def download_package(function_id: str):
         user_id = user["id"]
         db = get_db()
 
-        func = db((db.iceruns.function_id == function_id) & (db.iceruns.created_by_id == user_id)).select().first()
+        func = (
+            db(
+                (db.iceruns.function_id == function_id)
+                & (db.iceruns.created_by_id == user_id)
+            )
+            .select()
+            .first()
+        )
 
         if not func or not func.package_key:
             return jsonify({"error": "Package not found"}), 404
@@ -350,7 +405,14 @@ def delete_package(function_id: str):
         user_id = user["id"]
         db = get_db()
 
-        func = db((db.iceruns.function_id == function_id) & (db.iceruns.created_by_id == user_id)).select().first()
+        func = (
+            db(
+                (db.iceruns.function_id == function_id)
+                & (db.iceruns.created_by_id == user_id)
+            )
+            .select()
+            .first()
+        )
 
         if not func:
             return jsonify({"error": "Function not found"}), 404
@@ -359,7 +421,10 @@ def delete_package(function_id: str):
             IceRunsStorageService.delete_package(function_id)
 
         db(db.iceruns.id == func.id).update(
-            package_key=None, package_size=None, package_hash=None, updated_at=datetime.datetime.utcnow()
+            package_key=None,
+            package_size=None,
+            package_hash=None,
+            updated_at=datetime.datetime.utcnow(),
         )
         db.commit()
 
@@ -380,7 +445,14 @@ def activate_function(function_id: str):
         user_id = user["id"]
         db = get_db()
 
-        func = db((db.iceruns.function_id == function_id) & (db.iceruns.created_by_id == user_id)).select().first()
+        func = (
+            db(
+                (db.iceruns.function_id == function_id)
+                & (db.iceruns.created_by_id == user_id)
+            )
+            .select()
+            .first()
+        )
 
         if not func:
             return jsonify({"error": "Function not found"}), 404
@@ -388,7 +460,9 @@ def activate_function(function_id: str):
         if not func.package_key:
             return jsonify({"error": "Cannot activate function without package"}), 400
 
-        db(db.iceruns.id == func.id).update(status="active", updated_at=datetime.datetime.utcnow())
+        db(db.iceruns.id == func.id).update(
+            status="active", updated_at=datetime.datetime.utcnow()
+        )
         db.commit()
 
         return jsonify({"success": True, "status": "active"}), 200
@@ -408,12 +482,21 @@ def pause_function(function_id: str):
         user_id = user["id"]
         db = get_db()
 
-        func = db((db.iceruns.function_id == function_id) & (db.iceruns.created_by_id == user_id)).select().first()
+        func = (
+            db(
+                (db.iceruns.function_id == function_id)
+                & (db.iceruns.created_by_id == user_id)
+            )
+            .select()
+            .first()
+        )
 
         if not func:
             return jsonify({"error": "Function not found"}), 404
 
-        db(db.iceruns.id == func.id).update(status="paused", updated_at=datetime.datetime.utcnow())
+        db(db.iceruns.id == func.id).update(
+            status="paused", updated_at=datetime.datetime.utcnow()
+        )
         db.commit()
 
         return jsonify({"success": True, "status": "paused"}), 200
@@ -433,12 +516,21 @@ def archive_function(function_id: str):
         user_id = user["id"]
         db = get_db()
 
-        func = db((db.iceruns.function_id == function_id) & (db.iceruns.created_by_id == user_id)).select().first()
+        func = (
+            db(
+                (db.iceruns.function_id == function_id)
+                & (db.iceruns.created_by_id == user_id)
+            )
+            .select()
+            .first()
+        )
 
         if not func:
             return jsonify({"error": "Function not found"}), 404
 
-        db(db.iceruns.id == func.id).update(status="archived", updated_at=datetime.datetime.utcnow())
+        db(db.iceruns.id == func.id).update(
+            status="archived", updated_at=datetime.datetime.utcnow()
+        )
         db.commit()
 
         return jsonify({"success": True, "status": "archived"}), 200
@@ -458,7 +550,14 @@ def regenerate_webhook_token(function_id: str):
         user_id = user["id"]
         db = get_db()
 
-        func = db((db.iceruns.function_id == function_id) & (db.iceruns.created_by_id == user_id)).select().first()
+        func = (
+            db(
+                (db.iceruns.function_id == function_id)
+                & (db.iceruns.created_by_id == user_id)
+            )
+            .select()
+            .first()
+        )
 
         if not func:
             return jsonify({"error": "Function not found"}), 404
@@ -467,7 +566,9 @@ def regenerate_webhook_token(function_id: str):
         new_secret = secrets.token_urlsafe(64)
 
         db(db.iceruns.id == func.id).update(
-            webhook_token=new_token, webhook_secret=new_secret, updated_at=datetime.datetime.utcnow()
+            webhook_token=new_token,
+            webhook_secret=new_secret,
+            updated_at=datetime.datetime.utcnow(),
         )
         db.commit()
 
@@ -498,7 +599,14 @@ def list_versions(function_id: str):
         user_id = user["id"]
         db = get_db()
 
-        func = db((db.iceruns.function_id == function_id) & (db.iceruns.created_by_id == user_id)).select().first()
+        func = (
+            db(
+                (db.iceruns.function_id == function_id)
+                & (db.iceruns.created_by_id == user_id)
+            )
+            .select()
+            .first()
+        )
 
         if not func:
             return jsonify({"error": "Function not found"}), 404
@@ -540,7 +648,14 @@ def update_config(function_id: str):
         data = request.get_json()
         db = get_db()
 
-        func = db((db.iceruns.function_id == function_id) & (db.iceruns.created_by_id == user_id)).select().first()
+        func = (
+            db(
+                (db.iceruns.function_id == function_id)
+                & (db.iceruns.created_by_id == user_id)
+            )
+            .select()
+            .first()
+        )
 
         if not func:
             return jsonify({"error": "Function not found"}), 404
@@ -548,11 +663,17 @@ def update_config(function_id: str):
         update_fields = {}
         if "memory_limit_mb" in data:
             if not (128 <= data["memory_limit_mb"] <= 4096):
-                return jsonify({"error": "memory_limit_mb must be between 128 and 4096"}), 400
+                return (
+                    jsonify({"error": "memory_limit_mb must be between 128 and 4096"}),
+                    400,
+                )
             update_fields["memory_limit_mb"] = data["memory_limit_mb"]
         if "timeout_seconds" in data:
             if not (1 <= data["timeout_seconds"] <= 900):
-                return jsonify({"error": "timeout_seconds must be between 1 and 900"}), 400
+                return (
+                    jsonify({"error": "timeout_seconds must be between 1 and 900"}),
+                    400,
+                )
             update_fields["timeout_seconds"] = data["timeout_seconds"]
         if "cpu_limit" in data:
             if not (0.1 <= data["cpu_limit"] <= 4.0):
@@ -582,7 +703,14 @@ def update_secrets(function_id: str):
         data = request.get_json()
         db = get_db()
 
-        func = db((db.iceruns.function_id == function_id) & (db.iceruns.created_by_id == user_id)).select().first()
+        func = (
+            db(
+                (db.iceruns.function_id == function_id)
+                & (db.iceruns.created_by_id == user_id)
+            )
+            .select()
+            .first()
+        )
 
         if not func:
             return jsonify({"error": "Function not found"}), 404
@@ -590,7 +718,9 @@ def update_secrets(function_id: str):
         if "secrets" not in data or not isinstance(data["secrets"], dict):
             return jsonify({"error": "secrets must be a dictionary"}), 400
 
-        db(db.iceruns.id == func.id).update(secrets=data["secrets"], updated_at=datetime.datetime.utcnow())
+        db(db.iceruns.id == func.id).update(
+            secrets=data["secrets"], updated_at=datetime.datetime.utcnow()
+        )
         db.commit()
 
         return jsonify({"success": True, "message": "Secrets updated"}), 200

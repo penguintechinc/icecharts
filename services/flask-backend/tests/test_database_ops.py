@@ -1,4 +1,5 @@
 """Tests for Database Operations API endpoints."""
+
 import pytest
 
 
@@ -205,7 +206,11 @@ class TestDatabaseOpsProcedure:
         response = client.post(
             "/api/v1/database-ops/procedure",
             json={
-                "connection": {"db_type": "mysql", "host": "localhost", "database": "db"},
+                "connection": {
+                    "db_type": "mysql",
+                    "host": "localhost",
+                    "database": "db",
+                },
                 "procedure": "my_proc",
             },
         )
@@ -217,7 +222,11 @@ class TestDatabaseOpsProcedure:
             "/api/v1/database-ops/procedure",
             headers=auth_headers,
             json={
-                "connection": {"db_type": "mongodb", "host": "localhost", "database": "db"},
+                "connection": {
+                    "db_type": "mongodb",
+                    "host": "localhost",
+                    "database": "db",
+                },
                 "procedure": "my_proc",
             },
         )

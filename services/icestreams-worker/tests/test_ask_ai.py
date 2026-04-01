@@ -32,7 +32,7 @@ class TestAskAiValidation:
             "provider": "anthropic",
             "outputFormat": "text",
             "maxTokens": 1000,
-            "temperature": 0.7
+            "temperature": 0.7,
         }
         errors = AskAiTransform.validate_config(config)
         assert errors == []
@@ -260,18 +260,18 @@ class TestOutputFormatting:
             "prompt": "Simple prompt",
             "provider": "anthropic",
             "outputFormat": "text",
-            "apiKey": "test-key"
+            "apiKey": "test-key",
         }
         context.get_config_value = lambda k, d: context.config.get(k, d)
         context.log_info = MagicMock()
         context.log_error = MagicMock()
 
         # Mock the API call
-        with patch.object(node, '_call_anthropic', new_callable=AsyncMock) as mock_call:
+        with patch.object(node, "_call_anthropic", new_callable=AsyncMock) as mock_call:
             mock_call.return_value = {
                 "content": "This is the response",
                 "usage": {"input_tokens": 10, "output_tokens": 20},
-                "model": "test-model"
+                "model": "test-model",
             }
 
             result = await node.execute(context, {"in": "test data"})
@@ -287,17 +287,17 @@ class TestOutputFormatting:
             "prompt": "Return JSON",
             "provider": "anthropic",
             "outputFormat": "json",
-            "apiKey": "test-key"
+            "apiKey": "test-key",
         }
         context.get_config_value = lambda k, d: context.config.get(k, d)
         context.log_info = MagicMock()
         context.log_error = MagicMock()
 
-        with patch.object(node, '_call_anthropic', new_callable=AsyncMock) as mock_call:
+        with patch.object(node, "_call_anthropic", new_callable=AsyncMock) as mock_call:
             mock_call.return_value = {
                 "content": '{"result": "success", "count": 42}',
                 "usage": {"input_tokens": 10, "output_tokens": 20},
-                "model": "test-model"
+                "model": "test-model",
             }
 
             result = await node.execute(context, {"in": "test"})
@@ -314,17 +314,17 @@ class TestOutputFormatting:
             "prompt": "Return JSON",
             "provider": "anthropic",
             "outputFormat": "json",
-            "apiKey": "test-key"
+            "apiKey": "test-key",
         }
         context.get_config_value = lambda k, d: context.config.get(k, d)
         context.log_info = MagicMock()
         context.log_error = MagicMock()
 
-        with patch.object(node, '_call_anthropic', new_callable=AsyncMock) as mock_call:
+        with patch.object(node, "_call_anthropic", new_callable=AsyncMock) as mock_call:
             mock_call.return_value = {
                 "content": '```json\n{"result": "success"}\n```',
                 "usage": {"input_tokens": 10, "output_tokens": 20},
-                "model": "test-model"
+                "model": "test-model",
             }
 
             result = await node.execute(context, {"in": "test"})
@@ -340,23 +340,25 @@ class TestOutputFormatting:
             "prompt": "Return JSON",
             "provider": "anthropic",
             "outputFormat": "json",
-            "apiKey": "test-key"
+            "apiKey": "test-key",
         }
         context.get_config_value = lambda k, d: context.config.get(k, d)
         context.log_info = MagicMock()
         context.log_error = MagicMock()
 
-        with patch.object(node, '_call_anthropic', new_callable=AsyncMock) as mock_call:
+        with patch.object(node, "_call_anthropic", new_callable=AsyncMock) as mock_call:
             mock_call.return_value = {
                 "content": "Not valid JSON",
                 "usage": {"input_tokens": 10, "output_tokens": 20},
-                "model": "test-model"
+                "model": "test-model",
             }
 
             result = await node.execute(context, {"in": "test"})
             assert result.success is True
             # Should return error dict with parse_error
-            assert "parse_error" in result.outputs["out"] or isinstance(result.outputs["out"], dict)
+            assert "parse_error" in result.outputs["out"] or isinstance(
+                result.outputs["out"], dict
+            )
 
 
 class TestProviderCalls:
@@ -370,17 +372,17 @@ class TestProviderCalls:
         context.config = {
             "prompt": "Test prompt",
             "provider": "anthropic",
-            "apiKey": "test-key"
+            "apiKey": "test-key",
         }
         context.get_config_value = lambda k, d: context.config.get(k, d)
         context.log_info = MagicMock()
         context.log_error = MagicMock()
 
-        with patch.object(node, '_call_anthropic', new_callable=AsyncMock) as mock_call:
+        with patch.object(node, "_call_anthropic", new_callable=AsyncMock) as mock_call:
             mock_call.return_value = {
                 "content": "Response",
                 "usage": {"input_tokens": 10, "output_tokens": 20},
-                "model": "claude-3"
+                "model": "claude-3",
             }
 
             result = await node.execute(context, {"in": "test"})
@@ -395,17 +397,17 @@ class TestProviderCalls:
         context.config = {
             "prompt": "Test prompt",
             "provider": "openai",
-            "apiKey": "test-key"
+            "apiKey": "test-key",
         }
         context.get_config_value = lambda k, d: context.config.get(k, d)
         context.log_info = MagicMock()
         context.log_error = MagicMock()
 
-        with patch.object(node, '_call_openai', new_callable=AsyncMock) as mock_call:
+        with patch.object(node, "_call_openai", new_callable=AsyncMock) as mock_call:
             mock_call.return_value = {
                 "content": "Response",
                 "usage": {"input_tokens": 10, "output_tokens": 20},
-                "model": "gpt-4"
+                "model": "gpt-4",
             }
 
             result = await node.execute(context, {"in": "test"})
@@ -417,19 +419,16 @@ class TestProviderCalls:
         """Test Ollama provider call (no API key required)."""
         node = AskAiTransform()
         context = MagicMock(spec=NodeContext)
-        context.config = {
-            "prompt": "Test prompt",
-            "provider": "ollama"
-        }
+        context.config = {"prompt": "Test prompt", "provider": "ollama"}
         context.get_config_value = lambda k, d: context.config.get(k, d)
         context.log_info = MagicMock()
         context.log_error = MagicMock()
 
-        with patch.object(node, '_call_ollama', new_callable=AsyncMock) as mock_call:
+        with patch.object(node, "_call_ollama", new_callable=AsyncMock) as mock_call:
             mock_call.return_value = {
                 "content": "Response",
                 "usage": {"input_tokens": 10, "output_tokens": 20},
-                "model": "llama2"
+                "model": "llama2",
             }
 
             result = await node.execute(context, {"in": "test"})
@@ -443,17 +442,17 @@ class TestProviderCalls:
         context.config = {
             "prompt": "Test prompt",
             "provider": "waddle",
-            "apiKey": "test-key"
+            "apiKey": "test-key",
         }
         context.get_config_value = lambda k, d: context.config.get(k, d)
         context.log_info = MagicMock()
         context.log_error = MagicMock()
 
-        with patch.object(node, '_call_waddle', new_callable=AsyncMock) as mock_call:
+        with patch.object(node, "_call_waddle", new_callable=AsyncMock) as mock_call:
             mock_call.return_value = {
                 "content": "Response",
                 "usage": {"input_tokens": 10, "output_tokens": 20},
-                "model": "waddle"
+                "model": "waddle",
             }
 
             result = await node.execute(context, {"in": "test"})
@@ -470,7 +469,7 @@ class TestErrorHandling:
         context = MagicMock(spec=NodeContext)
         context.config = {
             "prompt": "Test",
-            "provider": "anthropic"
+            "provider": "anthropic",
             # No apiKey provided
         }
         context.get_config_value = lambda k, d: context.config.get(k, d)
@@ -486,10 +485,7 @@ class TestErrorHandling:
         """Test error when API key missing for OpenAI."""
         node = AskAiTransform()
         context = MagicMock(spec=NodeContext)
-        context.config = {
-            "prompt": "Test",
-            "provider": "openai"
-        }
+        context.config = {"prompt": "Test", "provider": "openai"}
         context.get_config_value = lambda k, d: context.config.get(k, d)
         context.log_info = MagicMock()
         context.log_error = MagicMock()
@@ -506,14 +502,14 @@ class TestErrorHandling:
         context.config = {
             "prompt": "Test",
             "provider": "anthropic",
-            "apiKey": "test-key"
+            "apiKey": "test-key",
         }
         context.get_config_value = lambda k, d: context.config.get(k, d)
         context.log_info = MagicMock()
         context.log_error = MagicMock()
         context.error = MagicMock()  # Add error method mock
 
-        with patch.object(node, '_call_anthropic', new_callable=AsyncMock) as mock_call:
+        with patch.object(node, "_call_anthropic", new_callable=AsyncMock) as mock_call:
             mock_call.side_effect = Exception("API Error")
 
             result = await node.execute(context, {"in": "test"})
@@ -532,17 +528,17 @@ class TestTokenUsage:
         context.config = {
             "prompt": "Test",
             "provider": "anthropic",
-            "apiKey": "test-key"
+            "apiKey": "test-key",
         }
         context.get_config_value = lambda k, d: context.config.get(k, d)
         context.log_info = MagicMock()
         context.log_error = MagicMock()
 
-        with patch.object(node, '_call_anthropic', new_callable=AsyncMock) as mock_call:
+        with patch.object(node, "_call_anthropic", new_callable=AsyncMock) as mock_call:
             mock_call.return_value = {
                 "content": "Response",
                 "usage": {"input_tokens": 100, "output_tokens": 50},
-                "model": "claude-3"
+                "model": "claude-3",
             }
 
             result = await node.execute(context, {"in": "test"})

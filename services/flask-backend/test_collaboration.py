@@ -7,6 +7,7 @@ import os
 # Add app to path
 sys.path.insert(0, os.path.dirname(__file__))
 
+
 def test_imports():
     """Test that all modules import correctly."""
     try:
@@ -14,23 +15,27 @@ def test_imports():
 
         # Test collaboration service import
         from app.services.collaboration_service import CollaborationService
+
         print("✓ CollaborationService imported successfully")
 
         # Test collaboration socket import
         # Note: This requires SocketIO to be initialized, so we'll skip full import
         # Just check the file exists and has valid syntax
         import ast
-        socket_file = os.path.join(os.path.dirname(__file__),
-                                   "app/api/v1/collaboration_socket.py")
-        with open(socket_file, 'r') as f:
+
+        socket_file = os.path.join(
+            os.path.dirname(__file__), "app/api/v1/collaboration_socket.py"
+        )
+        with open(socket_file, "r") as f:
             code = f.read()
             ast.parse(code)
         print("✓ collaboration_socket.py has valid syntax")
 
         # Test service file syntax
-        service_file = os.path.join(os.path.dirname(__file__),
-                                    "app/services/collaboration_service.py")
-        with open(service_file, 'r') as f:
+        service_file = os.path.join(
+            os.path.dirname(__file__), "app/services/collaboration_service.py"
+        )
+        with open(service_file, "r") as f:
             code = f.read()
             ast.parse(code)
         print("✓ collaboration_service.py has valid syntax")
@@ -47,6 +52,7 @@ def test_imports():
     except Exception as e:
         print(f"❌ Error: {e}")
         return False
+
 
 if __name__ == "__main__":
     success = test_imports()

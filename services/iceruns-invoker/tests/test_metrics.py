@@ -5,7 +5,9 @@ import sys
 import pytest
 from unittest.mock import MagicMock, patch
 
-sys.path.insert(0, os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), 'app'))
+sys.path.insert(
+    0, os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "app")
+)
 
 
 class TestMetricsRecorder:
@@ -16,7 +18,9 @@ class TestMetricsRecorder:
         from app.metrics import MetricsRecorder, ACTIVE_EXECUTIONS
 
         mock_labels = MagicMock()
-        with patch.object(ACTIVE_EXECUTIONS, "labels", return_value=mock_labels) as mock_lbl:
+        with patch.object(
+            ACTIVE_EXECUTIONS, "labels", return_value=mock_labels
+        ) as mock_lbl:
             MetricsRecorder.record_execution_start("worker-1")
             mock_lbl.assert_called_once_with(worker_id="worker-1")
         mock_labels.inc.assert_called_once()
@@ -35,7 +39,9 @@ class TestMetricsRecorder:
         from app.metrics import MetricsRecorder, EXECUTIONS_TOTAL
 
         mock_labels = MagicMock()
-        with patch.object(EXECUTIONS_TOTAL, "labels", return_value=mock_labels) as mock_lbl:
+        with patch.object(
+            EXECUTIONS_TOTAL, "labels", return_value=mock_labels
+        ) as mock_lbl:
             with patch("app.metrics.EXECUTION_DURATION") as mock_dur:
                 mock_dur.labels.return_value = MagicMock()
                 MetricsRecorder.record_execution_complete(
@@ -71,8 +77,9 @@ class TestMetricsRecorder:
 
         mock_labels = MagicMock()
         with patch.object(EXECUTION_MEMORY, "labels", return_value=mock_labels):
-            with patch("app.metrics.EXECUTIONS_TOTAL") as mock_total, \
-                 patch("app.metrics.EXECUTION_DURATION") as mock_dur:
+            with patch("app.metrics.EXECUTIONS_TOTAL") as mock_total, patch(
+                "app.metrics.EXECUTION_DURATION"
+            ) as mock_dur:
                 mock_total.labels.return_value = MagicMock()
                 mock_dur.labels.return_value = MagicMock()
                 MetricsRecorder.record_execution_complete(
@@ -88,7 +95,9 @@ class TestMetricsRecorder:
         from app.metrics import MetricsRecorder, EXECUTION_ERRORS
 
         mock_labels = MagicMock()
-        with patch.object(EXECUTION_ERRORS, "labels", return_value=mock_labels) as mock_lbl:
+        with patch.object(
+            EXECUTION_ERRORS, "labels", return_value=mock_labels
+        ) as mock_lbl:
             MetricsRecorder.record_execution_error(runtime="go", error_type="timeout")
             mock_lbl.assert_called_once_with(runtime="go", error_type="timeout")
         mock_labels.inc.assert_called_once()
@@ -104,6 +113,7 @@ class TestMetricsRecorder:
     def test_get_metrics_output_returns_bytes(self):
         """get_metrics_output returns bytes for Prometheus scraping."""
         from app.metrics import MetricsRecorder
+
         output = MetricsRecorder.get_metrics_output()
         assert isinstance(output, bytes)
         assert len(output) > 0

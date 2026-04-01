@@ -29,8 +29,9 @@ class TestIceFlowsWorkerHandlers:
     @pytest.mark.asyncio
     async def test_handle_pipeline_execute_logs_details(self, worker_instance):
         """_handle_pipeline_execute logs flow_id and promotion_id."""
-        with patch("worker.asyncio.sleep", new_callable=AsyncMock), \
-             patch("worker.logger") as mock_logger:
+        with patch("worker.asyncio.sleep", new_callable=AsyncMock), patch(
+            "worker.logger"
+        ) as mock_logger:
             payload = {
                 "flow_id": "flow-test",
                 "promotion_id": "promo-test",
@@ -56,8 +57,9 @@ class TestIceFlowsWorkerHandlers:
     @pytest.mark.asyncio
     async def test_handle_run_tests_logs_test_count(self, worker_instance):
         """_handle_run_tests logs number of tests."""
-        with patch("worker.asyncio.sleep", new_callable=AsyncMock), \
-             patch("worker.logger") as mock_logger:
+        with patch("worker.asyncio.sleep", new_callable=AsyncMock), patch(
+            "worker.logger"
+        ) as mock_logger:
             payload = {
                 "stage_id": "stage-1",
                 "test_configs": [
@@ -84,8 +86,9 @@ class TestIceFlowsWorkerHandlers:
     @pytest.mark.asyncio
     async def test_handle_run_merge_logs_branches(self, worker_instance):
         """_handle_run_merge logs branch info."""
-        with patch("worker.asyncio.sleep", new_callable=AsyncMock), \
-             patch("worker.logger") as mock_logger:
+        with patch("worker.asyncio.sleep", new_callable=AsyncMock), patch(
+            "worker.logger"
+        ) as mock_logger:
             payload = {
                 "source_branch": "dev",
                 "target_branch": "prod",
@@ -110,8 +113,9 @@ class TestIceFlowsWorkerHandlers:
     @pytest.mark.asyncio
     async def test_handle_run_calls_logs_count(self, worker_instance):
         """_handle_run_calls logs number of calls."""
-        with patch("worker.asyncio.sleep", new_callable=AsyncMock), \
-             patch("worker.logger") as mock_logger:
+        with patch("worker.asyncio.sleep", new_callable=AsyncMock), patch(
+            "worker.logger"
+        ) as mock_logger:
             payload = {
                 "call_configs": [
                     {"call_id": "c1", "call_type": "icestreams"},
@@ -133,7 +137,9 @@ class TestProcessMessageEdgeCases:
         assert result is True
 
     @pytest.mark.asyncio
-    async def test_process_message_missing_payload_defaults_empty(self, worker_instance):
+    async def test_process_message_missing_payload_defaults_empty(
+        self, worker_instance
+    ):
         """process_message with missing payload defaults to empty dict."""
         with patch.object(
             worker_instance, "_handle_pipeline_execute", new_callable=AsyncMock
@@ -146,6 +152,7 @@ class TestProcessMessageEdgeCases:
     @pytest.mark.asyncio
     async def test_process_message_handler_raises_exception(self, worker_instance):
         """process_message handles handler exceptions gracefully."""
+
         async def failing_handler(*args, **kwargs):
             raise RuntimeError("Handler failed")
 
@@ -187,10 +194,13 @@ class TestConsumerLoopAdvanced:
     async def test_consumer_loop_processes_messages(self, worker_instance, mock_redis):
         """consumer_loop reads and processes messages from stream."""
         messages = [
-            ("stream", [
-                ("msg-1", {"type": "run_tests", "payload": {}}),
-                ("msg-2", {"type": "run_merge", "payload": {}}),
-            ])
+            (
+                "stream",
+                [
+                    ("msg-1", {"type": "run_tests", "payload": {}}),
+                    ("msg-2", {"type": "run_merge", "payload": {}}),
+                ],
+            )
         ]
 
         call_count = 0
@@ -215,15 +225,20 @@ class TestConsumerLoopAdvanced:
         assert mock_process.call_count >= 2
 
     @pytest.mark.asyncio
-    async def test_consumer_loop_limits_concurrent_tasks(self, worker_instance, mock_redis):
+    async def test_consumer_loop_limits_concurrent_tasks(
+        self, worker_instance, mock_redis
+    ):
         """consumer_loop respects concurrency limit."""
         # Create multiple messages
         messages = [
-            ("stream", [
-                ("msg-1", {"type": "run_tests", "payload": {}}),
-                ("msg-2", {"type": "run_tests", "payload": {}}),
-                ("msg-3", {"type": "run_tests", "payload": {}}),
-            ])
+            (
+                "stream",
+                [
+                    ("msg-1", {"type": "run_tests", "payload": {}}),
+                    ("msg-2", {"type": "run_tests", "payload": {}}),
+                    ("msg-3", {"type": "run_tests", "payload": {}}),
+                ],
+            )
         ]
 
         call_count = 0
@@ -243,7 +258,9 @@ class TestConsumerLoopAdvanced:
         # Should respect concurrency limit of 2
 
     @pytest.mark.asyncio
-    async def test_consumer_loop_handles_empty_messages(self, worker_instance, mock_redis):
+    async def test_consumer_loop_handles_empty_messages(
+        self, worker_instance, mock_redis
+    ):
         """consumer_loop handles empty message list."""
         call_count = 0
 
@@ -261,7 +278,9 @@ class TestConsumerLoopAdvanced:
         assert call_count >= 1
 
     @pytest.mark.asyncio
-    async def test_consumer_loop_error_continues_loop(self, worker_instance, mock_redis):
+    async def test_consumer_loop_error_continues_loop(
+        self, worker_instance, mock_redis
+    ):
         """consumer_loop continues after error in message processing."""
         call_count = 0
 
@@ -279,12 +298,17 @@ class TestConsumerLoopAdvanced:
         await worker_instance.consumer_loop()
 
     @pytest.mark.asyncio
-    async def test_consumer_loop_waits_for_pending_tasks(self, worker_instance, mock_redis):
+    async def test_consumer_loop_waits_for_pending_tasks(
+        self, worker_instance, mock_redis
+    ):
         """consumer_loop waits for pending tasks on shutdown."""
         messages = [
-            ("stream", [
-                ("msg-1", {"type": "run_tests", "payload": {}}),
-            ])
+            (
+                "stream",
+                [
+                    ("msg-1", {"type": "run_tests", "payload": {}}),
+                ],
+            )
         ]
 
         call_count = 0
@@ -312,22 +336,34 @@ class TestWorkerLifecycle:
     """Tests for worker lifecycle methods."""
 
     @pytest.mark.asyncio
-    async def test_run_calls_connect_ensure_group_loop(self, worker_instance, mock_redis):
+    async def test_run_calls_connect_ensure_group_loop(
+        self, worker_instance, mock_redis
+    ):
         """run() orchestrates connection, consumer group, and consumer loop."""
-        with patch.object(worker_instance, "connect", new_callable=AsyncMock), \
-             patch.object(worker_instance, "ensure_consumer_group", new_callable=AsyncMock), \
-             patch.object(worker_instance, "consumer_loop", new_callable=AsyncMock), \
-             patch.object(worker_instance, "disconnect", new_callable=AsyncMock):
+        with patch.object(
+            worker_instance, "connect", new_callable=AsyncMock
+        ), patch.object(
+            worker_instance, "ensure_consumer_group", new_callable=AsyncMock
+        ), patch.object(
+            worker_instance, "consumer_loop", new_callable=AsyncMock
+        ), patch.object(
+            worker_instance, "disconnect", new_callable=AsyncMock
+        ):
 
             await worker_instance.run()
 
     @pytest.mark.asyncio
     async def test_run_disconnects_on_completion(self, worker_instance):
         """run() disconnects from Redis on completion."""
-        with patch.object(worker_instance, "connect", new_callable=AsyncMock), \
-             patch.object(worker_instance, "ensure_consumer_group", new_callable=AsyncMock), \
-             patch.object(worker_instance, "consumer_loop", new_callable=AsyncMock), \
-             patch.object(worker_instance, "disconnect", new_callable=AsyncMock) as mock_disconnect:
+        with patch.object(
+            worker_instance, "connect", new_callable=AsyncMock
+        ), patch.object(
+            worker_instance, "ensure_consumer_group", new_callable=AsyncMock
+        ), patch.object(
+            worker_instance, "consumer_loop", new_callable=AsyncMock
+        ), patch.object(
+            worker_instance, "disconnect", new_callable=AsyncMock
+        ) as mock_disconnect:
 
             await worker_instance.run()
             mock_disconnect.assert_awaited_once()
@@ -335,9 +371,16 @@ class TestWorkerLifecycle:
     @pytest.mark.asyncio
     async def test_run_disconnects_on_error(self, worker_instance):
         """run() disconnects even if error occurs."""
-        with patch.object(worker_instance, "connect", new_callable=AsyncMock, side_effect=RuntimeError("Connection failed")), \
-             patch.object(worker_instance, "disconnect", new_callable=AsyncMock) as mock_disconnect, \
-             patch("worker.sys.exit") as mock_exit:
+        with patch.object(
+            worker_instance,
+            "connect",
+            new_callable=AsyncMock,
+            side_effect=RuntimeError("Connection failed"),
+        ), patch.object(
+            worker_instance, "disconnect", new_callable=AsyncMock
+        ) as mock_disconnect, patch(
+            "worker.sys.exit"
+        ) as mock_exit:
 
             await worker_instance.run()
 
@@ -364,7 +407,10 @@ class TestWorkerConnectErrors:
         from redis.exceptions import ConnectionError
 
         worker = IceFlowsWorker()
-        with patch("worker.aioredis.from_url", side_effect=ConnectionError("Connection refused")):
+        with patch(
+            "worker.aioredis.from_url",
+            side_effect=ConnectionError("Connection refused"),
+        ):
             with pytest.raises(ConnectionError):
                 await worker.connect()
 
@@ -417,8 +463,12 @@ class TestEnvVariableDefaults:
         """IceFlowsWorker prefers provided arguments over env vars."""
         from worker import IceFlowsWorker
 
-        with patch.dict(os.environ, {"REDIS_URL": "redis://env:6379", "WORKER_ID": "env-worker"}):
-            worker = IceFlowsWorker(redis_url="redis://arg:6379", worker_id="arg-worker")
+        with patch.dict(
+            os.environ, {"REDIS_URL": "redis://env:6379", "WORKER_ID": "env-worker"}
+        ):
+            worker = IceFlowsWorker(
+                redis_url="redis://arg:6379", worker_id="arg-worker"
+            )
             assert worker.redis_url == "redis://arg:6379"
             assert worker.worker_id == "arg-worker"
 
@@ -431,9 +481,7 @@ class TestBlockingMessages:
         """process_message handles blocking test configuration."""
         payload = {
             "stage_id": "stage-1",
-            "test_configs": [
-                {"test_id": "t1", "is_blocking": True}
-            ],
+            "test_configs": [{"test_id": "t1", "is_blocking": True}],
         }
         result = await worker_instance.process_message(
             "msg-1", {"type": "run_tests", "payload": payload}
@@ -445,9 +493,7 @@ class TestBlockingMessages:
         """process_message handles non-blocking test configuration."""
         payload = {
             "stage_id": "stage-1",
-            "test_configs": [
-                {"test_id": "t1", "is_blocking": False}
-            ],
+            "test_configs": [{"test_id": "t1", "is_blocking": False}],
         }
         result = await worker_instance.process_message(
             "msg-1", {"type": "run_tests", "payload": payload}

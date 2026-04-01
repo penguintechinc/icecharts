@@ -169,15 +169,39 @@ async def test_conditional_branching():
 
     playbook_data = {
         "nodes": [
-            {"id": "trigger-1", "type": "trigger_manual", "data": {"category": "triggers"}},
-            {"id": "conditional-1", "type": "test_conditional", "data": {"category": "conditionals"}},
-            {"id": "output-true", "type": "test_output", "data": {"category": "actions"}},
-            {"id": "output-false", "type": "test_output", "data": {"category": "actions"}},
+            {
+                "id": "trigger-1",
+                "type": "trigger_manual",
+                "data": {"category": "triggers"},
+            },
+            {
+                "id": "conditional-1",
+                "type": "test_conditional",
+                "data": {"category": "conditionals"},
+            },
+            {
+                "id": "output-true",
+                "type": "test_output",
+                "data": {"category": "actions"},
+            },
+            {
+                "id": "output-false",
+                "type": "test_output",
+                "data": {"category": "actions"},
+            },
         ],
         "edges": [
             {"source": "trigger-1", "target": "conditional-1"},
-            {"source": "conditional-1", "sourceHandle": "true", "target": "output-true"},
-            {"source": "conditional-1", "sourceHandle": "false", "target": "output-false"},
+            {
+                "source": "conditional-1",
+                "sourceHandle": "true",
+                "target": "output-true",
+            },
+            {
+                "source": "conditional-1",
+                "sourceHandle": "false",
+                "target": "output-false",
+            },
         ],
         "trigger_output": {"value": 15},
         "config": {},

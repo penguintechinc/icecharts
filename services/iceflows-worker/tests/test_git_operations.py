@@ -13,9 +13,12 @@ from git_operations import GitOperations, GitOperationError
 @pytest.fixture
 def github_ops():
     """Create GitOperations for GitHub with mocked subprocess/requests."""
-    with patch("git_operations.subprocess") as mock_sub, \
-         patch("git_operations.requests") as mock_req:
-        mock_sub.run.return_value = MagicMock(stdout="abc123\n", stderr="", returncode=0)
+    with patch("git_operations.subprocess") as mock_sub, patch(
+        "git_operations.requests"
+    ) as mock_req:
+        mock_sub.run.return_value = MagicMock(
+            stdout="abc123\n", stderr="", returncode=0
+        )
         mock_response = MagicMock()
         mock_response.json.return_value = {}
         mock_response.raise_for_status = MagicMock()
@@ -33,9 +36,12 @@ def github_ops():
 @pytest.fixture
 def gitlab_ops():
     """Create GitOperations for GitLab with mocked subprocess/requests."""
-    with patch("git_operations.subprocess") as mock_sub, \
-         patch("git_operations.requests") as mock_req:
-        mock_sub.run.return_value = MagicMock(stdout="def456\n", stderr="", returncode=0)
+    with patch("git_operations.subprocess") as mock_sub, patch(
+        "git_operations.requests"
+    ) as mock_req:
+        mock_sub.run.return_value = MagicMock(
+            stdout="def456\n", stderr="", returncode=0
+        )
         mock_response = MagicMock()
         mock_response.json.return_value = {}
         mock_response.raise_for_status = MagicMock()
@@ -220,7 +226,9 @@ class TestMergeBranches:
 
     def test_merge_branches_success(self, github_ops):
         """merge_branches returns result dict on success."""
-        result = github_ops.merge_branches("/repo", "feature/x", "main", "Merge feature")
+        result = github_ops.merge_branches(
+            "/repo", "feature/x", "main", "Merge feature"
+        )
         assert result["source_branch"] == "feature/x"
         assert result["target_branch"] == "main"
         assert "merge_commit" in result
@@ -230,7 +238,9 @@ class TestMergeBranches:
         # First call (checkout) succeeds, second call (merge) fails
         github_ops._mock_sub.run.side_effect = [
             MagicMock(stdout="", stderr="", returncode=0),  # checkout
-            MagicMock(stdout="", stderr="CONFLICT (content): Merge conflict", returncode=1),
+            MagicMock(
+                stdout="", stderr="CONFLICT (content): Merge conflict", returncode=1
+            ),
         ]
         with pytest.raises(GitOperationError, match="Failed to merge"):
             github_ops.merge_branches("/repo", "feature/x", "main", "Merge")

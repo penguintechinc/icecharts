@@ -16,7 +16,6 @@ from typing import Any, Dict, List, Optional
 
 from .base import BaseNode, NodeContext, NodeInput, NodeOutput, NodeResult
 
-
 logger = logging.getLogger(__name__)
 
 
@@ -100,7 +99,9 @@ class IceRunExecuteNode(BaseNode):
         # Validate input_mode
         input_mode = config.get("input_mode", "from_previous")
         if input_mode not in {"static", "from_previous"}:
-            errors.append(f"Invalid input_mode '{input_mode}'. Must be 'static' or 'from_previous'")
+            errors.append(
+                f"Invalid input_mode '{input_mode}'. Must be 'static' or 'from_previous'"
+            )
 
         # Validate static input if required
         if input_mode == "static":
@@ -178,19 +179,25 @@ class IceRunExecuteNode(BaseNode):
                 error_msg = f"IceRun function '{function_id}' not found"
                 context.log_error(error_msg)
                 execution_time = (time.perf_counter() - start_time) * 1000
-                return NodeResult.failure_result(error=error_msg, execution_time_ms=execution_time)
+                return NodeResult.failure_result(
+                    error=error_msg, execution_time_ms=execution_time
+                )
 
             if func.status != "active":
                 error_msg = f"IceRun function is not active (status: {func.status})"
                 context.log_error(error_msg)
                 execution_time = (time.perf_counter() - start_time) * 1000
-                return NodeResult.failure_result(error=error_msg, execution_time_ms=execution_time)
+                return NodeResult.failure_result(
+                    error=error_msg, execution_time_ms=execution_time
+                )
 
             if not func.package_key:
                 error_msg = "IceRun function has no package"
                 context.log_error(error_msg)
                 execution_time = (time.perf_counter() - start_time) * 1000
-                return NodeResult.failure_result(error=error_msg, execution_time_ms=execution_time)
+                return NodeResult.failure_result(
+                    error=error_msg, execution_time_ms=execution_time
+                )
 
             # Create execution record
             execution_id = secrets.token_urlsafe(16)
@@ -220,8 +227,12 @@ class IceRunExecuteNode(BaseNode):
                 "package_key": func.package_key,
             }
 
-            redis.publish_icerun_task(execution_id, function_id, function_input, config_data)
-            context.log_info(f"IceRun task published to Redis Streams with execution_id={execution_id}")
+            redis.publish_icerun_task(
+                execution_id, function_id, function_input, config_data
+            )
+            context.log_info(
+                f"IceRun task published to Redis Streams with execution_id={execution_id}"
+            )
 
             # Update execution count
             db(db.iceruns.id == func.id).update(
@@ -240,20 +251,33 @@ class IceRunExecuteNode(BaseNode):
                     "execution_id": execution_id,
                 }
                 execution_time = (time.perf_counter() - start_time) * 1000
-                return NodeResult.success_result(outputs={"out": result_output}, execution_time_ms=execution_time)
+                return NodeResult.success_result(
+                    outputs={"out": result_output}, execution_time_ms=execution_time
+                )
             else:
                 # Sync mode: wait for completion (max 60 seconds)
                 max_wait_seconds = timeout_override or func.timeout_seconds
-                max_wait_seconds = min(max_wait_seconds + 10, 300)  # Add buffer, max 5 minutes
+                max_wait_seconds = min(
+                    max_wait_seconds + 10, 300
+                )  # Add buffer, max 5 minutes
 
-                context.log_info(f"Waiting for IceRun completion (max {max_wait_seconds}s)")
+                context.log_info(
+                    f"Waiting for IceRun completion (max {max_wait_seconds}s)"
+                )
 
                 for attempt in range(max_wait_seconds * 2):  # Poll every 0.5s
                     await asyncio.sleep(0.5)
 
                     execution = db.iceruns_executions[exec_id]
-                    if execution.status in ["completed", "failed", "timeout", "cancelled"]:
-                        context.log_info(f"IceRun completed with status={execution.status}")
+                    if execution.status in [
+                        "completed",
+                        "failed",
+                        "timeout",
+                        "cancelled",
+                    ]:
+                        context.log_info(
+                            f"IceRun completed with status={execution.status}"
+                        )
 
                         result_output = {
                             "status": execution.status,
@@ -268,20 +292,25 @@ class IceRunExecuteNode(BaseNode):
 
                         execution_time = (time.perf_counter() - start_time) * 1000
                         return NodeResult.success_result(
-                            outputs={"out": result_output}, execution_time_ms=execution_time
+                            outputs={"out": result_output},
+                            execution_time_ms=execution_time,
                         )
 
                 # Timeout waiting for execution
                 error_msg = f"IceRun execution timed out after {max_wait_seconds}s"
                 context.log_error(error_msg)
                 execution_time = (time.perf_counter() - start_time) * 1000
-                return NodeResult.failure_result(error=error_msg, execution_time_ms=execution_time)
+                return NodeResult.failure_result(
+                    error=error_msg, execution_time_ms=execution_time
+                )
 
         except Exception as e:
             error_msg = f"IceRun execute node failed: {str(e)}"
             context.log_error(error_msg)
             execution_time = (time.perf_counter() - start_time) * 1000
-            return NodeResult.failure_result(error=error_msg, execution_time_ms=execution_time)
+            return NodeResult.failure_result(
+                error=error_msg, execution_time_ms=execution_time
+            )
 
 
 class IceRunWaitNode(BaseNode):
@@ -362,8 +391,14 @@ class IceRunWaitNode(BaseNode):
         # Validate poll_interval_ms if provided
         if "poll_interval_ms" in config:
             interval = config["poll_interval_ms"]
-            if not isinstance(interval, (int, float)) or interval < 100 or interval > 10000:
-                errors.append("poll_interval_ms must be between 100 and 10000 milliseconds")
+            if (
+                not isinstance(interval, (int, float))
+                or interval < 100
+                or interval > 10000
+            ):
+                errors.append(
+                    "poll_interval_ms must be between 100 and 10000 milliseconds"
+                )
 
         return errors
 
@@ -396,13 +431,17 @@ class IceRunWaitNode(BaseNode):
                 error_msg = "activation_id is required for wait node"
                 context.log_error(error_msg)
                 execution_time = (time.perf_counter() - start_time) * 1000
-                return NodeResult.failure_result(error=error_msg, execution_time_ms=execution_time)
+                return NodeResult.failure_result(
+                    error=error_msg, execution_time_ms=execution_time
+                )
 
             if not isinstance(activation_id, str):
                 error_msg = f"activation_id must be a string, got {type(activation_id).__name__}"
                 context.log_error(error_msg)
                 execution_time = (time.perf_counter() - start_time) * 1000
-                return NodeResult.failure_result(error=error_msg, execution_time_ms=execution_time)
+                return NodeResult.failure_result(
+                    error=error_msg, execution_time_ms=execution_time
+                )
 
             context.log_info(
                 f"Waiting for IceRun completion (activation_id={activation_id}, "
@@ -415,13 +454,21 @@ class IceRunWaitNode(BaseNode):
 
             # Poll for completion
             for attempt in range(max_polls):
-                execution = db(db.iceruns_executions.execution_id == activation_id).select().first()
+                execution = (
+                    db(db.iceruns_executions.execution_id == activation_id)
+                    .select()
+                    .first()
+                )
 
                 if not execution:
-                    error_msg = f"Execution with activation_id '{activation_id}' not found"
+                    error_msg = (
+                        f"Execution with activation_id '{activation_id}' not found"
+                    )
                     context.log_error(error_msg)
                     execution_time = (time.perf_counter() - start_time) * 1000
-                    return NodeResult.failure_result(error=error_msg, execution_time_ms=execution_time)
+                    return NodeResult.failure_result(
+                        error=error_msg, execution_time_ms=execution_time
+                    )
 
                 # Check if execution is complete
                 if execution.status in ["completed", "failed", "timeout", "cancelled"]:
@@ -447,17 +494,23 @@ class IceRunWaitNode(BaseNode):
 
                 # Not complete yet, wait before polling again
                 if attempt < max_polls - 1:
-                    context.log_debug(f"IceRun still running (status={execution.status}), polling in {poll_interval_ms}ms")
+                    context.log_debug(
+                        f"IceRun still running (status={execution.status}), polling in {poll_interval_ms}ms"
+                    )
                     await asyncio.sleep(poll_interval_sec)
 
             # Timeout waiting for execution
             error_msg = f"IceRun execution timed out after {timeout_seconds} seconds (activation_id={activation_id})"
             context.log_error(error_msg)
             execution_time = (time.perf_counter() - start_time) * 1000
-            return NodeResult.failure_result(error=error_msg, execution_time_ms=execution_time)
+            return NodeResult.failure_result(
+                error=error_msg, execution_time_ms=execution_time
+            )
 
         except Exception as e:
             error_msg = f"IceRun wait node failed: {str(e)}"
             context.log_error(error_msg)
             execution_time = (time.perf_counter() - start_time) * 1000
-            return NodeResult.failure_result(error=error_msg, execution_time_ms=execution_time)
+            return NodeResult.failure_result(
+                error=error_msg, execution_time_ms=execution_time
+            )

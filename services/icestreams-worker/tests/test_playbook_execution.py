@@ -54,7 +54,7 @@ class DoubleTransformNode(BaseNode):
             result = NodeData(
                 data={"value": doubled, "doubled": True},
                 metadata={"operation": "double"},
-                source_node_id=self.context.node_id
+                source_node_id=self.context.node_id,
             )
             return {"default": result}
 
@@ -74,7 +74,7 @@ class AddOneTransformNode(BaseNode):
             result = NodeData(
                 data={"value": incremented, "incremented": True},
                 metadata={"operation": "add_one"},
-                source_node_id=self.context.node_id
+                source_node_id=self.context.node_id,
             )
             return {"default": result}
 
@@ -93,10 +93,10 @@ class MockActionNode(BaseNode):
                 data={
                     "status": "success",
                     "message": "Action completed",
-                    "input": input_data.data
+                    "input": input_data.data,
                 },
                 metadata={"action": "http_request"},
-                source_node_id=self.context.node_id
+                source_node_id=self.context.node_id,
             )
             return {"result": result}
 
@@ -117,7 +117,11 @@ class SlowNode(BaseNode):
     async def execute(self, inputs: Dict[str, NodeData]) -> Dict[str, NodeData]:
         """Sleep for a long time."""
         await asyncio.sleep(5.0)
-        return {"default": NodeData(data={"result": "slow"}, source_node_id=self.context.node_id)}
+        return {
+            "default": NodeData(
+                data={"result": "slow"}, source_node_id=self.context.node_id
+            )
+        }
 
 
 @pytest.fixture
@@ -133,20 +137,22 @@ def playbook_executor(mock_redis_client: AsyncMock) -> PlaybookExecutor:
         redis_client=mock_redis_client,
         execution_id="test-exec-123",
         playbook_id="test-pb-456",
-        node_timeout_seconds=10.0
+        node_timeout_seconds=10.0,
     )
 
 
 class TestPlaybookExecutorBasics:
     """Test basic PlaybookExecutor functionality."""
 
-    def test_playbook_executor_initialization(self, mock_redis_client: AsyncMock) -> None:
+    def test_playbook_executor_initialization(
+        self, mock_redis_client: AsyncMock
+    ) -> None:
         """Test PlaybookExecutor initialization."""
         executor = PlaybookExecutor(
             redis_client=mock_redis_client,
             execution_id="exec-1",
             playbook_id="pb-1",
-            node_timeout_seconds=30.0
+            node_timeout_seconds=30.0,
         )
 
         assert executor.execution_id == "exec-1"
@@ -155,15 +161,18 @@ class TestPlaybookExecutorBasics:
         assert executor._node_outputs == {}
         assert executor._execution_order == []
 
-    def test_playbook_executor_default_timeout(self, mock_redis_client: AsyncMock) -> None:
+    def test_playbook_executor_default_timeout(
+        self, mock_redis_client: AsyncMock
+    ) -> None:
         """Test PlaybookExecutor uses default timeout."""
         executor = PlaybookExecutor(
-            redis_client=mock_redis_client,
-            execution_id="exec-1",
-            playbook_id="pb-1"
+            redis_client=mock_redis_client, execution_id="exec-1", playbook_id="pb-1"
         )
 
-        assert executor.node_timeout_seconds == PlaybookExecutor.DEFAULT_NODE_TIMEOUT_SECONDS
+        assert (
+            executor.node_timeout_seconds
+            == PlaybookExecutor.DEFAULT_NODE_TIMEOUT_SECONDS
+        )
 
 
 class TestSimplePlaybookExecution:
@@ -171,8 +180,7 @@ class TestSimplePlaybookExecution:
 
     @pytest.mark.asyncio
     async def test_single_node_execution(
-        self,
-        playbook_executor: PlaybookExecutor
+        self, playbook_executor: PlaybookExecutor
     ) -> None:
         """Test executing a playbook with a single node."""
         playbook_data = {
@@ -180,15 +188,15 @@ class TestSimplePlaybookExecution:
                 {
                     "id": "node-1",
                     "type": "passthrough",
-                    "data": {"label": "Start", "category": "trigger"}
+                    "data": {"label": "Start", "category": "trigger"},
                 }
             ],
             "edges": [],
             "trigger_output": {"value": 10},
-            "config": {}
+            "config": {},
         }
 
-        with patch('executor.playbook_executor.NodeRegistry') as mock_registry:
+        with patch("executor.playbook_executor.NodeRegistry") as mock_registry:
             mock_registry.get.return_value = PassThroughNode
 
             result = await playbook_executor.execute(playbook_data)
@@ -200,8 +208,7 @@ class TestSimplePlaybookExecution:
 
     @pytest.mark.asyncio
     async def test_linear_three_node_chain(
-        self,
-        playbook_executor: PlaybookExecutor
+        self, playbook_executor: PlaybookExecutor
     ) -> None:
         """Test executing a linear chain of 3 nodes."""
         # Set up: trigger -> transform -> action
@@ -210,33 +217,43 @@ class TestSimplePlaybookExecution:
                 {
                     "id": "trigger",
                     "type": "trigger",
-                    "data": {"label": "Start", "category": "trigger"}
+                    "data": {"label": "Start", "category": "trigger"},
                 },
                 {
                     "id": "transform",
                     "type": "double_transform",
-                    "data": {"label": "Double", "category": "transform"}
+                    "data": {"label": "Double", "category": "transform"},
                 },
                 {
                     "id": "action",
                     "type": "mock_action",
-                    "data": {"label": "Action", "category": "action"}
-                }
+                    "data": {"label": "Action", "category": "action"},
+                },
             ],
             "edges": [
-                {"source": "trigger", "target": "transform", "sourceHandle": "default", "targetHandle": "default"},
-                {"source": "transform", "target": "action", "sourceHandle": "default", "targetHandle": "default"}
+                {
+                    "source": "trigger",
+                    "target": "transform",
+                    "sourceHandle": "default",
+                    "targetHandle": "default",
+                },
+                {
+                    "source": "transform",
+                    "target": "action",
+                    "sourceHandle": "default",
+                    "targetHandle": "default",
+                },
             ],
             "trigger_output": {"value": 5},
-            "config": {}
+            "config": {},
         }
 
         # Mock node registry
-        with patch('executor.playbook_executor.NodeRegistry') as mock_registry:
+        with patch("executor.playbook_executor.NodeRegistry") as mock_registry:
             mock_registry.get.side_effect = lambda node_type: {
                 "trigger": PassThroughNode,
                 "double_transform": DoubleTransformNode,
-                "mock_action": MockActionNode
+                "mock_action": MockActionNode,
             }.get(node_type, PassThroughNode)
 
             result = await playbook_executor.execute(playbook_data)
@@ -246,16 +263,10 @@ class TestSimplePlaybookExecution:
 
     @pytest.mark.asyncio
     async def test_no_nodes_in_playbook(
-        self,
-        playbook_executor: PlaybookExecutor
+        self, playbook_executor: PlaybookExecutor
     ) -> None:
         """Test execution fails when playbook has no nodes."""
-        playbook_data = {
-            "nodes": [],
-            "edges": [],
-            "trigger_output": {},
-            "config": {}
-        }
+        playbook_data = {"nodes": [], "edges": [], "trigger_output": {}, "config": {}}
 
         result = await playbook_executor.execute(playbook_data)
 
@@ -264,19 +275,11 @@ class TestSimplePlaybookExecution:
 
     @pytest.mark.asyncio
     async def test_execution_order_computation(
-        self,
-        playbook_executor: PlaybookExecutor
+        self, playbook_executor: PlaybookExecutor
     ) -> None:
         """Test that execution order is computed correctly."""
-        nodes = [
-            {"id": "n1"},
-            {"id": "n2"},
-            {"id": "n3"}
-        ]
-        edges = [
-            {"source": "n1", "target": "n2"},
-            {"source": "n2", "target": "n3"}
-        ]
+        nodes = [{"id": "n1"}, {"id": "n2"}, {"id": "n3"}]
+        edges = [{"source": "n1", "target": "n2"}, {"source": "n2", "target": "n3"}]
 
         execution_order = playbook_executor._get_execution_order(nodes, edges)
 
@@ -288,8 +291,7 @@ class TestDataFlow:
 
     @pytest.mark.asyncio
     async def test_data_flows_through_nodes(
-        self,
-        playbook_executor: PlaybookExecutor
+        self, playbook_executor: PlaybookExecutor
     ) -> None:
         """Test that data flows correctly through connected nodes."""
         playbook_data = {
@@ -297,25 +299,30 @@ class TestDataFlow:
                 {
                     "id": "start",
                     "type": "trigger",
-                    "data": {"label": "Start", "category": "trigger"}
+                    "data": {"label": "Start", "category": "trigger"},
                 },
                 {
                     "id": "double",
                     "type": "double_transform",
-                    "data": {"label": "Double", "category": "transform"}
-                }
+                    "data": {"label": "Double", "category": "transform"},
+                },
             ],
             "edges": [
-                {"source": "start", "target": "double", "sourceHandle": "default", "targetHandle": "default"}
+                {
+                    "source": "start",
+                    "target": "double",
+                    "sourceHandle": "default",
+                    "targetHandle": "default",
+                }
             ],
             "trigger_output": {"value": 5},
-            "config": {}
+            "config": {},
         }
 
-        with patch('executor.playbook_executor.NodeRegistry') as mock_registry:
+        with patch("executor.playbook_executor.NodeRegistry") as mock_registry:
             mock_registry.get.side_effect = lambda node_type: {
                 "trigger": PassThroughNode,
-                "double_transform": DoubleTransformNode
+                "double_transform": DoubleTransformNode,
             }.get(node_type, PassThroughNode)
 
             result = await playbook_executor.execute(playbook_data)
@@ -323,8 +330,7 @@ class TestDataFlow:
         assert result.success is True
 
     def test_gather_inputs_from_upstream(
-        self,
-        playbook_executor: PlaybookExecutor
+        self, playbook_executor: PlaybookExecutor
     ) -> None:
         """Test _gather_inputs collects data from upstream nodes."""
         node_outputs = {
@@ -333,12 +339,22 @@ class TestDataFlow:
             },
             "upstream_2": {
                 "output_b": NodeData(data={"value": 20}, source_node_id="upstream_2")
-            }
+            },
         }
 
         edges = [
-            {"source": "upstream_1", "target": "target", "sourceHandle": "output_a", "targetHandle": "input_a"},
-            {"source": "upstream_2", "target": "target", "sourceHandle": "output_b", "targetHandle": "input_b"}
+            {
+                "source": "upstream_1",
+                "target": "target",
+                "sourceHandle": "output_a",
+                "targetHandle": "input_a",
+            },
+            {
+                "source": "upstream_2",
+                "target": "target",
+                "sourceHandle": "output_b",
+                "targetHandle": "input_b",
+            },
         ]
 
         inputs = playbook_executor._gather_inputs("target", edges, node_outputs)
@@ -349,24 +365,19 @@ class TestDataFlow:
         assert inputs["input_b"].data["value"] == 20
 
     def test_route_outputs_to_downstream(
-        self,
-        playbook_executor: PlaybookExecutor
+        self, playbook_executor: PlaybookExecutor
     ) -> None:
         """Test _route_outputs stores outputs for downstream consumption."""
         outputs = {
             "output_1": NodeData(data={"result": "a"}, source_node_id="node_1"),
-            "output_2": NodeData(data={"result": "b"}, source_node_id="node_1")
+            "output_2": NodeData(data={"result": "b"}, source_node_id="node_1"),
         }
 
         result = NodeResult(
-            node_id="node_1",
-            status=NodeStatus.SUCCESS,
-            outputs=outputs
+            node_id="node_1", status=NodeStatus.SUCCESS, outputs=outputs
         )
 
-        edges = [
-            {"source": "node_1", "target": "node_2", "sourceHandle": "output_1"}
-        ]
+        edges = [{"source": "node_1", "target": "node_2", "sourceHandle": "output_1"}]
 
         playbook_executor._route_outputs("node_1", result, edges)
 
@@ -378,8 +389,7 @@ class TestErrorHandling:
 
     @pytest.mark.asyncio
     async def test_node_execution_failure_stops_playbook(
-        self,
-        playbook_executor: PlaybookExecutor
+        self, playbook_executor: PlaybookExecutor
     ) -> None:
         """Test that node failure stops execution by default."""
         playbook_data = {
@@ -387,32 +397,32 @@ class TestErrorHandling:
                 {
                     "id": "start",
                     "type": "trigger",
-                    "data": {"label": "Start", "category": "trigger"}
+                    "data": {"label": "Start", "category": "trigger"},
                 },
                 {
                     "id": "fail",
                     "type": "failing",
-                    "data": {"label": "Fail", "category": "transform"}
+                    "data": {"label": "Fail", "category": "transform"},
                 },
                 {
                     "id": "unreachable",
                     "type": "passthrough",
-                    "data": {"label": "Unreachable", "category": "action"}
-                }
+                    "data": {"label": "Unreachable", "category": "action"},
+                },
             ],
             "edges": [
                 {"source": "start", "target": "fail"},
-                {"source": "fail", "target": "unreachable"}
+                {"source": "fail", "target": "unreachable"},
             ],
             "trigger_output": {},
-            "config": {}
+            "config": {},
         }
 
-        with patch('executor.playbook_executor.NodeRegistry') as mock_registry:
+        with patch("executor.playbook_executor.NodeRegistry") as mock_registry:
             mock_registry.get.side_effect = lambda node_type: {
                 "trigger": PassThroughNode,
                 "failing": FailingNode,
-                "passthrough": PassThroughNode
+                "passthrough": PassThroughNode,
             }.get(node_type, PassThroughNode)
 
             result = await playbook_executor.execute(playbook_data)
@@ -424,8 +434,7 @@ class TestErrorHandling:
 
     @pytest.mark.asyncio
     async def test_continue_on_error_configuration(
-        self,
-        playbook_executor: PlaybookExecutor
+        self, playbook_executor: PlaybookExecutor
     ) -> None:
         """Test that continue_on_error config allows execution to continue."""
         playbook_data = {
@@ -433,32 +442,32 @@ class TestErrorHandling:
                 {
                     "id": "start",
                     "type": "trigger",
-                    "data": {"label": "Start", "category": "trigger"}
+                    "data": {"label": "Start", "category": "trigger"},
                 },
                 {
                     "id": "fail",
                     "type": "failing",
-                    "data": {"label": "Fail", "category": "transform"}
+                    "data": {"label": "Fail", "category": "transform"},
                 },
                 {
                     "id": "continue",
                     "type": "passthrough",
-                    "data": {"label": "Continue", "category": "action"}
-                }
+                    "data": {"label": "Continue", "category": "action"},
+                },
             ],
             "edges": [
                 {"source": "start", "target": "fail"},
-                {"source": "start", "target": "continue"}
+                {"source": "start", "target": "continue"},
             ],
             "trigger_output": {},
-            "config": {"continue_on_error": True}
+            "config": {"continue_on_error": True},
         }
 
-        with patch('executor.playbook_executor.NodeRegistry') as mock_registry:
+        with patch("executor.playbook_executor.NodeRegistry") as mock_registry:
             mock_registry.get.side_effect = lambda node_type: {
                 "trigger": PassThroughNode,
                 "failing": FailingNode,
-                "passthrough": PassThroughNode
+                "passthrough": PassThroughNode,
             }.get(node_type, PassThroughNode)
 
             result = await playbook_executor.execute(playbook_data)
@@ -469,8 +478,7 @@ class TestErrorHandling:
 
     @pytest.mark.asyncio
     async def test_node_timeout_error(
-        self,
-        playbook_executor: PlaybookExecutor
+        self, playbook_executor: PlaybookExecutor
     ) -> None:
         """Test that node timeout produces proper error."""
         # Set a very short timeout
@@ -481,18 +489,18 @@ class TestErrorHandling:
                 {
                     "id": "slow",
                     "type": "slow",
-                    "data": {"label": "Slow", "category": "transform"}
+                    "data": {"label": "Slow", "category": "transform"},
                 }
             ],
             "edges": [],
             "trigger_output": {},
-            "config": {}
+            "config": {},
         }
 
-        with patch('executor.playbook_executor.NodeRegistry') as mock_registry:
-            mock_registry.get.side_effect = lambda node_type: {
-                "slow": SlowNode
-            }.get(node_type, PassThroughNode)
+        with patch("executor.playbook_executor.NodeRegistry") as mock_registry:
+            mock_registry.get.side_effect = lambda node_type: {"slow": SlowNode}.get(
+                node_type, PassThroughNode
+            )
 
             result = await playbook_executor.execute(playbook_data)
 
@@ -505,8 +513,7 @@ class TestExecutionResults:
 
     @pytest.mark.asyncio
     async def test_execution_result_contains_all_nodes(
-        self,
-        playbook_executor: PlaybookExecutor
+        self, playbook_executor: PlaybookExecutor
     ) -> None:
         """Test that execution result includes all node results."""
         playbook_data = {
@@ -514,22 +521,20 @@ class TestExecutionResults:
                 {
                     "id": "node_1",
                     "type": "passthrough",
-                    "data": {"label": "Node 1", "category": "trigger"}
+                    "data": {"label": "Node 1", "category": "trigger"},
                 },
                 {
                     "id": "node_2",
                     "type": "passthrough",
-                    "data": {"label": "Node 2", "category": "transform"}
-                }
+                    "data": {"label": "Node 2", "category": "transform"},
+                },
             ],
-            "edges": [
-                {"source": "node_1", "target": "node_2"}
-            ],
+            "edges": [{"source": "node_1", "target": "node_2"}],
             "trigger_output": {},
-            "config": {}
+            "config": {},
         }
 
-        with patch('executor.playbook_executor.NodeRegistry') as mock_registry:
+        with patch("executor.playbook_executor.NodeRegistry") as mock_registry:
             mock_registry.get.return_value = PassThroughNode
 
             result = await playbook_executor.execute(playbook_data)
@@ -540,8 +545,7 @@ class TestExecutionResults:
 
     @pytest.mark.asyncio
     async def test_node_result_has_execution_time(
-        self,
-        playbook_executor: PlaybookExecutor
+        self, playbook_executor: PlaybookExecutor
     ) -> None:
         """Test that node results include execution time."""
         playbook_data = {
@@ -549,15 +553,15 @@ class TestExecutionResults:
                 {
                     "id": "node_1",
                     "type": "passthrough",
-                    "data": {"label": "Node 1", "category": "trigger"}
+                    "data": {"label": "Node 1", "category": "trigger"},
                 }
             ],
             "edges": [],
             "trigger_output": {},
-            "config": {}
+            "config": {},
         }
 
-        with patch('executor.playbook_executor.NodeRegistry') as mock_registry:
+        with patch("executor.playbook_executor.NodeRegistry") as mock_registry:
             mock_registry.get.return_value = PassThroughNode
 
             result = await playbook_executor.execute(playbook_data)
@@ -567,8 +571,7 @@ class TestExecutionResults:
 
     @pytest.mark.asyncio
     async def test_execution_result_timestamps(
-        self,
-        playbook_executor: PlaybookExecutor
+        self, playbook_executor: PlaybookExecutor
     ) -> None:
         """Test that node results have start and completion timestamps."""
         playbook_data = {
@@ -576,15 +579,15 @@ class TestExecutionResults:
                 {
                     "id": "node_1",
                     "type": "passthrough",
-                    "data": {"label": "Node 1", "category": "trigger"}
+                    "data": {"label": "Node 1", "category": "trigger"},
                 }
             ],
             "edges": [],
             "trigger_output": {},
-            "config": {}
+            "config": {},
         }
 
-        with patch('executor.playbook_executor.NodeRegistry') as mock_registry:
+        with patch("executor.playbook_executor.NodeRegistry") as mock_registry:
             mock_registry.get.return_value = PassThroughNode
 
             result = await playbook_executor.execute(playbook_data)
@@ -600,14 +603,14 @@ class TestExecutionResults:
             node_id="node_1",
             status=NodeStatus.SUCCESS,
             outputs={"out": NodeData(data={"value": 42}, source_node_id="node_1")},
-            execution_time_ms=100.5
+            execution_time_ms=100.5,
         )
 
         result = ExecutionResult(
             success=True,
             node_results={"node_1": node_result},
             execution_time_ms=100.5,
-            completed_nodes=["node_1"]
+            completed_nodes=["node_1"],
         )
 
         result_dict = result.to_dict()
@@ -623,14 +626,14 @@ class TestExecutionResults:
             data={"value": 42},
             metadata={"type": "number"},
             source_node_id="source",
-            timestamp=datetime(2025, 1, 1, 12, 0, 0)
+            timestamp=datetime(2025, 1, 1, 12, 0, 0),
         )
 
         node_result = NodeResult(
             node_id="node_1",
             status=NodeStatus.SUCCESS,
             outputs={"output": node_data},
-            execution_time_ms=50.0
+            execution_time_ms=50.0,
         )
 
         result_dict = node_result.to_dict()
@@ -646,8 +649,7 @@ class TestNodeContextCreation:
 
     @pytest.mark.asyncio
     async def test_node_context_passed_to_node(
-        self,
-        playbook_executor: PlaybookExecutor
+        self, playbook_executor: PlaybookExecutor
     ) -> None:
         """Test that NodeContext is properly created and passed to nodes."""
         playbook_data = {
@@ -656,20 +658,22 @@ class TestNodeContextCreation:
                     "id": "test_node",
                     "type": "passthrough",
                     "config": {"timeout": 30},
-                    "data": {"label": "Test", "category": "test"}
+                    "data": {"label": "Test", "category": "test"},
                 }
             ],
             "edges": [],
             "trigger_output": {},
-            "config": {"global_setting": "value"}
+            "config": {"global_setting": "value"},
         }
 
-        with patch('executor.playbook_executor.NodeRegistry') as mock_registry:
+        with patch("executor.playbook_executor.NodeRegistry") as mock_registry:
             # Create a mock node that captures its context
             captured_context = None
 
             class ContextCapturingNode(BaseNode):
-                async def execute(self, inputs: Dict[str, NodeData]) -> Dict[str, NodeData]:
+                async def execute(
+                    self, inputs: Dict[str, NodeData]
+                ) -> Dict[str, NodeData]:
                     nonlocal captured_context
                     captured_context = self.context
                     return {}
@@ -689,16 +693,20 @@ class TestMultipleOutputHandles:
 
     @pytest.mark.asyncio
     async def test_multiple_output_handles(
-        self,
-        playbook_executor: PlaybookExecutor
+        self, playbook_executor: PlaybookExecutor
     ) -> None:
         """Test executing nodes with multiple output handles."""
+
         class MultiOutputNode(BaseNode):
             async def execute(self, inputs: Dict[str, NodeData]) -> Dict[str, NodeData]:
                 """Return multiple outputs."""
                 return {
-                    "success": NodeData(data={"status": "ok"}, source_node_id=self.context.node_id),
-                    "error": NodeData(data={"error": None}, source_node_id=self.context.node_id)
+                    "success": NodeData(
+                        data={"status": "ok"}, source_node_id=self.context.node_id
+                    ),
+                    "error": NodeData(
+                        data={"error": None}, source_node_id=self.context.node_id
+                    ),
                 }
 
         playbook_data = {
@@ -706,15 +714,15 @@ class TestMultipleOutputHandles:
                 {
                     "id": "multi",
                     "type": "multi_output",
-                    "data": {"label": "Multi", "category": "transform"}
+                    "data": {"label": "Multi", "category": "transform"},
                 }
             ],
             "edges": [],
             "trigger_output": {},
-            "config": {}
+            "config": {},
         }
 
-        with patch('executor.playbook_executor.NodeRegistry') as mock_registry:
+        with patch("executor.playbook_executor.NodeRegistry") as mock_registry:
             mock_registry.get.return_value = MultiOutputNode
 
             result = await playbook_executor.execute(playbook_data)
@@ -730,15 +738,11 @@ class TestPassThroughNode:
     async def test_passthrough_with_default_input(self) -> None:
         """Test PassThroughNode passes default input to output."""
         context = NodeContext(
-            execution_id="exec-1",
-            playbook_id="pb-1",
-            node_id="node-1"
+            execution_id="exec-1", playbook_id="pb-1", node_id="node-1"
         )
 
         node = PassThroughNode(context)
-        inputs = {
-            "default": NodeData(data={"value": 42}, source_node_id="upstream")
-        }
+        inputs = {"default": NodeData(data={"value": 42}, source_node_id="upstream")}
 
         outputs = await node.execute(inputs)
 
@@ -749,15 +753,13 @@ class TestPassThroughNode:
     async def test_passthrough_with_no_default_returns_all_inputs(self) -> None:
         """Test PassThroughNode returns all inputs when no default."""
         context = NodeContext(
-            execution_id="exec-1",
-            playbook_id="pb-1",
-            node_id="node-1"
+            execution_id="exec-1", playbook_id="pb-1", node_id="node-1"
         )
 
         node = PassThroughNode(context)
         inputs = {
             "custom_1": NodeData(data={"a": 1}, source_node_id="upstream"),
-            "custom_2": NodeData(data={"b": 2}, source_node_id="upstream")
+            "custom_2": NodeData(data={"b": 2}, source_node_id="upstream"),
         }
 
         outputs = await node.execute(inputs)
@@ -769,9 +771,7 @@ class TestPassThroughNode:
     async def test_passthrough_with_empty_inputs(self) -> None:
         """Test PassThroughNode handles empty inputs."""
         context = NodeContext(
-            execution_id="exec-1",
-            playbook_id="pb-1",
-            node_id="node-1"
+            execution_id="exec-1", playbook_id="pb-1", node_id="node-1"
         )
 
         node = PassThroughNode(context)
@@ -785,8 +785,7 @@ class TestComplexGraphs:
 
     @pytest.mark.asyncio
     async def test_diamond_graph_execution(
-        self,
-        playbook_executor: PlaybookExecutor
+        self, playbook_executor: PlaybookExecutor
     ) -> None:
         """Test execution of a diamond-shaped graph (splits and merges)."""
         playbook_data = {
@@ -794,35 +793,35 @@ class TestComplexGraphs:
                 {
                     "id": "start",
                     "type": "trigger",
-                    "data": {"label": "Start", "category": "trigger"}
+                    "data": {"label": "Start", "category": "trigger"},
                 },
                 {
                     "id": "left",
                     "type": "passthrough",
-                    "data": {"label": "Left", "category": "transform"}
+                    "data": {"label": "Left", "category": "transform"},
                 },
                 {
                     "id": "right",
                     "type": "passthrough",
-                    "data": {"label": "Right", "category": "transform"}
+                    "data": {"label": "Right", "category": "transform"},
                 },
                 {
                     "id": "end",
                     "type": "passthrough",
-                    "data": {"label": "End", "category": "action"}
-                }
+                    "data": {"label": "End", "category": "action"},
+                },
             ],
             "edges": [
                 {"source": "start", "target": "left"},
                 {"source": "start", "target": "right"},
                 {"source": "left", "target": "end"},
-                {"source": "right", "target": "end"}
+                {"source": "right", "target": "end"},
             ],
             "trigger_output": {},
-            "config": {}
+            "config": {},
         }
 
-        with patch('executor.playbook_executor.NodeRegistry') as mock_registry:
+        with patch("executor.playbook_executor.NodeRegistry") as mock_registry:
             mock_registry.get.return_value = PassThroughNode
 
             result = await playbook_executor.execute(playbook_data)
@@ -832,8 +831,7 @@ class TestComplexGraphs:
 
     @pytest.mark.asyncio
     async def test_multiple_execution_paths(
-        self,
-        playbook_executor: PlaybookExecutor
+        self, playbook_executor: PlaybookExecutor
     ) -> None:
         """Test graph with multiple independent execution paths."""
         playbook_data = {
@@ -841,28 +839,28 @@ class TestComplexGraphs:
                 {
                     "id": "start",
                     "type": "trigger",
-                    "data": {"label": "Start", "category": "trigger"}
+                    "data": {"label": "Start", "category": "trigger"},
                 },
                 {
                     "id": "path1_node",
                     "type": "passthrough",
-                    "data": {"label": "Path 1", "category": "transform"}
+                    "data": {"label": "Path 1", "category": "transform"},
                 },
                 {
                     "id": "path2_node",
                     "type": "passthrough",
-                    "data": {"label": "Path 2", "category": "transform"}
-                }
+                    "data": {"label": "Path 2", "category": "transform"},
+                },
             ],
             "edges": [
                 {"source": "start", "target": "path1_node"},
-                {"source": "start", "target": "path2_node"}
+                {"source": "start", "target": "path2_node"},
             ],
             "trigger_output": {},
-            "config": {}
+            "config": {},
         }
 
-        with patch('executor.playbook_executor.NodeRegistry') as mock_registry:
+        with patch("executor.playbook_executor.NodeRegistry") as mock_registry:
             mock_registry.get.return_value = PassThroughNode
 
             result = await playbook_executor.execute(playbook_data)

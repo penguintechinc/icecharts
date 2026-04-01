@@ -138,6 +138,7 @@ def optional_auth(f: Callable) -> Callable:
     Sets g.current_user if a valid token is present, otherwise sets it
     to None and continues without returning an error.
     """
+
     @wraps(f)
     def decorated(*args, **kwargs):
         g.current_user = None

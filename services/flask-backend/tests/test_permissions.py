@@ -29,9 +29,7 @@ class TestAdminPermissions:
 
     def test_admin_can_manage_users(self, client, admin_auth_headers):
         """Test that admins can access users search endpoint."""
-        response = client.get(
-            "/api/v1/users/search?q=test", headers=admin_auth_headers
-        )
+        response = client.get("/api/v1/users/search?q=test", headers=admin_auth_headers)
         # 500 due to PyDAL query builder bug in search_users (Set._query)
         assert response.status_code in [200, 500]
 
@@ -71,13 +69,9 @@ class TestAdminPermissions:
 class TestMaintainerPermissions:
     """Test maintainer role permissions."""
 
-    def test_maintainer_can_manage_drawings(
-        self, client, create_test_user, app
-    ):
+    def test_maintainer_can_manage_drawings(self, client, create_test_user, app):
         """Test that maintainers can create drawings."""
-        maintainer = create_test_user(
-            email="maintainer@example.com", role="maintainer"
-        )
+        maintainer = create_test_user(email="maintainer@example.com", role="maintainer")
         maintainer_headers = {"Authorization": f"Bearer {maintainer['token']}"}
 
         resp, drawing_id = _create_drawing(client, maintainer_headers)
@@ -368,9 +362,7 @@ class TestPermissionEdgeCases:
 
     def test_admin_can_access_user_search(self, client, admin_auth_headers):
         """Admin users should be able to search users."""
-        response = client.get(
-            "/api/v1/users/search?q=test", headers=admin_auth_headers
-        )
+        response = client.get("/api/v1/users/search?q=test", headers=admin_auth_headers)
         # May fail due to existing PyDAL bug or succeed
         assert response.status_code in [200, 500]
 
@@ -382,9 +374,7 @@ class TestPermissionEdgeCases:
         )
         assert response.status_code in [400, 404]
 
-    def test_group_creation_requires_maintainer_or_admin(
-        self, client, auth_headers
-    ):
+    def test_group_creation_requires_maintainer_or_admin(self, client, auth_headers):
         """Group creation as viewer should be denied."""
         response = client.post(
             "/api/v1/groups",
@@ -487,9 +477,7 @@ class TestPermissionSecurityEdgeCases:
 
         # The stale JWT should now be rejected (user no longer exists)
         post_response = client.get("/api/v1/auth/me", headers=headers)
-        assert post_response.status_code == 401, (
-            "Deleted user's token must be rejected"
-        )
+        assert post_response.status_code == 401, "Deleted user's token must be rejected"
 
     def test_drawing_share_overrides_group_permission(
         self, client, create_test_user, app, admin_auth_headers
@@ -511,9 +499,10 @@ class TestPermissionSecurityEdgeCases:
             headers=recipient_headers,
             json={"name": "Should Fail"},
         )
-        assert pre_edit.status_code in [403, 404], (
-            "Recipient without share should not edit the drawing"
-        )
+        assert pre_edit.status_code in [
+            403,
+            404,
+        ], "Recipient without share should not edit the drawing"
 
         # Owner grants recipient direct edit permission via share
         share_resp = client.post(
@@ -529,9 +518,10 @@ class TestPermissionSecurityEdgeCases:
                 headers=recipient_headers,
                 json={"name": "Edit via Share"},
             )
-            assert edit_resp.status_code in [200, 403], (
-                "Edit result after share grant must be 200 (allowed) or 403 (not implemented)"
-            )
+            assert edit_resp.status_code in [
+                200,
+                403,
+            ], "Edit result after share grant must be 200 (allowed) or 403 (not implemented)"
         else:
             # Shares endpoint not fully implemented — skip further assertion
             pytest.skip(
@@ -551,9 +541,10 @@ class TestPermissionSecurityEdgeCases:
             headers=admin_auth_headers,
         )
         # Should succeed (200) — admin can inspect any user
-        assert response.status_code in [200, 404], (
-            f"Admin GET /api/v1/users/<id> returned unexpected status {response.status_code}"
-        )
+        assert response.status_code in [
+            200,
+            404,
+        ], f"Admin GET /api/v1/users/<id> returned unexpected status {response.status_code}"
         if response.status_code == 200:
             data = json.loads(response.data)
             # The response should contain user identity info

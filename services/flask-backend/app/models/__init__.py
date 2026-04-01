@@ -154,8 +154,7 @@ def get_db_uri(config) -> str:
     db_type = config.DB_TYPE.lower()
     if db_type not in VALID_DB_TYPES:
         raise ValueError(
-            f"Invalid DB_TYPE: {db_type}. "
-            f"Must be one of: {sorted(VALID_DB_TYPES)}"
+            f"Invalid DB_TYPE: {db_type}. " f"Must be one of: {sorted(VALID_DB_TYPES)}"
         )
 
     # Map to PyDAL scheme
@@ -163,9 +162,7 @@ def get_db_uri(config) -> str:
 
     # Build URI from components
     if pydal_scheme == "sqlite":
-        db_path = (
-            config.DB_NAME if config.DB_NAME != ":memory:" else ":memory:"
-        )
+        db_path = config.DB_NAME if config.DB_NAME != ":memory:" else ":memory:"
         return f"sqlite://{db_path}"
 
     # For network databases, build full connection string

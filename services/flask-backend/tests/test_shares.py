@@ -1,4 +1,5 @@
 """Tests for Drawing Shares API endpoints."""
+
 import pytest
 
 
@@ -36,6 +37,7 @@ class TestCreateShare:
         """Test invalid permission validation (requires drawing to exist first)."""
         with app.app_context():
             from app.models import get_db
+
             db = get_db()
             drawing_id = db.drawings.insert(
                 tenant_id=1,
@@ -56,6 +58,7 @@ class TestCreateShare:
     def test_create_invalid_share_type_returns_400(self, client, auth_headers, app):
         with app.app_context():
             from app.models import get_db
+
             db = get_db()
             drawing_id = db.drawings.insert(
                 tenant_id=1,
@@ -147,13 +150,9 @@ class TestShareAnalytics:
         assert response.status_code == 401
 
     def test_analytics_nonexistent_drawing_returns_404(self, client, auth_headers):
-        response = client.get(
-            "/api/v1/drawings/999999/analytics", headers=auth_headers
-        )
+        response = client.get("/api/v1/drawings/999999/analytics", headers=auth_headers)
         assert response.status_code == 404
 
     def test_analytics_with_auth(self, client, auth_headers):
-        response = client.get(
-            "/api/v1/drawings/999999/analytics", headers=auth_headers
-        )
+        response = client.get("/api/v1/drawings/999999/analytics", headers=auth_headers)
         assert response.status_code != 401

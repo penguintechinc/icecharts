@@ -35,7 +35,6 @@ from connectors.registry import (
 )
 from executor.node_registry import NodeRegistry
 
-
 MANIFESTS_DIR = os.path.join(
     os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
     "connectors",
@@ -290,9 +289,7 @@ class TestGetInstance:
 
     def test_get_instance_returns_none_when_raise_false(self):
         """get_instance() with raise_on_missing=False returns None for unknown."""
-        result = ConnectorRegistry.get_instance(
-            "unknown_xyz", raise_on_missing=False
-        )
+        result = ConnectorRegistry.get_instance("unknown_xyz", raise_on_missing=False)
         assert result is None
 
     def test_get_instance_creates_generic_connector(self):

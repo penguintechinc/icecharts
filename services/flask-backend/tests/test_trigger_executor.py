@@ -108,7 +108,9 @@ class TestNodeResult:
 
     def test_node_result_failure_factory(self):
         """Test creating a failure result."""
-        result = NodeResult.failure_result("Something went wrong", execution_time_ms=50.0)
+        result = NodeResult.failure_result(
+            "Something went wrong", execution_time_ms=50.0
+        )
 
         assert result.success is False
         assert result.error == "Something went wrong"

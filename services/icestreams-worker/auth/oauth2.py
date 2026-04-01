@@ -14,6 +14,7 @@ import logging
 try:
     import boto3
     from botocore.exceptions import ClientError, BotoCoreError
+
     HAS_BOTO3 = True
 except ImportError:
     HAS_BOTO3 = False
@@ -27,6 +28,7 @@ logger = logging.getLogger(__name__)
 @dataclass(slots=True, frozen=True)
 class OAuth2Config:
     """Configuration for OAuth2 authentication."""
+
     client_id: str
     client_secret: str
     token_url: str
@@ -37,6 +39,7 @@ class OAuth2Config:
 @dataclass(slots=True, frozen=True)
 class AWSSTSConfig:
     """Configuration for AWS STS authentication."""
+
     access_key_id: str
     secret_access_key: str
     region: str
@@ -49,6 +52,7 @@ class AWSSTSConfig:
 @dataclass(slots=True)
 class CachedToken:
     """Cached OAuth2 token with expiry tracking."""
+
     access_token: str
     token_type: str
     expires_at: datetime
@@ -71,7 +75,7 @@ class OAuth2Client:
     - Thread-safe token management
     """
 
-    __slots__ = ('_config', '_token_cache', '_lock')
+    __slots__ = ("_config", "_token_cache", "_lock")
 
     def __init__(self, config: OAuth2Config):
         """
@@ -98,7 +102,11 @@ class OAuth2Client:
             RuntimeError: If token acquisition fails
         """
         with self._lock:
-            if not force_refresh and self._token_cache and not self._token_cache.is_expired():
+            if (
+                not force_refresh
+                and self._token_cache
+                and not self._token_cache.is_expired()
+            ):
                 return self._token_cache.access_token
 
             return self._fetch_new_token()
@@ -115,40 +123,40 @@ class OAuth2Client:
         """
         try:
             data = {
-                'grant_type': 'client_credentials',
-                'client_id': self._config.client_id,
-                'client_secret': self._config.client_secret,
+                "grant_type": "client_credentials",
+                "client_id": self._config.client_id,
+                "client_secret": self._config.client_secret,
             }
 
             if self._config.scope:
-                data['scope'] = self._config.scope
+                data["scope"] = self._config.scope
 
             response = requests.post(
                 self._config.token_url,
                 data=data,
                 timeout=self._config.timeout,
-                headers={'Content-Type': 'application/x-www-form-urlencoded'}
+                headers={"Content-Type": "application/x-www-form-urlencoded"},
             )
             response.raise_for_status()
 
             token_data = response.json()
 
             # Calculate expiry time
-            expires_in = token_data.get('expires_in', 3600)
+            expires_in = token_data.get("expires_in", 3600)
             expires_at = datetime.now() + timedelta(seconds=expires_in)
 
             # Cache token
             self._token_cache = CachedToken(
-                access_token=token_data['access_token'],
-                token_type=token_data.get('token_type', 'Bearer'),
+                access_token=token_data["access_token"],
+                token_type=token_data.get("token_type", "Bearer"),
                 expires_at=expires_at,
-                refresh_token=token_data.get('refresh_token'),
-                scope=token_data.get('scope')
+                refresh_token=token_data.get("refresh_token"),
+                scope=token_data.get("scope"),
             )
 
             logger.info(
                 "Successfully fetched OAuth2 token, expires at %s",
-                expires_at.isoformat()
+                expires_at.isoformat(),
             )
 
             return self._token_cache.access_token
@@ -171,8 +179,8 @@ class OAuth2Client:
             Authorization header dict
         """
         token = self.get_access_token(force_refresh=force_refresh)
-        token_type = self._token_cache.token_type if self._token_cache else 'Bearer'
-        return {'Authorization': f'{token_type} {token}'}
+        token_type = self._token_cache.token_type if self._token_cache else "Bearer"
+        return {"Authorization": f"{token_type} {token}"}
 
     def invalidate_cache(self) -> None:
         """Invalidate cached token, forcing refresh on next request."""
@@ -192,7 +200,7 @@ class AWSSTSClient:
     - Thread-safe credential management
     """
 
-    __slots__ = ('_config', '_credentials_cache', '_lock')
+    __slots__ = ("_config", "_credentials_cache", "_lock")
 
     def __init__(self, config: AWSSTSConfig):
         """
@@ -229,12 +237,14 @@ class AWSSTSClient:
         """
         with self._lock:
             if not force_refresh and self._credentials_cache:
-                expiry = self._credentials_cache.get('expiry')
+                expiry = self._credentials_cache.get("expiry")
                 if expiry and datetime.now() < (expiry - timedelta(minutes=5)):
                     return {
-                        'access_key_id': self._credentials_cache['access_key_id'],
-                        'secret_access_key': self._credentials_cache['secret_access_key'],
-                        'session_token': self._credentials_cache.get('session_token'),
+                        "access_key_id": self._credentials_cache["access_key_id"],
+                        "secret_access_key": self._credentials_cache[
+                            "secret_access_key"
+                        ],
+                        "session_token": self._credentials_cache.get("session_token"),
                     }
 
             return self._fetch_new_credentials()
@@ -252,57 +262,57 @@ class AWSSTSClient:
         try:
             # Create STS client
             sts_client = boto3.client(
-                'sts',
+                "sts",
                 aws_access_key_id=self._config.access_key_id,
                 aws_secret_access_key=self._config.secret_access_key,
                 aws_session_token=self._config.session_token,
-                region_name=self._config.region
+                region_name=self._config.region,
             )
 
             if self._config.role_arn:
                 # Assume role
                 response = sts_client.assume_role(
                     RoleArn=self._config.role_arn,
-                    RoleSessionName=f'icestreams-{datetime.now().timestamp()}',
-                    DurationSeconds=self._config.session_duration
+                    RoleSessionName=f"icestreams-{datetime.now().timestamp()}",
+                    DurationSeconds=self._config.session_duration,
                 )
-                credentials = response['Credentials']
+                credentials = response["Credentials"]
 
                 self._credentials_cache = {
-                    'access_key_id': credentials['AccessKeyId'],
-                    'secret_access_key': credentials['SecretAccessKey'],
-                    'session_token': credentials['SessionToken'],
-                    'expiry': credentials['Expiration'].replace(tzinfo=None)
+                    "access_key_id": credentials["AccessKeyId"],
+                    "secret_access_key": credentials["SecretAccessKey"],
+                    "session_token": credentials["SessionToken"],
+                    "expiry": credentials["Expiration"].replace(tzinfo=None),
                 }
 
                 logger.info(
                     "Successfully assumed role %s, expires at %s",
                     self._config.role_arn,
-                    credentials['Expiration'].isoformat()
+                    credentials["Expiration"].isoformat(),
                 )
             else:
                 # Get session token
                 response = sts_client.get_session_token(
                     DurationSeconds=self._config.session_duration
                 )
-                credentials = response['Credentials']
+                credentials = response["Credentials"]
 
                 self._credentials_cache = {
-                    'access_key_id': credentials['AccessKeyId'],
-                    'secret_access_key': credentials['SecretAccessKey'],
-                    'session_token': credentials['SessionToken'],
-                    'expiry': credentials['Expiration'].replace(tzinfo=None)
+                    "access_key_id": credentials["AccessKeyId"],
+                    "secret_access_key": credentials["SecretAccessKey"],
+                    "session_token": credentials["SessionToken"],
+                    "expiry": credentials["Expiration"].replace(tzinfo=None),
                 }
 
                 logger.info(
                     "Successfully fetched session token, expires at %s",
-                    credentials['Expiration'].isoformat()
+                    credentials["Expiration"].isoformat(),
                 )
 
             return {
-                'access_key_id': self._credentials_cache['access_key_id'],
-                'secret_access_key': self._credentials_cache['secret_access_key'],
-                'session_token': self._credentials_cache.get('session_token'),
+                "access_key_id": self._credentials_cache["access_key_id"],
+                "secret_access_key": self._credentials_cache["secret_access_key"],
+                "session_token": self._credentials_cache.get("session_token"),
             }
 
         except (ClientError, BotoCoreError) as e:

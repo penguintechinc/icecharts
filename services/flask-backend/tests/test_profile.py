@@ -1,4 +1,5 @@
 """Tests for Profile API endpoints."""
+
 import io
 
 import pytest

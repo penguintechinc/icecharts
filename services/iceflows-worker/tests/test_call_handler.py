@@ -38,16 +38,16 @@ class TestCallHandlerInit:
 
     def test_constructor_creates_session_with_auth(self, mock_session):
         """Constructor creates session with Bearer token header."""
-        with patch("call_handler.requests.Session", return_value=mock_session) as mock_cls:
+        with patch(
+            "call_handler.requests.Session", return_value=mock_session
+        ) as mock_cls:
             mock_session.headers = MagicMock()
             mock_session.headers.update = MagicMock()
             h = CallHandler(api_base_url="http://api:5000", api_token="my-token")
         mock_cls.assert_called_once()
         # The session headers.update should be called with Authorization
         update_calls = mock_session.headers.update.call_args_list
-        auth_set = any(
-            "Authorization" in str(c) for c in update_calls
-        )
+        auth_set = any("Authorization" in str(c) for c in update_calls)
         assert auth_set
 
     def test_constructor_strips_trailing_slash(self, mock_session):
@@ -59,7 +59,9 @@ class TestCallHandlerInit:
     def test_constructor_stores_timeout(self, mock_session):
         """Timeout is stored correctly."""
         with patch("call_handler.requests.Session", return_value=mock_session):
-            h = CallHandler(api_base_url="http://api:5000", api_token="tok", timeout_seconds=120)
+            h = CallHandler(
+                api_base_url="http://api:5000", api_token="tok", timeout_seconds=120
+            )
         assert h.timeout_seconds == 120
 
 
@@ -78,7 +80,9 @@ class TestTriggerIcestreams:
         result = handler._trigger_icestreams("pb-1", {})
         assert result["execution_id"] == "exec-abc"
 
-    def test_trigger_icestreams_raises_on_missing_execution_id(self, handler, mock_session):
+    def test_trigger_icestreams_raises_on_missing_execution_id(
+        self, handler, mock_session
+    ):
         """_trigger_icestreams raises ValueError if execution_id absent."""
         mock_session.post.return_value.json.return_value = {}
         with pytest.raises(ValueError, match="missing execution_id"):
@@ -126,12 +130,18 @@ class TestPollExecutionStatus:
 
     def test_poll_exponential_backoff(self, handler, mock_session):
         """Polling uses increasing interval between checks."""
-        statuses = [{"status": "running"}, {"status": "running"}, {"status": "completed", "output": None}]
+        statuses = [
+            {"status": "running"},
+            {"status": "running"},
+            {"status": "completed", "output": None},
+        ]
         mock_session.get.return_value.json.side_effect = statuses
         sleep_calls = []
         with patch("time.sleep", side_effect=lambda s: sleep_calls.append(s)):
             with patch("time.time", side_effect=[0, 0.1, 0.2, 0.3, 0.4, 0.5]):
-                result = handler._poll_execution_status("exec-1", "icestreams", timeout=60)
+                result = handler._poll_execution_status(
+                    "exec-1", "icestreams", timeout=60
+                )
         # Should have slept at least once
         assert len(sleep_calls) >= 1
         # Intervals should be non-decreasing (exponential backoff)
@@ -261,6 +271,7 @@ class TestCallHandlerErrors:
     def test_http_timeout_returns_error_status(self, handler, mock_session):
         """When HTTP call times out, CallResult status is 'error'."""
         import requests
+
         mock_session.post.side_effect = requests.Timeout("Connection timeout")
         config = {
             "call_id": "err-timeout",
@@ -279,6 +290,7 @@ class TestCallHandlerErrors:
     def test_http_connection_error_returns_error_status(self, handler, mock_session):
         """When HTTP connection fails, CallResult status is 'error'."""
         import requests
+
         mock_session.post.side_effect = requests.ConnectionError("Connection refused")
         config = {
             "call_id": "err-conn",
@@ -297,6 +309,7 @@ class TestCallHandlerErrors:
     def test_http_auth_failure_raises_for_status(self, handler, mock_session):
         """When API returns 401/403, response.raise_for_status() raises."""
         import requests
+
         mock_session.post.return_value.status_code = 401
         mock_session.post.return_value.raise_for_status.side_effect = (
             requests.HTTPError("401 Unauthorized")
@@ -377,7 +390,9 @@ class TestCallHandlerErrors:
         assert result.status == "timeout"
         assert "did not complete" in result.error_message
 
-    def test_invalid_execution_id_response_raises_value_error(self, handler, mock_session):
+    def test_invalid_execution_id_response_raises_value_error(
+        self, handler, mock_session
+    ):
         """When execution_id missing in response, raises ValueError."""
         mock_session.post.return_value.json.return_value = {"no_id_here": "value"}
         config = {
@@ -394,7 +409,9 @@ class TestCallHandlerErrors:
         assert result.status == "error"
         assert "missing execution_id" in result.error_message
 
-    def test_blocking_call_with_failed_status_returns_failed(self, handler, mock_session):
+    def test_blocking_call_with_failed_status_returns_failed(
+        self, handler, mock_session
+    ):
         """When blocking call returns failed status, result.success is False."""
         post_response = MagicMock()
         post_response.json.return_value = {"execution_id": "exec-failed"}
@@ -426,6 +443,7 @@ class TestCallHandlerErrors:
     def test_polling_api_error_during_poll_returns_error(self, handler, mock_session):
         """When API errors during polling, status is 'error'."""
         import requests
+
         post_response = MagicMock()
         post_response.json.return_value = {"execution_id": "exec-poll-err"}
         mock_session.post.return_value = post_response
@@ -447,14 +465,16 @@ class TestCallHandlerErrors:
         assert result.status == "error"
         assert "API error" in result.error_message
 
-    def test_execute_calls_continues_after_single_call_failure(self, handler, mock_session):
+    def test_execute_calls_continues_after_single_call_failure(
+        self, handler, mock_session
+    ):
         """execute_calls processes all calls even if one fails."""
         # First call fails
         mock_session.post.side_effect = [
             MagicMock(json=MagicMock(return_value={})),  # No execution_id
             MagicMock(
                 json=MagicMock(return_value={"execution_id": "exec-ok"}),
-                raise_for_status=MagicMock()
+                raise_for_status=MagicMock(),
             ),
         ]
 

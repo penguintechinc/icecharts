@@ -24,4 +24,4 @@ class RustRuntime(BaseRuntime):
             Command list
         """
         # Rust runtime expects pre-compiled binary
-        return ['./target/release/main']
+        return ["./target/release/main"]

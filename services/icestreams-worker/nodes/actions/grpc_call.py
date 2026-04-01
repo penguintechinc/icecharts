@@ -94,14 +94,18 @@ class GrpcCallAction(BaseNode):
             if tls_mode == "tls" and not config.get("caPath"):
                 errors.append("caPath required for TLS mode")
             if tls_mode == "mtls":
-                if not config.get("caPath") or not config.get("certPath") or not config.get("keyPath"):
-                    errors.append("caPath, certPath, and keyPath required for mTLS mode")
+                if (
+                    not config.get("caPath")
+                    or not config.get("certPath")
+                    or not config.get("keyPath")
+                ):
+                    errors.append(
+                        "caPath, certPath, and keyPath required for mTLS mode"
+                    )
 
         return errors
 
-    async def _get_channel(
-        self, context: NodeContext, service: str
-    ) -> aio.Channel:
+    async def _get_channel(self, context: NodeContext, service: str) -> aio.Channel:
         """Create gRPC channel with appropriate credentials."""
         tls_mode = context.get_config_value("tlsMode", "insecure")
 
@@ -153,13 +157,12 @@ class GrpcCallAction(BaseNode):
             channel = await self._get_channel(context, service)
 
             unary_unary = grpc.aio.unary_unary(
-                method, request_serializer=self._serialize_request,
-                response_deserializer=self._deserialize_response
+                method,
+                request_serializer=self._serialize_request,
+                response_deserializer=self._deserialize_response,
             )
 
-            response = await unary_unary(
-                channel, method, request, timeout=timeout
-            )
+            response = await unary_unary(channel, method, request, timeout=timeout)
 
             return True, response, "OK", ""
 
@@ -190,9 +193,7 @@ class GrpcCallAction(BaseNode):
         except (json.JSONDecodeError, UnicodeDecodeError):
             return data.decode()
 
-    async def execute(
-        self, context: NodeContext, inputs: Dict[str, Any]
-    ) -> NodeResult:
+    async def execute(self, context: NodeContext, inputs: Dict[str, Any]) -> NodeResult:
         """Execute gRPC call."""
         start_time = time.perf_counter()
 

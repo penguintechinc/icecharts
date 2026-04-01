@@ -1,4 +1,5 @@
 """Tests for Users API endpoints."""
+
 import pytest
 
 
@@ -50,9 +51,7 @@ class TestGetUser:
 
     def test_get_user_found(self, client, auth_headers, test_user):
         """Existing user returns user data."""
-        response = client.get(
-            f"/api/v1/users/{test_user['id']}", headers=auth_headers
-        )
+        response = client.get(f"/api/v1/users/{test_user['id']}", headers=auth_headers)
         assert response.status_code == 200
         data = response.get_json()
         assert "user" in data

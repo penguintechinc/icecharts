@@ -63,9 +63,7 @@ def check_day_restrictions(stage) -> Tuple[bool, str]:
     try:
         tz = pytz.timezone(tz_name)
     except pytz.UnknownTimeZoneError:
-        current_app.logger.warning(
-            f"Unknown timezone {tz_name}, defaulting to UTC"
-        )
+        current_app.logger.warning(f"Unknown timezone {tz_name}, defaulting to UTC")
         tz = pytz.UTC
 
     now = datetime.datetime.now(tz)
@@ -136,14 +134,14 @@ def get_approval_status(promotion_id: str) -> dict:
     db = get_db()
 
     # Get promotion
-    promotion = db(
-        db.iceflows_promotions.promotion_id == promotion_id
-    ).select().first()
+    promotion = db(db.iceflows_promotions.promotion_id == promotion_id).select().first()
     if not promotion:
         return {"error": "Promotion not found"}
 
     # Get target stage
-    target_stage = db(db.iceflows_stages.id == promotion.target_stage_id).select().first()
+    target_stage = (
+        db(db.iceflows_stages.id == promotion.target_stage_id).select().first()
+    )
     if not target_stage:
         return {"error": "Target stage not found"}
 
@@ -231,8 +229,12 @@ def serialize_promotion(promotion, include_approvals=False):
     flow = db(db.iceflows.id == promotion.flow_id).select().first()
 
     # Get stages
-    source_stage = db(db.iceflows_stages.id == promotion.source_stage_id).select().first()
-    target_stage = db(db.iceflows_stages.id == promotion.target_stage_id).select().first()
+    source_stage = (
+        db(db.iceflows_stages.id == promotion.source_stage_id).select().first()
+    )
+    target_stage = (
+        db(db.iceflows_stages.id == promotion.target_stage_id).select().first()
+    )
 
     # Get user info
     requested_by = None
@@ -266,7 +268,9 @@ def serialize_promotion(promotion, include_approvals=False):
         "requested_by": requested_by,
         "merged_by": merged_by,
         "merged_at": promotion.merged_at.isoformat() if promotion.merged_at else None,
-        "created_at": promotion.created_at.isoformat() if promotion.created_at else None,
+        "created_at": (
+            promotion.created_at.isoformat() if promotion.created_at else None
+        ),
     }
 
     # Add approval status
@@ -275,24 +279,32 @@ def serialize_promotion(promotion, include_approvals=False):
 
     # Include approval records if requested
     if include_approvals:
-        approvals = db(
-            db.iceflows_approvals.promotion_id == promotion.id
-        ).select(orderby=db.iceflows_approvals.approved_at)
+        approvals = db(db.iceflows_approvals.promotion_id == promotion.id).select(
+            orderby=db.iceflows_approvals.approved_at
+        )
 
         result["approvals"] = []
         for approval in approvals:
             approver = db(db.auth_user.id == approval.approver_id).select().first()
-            result["approvals"].append({
-                "approval_id": approval.approval_id,
-                "approver": {
-                    "id": str(approver.id) if approver else None,
-                    "name": approver.username or approver.email if approver else None,
-                },
-                "decision": approval.decision,
-                "comment": approval.comment or "",
-                "can_override": approval.can_override or False,
-                "approved_at": approval.approved_at.isoformat() if approval.approved_at else None,
-            })
+            result["approvals"].append(
+                {
+                    "approval_id": approval.approval_id,
+                    "approver": {
+                        "id": str(approver.id) if approver else None,
+                        "name": (
+                            approver.username or approver.email if approver else None
+                        ),
+                    },
+                    "decision": approval.decision,
+                    "comment": approval.comment or "",
+                    "can_override": approval.can_override or False,
+                    "approved_at": (
+                        approval.approved_at.isoformat()
+                        if approval.approved_at
+                        else None
+                    ),
+                }
+            )
 
     return result
 
@@ -357,14 +369,16 @@ def list_promotions(flow_id: str):
         result = [serialize_promotion(p, include_approvals=False) for p in promotions]
 
         return (
-            jsonify({
-                "success": True,
-                "promotions": result,
-                "total": total,
-                "page": page,
-                "per_page": per_page,
-                "pages": (total + per_page - 1) // per_page,
-            }),
+            jsonify(
+                {
+                    "success": True,
+                    "promotions": result,
+                    "total": total,
+                    "page": page,
+                    "per_page": per_page,
+                    "pages": (total + per_page - 1) // per_page,
+                }
+            ),
             200,
         )
 
@@ -411,27 +425,39 @@ def create_promotion(flow_id: str):
 
         if not source_stage_id or not target_stage_id:
             return (
-                jsonify({
-                    "success": False,
-                    "error": "source_stage_id and target_stage_id are required",
-                }),
+                jsonify(
+                    {
+                        "success": False,
+                        "error": "source_stage_id and target_stage_id are required",
+                    }
+                ),
                 400,
             )
 
         # Get stages
-        source_stage = db(
-            (db.iceflows_stages.stage_id == source_stage_id)
-            & (db.iceflows_stages.flow_id == flow.id)
-        ).select().first()
+        source_stage = (
+            db(
+                (db.iceflows_stages.stage_id == source_stage_id)
+                & (db.iceflows_stages.flow_id == flow.id)
+            )
+            .select()
+            .first()
+        )
 
-        target_stage = db(
-            (db.iceflows_stages.stage_id == target_stage_id)
-            & (db.iceflows_stages.flow_id == flow.id)
-        ).select().first()
+        target_stage = (
+            db(
+                (db.iceflows_stages.stage_id == target_stage_id)
+                & (db.iceflows_stages.flow_id == flow.id)
+            )
+            .select()
+            .first()
+        )
 
         if not source_stage or not target_stage:
             return (
-                jsonify({"success": False, "error": "Source or target stage not found"}),
+                jsonify(
+                    {"success": False, "error": "Source or target stage not found"}
+                ),
                 404,
             )
 
@@ -439,15 +465,17 @@ def create_promotion(flow_id: str):
         allow_skip = data.get("allow_skip", False)
         if not allow_skip and target_stage.stage_order != source_stage.stage_order + 1:
             return (
-                jsonify({
-                    "success": False,
-                    "error": (
-                        f"Target stage must be next in sequence. "
-                        f"Source order: {source_stage.stage_order}, "
-                        f"Target order: {target_stage.stage_order}. "
-                        f"Use allow_skip=true to override."
-                    ),
-                }),
+                jsonify(
+                    {
+                        "success": False,
+                        "error": (
+                            f"Target stage must be next in sequence. "
+                            f"Source order: {source_stage.stage_order}, "
+                            f"Target order: {target_stage.stage_order}. "
+                            f"Use allow_skip=true to override."
+                        ),
+                    }
+                ),
                 400,
             )
 
@@ -473,11 +501,13 @@ def create_promotion(flow_id: str):
             flow_name = flow.name if flow else "Unknown"
             source_stage_name = (
                 source_stage.display_name or source_stage.branch_name
-                if source_stage else "Unknown"
+                if source_stage
+                else "Unknown"
             )
             target_stage_name = (
                 target_stage.display_name or target_stage.branch_name
-                if target_stage else "Unknown"
+                if target_stage
+                else "Unknown"
             )
 
             IceFlowsNotificationService.send_notification(
@@ -497,10 +527,12 @@ def create_promotion(flow_id: str):
         promotion = db.iceflows_promotions[db_id]
 
         return (
-            jsonify({
-                "success": True,
-                "promotion": serialize_promotion(promotion, include_approvals=True),
-            }),
+            jsonify(
+                {
+                    "success": True,
+                    "promotion": serialize_promotion(promotion, include_approvals=True),
+                }
+            ),
             201,
         )
 
@@ -526,9 +558,9 @@ def get_promotion(promotion_id: str):
         user_id = user["id"]
         db = get_db()
 
-        promotion = db(
-            db.iceflows_promotions.promotion_id == promotion_id
-        ).select().first()
+        promotion = (
+            db(db.iceflows_promotions.promotion_id == promotion_id).select().first()
+        )
         if not promotion:
             return jsonify({"success": False, "error": "Promotion not found"}), 404
 
@@ -538,10 +570,12 @@ def get_promotion(promotion_id: str):
             return jsonify({"success": False, "error": "Access denied"}), 403
 
         return (
-            jsonify({
-                "success": True,
-                "promotion": serialize_promotion(promotion, include_approvals=True),
-            }),
+            jsonify(
+                {
+                    "success": True,
+                    "promotion": serialize_promotion(promotion, include_approvals=True),
+                }
+            ),
             200,
         )
 
@@ -567,9 +601,9 @@ def cancel_promotion(promotion_id: str):
         user_id = user["id"]
         db = get_db()
 
-        promotion = db(
-            db.iceflows_promotions.promotion_id == promotion_id
-        ).select().first()
+        promotion = (
+            db(db.iceflows_promotions.promotion_id == promotion_id).select().first()
+        )
         if not promotion:
             return jsonify({"success": False, "error": "Promotion not found"}), 404
 
@@ -581,10 +615,12 @@ def cancel_promotion(promotion_id: str):
         # Only allow cancelling pending promotions
         if promotion.status not in ["pending", "approved"]:
             return (
-                jsonify({
-                    "success": False,
-                    "error": f"Cannot cancel promotion with status: {promotion.status}",
-                }),
+                jsonify(
+                    {
+                        "success": False,
+                        "error": f"Cannot cancel promotion with status: {promotion.status}",
+                    }
+                ),
                 400,
             )
 
@@ -596,10 +632,12 @@ def cancel_promotion(promotion_id: str):
         db.commit()
 
         return (
-            jsonify({
-                "success": True,
-                "message": "Promotion cancelled successfully",
-            }),
+            jsonify(
+                {
+                    "success": True,
+                    "message": "Promotion cancelled successfully",
+                }
+            ),
             200,
         )
 
@@ -625,9 +663,9 @@ def merge_promotion(promotion_id: str):
         user_id = user["id"]
         db = get_db()
 
-        promotion = db(
-            db.iceflows_promotions.promotion_id == promotion_id
-        ).select().first()
+        promotion = (
+            db(db.iceflows_promotions.promotion_id == promotion_id).select().first()
+        )
         if not promotion:
             return jsonify({"success": False, "error": "Promotion not found"}), 404
 
@@ -641,11 +679,13 @@ def merge_promotion(promotion_id: str):
 
         if not approval_status["can_merge"]:
             return (
-                jsonify({
-                    "success": False,
-                    "error": "Promotion not ready to merge",
-                    "blocking_reason": approval_status.get("blocking_reason"),
-                }),
+                jsonify(
+                    {
+                        "success": False,
+                        "error": "Promotion not ready to merge",
+                        "blocking_reason": approval_status.get("blocking_reason"),
+                    }
+                ),
                 400,
             )
 
@@ -678,21 +718,23 @@ def merge_promotion(promotion_id: str):
         # Send execution_completed notification
         try:
             flow = db(db.iceflows.id == promotion.flow_id).select().first()
-            target_stage = db(
-                db.iceflows_stages.id == promotion.target_stage_id
-            ).select().first()
-            source_stage = db(
-                db.iceflows_stages.id == promotion.source_stage_id
-            ).select().first()
+            target_stage = (
+                db(db.iceflows_stages.id == promotion.target_stage_id).select().first()
+            )
+            source_stage = (
+                db(db.iceflows_stages.id == promotion.source_stage_id).select().first()
+            )
 
             flow_name = flow.name if flow else "Unknown"
             source_stage_name = (
                 source_stage.display_name or source_stage.branch_name
-                if source_stage else "Unknown"
+                if source_stage
+                else "Unknown"
             )
             target_stage_name = (
                 target_stage.display_name or target_stage.branch_name
-                if target_stage else "Unknown"
+                if target_stage
+                else "Unknown"
             )
 
             IceFlowsNotificationService.send_notification(
@@ -714,11 +756,13 @@ def merge_promotion(promotion_id: str):
         )
 
         return (
-            jsonify({
-                "success": True,
-                "promotion": serialize_promotion(promotion, include_approvals=True),
-                "message": "Merge executed successfully",
-            }),
+            jsonify(
+                {
+                    "success": True,
+                    "promotion": serialize_promotion(promotion, include_approvals=True),
+                    "message": "Merge executed successfully",
+                }
+            ),
             200,
         )
 
@@ -753,54 +797,70 @@ def approve_promotion(promotion_id: str):
         db = get_db()
         data = request.get_json() or {}
 
-        promotion = db(
-            db.iceflows_promotions.promotion_id == promotion_id
-        ).select().first()
+        promotion = (
+            db(db.iceflows_promotions.promotion_id == promotion_id).select().first()
+        )
         if not promotion:
             return jsonify({"success": False, "error": "Promotion not found"}), 404
 
         # Only allow approving pending promotions
         if promotion.status != "pending":
             return (
-                jsonify({
-                    "success": False,
-                    "error": f"Cannot approve promotion with status: {promotion.status}",
-                }),
+                jsonify(
+                    {
+                        "success": False,
+                        "error": f"Cannot approve promotion with status: {promotion.status}",
+                    }
+                ),
                 400,
             )
 
         # Get target stage
-        target_stage = db(db.iceflows_stages.id == promotion.target_stage_id).select().first()
+        target_stage = (
+            db(db.iceflows_stages.id == promotion.target_stage_id).select().first()
+        )
         if not target_stage:
             return jsonify({"success": False, "error": "Target stage not found"}), 404
 
         # Verify user is an authorized approver for target stage
-        approver = db(
-            (db.iceflows_stage_approvers.stage_id == target_stage.id)
-            & (db.iceflows_stage_approvers.identity_id == user_id)
-        ).select().first()
+        approver = (
+            db(
+                (db.iceflows_stage_approvers.stage_id == target_stage.id)
+                & (db.iceflows_stage_approvers.identity_id == user_id)
+            )
+            .select()
+            .first()
+        )
 
         if not approver:
             return (
-                jsonify({
-                    "success": False,
-                    "error": "User not authorized to approve for this stage",
-                }),
+                jsonify(
+                    {
+                        "success": False,
+                        "error": "User not authorized to approve for this stage",
+                    }
+                ),
                 403,
             )
 
         # Check for existing approval from this user
-        existing = db(
-            (db.iceflows_approvals.promotion_id == promotion.id)
-            & (db.iceflows_approvals.approver_id == user_id)
-        ).select().first()
+        existing = (
+            db(
+                (db.iceflows_approvals.promotion_id == promotion.id)
+                & (db.iceflows_approvals.approver_id == user_id)
+            )
+            .select()
+            .first()
+        )
 
         if existing:
             return (
-                jsonify({
-                    "success": False,
-                    "error": "User has already submitted a decision for this promotion",
-                }),
+                jsonify(
+                    {
+                        "success": False,
+                        "error": "User has already submitted a decision for this promotion",
+                    }
+                ),
                 400,
             )
 
@@ -829,29 +889,33 @@ def approve_promotion(promotion_id: str):
             and approver.can_override
         ):
             # Get previous override status to detect first-time activation
-            previous_override_approvals = (
-                approval_status["override_approvals"] - 1
-            )
+            previous_override_approvals = approval_status["override_approvals"] - 1
             override_min = approval_status["override_min_approvers"]
             if previous_override_approvals < override_min:
                 # Send promotion_override notification
                 try:
                     flow = db(db.iceflows.id == promotion.flow_id).select().first()
-                    target_stage = db(
-                        db.iceflows_stages.id == promotion.target_stage_id
-                    ).select().first()
-                    source_stage = db(
-                        db.iceflows_stages.id == promotion.source_stage_id
-                    ).select().first()
+                    target_stage = (
+                        db(db.iceflows_stages.id == promotion.target_stage_id)
+                        .select()
+                        .first()
+                    )
+                    source_stage = (
+                        db(db.iceflows_stages.id == promotion.source_stage_id)
+                        .select()
+                        .first()
+                    )
 
                     flow_name = flow.name if flow else "Unknown"
                     source_stage_name = (
                         source_stage.display_name or source_stage.branch_name
-                        if source_stage else "Unknown"
+                        if source_stage
+                        else "Unknown"
                     )
                     target_stage_name = (
                         target_stage.display_name or target_stage.branch_name
-                        if target_stage else "Unknown"
+                        if target_stage
+                        else "Unknown"
                     )
 
                     IceFlowsNotificationService.send_notification(
@@ -879,21 +943,27 @@ def approve_promotion(promotion_id: str):
             # Send promotion_approved notification
             try:
                 flow = db(db.iceflows.id == promotion.flow_id).select().first()
-                target_stage = db(
-                    db.iceflows_stages.id == promotion.target_stage_id
-                ).select().first()
-                source_stage = db(
-                    db.iceflows_stages.id == promotion.source_stage_id
-                ).select().first()
+                target_stage = (
+                    db(db.iceflows_stages.id == promotion.target_stage_id)
+                    .select()
+                    .first()
+                )
+                source_stage = (
+                    db(db.iceflows_stages.id == promotion.source_stage_id)
+                    .select()
+                    .first()
+                )
 
                 flow_name = flow.name if flow else "Unknown"
                 source_stage_name = (
                     source_stage.display_name or source_stage.branch_name
-                    if source_stage else "Unknown"
+                    if source_stage
+                    else "Unknown"
                 )
                 target_stage_name = (
                     target_stage.display_name or target_stage.branch_name
-                    if target_stage else "Unknown"
+                    if target_stage
+                    else "Unknown"
                 )
 
                 IceFlowsNotificationService.send_notification(
@@ -907,29 +977,29 @@ def approve_promotion(promotion_id: str):
                     },
                 )
             except Exception as notify_err:
-                current_app.logger.warning(
-                    f"Failed to send notification: {notify_err}"
-                )
+                current_app.logger.warning(f"Failed to send notification: {notify_err}")
 
         approval = db.iceflows_approvals[db_id]
         approver_user = db(db.auth_user.id == user_id).select().first()
 
         return (
-            jsonify({
-                "success": True,
-                "approval": {
-                    "approval_id": approval.approval_id,
-                    "approver": {
-                        "id": str(approver_user.id),
-                        "name": approver_user.username or approver_user.email,
+            jsonify(
+                {
+                    "success": True,
+                    "approval": {
+                        "approval_id": approval.approval_id,
+                        "approver": {
+                            "id": str(approver_user.id),
+                            "name": approver_user.username or approver_user.email,
+                        },
+                        "decision": approval.decision,
+                        "comment": approval.comment or "",
+                        "can_override": approval.can_override or False,
+                        "approved_at": approval.approved_at.isoformat(),
                     },
-                    "decision": approval.decision,
-                    "comment": approval.comment or "",
-                    "can_override": approval.can_override or False,
-                    "approved_at": approval.approved_at.isoformat(),
-                },
-                "approval_status": approval_status,
-            }),
+                    "approval_status": approval_status,
+                }
+            ),
             201,
         )
 
@@ -959,19 +1029,21 @@ def reject_promotion(promotion_id: str):
         db = get_db()
         data = request.get_json() or {}
 
-        promotion = db(
-            db.iceflows_promotions.promotion_id == promotion_id
-        ).select().first()
+        promotion = (
+            db(db.iceflows_promotions.promotion_id == promotion_id).select().first()
+        )
         if not promotion:
             return jsonify({"success": False, "error": "Promotion not found"}), 404
 
         # Only allow rejecting pending promotions
         if promotion.status != "pending":
             return (
-                jsonify({
-                    "success": False,
-                    "error": f"Cannot reject promotion with status: {promotion.status}",
-                }),
+                jsonify(
+                    {
+                        "success": False,
+                        "error": f"Cannot reject promotion with status: {promotion.status}",
+                    }
+                ),
                 400,
             )
 
@@ -983,37 +1055,51 @@ def reject_promotion(promotion_id: str):
             )
 
         # Get target stage
-        target_stage = db(db.iceflows_stages.id == promotion.target_stage_id).select().first()
+        target_stage = (
+            db(db.iceflows_stages.id == promotion.target_stage_id).select().first()
+        )
         if not target_stage:
             return jsonify({"success": False, "error": "Target stage not found"}), 404
 
         # Verify user is an authorized approver for target stage
-        approver = db(
-            (db.iceflows_stage_approvers.stage_id == target_stage.id)
-            & (db.iceflows_stage_approvers.identity_id == user_id)
-        ).select().first()
+        approver = (
+            db(
+                (db.iceflows_stage_approvers.stage_id == target_stage.id)
+                & (db.iceflows_stage_approvers.identity_id == user_id)
+            )
+            .select()
+            .first()
+        )
 
         if not approver:
             return (
-                jsonify({
-                    "success": False,
-                    "error": "User not authorized to reject for this stage",
-                }),
+                jsonify(
+                    {
+                        "success": False,
+                        "error": "User not authorized to reject for this stage",
+                    }
+                ),
                 403,
             )
 
         # Check for existing decision from this user
-        existing = db(
-            (db.iceflows_approvals.promotion_id == promotion.id)
-            & (db.iceflows_approvals.approver_id == user_id)
-        ).select().first()
+        existing = (
+            db(
+                (db.iceflows_approvals.promotion_id == promotion.id)
+                & (db.iceflows_approvals.approver_id == user_id)
+            )
+            .select()
+            .first()
+        )
 
         if existing:
             return (
-                jsonify({
-                    "success": False,
-                    "error": "User has already submitted a decision for this promotion",
-                }),
+                jsonify(
+                    {
+                        "success": False,
+                        "error": "User has already submitted a decision for this promotion",
+                    }
+                ),
                 400,
             )
 
@@ -1041,21 +1127,23 @@ def reject_promotion(promotion_id: str):
         # Send promotion_rejected notification
         try:
             flow = db(db.iceflows.id == promotion.flow_id).select().first()
-            target_stage = db(
-                db.iceflows_stages.id == promotion.target_stage_id
-            ).select().first()
-            source_stage = db(
-                db.iceflows_stages.id == promotion.source_stage_id
-            ).select().first()
+            target_stage = (
+                db(db.iceflows_stages.id == promotion.target_stage_id).select().first()
+            )
+            source_stage = (
+                db(db.iceflows_stages.id == promotion.source_stage_id).select().first()
+            )
 
             flow_name = flow.name if flow else "Unknown"
             source_stage_name = (
                 source_stage.display_name or source_stage.branch_name
-                if source_stage else "Unknown"
+                if source_stage
+                else "Unknown"
             )
             target_stage_name = (
                 target_stage.display_name or target_stage.branch_name
-                if target_stage else "Unknown"
+                if target_stage
+                else "Unknown"
             )
 
             IceFlowsNotificationService.send_notification(
@@ -1075,20 +1163,22 @@ def reject_promotion(promotion_id: str):
         approver_user = db(db.auth_user.id == user_id).select().first()
 
         return (
-            jsonify({
-                "success": True,
-                "approval": {
-                    "approval_id": approval.approval_id,
-                    "approver": {
-                        "id": str(approver_user.id),
-                        "name": approver_user.username or approver_user.email,
+            jsonify(
+                {
+                    "success": True,
+                    "approval": {
+                        "approval_id": approval.approval_id,
+                        "approver": {
+                            "id": str(approver_user.id),
+                            "name": approver_user.username or approver_user.email,
+                        },
+                        "decision": approval.decision,
+                        "comment": approval.comment or "",
+                        "can_override": approval.can_override or False,
+                        "approved_at": approval.approved_at.isoformat(),
                     },
-                    "decision": approval.decision,
-                    "comment": approval.comment or "",
-                    "can_override": approval.can_override or False,
-                    "approved_at": approval.approved_at.isoformat(),
-                },
-            }),
+                }
+            ),
             201,
         )
 
@@ -1121,9 +1211,9 @@ def override_restrictions(promotion_id: str):
         db = get_db()
         data = request.get_json() or {}
 
-        promotion = db(
-            db.iceflows_promotions.promotion_id == promotion_id
-        ).select().first()
+        promotion = (
+            db(db.iceflows_promotions.promotion_id == promotion_id).select().first()
+        )
         if not promotion:
             return jsonify({"success": False, "error": "Promotion not found"}), 404
 
@@ -1135,7 +1225,9 @@ def override_restrictions(promotion_id: str):
             )
 
         # Get target stage
-        target_stage = db(db.iceflows_stages.id == promotion.target_stage_id).select().first()
+        target_stage = (
+            db(db.iceflows_stages.id == promotion.target_stage_id).select().first()
+        )
         if not target_stage:
             return jsonify({"success": False, "error": "Target stage not found"}), 404
 
@@ -1143,26 +1235,34 @@ def override_restrictions(promotion_id: str):
         is_day_allowed, block_reason = check_day_restrictions(target_stage)
         if is_day_allowed:
             return (
-                jsonify({
-                    "success": False,
-                    "error": "No day/time restrictions active, override not needed",
-                }),
+                jsonify(
+                    {
+                        "success": False,
+                        "error": "No day/time restrictions active, override not needed",
+                    }
+                ),
                 400,
             )
 
         # Verify user has override capability
-        approver = db(
-            (db.iceflows_stage_approvers.stage_id == target_stage.id)
-            & (db.iceflows_stage_approvers.identity_id == user_id)
-            & (db.iceflows_stage_approvers.can_override == True)  # noqa: E712
-        ).select().first()
+        approver = (
+            db(
+                (db.iceflows_stage_approvers.stage_id == target_stage.id)
+                & (db.iceflows_stage_approvers.identity_id == user_id)
+                & (db.iceflows_stage_approvers.can_override == True)  # noqa: E712
+            )
+            .select()
+            .first()
+        )
 
         if not approver:
             return (
-                jsonify({
-                    "success": False,
-                    "error": "User not authorized to override restrictions",
-                }),
+                jsonify(
+                    {
+                        "success": False,
+                        "error": "User not authorized to override restrictions",
+                    }
+                ),
                 403,
             )
 
@@ -1170,26 +1270,32 @@ def override_restrictions(promotion_id: str):
         approval_status = get_approval_status(promotion_id)
 
         return (
-            jsonify({
-                "success": True,
-                "message": (
-                    "Override counted via approval. Submit regular approval "
-                    "with can_override=True to count toward override threshold."
-                ),
-                "override_status": {
-                    "override_approvals": approval_status["override_approvals"],
-                    "override_min_approvers": approval_status["override_min_approvers"],
-                    "override_active": approval_status["override_active"],
-                    "is_day_blocked": approval_status["is_day_blocked"],
-                    "restriction_reason": block_reason,
-                },
-                "reason": data["reason"],
-            }),
+            jsonify(
+                {
+                    "success": True,
+                    "message": (
+                        "Override counted via approval. Submit regular approval "
+                        "with can_override=True to count toward override threshold."
+                    ),
+                    "override_status": {
+                        "override_approvals": approval_status["override_approvals"],
+                        "override_min_approvers": approval_status[
+                            "override_min_approvers"
+                        ],
+                        "override_active": approval_status["override_active"],
+                        "is_day_blocked": approval_status["is_day_blocked"],
+                        "restriction_reason": block_reason,
+                    },
+                    "reason": data["reason"],
+                }
+            ),
             200,
         )
 
     except Exception as e:
-        current_app.logger.error(f"Error overriding restrictions for {promotion_id}: {e}")
+        current_app.logger.error(
+            f"Error overriding restrictions for {promotion_id}: {e}"
+        )
         return jsonify({"success": False, "error": str(e)}), 500
 
 
@@ -1216,11 +1322,13 @@ def get_my_approvals():
 
         if not stage_ids:
             return (
-                jsonify({
-                    "success": True,
-                    "pending_approvals": [],
-                    "count": 0,
-                }),
+                jsonify(
+                    {
+                        "success": True,
+                        "pending_approvals": [],
+                        "count": 0,
+                    }
+                ),
                 200,
             )
 
@@ -1235,39 +1343,59 @@ def get_my_approvals():
 
         for promotion in promotions:
             # Check if user already decided
-            existing = db(
-                (db.iceflows_approvals.promotion_id == promotion.id)
-                & (db.iceflows_approvals.approver_id == user_id)
-            ).select().first()
+            existing = (
+                db(
+                    (db.iceflows_approvals.promotion_id == promotion.id)
+                    & (db.iceflows_approvals.approver_id == user_id)
+                )
+                .select()
+                .first()
+            )
 
             if existing:
                 continue  # Skip if already decided
 
             # Get flow and stages
             flow = db(db.iceflows.id == promotion.flow_id).select().first()
-            source_stage = db(db.iceflows_stages.id == promotion.source_stage_id).select().first()
-            target_stage = db(db.iceflows_stages.id == promotion.target_stage_id).select().first()
-            requester = db(db.auth_user.id == promotion.requested_by_id).select().first()
+            source_stage = (
+                db(db.iceflows_stages.id == promotion.source_stage_id).select().first()
+            )
+            target_stage = (
+                db(db.iceflows_stages.id == promotion.target_stage_id).select().first()
+            )
+            requester = (
+                db(db.auth_user.id == promotion.requested_by_id).select().first()
+            )
 
             # Check day restrictions
             is_day_allowed, _ = check_day_restrictions(target_stage)
 
-            pending.append({
-                "promotion_id": promotion.promotion_id,
-                "flow_name": flow.name if flow else None,
-                "source_branch": source_stage.branch_name if source_stage else None,
-                "target_branch": target_stage.branch_name if target_stage else None,
-                "requested_by": requester.username or requester.email if requester else None,
-                "requested_at": promotion.created_at.isoformat() if promotion.created_at else None,
-                "is_day_blocked": not is_day_allowed,
-            })
+            pending.append(
+                {
+                    "promotion_id": promotion.promotion_id,
+                    "flow_name": flow.name if flow else None,
+                    "source_branch": source_stage.branch_name if source_stage else None,
+                    "target_branch": target_stage.branch_name if target_stage else None,
+                    "requested_by": (
+                        requester.username or requester.email if requester else None
+                    ),
+                    "requested_at": (
+                        promotion.created_at.isoformat()
+                        if promotion.created_at
+                        else None
+                    ),
+                    "is_day_blocked": not is_day_allowed,
+                }
+            )
 
         return (
-            jsonify({
-                "success": True,
-                "pending_approvals": pending,
-                "count": len(pending),
-            }),
+            jsonify(
+                {
+                    "success": True,
+                    "pending_approvals": pending,
+                    "count": len(pending),
+                }
+            ),
             200,
         )
 
@@ -1298,9 +1426,9 @@ def list_approvals(promotion_id: str):
         user_id = user["id"]
         db = get_db()
 
-        promotion = db(
-            db.iceflows_promotions.promotion_id == promotion_id
-        ).select().first()
+        promotion = (
+            db(db.iceflows_promotions.promotion_id == promotion_id).select().first()
+        )
         if not promotion:
             return jsonify({"success": False, "error": "Promotion not found"}), 404
 
@@ -1310,31 +1438,41 @@ def list_approvals(promotion_id: str):
             return jsonify({"success": False, "error": "Access denied"}), 403
 
         # Get all approvals
-        approvals = db(
-            db.iceflows_approvals.promotion_id == promotion.id
-        ).select(orderby=db.iceflows_approvals.approved_at)
+        approvals = db(db.iceflows_approvals.promotion_id == promotion.id).select(
+            orderby=db.iceflows_approvals.approved_at
+        )
 
         result = []
         for approval in approvals:
             approver = db(db.auth_user.id == approval.approver_id).select().first()
-            result.append({
-                "approval_id": approval.approval_id,
-                "approver": {
-                    "id": str(approver.id) if approver else None,
-                    "name": approver.username or approver.email if approver else None,
-                },
-                "decision": approval.decision,
-                "comment": approval.comment or "",
-                "can_override": approval.can_override or False,
-                "approved_at": approval.approved_at.isoformat() if approval.approved_at else None,
-            })
+            result.append(
+                {
+                    "approval_id": approval.approval_id,
+                    "approver": {
+                        "id": str(approver.id) if approver else None,
+                        "name": (
+                            approver.username or approver.email if approver else None
+                        ),
+                    },
+                    "decision": approval.decision,
+                    "comment": approval.comment or "",
+                    "can_override": approval.can_override or False,
+                    "approved_at": (
+                        approval.approved_at.isoformat()
+                        if approval.approved_at
+                        else None
+                    ),
+                }
+            )
 
         return (
-            jsonify({
-                "success": True,
-                "approvals": result,
-                "count": len(result),
-            }),
+            jsonify(
+                {
+                    "success": True,
+                    "approvals": result,
+                    "count": len(result),
+                }
+            ),
             200,
         )
 
@@ -1360,9 +1498,9 @@ def get_promotion_status(promotion_id: str):
         user_id = user["id"]
         db = get_db()
 
-        promotion = db(
-            db.iceflows_promotions.promotion_id == promotion_id
-        ).select().first()
+        promotion = (
+            db(db.iceflows_promotions.promotion_id == promotion_id).select().first()
+        )
         if not promotion:
             return jsonify({"success": False, "error": "Promotion not found"}), 404
 
@@ -1374,10 +1512,12 @@ def get_promotion_status(promotion_id: str):
         approval_status = get_approval_status(promotion_id)
 
         return (
-            jsonify({
-                "success": True,
-                "status": approval_status,
-            }),
+            jsonify(
+                {
+                    "success": True,
+                    "status": approval_status,
+                }
+            ),
             200,
         )
 

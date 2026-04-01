@@ -23,10 +23,12 @@ class NodeJSRuntime(BaseRuntime):
         Returns:
             Command list
         """
-        if '.' not in handler:
-            raise ValueError(f"Invalid handler format: {handler}. Expected: file.function")
+        if "." not in handler:
+            raise ValueError(
+                f"Invalid handler format: {handler}. Expected: file.function"
+            )
 
-        module, function = handler.rsplit('.', 1)
+        module, function = handler.rsplit(".", 1)
 
         wrapper = f"""
 const {{ {function} }} = require('./{module}');
@@ -44,4 +46,4 @@ const input = JSON.parse(process.env.ICERUN_INPUT);
 }})();
 """
 
-        return ['node', '-e', wrapper]
+        return ["node", "-e", wrapper]

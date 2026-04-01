@@ -1,4 +1,5 @@
 """Performance tests for warm vs cold start container execution."""
+
 import pytest
 import time
 
@@ -9,23 +10,23 @@ class TestWarmVsColdStart:
     def test_cold_start_time(self, api_client, auth_token, sample_function):
         """Measure cold start execution time."""
         create_response = api_client.post(
-            '/api/v1/iceruns',
+            "/api/v1/iceruns",
             json=sample_function,
-            headers={'Authorization': auth_token}
+            headers={"Authorization": auth_token},
         )
-        function_id = create_response.get_json()['function_id']
+        function_id = create_response.get_json()["function_id"]
 
         api_client.put(
-            f'/api/v1/iceruns/{function_id}/activate',
-            headers={'Authorization': auth_token}
+            f"/api/v1/iceruns/{function_id}/activate",
+            headers={"Authorization": auth_token},
         )
 
         # First execution (cold start)
         start_time = time.time()
         response = api_client.post(
-            f'/api/v1/iceruns/{function_id}/execute',
-            json={'input': {}},
-            headers={'Authorization': auth_token}
+            f"/api/v1/iceruns/{function_id}/execute",
+            json={"input": {}},
+            headers={"Authorization": auth_token},
         )
         cold_start_time = time.time() - start_time
 
@@ -36,22 +37,22 @@ class TestWarmVsColdStart:
     def test_warm_start_time(self, api_client, auth_token, sample_function):
         """Measure warm start execution time."""
         create_response = api_client.post(
-            '/api/v1/iceruns',
+            "/api/v1/iceruns",
             json=sample_function,
-            headers={'Authorization': auth_token}
+            headers={"Authorization": auth_token},
         )
-        function_id = create_response.get_json()['function_id']
+        function_id = create_response.get_json()["function_id"]
 
         api_client.put(
-            f'/api/v1/iceruns/{function_id}/activate',
-            headers={'Authorization': auth_token}
+            f"/api/v1/iceruns/{function_id}/activate",
+            headers={"Authorization": auth_token},
         )
 
         # First execution (cold start) - primes the container
         api_client.post(
-            f'/api/v1/iceruns/{function_id}/execute',
-            json={'input': {}},
-            headers={'Authorization': auth_token}
+            f"/api/v1/iceruns/{function_id}/execute",
+            json={"input": {}},
+            headers={"Authorization": auth_token},
         )
 
         time.sleep(0.5)  # Brief pause
@@ -59,9 +60,9 @@ class TestWarmVsColdStart:
         # Second execution (warm start)
         start_time = time.time()
         response = api_client.post(
-            f'/api/v1/iceruns/{function_id}/execute',
-            json={'input': {}},
-            headers={'Authorization': auth_token}
+            f"/api/v1/iceruns/{function_id}/execute",
+            json={"input": {}},
+            headers={"Authorization": auth_token},
         )
         warm_start_time = time.time() - start_time
 
@@ -72,23 +73,23 @@ class TestWarmVsColdStart:
     def test_warm_start_faster_than_cold(self, api_client, auth_token, sample_function):
         """Verify warm start is faster than cold start."""
         create_response = api_client.post(
-            '/api/v1/iceruns',
+            "/api/v1/iceruns",
             json=sample_function,
-            headers={'Authorization': auth_token}
+            headers={"Authorization": auth_token},
         )
-        function_id = create_response.get_json()['function_id']
+        function_id = create_response.get_json()["function_id"]
 
         api_client.put(
-            f'/api/v1/iceruns/{function_id}/activate',
-            headers={'Authorization': auth_token}
+            f"/api/v1/iceruns/{function_id}/activate",
+            headers={"Authorization": auth_token},
         )
 
         # Measure cold start
         start_time = time.time()
         api_client.post(
-            f'/api/v1/iceruns/{function_id}/execute',
-            json={'input': {}},
-            headers={'Authorization': auth_token}
+            f"/api/v1/iceruns/{function_id}/execute",
+            json={"input": {}},
+            headers={"Authorization": auth_token},
         )
         cold_start = time.time() - start_time
 
@@ -97,27 +98,29 @@ class TestWarmVsColdStart:
         # Measure warm start
         start_time = time.time()
         api_client.post(
-            f'/api/v1/iceruns/{function_id}/execute',
-            json={'input': {}},
-            headers={'Authorization': auth_token}
+            f"/api/v1/iceruns/{function_id}/execute",
+            json={"input": {}},
+            headers={"Authorization": auth_token},
         )
         warm_start = time.time() - start_time
 
         # Warm start should be significantly faster
         assert warm_start < cold_start
 
-    def test_multiple_executions_reuse_container(self, api_client, auth_token, sample_function):
+    def test_multiple_executions_reuse_container(
+        self, api_client, auth_token, sample_function
+    ):
         """Test repeated executions reuse container."""
         create_response = api_client.post(
-            '/api/v1/iceruns',
+            "/api/v1/iceruns",
             json=sample_function,
-            headers={'Authorization': auth_token}
+            headers={"Authorization": auth_token},
         )
-        function_id = create_response.get_json()['function_id']
+        function_id = create_response.get_json()["function_id"]
 
         api_client.put(
-            f'/api/v1/iceruns/{function_id}/activate',
-            headers={'Authorization': auth_token}
+            f"/api/v1/iceruns/{function_id}/activate",
+            headers={"Authorization": auth_token},
         )
 
         times = []
@@ -126,9 +129,9 @@ class TestWarmVsColdStart:
         for i in range(5):
             start_time = time.time()
             api_client.post(
-                f'/api/v1/iceruns/{function_id}/execute',
-                json={'input': {'index': i}},
-                headers={'Authorization': auth_token}
+                f"/api/v1/iceruns/{function_id}/execute",
+                json={"input": {"index": i}},
+                headers={"Authorization": auth_token},
             )
             elapsed = time.time() - start_time
             times.append(elapsed)
@@ -145,34 +148,34 @@ class TestWarmVsColdStart:
 
     def test_different_runtimes_cold_start(self, api_client, auth_token):
         """Compare cold start times across different runtimes."""
-        runtimes = ['python3.13', 'nodejs', 'go']
+        runtimes = ["python3.13", "nodejs", "go"]
         cold_start_times = {}
 
         for runtime in runtimes:
             function_data = {
-                'name': f'Cold Start {runtime}',
-                'runtime': runtime,
-                'entrypoint': 'main',
-                'handler': 'handler',
+                "name": f"Cold Start {runtime}",
+                "runtime": runtime,
+                "entrypoint": "main",
+                "handler": "handler",
             }
 
             create_response = api_client.post(
-                '/api/v1/iceruns',
+                "/api/v1/iceruns",
                 json=function_data,
-                headers={'Authorization': auth_token}
+                headers={"Authorization": auth_token},
             )
-            function_id = create_response.get_json()['function_id']
+            function_id = create_response.get_json()["function_id"]
 
             api_client.put(
-                f'/api/v1/iceruns/{function_id}/activate',
-                headers={'Authorization': auth_token}
+                f"/api/v1/iceruns/{function_id}/activate",
+                headers={"Authorization": auth_token},
             )
 
             start_time = time.time()
             api_client.post(
-                f'/api/v1/iceruns/{function_id}/execute',
-                json={'input': {}},
-                headers={'Authorization': auth_token}
+                f"/api/v1/iceruns/{function_id}/execute",
+                json={"input": {}},
+                headers={"Authorization": auth_token},
             )
             elapsed = time.time() - start_time
 
@@ -185,23 +188,23 @@ class TestWarmVsColdStart:
     def test_container_ttl_expiration(self, api_client, auth_token, sample_function):
         """Test container TTL expiration triggers new cold start."""
         create_response = api_client.post(
-            '/api/v1/iceruns',
+            "/api/v1/iceruns",
             json=sample_function,
-            headers={'Authorization': auth_token}
+            headers={"Authorization": auth_token},
         )
-        function_id = create_response.get_json()['function_id']
+        function_id = create_response.get_json()["function_id"]
 
         api_client.put(
-            f'/api/v1/iceruns/{function_id}/activate',
-            headers={'Authorization': auth_token}
+            f"/api/v1/iceruns/{function_id}/activate",
+            headers={"Authorization": auth_token},
         )
 
         # Execute immediately (warm)
         start_time = time.time()
         api_client.post(
-            f'/api/v1/iceruns/{function_id}/execute',
-            json={'input': {}},
-            headers={'Authorization': auth_token}
+            f"/api/v1/iceruns/{function_id}/execute",
+            json={"input": {}},
+            headers={"Authorization": auth_token},
         )
         warm_time = time.time() - start_time
 
@@ -214,22 +217,22 @@ class TestWarmVsColdStart:
     def test_execution_time_consistency(self, api_client, auth_token, sample_function):
         """Test execution time is consistent across multiple runs."""
         create_response = api_client.post(
-            '/api/v1/iceruns',
+            "/api/v1/iceruns",
             json=sample_function,
-            headers={'Authorization': auth_token}
+            headers={"Authorization": auth_token},
         )
-        function_id = create_response.get_json()['function_id']
+        function_id = create_response.get_json()["function_id"]
 
         api_client.put(
-            f'/api/v1/iceruns/{function_id}/activate',
-            headers={'Authorization': auth_token}
+            f"/api/v1/iceruns/{function_id}/activate",
+            headers={"Authorization": auth_token},
         )
 
         # Prime with cold start
         api_client.post(
-            f'/api/v1/iceruns/{function_id}/execute',
-            json={'input': {}},
-            headers={'Authorization': auth_token}
+            f"/api/v1/iceruns/{function_id}/execute",
+            json={"input": {}},
+            headers={"Authorization": auth_token},
         )
 
         # Measure 5 warm executions
@@ -237,9 +240,9 @@ class TestWarmVsColdStart:
         for i in range(5):
             start_time = time.time()
             api_client.post(
-                f'/api/v1/iceruns/{function_id}/execute',
-                json={'input': {}},
-                headers={'Authorization': auth_token}
+                f"/api/v1/iceruns/{function_id}/execute",
+                json={"input": {}},
+                headers={"Authorization": auth_token},
             )
             times.append(time.time() - start_time)
             time.sleep(0.1)
@@ -247,7 +250,7 @@ class TestWarmVsColdStart:
         # Execution times should be relatively consistent
         avg_time = sum(times) / len(times)
         variance = sum((t - avg_time) ** 2 for t in times) / len(times)
-        std_dev = variance ** 0.5
+        std_dev = variance**0.5
 
         # Standard deviation should be small relative to mean
         assert std_dev < avg_time * 0.5  # Within 50% of mean

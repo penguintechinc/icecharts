@@ -33,7 +33,9 @@ def clean_node_registry():
     NodeRegistry.clear()
 
 
-def _make_context(config: dict = None, variables: dict = None, node_id: str = "test-node") -> NodeContext:
+def _make_context(
+    config: dict = None, variables: dict = None, node_id: str = "test-node"
+) -> NodeContext:
     """Create a test NodeContext."""
     return NodeContext(
         execution_id="test-exec-001",
@@ -50,6 +52,7 @@ class TestIfThenConditional:
     @pytest.fixture(autouse=True)
     def import_node(self):
         from nodes.conditionals.if_then import IfThenConditional
+
         self.node_class = IfThenConditional
         self.node = IfThenConditional()
 
@@ -71,10 +74,14 @@ class TestIfThenConditional:
     @pytest.mark.asyncio
     async def test_condition_true_routes_to_true_output(self):
         """When condition matches, data goes to 'true' output."""
-        ctx = _make_context(config={
-            "conditions": [{"field": "status", "operator": "eq", "value": "active"}],
-            "logic": "and",
-        })
+        ctx = _make_context(
+            config={
+                "conditions": [
+                    {"field": "status", "operator": "eq", "value": "active"}
+                ],
+                "logic": "and",
+            }
+        )
         result = await self.node.execute(ctx, {"in": {"status": "active"}})
         assert isinstance(result, NodeResult)
         assert result.success is True
@@ -84,10 +91,14 @@ class TestIfThenConditional:
     @pytest.mark.asyncio
     async def test_condition_false_routes_to_false_output(self):
         """When condition doesn't match, data goes to 'false' output."""
-        ctx = _make_context(config={
-            "conditions": [{"field": "status", "operator": "eq", "value": "active"}],
-            "logic": "and",
-        })
+        ctx = _make_context(
+            config={
+                "conditions": [
+                    {"field": "status", "operator": "eq", "value": "active"}
+                ],
+                "logic": "and",
+            }
+        )
         result = await self.node.execute(ctx, {"in": {"status": "inactive"}})
         assert result.success is True
         assert result.outputs["true"] is None
@@ -96,13 +107,15 @@ class TestIfThenConditional:
     @pytest.mark.asyncio
     async def test_and_logic_all_conditions_must_match(self):
         """AND logic: all conditions must match for true branch."""
-        ctx = _make_context(config={
-            "conditions": [
-                {"field": "age", "operator": "gte", "value": 18},
-                {"field": "active", "operator": "eq", "value": True},
-            ],
-            "logic": "and",
-        })
+        ctx = _make_context(
+            config={
+                "conditions": [
+                    {"field": "age", "operator": "gte", "value": 18},
+                    {"field": "active", "operator": "eq", "value": True},
+                ],
+                "logic": "and",
+            }
+        )
         # Both match
         result = await self.node.execute(ctx, {"in": {"age": 25, "active": True}})
         assert result.outputs["true"] is not None
@@ -114,33 +127,41 @@ class TestIfThenConditional:
     @pytest.mark.asyncio
     async def test_or_logic_any_condition_matches(self):
         """OR logic: any single condition matching sends to true branch."""
-        ctx = _make_context(config={
-            "conditions": [
-                {"field": "role", "operator": "eq", "value": "admin"},
-                {"field": "role", "operator": "eq", "value": "superuser"},
-            ],
-            "logic": "or",
-        })
+        ctx = _make_context(
+            config={
+                "conditions": [
+                    {"field": "role", "operator": "eq", "value": "admin"},
+                    {"field": "role", "operator": "eq", "value": "superuser"},
+                ],
+                "logic": "or",
+            }
+        )
         result = await self.node.execute(ctx, {"in": {"role": "superuser"}})
         assert result.outputs["true"] is not None
 
     @pytest.mark.asyncio
     async def test_contains_operator(self):
         """contains operator must check substring membership."""
-        ctx = _make_context(config={
-            "conditions": [{"field": "name", "operator": "contains", "value": "Alice"}],
-            "logic": "and",
-        })
+        ctx = _make_context(
+            config={
+                "conditions": [
+                    {"field": "name", "operator": "contains", "value": "Alice"}
+                ],
+                "logic": "and",
+            }
+        )
         result = await self.node.execute(ctx, {"in": {"name": "Alice Smith"}})
         assert result.outputs["true"] is not None
 
     @pytest.mark.asyncio
     async def test_gt_operator(self):
         """gt operator must route to true when field > value."""
-        ctx = _make_context(config={
-            "conditions": [{"field": "score", "operator": "gt", "value": 50}],
-            "logic": "and",
-        })
+        ctx = _make_context(
+            config={
+                "conditions": [{"field": "score", "operator": "gt", "value": 50}],
+                "logic": "and",
+            }
+        )
         result = await self.node.execute(ctx, {"in": {"score": 75}})
         assert result.outputs["true"] is not None
 
@@ -150,19 +171,23 @@ class TestIfThenConditional:
     @pytest.mark.asyncio
     async def test_ne_operator(self):
         """ne (not equal) operator must work correctly."""
-        ctx = _make_context(config={
-            "conditions": [{"field": "type", "operator": "ne", "value": "deleted"}],
-            "logic": "and",
-        })
+        ctx = _make_context(
+            config={
+                "conditions": [{"field": "type", "operator": "ne", "value": "deleted"}],
+                "logic": "and",
+            }
+        )
         result = await self.node.execute(ctx, {"in": {"type": "active"}})
         assert result.outputs["true"] is not None
 
     @pytest.mark.asyncio
     async def test_missing_in_input_returns_failure(self):
         """Missing required 'in' input must return failure."""
-        ctx = _make_context(config={
-            "conditions": [{"field": "x", "operator": "eq", "value": 1}],
-        })
+        ctx = _make_context(
+            config={
+                "conditions": [{"field": "x", "operator": "eq", "value": 1}],
+            }
+        )
         result = await self.node.execute(ctx, {})
         assert result.success is False
 
@@ -175,10 +200,12 @@ class TestIfThenConditional:
         assert result.outputs["true"] is not None
 
     def test_validate_config_valid(self):
-        errors = self.node_class.validate_config({
-            "conditions": [{"field": "x", "operator": "eq", "value": 1}],
-            "logic": "and",
-        })
+        errors = self.node_class.validate_config(
+            {
+                "conditions": [{"field": "x", "operator": "eq", "value": 1}],
+                "logic": "and",
+            }
+        )
         assert errors == []
 
     def test_validate_config_no_conditions(self):
@@ -186,10 +213,12 @@ class TestIfThenConditional:
         assert any("condition" in e.lower() for e in errors)
 
     def test_validate_config_invalid_operator(self):
-        errors = self.node_class.validate_config({
-            "conditions": [{"field": "x", "operator": "INVALID_OP", "value": 1}],
-            "logic": "and",
-        })
+        errors = self.node_class.validate_config(
+            {
+                "conditions": [{"field": "x", "operator": "INVALID_OP", "value": 1}],
+                "logic": "and",
+            }
+        )
         assert len(errors) > 0
 
 
@@ -199,6 +228,7 @@ class TestSwitchConditional:
     @pytest.fixture(autouse=True)
     def import_node(self):
         from nodes.conditionals.switch import SwitchConditional
+
         self.node_class = SwitchConditional
         self.node = SwitchConditional()
 
@@ -214,13 +244,15 @@ class TestSwitchConditional:
     @pytest.mark.asyncio
     async def test_matching_case_receives_data(self):
         """Data must route to the matching case output."""
-        ctx = _make_context(config={
-            "field": "color",
-            "cases": [
-                {"value": "red", "output": "case1"},
-                {"value": "blue", "output": "case2"},
-            ],
-        })
+        ctx = _make_context(
+            config={
+                "field": "color",
+                "cases": [
+                    {"value": "red", "output": "case1"},
+                    {"value": "blue", "output": "case2"},
+                ],
+            }
+        )
         result = await self.node.execute(ctx, {"in": {"color": "red"}})
         assert result.success is True
         assert result.outputs["case1"] is not None
@@ -229,12 +261,14 @@ class TestSwitchConditional:
     @pytest.mark.asyncio
     async def test_no_match_routes_to_default(self):
         """Unmatched value must route to default output."""
-        ctx = _make_context(config={
-            "field": "color",
-            "cases": [
-                {"value": "red", "output": "case1"},
-            ],
-        })
+        ctx = _make_context(
+            config={
+                "field": "color",
+                "cases": [
+                    {"value": "red", "output": "case1"},
+                ],
+            }
+        )
         result = await self.node.execute(ctx, {"in": {"color": "green"}})
         assert result.success is True
         assert result.outputs["default"] is not None
@@ -243,14 +277,16 @@ class TestSwitchConditional:
     @pytest.mark.asyncio
     async def test_case2_routing(self):
         """Value matching case2 must route data there."""
-        ctx = _make_context(config={
-            "field": "priority",
-            "cases": [
-                {"value": "low", "output": "case1"},
-                {"value": "medium", "output": "case2"},
-                {"value": "high", "output": "case3"},
-            ],
-        })
+        ctx = _make_context(
+            config={
+                "field": "priority",
+                "cases": [
+                    {"value": "low", "output": "case1"},
+                    {"value": "medium", "output": "case2"},
+                    {"value": "high", "output": "case3"},
+                ],
+            }
+        )
         result = await self.node.execute(ctx, {"in": {"priority": "medium"}})
         assert result.outputs["case2"] is not None
         assert result.outputs["case1"] is None
@@ -259,34 +295,42 @@ class TestSwitchConditional:
     @pytest.mark.asyncio
     async def test_nested_field_routing(self):
         """Dot-notation field paths must resolve for case matching."""
-        ctx = _make_context(config={
-            "field": "user.role",
-            "cases": [{"value": "admin", "output": "case1"}],
-        })
+        ctx = _make_context(
+            config={
+                "field": "user.role",
+                "cases": [{"value": "admin", "output": "case1"}],
+            }
+        )
         result = await self.node.execute(ctx, {"in": {"user": {"role": "admin"}}})
         assert result.outputs["case1"] is not None
 
     @pytest.mark.asyncio
     async def test_missing_in_input_returns_failure(self):
         """Missing required 'in' input must return failure."""
-        ctx = _make_context(config={
-            "field": "x",
-            "cases": [{"value": "y", "output": "case1"}],
-        })
+        ctx = _make_context(
+            config={
+                "field": "x",
+                "cases": [{"value": "y", "output": "case1"}],
+            }
+        )
         result = await self.node.execute(ctx, {})
         assert result.success is False
 
     def test_validate_config_valid(self):
-        errors = self.node_class.validate_config({
-            "field": "status",
-            "cases": [{"value": "ok", "output": "case1"}],
-        })
+        errors = self.node_class.validate_config(
+            {
+                "field": "status",
+                "cases": [{"value": "ok", "output": "case1"}],
+            }
+        )
         assert errors == []
 
     def test_validate_config_missing_field(self):
-        errors = self.node_class.validate_config({
-            "cases": [{"value": "ok", "output": "case1"}],
-        })
+        errors = self.node_class.validate_config(
+            {
+                "cases": [{"value": "ok", "output": "case1"}],
+            }
+        )
         assert len(errors) > 0
 
     def test_validate_config_missing_cases(self):
@@ -300,6 +344,7 @@ class TestForEachConditional:
     @pytest.fixture(autouse=True)
     def import_node(self):
         from nodes.conditionals.for_each import ForEachConditional
+
         self.node_class = ForEachConditional
         self.node = ForEachConditional()
 
@@ -371,6 +416,7 @@ class TestWhileConditional:
     @pytest.fixture(autouse=True)
     def import_node(self):
         from nodes.conditionals.while_loop import WhileConditional
+
         self.node_class = WhileConditional
         self.node = WhileConditional()
 
@@ -385,10 +431,12 @@ class TestWhileConditional:
     @pytest.mark.asyncio
     async def test_condition_true_returns_loop_output(self):
         """When condition is true, data goes to 'loop' output."""
-        ctx = _make_context(config={
-            "condition": {"field": "count", "operator": "lt", "value": 10},
-            "maxIterations": 100,
-        })
+        ctx = _make_context(
+            config={
+                "condition": {"field": "count", "operator": "lt", "value": 10},
+                "maxIterations": 100,
+            }
+        )
         result = await self.node.execute(ctx, {"in": {"count": 5}})
         assert result.success is True
         assert "loop" in result.outputs
@@ -397,10 +445,12 @@ class TestWhileConditional:
     @pytest.mark.asyncio
     async def test_condition_false_returns_done_output(self):
         """When condition is false, data goes to 'done' output."""
-        ctx = _make_context(config={
-            "condition": {"field": "count", "operator": "lt", "value": 10},
-            "maxIterations": 100,
-        })
+        ctx = _make_context(
+            config={
+                "condition": {"field": "count", "operator": "lt", "value": 10},
+                "maxIterations": 100,
+            }
+        )
         result = await self.node.execute(ctx, {"in": {"count": 15}})
         assert result.success is True
         assert "done" in result.outputs
@@ -424,10 +474,12 @@ class TestWhileConditional:
     @pytest.mark.asyncio
     async def test_non_dict_input_continues_looping(self):
         """Non-dict input always continues loop (condition meets True)."""
-        ctx = _make_context(config={
-            "condition": {"field": "x", "operator": "eq", "value": "y"},
-            "maxIterations": 100,
-        })
+        ctx = _make_context(
+            config={
+                "condition": {"field": "x", "operator": "eq", "value": "y"},
+                "maxIterations": 100,
+            }
+        )
         result = await self.node.execute(ctx, {"in": "simple_string"})
         assert result.success is True
         # Non-dict always continues
@@ -436,30 +488,38 @@ class TestWhileConditional:
     @pytest.mark.asyncio
     async def test_missing_in_input_returns_failure(self):
         """Missing required 'in' input must return failure."""
-        ctx = _make_context(config={
-            "condition": {"field": "x", "operator": "eq", "value": 1},
-        })
+        ctx = _make_context(
+            config={
+                "condition": {"field": "x", "operator": "eq", "value": 1},
+            }
+        )
         result = await self.node.execute(ctx, {})
         assert result.success is False
 
     def test_validate_config_valid(self):
-        errors = self.node_class.validate_config({
-            "condition": {"field": "count", "operator": "lt", "value": 100},
-            "maxIterations": 50,
-        })
+        errors = self.node_class.validate_config(
+            {
+                "condition": {"field": "count", "operator": "lt", "value": 100},
+                "maxIterations": 50,
+            }
+        )
         assert errors == []
 
     def test_validate_config_missing_condition_field(self):
-        errors = self.node_class.validate_config({
-            "condition": {"operator": "eq", "value": 1},
-        })
+        errors = self.node_class.validate_config(
+            {
+                "condition": {"operator": "eq", "value": 1},
+            }
+        )
         assert len(errors) > 0
 
     def test_validate_config_zero_max_iterations(self):
-        errors = self.node_class.validate_config({
-            "condition": {"field": "x", "operator": "eq", "value": 1},
-            "maxIterations": 0,
-        })
+        errors = self.node_class.validate_config(
+            {
+                "condition": {"field": "x", "operator": "eq", "value": 1},
+                "maxIterations": 0,
+            }
+        )
         assert len(errors) > 0
 
 
@@ -469,6 +529,7 @@ class TestAndGate:
     @pytest.fixture(autouse=True)
     def import_node(self):
         from nodes.conditionals.logic_gates import AndConditional
+
         self.node_class = AndConditional
         self.node = AndConditional()
 
@@ -529,6 +590,7 @@ class TestOrGate:
     @pytest.fixture(autouse=True)
     def import_node(self):
         from nodes.conditionals.logic_gates import OrConditional
+
         self.node_class = OrConditional
         self.node = OrConditional()
 
@@ -567,6 +629,7 @@ class TestNotGate:
     @pytest.fixture(autouse=True)
     def import_node(self):
         from nodes.conditionals.logic_gates import NotConditional
+
         self.node_class = NotConditional
         self.node = NotConditional()
 

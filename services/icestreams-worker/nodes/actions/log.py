@@ -90,9 +90,7 @@ class LogAction(BaseNode):
 
         return json.dumps(entry)
 
-    async def execute(
-        self, context: NodeContext, inputs: Dict[str, Any]
-    ) -> NodeResult:
+    async def execute(self, context: NodeContext, inputs: Dict[str, Any]) -> NodeResult:
         """Execute log action."""
         start_time = time.perf_counter()
 

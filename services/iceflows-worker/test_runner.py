@@ -358,8 +358,7 @@ class TestRunner:
         test_dir = Path(self.repo_path) / relative_path
         if not test_dir.exists():
             logger.warning(
-                f"Test path does not exist: {test_dir}, "
-                f"using repo root instead"
+                f"Test path does not exist: {test_dir}, " f"using repo root instead"
             )
             return self.repo_path
 

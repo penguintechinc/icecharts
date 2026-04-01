@@ -31,7 +31,9 @@ def clean_node_registry():
     NodeRegistry.clear()
 
 
-def _make_context(config: dict = None, variables: dict = None, node_id: str = "test-node") -> NodeContext:
+def _make_context(
+    config: dict = None, variables: dict = None, node_id: str = "test-node"
+) -> NodeContext:
     """Create a test NodeContext."""
     return NodeContext(
         execution_id="test-exec-001",
@@ -48,6 +50,7 @@ class TestEqualsConditional:
     @pytest.fixture(autouse=True)
     def import_node(self):
         from nodes.conditionals.comparisons import EqualsConditional
+
         self.node_class = EqualsConditional
         self.node = EqualsConditional()
 
@@ -124,7 +127,9 @@ class TestEqualsConditional:
     async def test_list_equality(self):
         """Lists can be compared for equality."""
         ctx = _make_context()
-        result = await self.node.execute(ctx, {"value": [1, 2, 3], "expected": [1, 2, 3]})
+        result = await self.node.execute(
+            ctx, {"value": [1, 2, 3], "expected": [1, 2, 3]}
+        )
         assert result.success is True
         assert result.outputs["true"] == [1, 2, 3]
 
@@ -174,6 +179,7 @@ class TestGreaterThanConditional:
     @pytest.fixture(autouse=True)
     def import_node(self):
         from nodes.conditionals.comparisons import GreaterThanConditional
+
         self.node_class = GreaterThanConditional
         self.node = GreaterThanConditional()
 
@@ -276,6 +282,7 @@ class TestLessThanConditional:
     @pytest.fixture(autouse=True)
     def import_node(self):
         from nodes.conditionals.comparisons import LessThanConditional
+
         self.node_class = LessThanConditional
         self.node = LessThanConditional()
 
@@ -347,6 +354,7 @@ class TestContainsConditional:
     @pytest.fixture(autouse=True)
     def import_node(self):
         from nodes.conditionals.comparisons import ContainsConditional
+
         self.node_class = ContainsConditional
         self.node = ContainsConditional()
 
@@ -423,7 +431,9 @@ class TestContainsConditional:
     async def test_dict_contains_value(self):
         """{'a': 1, 'b': 2} contains 1 (as value) is true."""
         ctx = _make_context()
-        result = await self.node.execute(ctx, {"haystack": {"a": 1, "b": 2}, "needle": 1})
+        result = await self.node.execute(
+            ctx, {"haystack": {"a": 1, "b": 2}, "needle": 1}
+        )
         assert result.success is True
         assert result.outputs["true"] == {"a": 1, "b": 2}
 
@@ -431,7 +441,9 @@ class TestContainsConditional:
     async def test_dict_does_not_contain_key_as_value(self):
         """{'a': 1, 'b': 2} contains 'a' (key, not value) is false."""
         ctx = _make_context()
-        result = await self.node.execute(ctx, {"haystack": {"a": 1, "b": 2}, "needle": "a"})
+        result = await self.node.execute(
+            ctx, {"haystack": {"a": 1, "b": 2}, "needle": "a"}
+        )
         assert result.success is True
         assert result.outputs.get("true") is None
 
@@ -473,6 +485,7 @@ class TestRegexConditional:
     @pytest.fixture(autouse=True)
     def import_node(self):
         from nodes.conditionals.comparisons import RegexConditional
+
         self.node_class = RegexConditional
         self.node = RegexConditional()
 
@@ -545,8 +558,8 @@ class TestRegexConditional:
             ctx,
             {
                 "text": "test@example.com",
-                "pattern": r"[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}"
-            }
+                "pattern": r"[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}",
+            },
         )
         assert result.success is True
         assert result.outputs["true"] == "test@example.com"
@@ -555,7 +568,9 @@ class TestRegexConditional:
     async def test_regex_partial_match(self):
         """Pattern doesn't need to match entire string."""
         ctx = _make_context()
-        result = await self.node.execute(ctx, {"text": "hello world", "pattern": "world"})
+        result = await self.node.execute(
+            ctx, {"text": "hello world", "pattern": "world"}
+        )
         assert result.success is True
         assert result.outputs["true"] == "hello world"
 

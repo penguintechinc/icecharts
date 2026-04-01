@@ -49,7 +49,9 @@ def clean_registries():
     NodeRegistry.clear()
 
 
-def _make_config(auth_type: AuthType = AuthType.NONE, api_key: str = None, oauth_token: str = None):
+def _make_config(
+    auth_type: AuthType = AuthType.NONE, api_key: str = None, oauth_token: str = None
+):
     return ConnectorConfig(
         connector_id="testconn",
         base_url="http://localhost:9000",
@@ -73,7 +75,9 @@ def _make_manifest_with_action(
         version="1.0.0",
         vendor="test",
         auth_methods=(
-            AuthMethod(type=AuthType.API_KEY, header="X-API-Key", env_var="TEST_API_KEY"),
+            AuthMethod(
+                type=AuthType.API_KEY, header="X-API-Key", env_var="TEST_API_KEY"
+            ),
         ),
         actions=(
             ActionDefinition(
@@ -129,7 +133,9 @@ class TestExecuteActionHTTP:
         connector = _get_real_connector()
         executor._connectors["testconn"] = connector
 
-        with patch.object(connector, "call_api", new_callable=AsyncMock, return_value={"ok": True}) as mock_api:
+        with patch.object(
+            connector, "call_api", new_callable=AsyncMock, return_value={"ok": True}
+        ) as mock_api:
             result = await executor.execute_action(
                 connector_id="testconn",
                 action_id="do_thing",
@@ -151,7 +157,12 @@ class TestExecuteActionHTTP:
         executor = ConnectorActionExecutor()
         executor._connectors["testconn"] = connector
 
-        with patch.object(connector, "call_api", new_callable=AsyncMock, return_value={"updated": True}) as mock_api:
+        with patch.object(
+            connector,
+            "call_api",
+            new_callable=AsyncMock,
+            return_value={"updated": True},
+        ) as mock_api:
             result = await executor.execute_action(
                 connector_id="testconn",
                 action_id="do_thing",
@@ -174,7 +185,9 @@ class TestExecuteActionHTTP:
         executor._connectors["testconn"] = connector
 
         expected = {"result": "data", "id": 123}
-        with patch.object(connector, "call_api", new_callable=AsyncMock, return_value=expected):
+        with patch.object(
+            connector, "call_api", new_callable=AsyncMock, return_value=expected
+        ):
             result = await executor.execute_action(
                 connector_id="testconn",
                 action_id="do_thing",
@@ -227,11 +240,14 @@ class TestExecuteActionHTTP:
         executor._connectors["testconn"] = connector
 
         import httpx
+
         with patch.object(
             connector,
             "call_api",
             new_callable=AsyncMock,
-            side_effect=httpx.HTTPStatusError("404", request=MagicMock(), response=MagicMock()),
+            side_effect=httpx.HTTPStatusError(
+                "404", request=MagicMock(), response=MagicMock()
+            ),
         ):
             with pytest.raises(ConnectorExecutionError):
                 await executor.execute_action(
@@ -384,7 +400,9 @@ class TestExecuteTransform:
         executor._connectors["testconn"] = connector
 
         expected = {"rows": [{"id": 1}]}
-        with patch.object(connector, "call_api", new_callable=AsyncMock, return_value=expected):
+        with patch.object(
+            connector, "call_api", new_callable=AsyncMock, return_value=expected
+        ):
             result = await executor.execute_transform(
                 connector_id="testconn",
                 transform_id="lookup",

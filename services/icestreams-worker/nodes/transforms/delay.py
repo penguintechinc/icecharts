@@ -37,7 +37,7 @@ class DelayTransform(BaseNode):
                 name="in",
                 description="Input data (passed through after delay)",
                 required=True,
-                data_type="any"
+                data_type="any",
             ),
         ]
 
@@ -46,9 +46,7 @@ class DelayTransform(BaseNode):
         """Define output ports for the delay node."""
         return [
             NodeOutput(
-                name="out",
-                description="Input data passed through",
-                data_type="any"
+                name="out", description="Input data passed through", data_type="any"
             ),
         ]
 
@@ -150,12 +148,12 @@ class DelayTransform(BaseNode):
                     "duration_seconds": delay,
                     "started_at": started_at,
                     "finished_at": finished_at,
-                }
+                },
             }
         else:
             result = input_data
 
         return NodeResult.success_result(
             outputs={"out": result},
-            execution_time_ms=(time.perf_counter() - start_time) * 1000
+            execution_time_ms=(time.perf_counter() - start_time) * 1000,
         )

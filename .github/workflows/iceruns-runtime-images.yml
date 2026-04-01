@@ -23,25 +23,25 @@ jobs:
       matrix:
         runtime:
           - name: python
-            dockerfile: Dockerfile.python
+            dockerfile: python.dockerfile
             version: '3.13'
           - name: nodejs
-            dockerfile: Dockerfile.nodejs
+            dockerfile: nodejs.dockerfile
             version: '20'
           - name: go
-            dockerfile: Dockerfile.go
+            dockerfile: go.dockerfile
             version: '1.23'
           - name: ruby
-            dockerfile: Dockerfile.ruby
+            dockerfile: ruby.dockerfile
             version: '3.3'
           - name: bash
-            dockerfile: Dockerfile.bash
+            dockerfile: bash.dockerfile
             version: '5.2'
           - name: powershell
-            dockerfile: Dockerfile.powershell
+            dockerfile: powershell.dockerfile
             version: '7.4'
           - name: rust
-            dockerfile: Dockerfile.rust
+            dockerfile: rust.dockerfile
             version: '1.75'
         platform: [linux/amd64, linux/arm64]
 
@@ -85,9 +85,8 @@ jobs:
 
       - name: Run Trivy security scan
         uses: aquasecurity/trivy-action@57a97c7e7821a5776cebc9bb87c984fa69cba8f1  # v0.35.0
-          with:
-            trivy-version: 'v0.69.3'
         with:
+          trivy-version: 'v0.69.3'
           image-ref: ${{ env.REGISTRY }}/${{ env.IMAGE_PREFIX }}/${{ matrix.runtime.name }}:${{ matrix.runtime.version }}
           format: 'sarif'
           output: 'trivy-results-${{ matrix.runtime.name }}.sarif'

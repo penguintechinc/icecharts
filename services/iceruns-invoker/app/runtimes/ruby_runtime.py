@@ -23,10 +23,12 @@ class RubyRuntime(BaseRuntime):
         Returns:
             Command list
         """
-        if '.' not in handler:
-            raise ValueError(f"Invalid handler format: {handler}. Expected: file.method")
+        if "." not in handler:
+            raise ValueError(
+                f"Invalid handler format: {handler}. Expected: file.method"
+            )
 
-        module, method = handler.rsplit('.', 1)
+        module, method = handler.rsplit(".", 1)
 
         wrapper = f"""
 require 'json'
@@ -45,4 +47,4 @@ rescue => e
 end
 """
 
-        return ['ruby', '-e', wrapper]
+        return ["ruby", "-e", wrapper]

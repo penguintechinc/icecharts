@@ -22,7 +22,9 @@ class TestHealthCheckService:
             with patch.object(health_service, "_check_database") as mock_db:
                 with patch.object(health_service, "_check_redis") as mock_redis:
                     with patch.object(health_service, "_check_storage") as mock_storage:
-                        with patch.object(health_service, "_check_api_service") as mock_api:
+                        with patch.object(
+                            health_service, "_check_api_service"
+                        ) as mock_api:
                             with patch.object(
                                 health_service, "_check_system_resources"
                             ) as mock_sys:
@@ -98,9 +100,7 @@ class TestHealthCheckService:
         """Test Redis check when Redis is healthy."""
         with app.app_context():
             app.config["REDIS_URL"] = "redis://localhost:6379/0"
-            with patch(
-                "app.services.health_check_service.redis"
-            ) as mock_redis_module:
+            with patch("app.services.health_check_service.redis") as mock_redis_module:
                 mock_conn = MagicMock()
                 mock_conn.ping.return_value = True
                 mock_conn.info.return_value = {
@@ -133,9 +133,7 @@ class TestHealthCheckService:
 
         with app.app_context():
             app.config["REDIS_URL"] = "redis://localhost:6379/0"
-            with patch(
-                "app.services.health_check_service.redis"
-            ) as mock_redis_module:
+            with patch("app.services.health_check_service.redis") as mock_redis_module:
                 mock_redis_module.from_url.return_value.ping.side_effect = (
                     redis_lib.ConnectionError("Connection refused")
                 )
@@ -180,10 +178,11 @@ class TestHealthCheckService:
 
     def test_check_system_resources_healthy(self, health_service):
         """Test system resource check when resources are healthy."""
-        with patch("psutil.virtual_memory") as mock_vm, \
-             patch("psutil.disk_usage") as mock_du, \
-             patch("psutil.cpu_percent") as mock_cpu, \
-             patch("psutil.cpu_count") as mock_count:
+        with patch("psutil.virtual_memory") as mock_vm, patch(
+            "psutil.disk_usage"
+        ) as mock_du, patch("psutil.cpu_percent") as mock_cpu, patch(
+            "psutil.cpu_count"
+        ) as mock_count:
             mock_memory = MagicMock()
             mock_memory.percent = 50
             mock_memory.total = 8 * (1024**3)
@@ -211,10 +210,11 @@ class TestHealthCheckService:
 
     def test_check_system_resources_memory_degraded(self, health_service):
         """Test system resource check when memory usage is high."""
-        with patch("psutil.virtual_memory") as mock_vm, \
-             patch("psutil.disk_usage") as mock_du, \
-             patch("psutil.cpu_percent") as mock_cpu, \
-             patch("psutil.cpu_count") as mock_count:
+        with patch("psutil.virtual_memory") as mock_vm, patch(
+            "psutil.disk_usage"
+        ) as mock_du, patch("psutil.cpu_percent") as mock_cpu, patch(
+            "psutil.cpu_count"
+        ) as mock_count:
             mock_memory = MagicMock()
             mock_memory.percent = 85
             mock_memory.total = 8 * (1024**3)
@@ -239,10 +239,11 @@ class TestHealthCheckService:
 
     def test_check_system_resources_disk_unhealthy(self, health_service):
         """Test system resource check when disk usage is critical."""
-        with patch("psutil.virtual_memory") as mock_vm, \
-             patch("psutil.disk_usage") as mock_du, \
-             patch("psutil.cpu_percent") as mock_cpu, \
-             patch("psutil.cpu_count") as mock_count:
+        with patch("psutil.virtual_memory") as mock_vm, patch(
+            "psutil.disk_usage"
+        ) as mock_du, patch("psutil.cpu_percent") as mock_cpu, patch(
+            "psutil.cpu_count"
+        ) as mock_count:
             mock_memory = MagicMock()
             mock_memory.percent = 50
             mock_memory.total = 8 * (1024**3)
@@ -268,6 +269,7 @@ class TestHealthCheckService:
     def test_check_system_resources_psutil_not_available(self, health_service):
         """Test system resource check when psutil is not available."""
         import builtins
+
         original_import = builtins.__import__
 
         def mock_import(name, *args, **kwargs):
@@ -326,9 +328,7 @@ class TestHealthCheckServiceFailurePaths:
         """Test Redis check returns degraded when response is slow."""
         with app.app_context():
             app.config["REDIS_URL"] = "redis://localhost:6379/0"
-            with patch(
-                "app.services.health_check_service.redis"
-            ) as mock_redis_module:
+            with patch("app.services.health_check_service.redis") as mock_redis_module:
                 mock_conn = MagicMock()
                 mock_conn.ping.return_value = True
                 # Simulate info call returning degraded metrics
@@ -349,9 +349,7 @@ class TestHealthCheckServiceFailurePaths:
         """Test storage check handles database query exceptions."""
         with app.app_context():
             with patch("app.models.get_db") as mock_get_db:
-                mock_get_db.return_value.side_effect = Exception(
-                    "Database error"
-                )
+                mock_get_db.return_value.side_effect = Exception("Database error")
 
                 # Should not raise, should return error status
                 result = health_service._check_storage()
@@ -384,10 +382,11 @@ class TestHealthCheckServiceFailurePaths:
 
     def test_check_system_resources_memory_unhealthy(self, health_service):
         """Test system resource check when memory usage is critical."""
-        with patch("psutil.virtual_memory") as mock_vm, \
-             patch("psutil.disk_usage") as mock_du, \
-             patch("psutil.cpu_percent") as mock_cpu, \
-             patch("psutil.cpu_count") as mock_count:
+        with patch("psutil.virtual_memory") as mock_vm, patch(
+            "psutil.disk_usage"
+        ) as mock_du, patch("psutil.cpu_percent") as mock_cpu, patch(
+            "psutil.cpu_count"
+        ) as mock_count:
             mock_memory = MagicMock()
             mock_memory.percent = 95  # Very high
             mock_memory.total = 8 * (1024**3)
@@ -433,9 +432,7 @@ class TestHealthCheckServiceFailurePathsExtended:
 
         with app.app_context():
             app.config["REDIS_URL"] = "redis://localhost:6379/0"
-            with patch(
-                "app.services.health_check_service.redis"
-            ) as mock_redis_module:
+            with patch("app.services.health_check_service.redis") as mock_redis_module:
                 # TimeoutError is a subclass of ConnectionError in redis-py
                 mock_redis_module.from_url.return_value.ping.side_effect = (
                     redis_lib.TimeoutError("Socket timed out")
@@ -451,11 +448,17 @@ class TestHealthCheckServiceFailurePathsExtended:
     def test_overall_status_degraded_when_one_check_fails(self, app, health_service):
         """check_all returns degraded overall status when one component is degraded."""
         with app.app_context():
-            with patch.object(health_service, "_check_database") as mock_db, \
-                 patch.object(health_service, "_check_redis") as mock_redis, \
-                 patch.object(health_service, "_check_storage") as mock_storage, \
-                 patch.object(health_service, "_check_api_service") as mock_api, \
-                 patch.object(health_service, "_check_system_resources") as mock_sys:
+            with patch.object(
+                health_service, "_check_database"
+            ) as mock_db, patch.object(
+                health_service, "_check_redis"
+            ) as mock_redis, patch.object(
+                health_service, "_check_storage"
+            ) as mock_storage, patch.object(
+                health_service, "_check_api_service"
+            ) as mock_api, patch.object(
+                health_service, "_check_system_resources"
+            ) as mock_sys:
 
                 mock_db.return_value = {"status": "healthy"}
                 mock_redis.return_value = {"status": "degraded"}  # one degraded

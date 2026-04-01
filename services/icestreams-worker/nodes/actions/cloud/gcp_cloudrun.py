@@ -23,7 +23,7 @@ from ....executor.node_registry import register_node
     node_type="gcp_cloudrun",
     category="cloud",
     display_name="GCP Cloud Run",
-    description="Invoke GCP Cloud Run service with HTTP request"
+    description="Invoke GCP Cloud Run service with HTTP request",
 )
 class GcpCloudRunAction(BaseCloudFunction):
     """
@@ -165,9 +165,7 @@ class GcpCloudRunAction(BaseCloudFunction):
         else:
             full_url = service_url
 
-        context.log_info(
-            f"Invoking Cloud Run service: {http_method} {full_url}"
-        )
+        context.log_info(f"Invoking Cloud Run service: {http_method} {full_url}")
 
         # Get ID token
         id_token = auth_client.get_id_token(target_audience=service_url)
@@ -228,7 +226,9 @@ class GcpCloudRunAction(BaseCloudFunction):
                 if status_code >= 400:
                     error_msg = f"Cloud Run request failed with status {status_code}"
                     if isinstance(response_data, dict):
-                        error_detail = response_data.get("error") or response_data.get("message")
+                        error_detail = response_data.get("error") or response_data.get(
+                            "message"
+                        )
                         if error_detail:
                             error_msg += f": {error_detail}"
                     elif isinstance(response_data, str):
@@ -242,11 +242,7 @@ class GcpCloudRunAction(BaseCloudFunction):
 
                 return result
 
-    async def execute(
-        self,
-        context: NodeContext,
-        inputs: Dict[str, Any]
-    ) -> NodeResult:
+    async def execute(self, context: NodeContext, inputs: Dict[str, Any]) -> NodeResult:
         """
         Execute GCP Cloud Run service invocation.
 
@@ -258,6 +254,7 @@ class GcpCloudRunAction(BaseCloudFunction):
             NodeResult with service response or error.
         """
         import time
+
         start_time = time.time()
 
         try:
@@ -293,7 +290,9 @@ class GcpCloudRunAction(BaseCloudFunction):
             self._auth_client = auth_client
 
             # Invoke service with retry
-            context.log_debug(f"Invoking Cloud Run service: {function_config['service_url']}")
+            context.log_debug(
+                f"Invoking Cloud Run service: {function_config['service_url']}"
+            )
 
             async def invoke_operation():
                 return await self._invoke_function(
@@ -311,7 +310,9 @@ class GcpCloudRunAction(BaseCloudFunction):
             standardized = self._standardize_response(response, success=True)
 
             execution_time_ms = (time.time() - start_time) * 1000
-            context.log_info(f"Cloud Run invocation completed in {execution_time_ms:.2f}ms")
+            context.log_info(
+                f"Cloud Run invocation completed in {execution_time_ms:.2f}ms"
+            )
 
             return NodeResult.success_result(
                 outputs={"result": standardized},

@@ -43,20 +43,21 @@ def get_my_approvals():
 
         # Find approval gates where user is an approver
         # This includes both direct user approvers and group-based approvers
-        gates_query = (
-            (db.playbook_approval_gates.approvers.contains(user_id))
-            & (db.playbook_approval_gates.is_enabled == True)  # noqa: E712
-        )
+        gates_query = (db.playbook_approval_gates.approvers.contains(user_id)) & (
+            db.playbook_approval_gates.is_enabled == True
+        )  # noqa: E712
         gates = db(gates_query).select()
         gate_ids = [g.id for g in gates]
 
         if not gate_ids:
             return (
-                jsonify({
-                    "success": True,
-                    "pending_approvals": [],
-                    "count": 0,
-                }),
+                jsonify(
+                    {
+                        "success": True,
+                        "pending_approvals": [],
+                        "count": 0,
+                    }
+                ),
                 200,
             )
 
@@ -64,16 +65,23 @@ def get_my_approvals():
         # where user has NOT already submitted a decision
         pending = []
 
-        executions = db(
-            db.playbook_executions.status == "paused_for_approval"
-        ).select(orderby=~db.playbook_executions.created_at)
+        executions = db(db.playbook_executions.status == "paused_for_approval").select(
+            orderby=~db.playbook_executions.created_at
+        )
 
         for execution in executions:
             # Check if user already decided on this execution
-            existing = db(
-                (db.playbook_execution_approvals.execution_id == execution.execution_id)
-                & (db.playbook_execution_approvals.approver_id == user_id)
-            ).select().first()
+            existing = (
+                db(
+                    (
+                        db.playbook_execution_approvals.execution_id
+                        == execution.execution_id
+                    )
+                    & (db.playbook_execution_approvals.approver_id == user_id)
+                )
+                .select()
+                .first()
+            )
 
             if existing:
                 continue  # Skip if already decided
@@ -98,35 +106,46 @@ def get_my_approvals():
             # Get the requester
             requester = None
             if execution.triggered_by_id:
-                requester = db(db.identities.id == execution.triggered_by_id).select().first()
+                requester = (
+                    db(db.identities.id == execution.triggered_by_id).select().first()
+                )
 
             # Get the gate (use first matching gate for now)
             gate = execution_gates.first()
 
-            pending.append({
-                "execution_id": execution.execution_id,
-                "playbook_id": playbook.playbook_id,
-                "playbook_name": playbook.name,
-                "gate_id": gate.gate_id if gate else None,
-                "gate_name": gate.name if gate else "Unknown Gate",
-                "requested_by": (
-                    requester.username if requester
-                    else execution.triggered_by or "Unknown"
-                ),
-                "requested_at": (
-                    execution.created_at.isoformat() if execution.created_at else None
-                ),
-                "paused_at": (
-                    execution.started_at.isoformat() if execution.started_at else None
-                ),
-            })
+            pending.append(
+                {
+                    "execution_id": execution.execution_id,
+                    "playbook_id": playbook.playbook_id,
+                    "playbook_name": playbook.name,
+                    "gate_id": gate.gate_id if gate else None,
+                    "gate_name": gate.name if gate else "Unknown Gate",
+                    "requested_by": (
+                        requester.username
+                        if requester
+                        else execution.triggered_by or "Unknown"
+                    ),
+                    "requested_at": (
+                        execution.created_at.isoformat()
+                        if execution.created_at
+                        else None
+                    ),
+                    "paused_at": (
+                        execution.started_at.isoformat()
+                        if execution.started_at
+                        else None
+                    ),
+                }
+            )
 
         return (
-            jsonify({
-                "success": True,
-                "pending_approvals": pending,
-                "count": len(pending),
-            }),
+            jsonify(
+                {
+                    "success": True,
+                    "pending_approvals": pending,
+                    "count": len(pending),
+                }
+            ),
             200,
         )
 
@@ -164,19 +183,21 @@ def approve_execution(execution_id: str):
         data = request.get_json() or {}
 
         # Find execution
-        execution = db(
-            db.playbook_executions.execution_id == execution_id
-        ).select().first()
+        execution = (
+            db(db.playbook_executions.execution_id == execution_id).select().first()
+        )
 
         if not execution:
             return jsonify({"success": False, "error": "Execution not found"}), 404
 
         if execution.status != "paused_for_approval":
             return (
-                jsonify({
-                    "success": False,
-                    "error": "Execution is not paused for approval",
-                }),
+                jsonify(
+                    {
+                        "success": False,
+                        "error": "Execution is not paused for approval",
+                    }
+                ),
                 400,
             )
 
@@ -202,25 +223,33 @@ def approve_execution(execution_id: str):
 
         if not user_can_approve:
             return (
-                jsonify({
-                    "success": False,
-                    "error": "You are not authorized to approve this execution",
-                }),
+                jsonify(
+                    {
+                        "success": False,
+                        "error": "You are not authorized to approve this execution",
+                    }
+                ),
                 403,
             )
 
         # Check if user already approved
-        existing = db(
-            (db.playbook_execution_approvals.execution_id == execution_id)
-            & (db.playbook_execution_approvals.approver_id == user_id)
-        ).select().first()
+        existing = (
+            db(
+                (db.playbook_execution_approvals.execution_id == execution_id)
+                & (db.playbook_execution_approvals.approver_id == user_id)
+            )
+            .select()
+            .first()
+        )
 
         if existing:
             return (
-                jsonify({
-                    "success": False,
-                    "error": "You have already submitted an approval decision",
-                }),
+                jsonify(
+                    {
+                        "success": False,
+                        "error": "You have already submitted an approval decision",
+                    }
+                ),
                 400,
             )
 
@@ -239,19 +268,19 @@ def approve_execution(execution_id: str):
         # Check if we have enough approvals to proceed
         # For now, single approval is sufficient (can be enhanced with min_approvers logic)
         # Resume execution by updating status
-        db(db.playbook_executions.execution_id == execution_id).update(
-            status="running"
-        )
+        db(db.playbook_executions.execution_id == execution_id).update(status="running")
         db.commit()
 
         # TODO: Trigger worker to resume execution from paused node
 
         return (
-            jsonify({
-                "success": True,
-                "message": "Execution approved and resumed",
-                "approval_id": approval_id,
-            }),
+            jsonify(
+                {
+                    "success": True,
+                    "message": "Execution approved and resumed",
+                    "approval_id": approval_id,
+                }
+            ),
             200,
         )
 
@@ -287,27 +316,31 @@ def reject_execution(execution_id: str):
         comment = data.get("comment", "").strip()
         if not comment:
             return (
-                jsonify({
-                    "success": False,
-                    "error": "Comment is required for rejection",
-                }),
+                jsonify(
+                    {
+                        "success": False,
+                        "error": "Comment is required for rejection",
+                    }
+                ),
                 400,
             )
 
         # Find execution
-        execution = db(
-            db.playbook_executions.execution_id == execution_id
-        ).select().first()
+        execution = (
+            db(db.playbook_executions.execution_id == execution_id).select().first()
+        )
 
         if not execution:
             return jsonify({"success": False, "error": "Execution not found"}), 404
 
         if execution.status != "paused_for_approval":
             return (
-                jsonify({
-                    "success": False,
-                    "error": "Execution is not paused for approval",
-                }),
+                jsonify(
+                    {
+                        "success": False,
+                        "error": "Execution is not paused for approval",
+                    }
+                ),
                 400,
             )
 
@@ -333,25 +366,33 @@ def reject_execution(execution_id: str):
 
         if not user_can_approve:
             return (
-                jsonify({
-                    "success": False,
-                    "error": "You are not authorized to reject this execution",
-                }),
+                jsonify(
+                    {
+                        "success": False,
+                        "error": "You are not authorized to reject this execution",
+                    }
+                ),
                 403,
             )
 
         # Check if user already decided
-        existing = db(
-            (db.playbook_execution_approvals.execution_id == execution_id)
-            & (db.playbook_execution_approvals.approver_id == user_id)
-        ).select().first()
+        existing = (
+            db(
+                (db.playbook_execution_approvals.execution_id == execution_id)
+                & (db.playbook_execution_approvals.approver_id == user_id)
+            )
+            .select()
+            .first()
+        )
 
         if existing:
             return (
-                jsonify({
-                    "success": False,
-                    "error": "You have already submitted an approval decision",
-                }),
+                jsonify(
+                    {
+                        "success": False,
+                        "error": "You have already submitted an approval decision",
+                    }
+                ),
                 400,
             )
 
@@ -376,11 +417,13 @@ def reject_execution(execution_id: str):
         db.commit()
 
         return (
-            jsonify({
-                "success": True,
-                "message": "Execution rejected",
-                "approval_id": approval_id,
-            }),
+            jsonify(
+                {
+                    "success": True,
+                    "message": "Execution rejected",
+                    "approval_id": approval_id,
+                }
+            ),
             200,
         )
 
@@ -394,7 +437,9 @@ def reject_execution(execution_id: str):
 # ============================================================================
 
 
-@playbook_approvals_bp.route("/executions/<execution_id>/approval-status", methods=["GET"])
+@playbook_approvals_bp.route(
+    "/executions/<execution_id>/approval-status", methods=["GET"]
+)
 @auth_required
 @scopes_required("playbooks:read")
 def get_approval_status(execution_id: str):
@@ -411,9 +456,9 @@ def get_approval_status(execution_id: str):
         db = get_db()
 
         # Find execution
-        execution = db(
-            db.playbook_executions.execution_id == execution_id
-        ).select().first()
+        execution = (
+            db(db.playbook_executions.execution_id == execution_id).select().first()
+        )
 
         if not execution:
             return jsonify({"success": False, "error": "Execution not found"}), 404
@@ -426,31 +471,41 @@ def get_approval_status(execution_id: str):
         result = []
         for approval in approvals:
             approver = db(db.identities.id == approval.approver_id).select().first()
-            gate = db(db.playbook_approval_gates.id == approval.gate_id).select().first()
-            result.append({
-                "approval_id": approval.approval_id,
-                "approver": {
-                    "id": str(approver.id) if approver else None,
-                    "name": approver.username if approver else "Unknown",
-                },
-                "gate_name": gate.name if gate else "Unknown Gate",
-                "decision": approval.decision,
-                "comment": approval.comment or "",
-                "created_at": approval.created_at.isoformat() if approval.created_at else None,
-            })
+            gate = (
+                db(db.playbook_approval_gates.id == approval.gate_id).select().first()
+            )
+            result.append(
+                {
+                    "approval_id": approval.approval_id,
+                    "approver": {
+                        "id": str(approver.id) if approver else None,
+                        "name": approver.username if approver else "Unknown",
+                    },
+                    "gate_name": gate.name if gate else "Unknown Gate",
+                    "decision": approval.decision,
+                    "comment": approval.comment or "",
+                    "created_at": (
+                        approval.created_at.isoformat() if approval.created_at else None
+                    ),
+                }
+            )
 
         return (
-            jsonify({
-                "success": True,
-                "execution_status": execution.status,
-                "approvals": result,
-                "count": len(result),
-            }),
+            jsonify(
+                {
+                    "success": True,
+                    "execution_status": execution.status,
+                    "approvals": result,
+                    "count": len(result),
+                }
+            ),
             200,
         )
 
     except Exception as e:
-        current_app.logger.error(f"Error getting approval status for {execution_id}: {e}")
+        current_app.logger.error(
+            f"Error getting approval status for {execution_id}: {e}"
+        )
         return jsonify({"success": False, "error": str(e)}), 500
 
 
@@ -480,33 +535,41 @@ def list_approval_gates(playbook_id: str):
             return jsonify({"success": False, "error": "Playbook not found"}), 404
 
         # Get all gates for this playbook
-        gates = db(
-            db.playbook_approval_gates.playbook_id == playbook.id
-        ).select(orderby=db.playbook_approval_gates.created_at)
+        gates = db(db.playbook_approval_gates.playbook_id == playbook.id).select(
+            orderby=db.playbook_approval_gates.created_at
+        )
 
         result = []
         for gate in gates:
-            result.append({
-                "gate_id": gate.gate_id,
-                "node_id": gate.node_id,
-                "name": gate.name,
-                "description": gate.description or "",
-                "require_approval": gate.require_approval,
-                "min_approvers": gate.min_approvers,
-                "approvers": gate.approvers or [],
-                "approver_groups": gate.approver_groups or [],
-                "timeout_minutes": gate.timeout_minutes,
-                "is_enabled": gate.is_enabled,
-                "created_at": gate.created_at.isoformat() if gate.created_at else None,
-                "updated_at": gate.updated_at.isoformat() if gate.updated_at else None,
-            })
+            result.append(
+                {
+                    "gate_id": gate.gate_id,
+                    "node_id": gate.node_id,
+                    "name": gate.name,
+                    "description": gate.description or "",
+                    "require_approval": gate.require_approval,
+                    "min_approvers": gate.min_approvers,
+                    "approvers": gate.approvers or [],
+                    "approver_groups": gate.approver_groups or [],
+                    "timeout_minutes": gate.timeout_minutes,
+                    "is_enabled": gate.is_enabled,
+                    "created_at": (
+                        gate.created_at.isoformat() if gate.created_at else None
+                    ),
+                    "updated_at": (
+                        gate.updated_at.isoformat() if gate.updated_at else None
+                    ),
+                }
+            )
 
         return (
-            jsonify({
-                "success": True,
-                "gates": result,
-                "count": len(result),
-            }),
+            jsonify(
+                {
+                    "success": True,
+                    "gates": result,
+                    "count": len(result),
+                }
+            ),
             200,
         )
 
@@ -553,10 +616,12 @@ def create_approval_gate(playbook_id: str):
         # Validate required fields
         if not data.get("node_id") or not data.get("name"):
             return (
-                jsonify({
-                    "success": False,
-                    "error": "node_id and name are required",
-                }),
+                jsonify(
+                    {
+                        "success": False,
+                        "error": "node_id and name are required",
+                    }
+                ),
                 400,
             )
 
@@ -581,21 +646,23 @@ def create_approval_gate(playbook_id: str):
         gate = db(db.playbook_approval_gates.gate_id == gate_id).select().first()
 
         return (
-            jsonify({
-                "success": True,
-                "gate": {
-                    "gate_id": gate.gate_id,
-                    "node_id": gate.node_id,
-                    "name": gate.name,
-                    "description": gate.description or "",
-                    "require_approval": gate.require_approval,
-                    "min_approvers": gate.min_approvers,
-                    "approvers": gate.approvers or [],
-                    "approver_groups": gate.approver_groups or [],
-                    "timeout_minutes": gate.timeout_minutes,
-                    "is_enabled": gate.is_enabled,
-                },
-            }),
+            jsonify(
+                {
+                    "success": True,
+                    "gate": {
+                        "gate_id": gate.gate_id,
+                        "node_id": gate.node_id,
+                        "name": gate.name,
+                        "description": gate.description or "",
+                        "require_approval": gate.require_approval,
+                        "min_approvers": gate.min_approvers,
+                        "approvers": gate.approvers or [],
+                        "approver_groups": gate.approver_groups or [],
+                        "timeout_minutes": gate.timeout_minutes,
+                        "is_enabled": gate.is_enabled,
+                    },
+                }
+            ),
             201,
         )
 

@@ -1,4 +1,5 @@
 """Tests for IceFlows Stage Configuration API endpoints (approvers, tests, calls, reviews)."""
+
 import pytest
 
 NONEXISTENT_STAGE_ID = "nonexistent-stage-id-00000000-0000-0000-0000-000000000000"
@@ -50,9 +51,7 @@ class TestStageApprovers:
 
 class TestStageTests:
     def test_list_tests_requires_auth(self, client):
-        response = client.get(
-            f"/api/v1/iceflows/stages/{NONEXISTENT_STAGE_ID}/tests"
-        )
+        response = client.get(f"/api/v1/iceflows/stages/{NONEXISTENT_STAGE_ID}/tests")
         assert response.status_code == 401
 
     def test_list_tests_nonexistent_stage_returns_404(self, client, auth_headers):
@@ -106,9 +105,7 @@ class TestStageTests:
 
 class TestStageCalls:
     def test_list_calls_requires_auth(self, client):
-        response = client.get(
-            f"/api/v1/iceflows/stages/{NONEXISTENT_STAGE_ID}/calls"
-        )
+        response = client.get(f"/api/v1/iceflows/stages/{NONEXISTENT_STAGE_ID}/calls")
         assert response.status_code == 401
 
     def test_list_calls_nonexistent_stage_returns_404(self, client, auth_headers):
@@ -162,9 +159,7 @@ class TestStageCalls:
 
 class TestStageReviews:
     def test_get_review_requires_auth(self, client):
-        response = client.get(
-            f"/api/v1/iceflows/stages/{NONEXISTENT_STAGE_ID}/reviews"
-        )
+        response = client.get(f"/api/v1/iceflows/stages/{NONEXISTENT_STAGE_ID}/reviews")
         assert response.status_code == 401
 
     def test_update_review_requires_auth(self, client):

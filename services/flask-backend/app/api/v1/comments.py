@@ -87,7 +87,8 @@ def list_comments(drawing_id: int):
 
     # Get comments with user details
     comments = db(
-        (db.comments.drawing_id == drawing_id) & (db.comments.author_id == db.identities.id)
+        (db.comments.drawing_id == drawing_id)
+        & (db.comments.author_id == db.identities.id)
     ).select(
         db.comments.ALL,
         db.identities.id,

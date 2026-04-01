@@ -24,13 +24,13 @@ from .oidc import (
 
 __all__ = [
     # OAuth2
-    'OAuth2Client',
-    'OAuth2Config',
-    'AWSSTSClient',
-    'AWSSTSConfig',
-    'CachedToken',
+    "OAuth2Client",
+    "OAuth2Config",
+    "AWSSTSClient",
+    "AWSSTSConfig",
+    "CachedToken",
     # OIDC
-    'OIDCClient',
-    'OIDCConfig',
-    'CachedIDToken',
+    "OIDCClient",
+    "OIDCConfig",
+    "CachedIDToken",
 ]

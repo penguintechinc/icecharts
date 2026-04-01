@@ -158,9 +158,7 @@ class WhileConditional(BaseNode):
         except Exception:
             return False
 
-    async def execute(
-        self, context: NodeContext, inputs: Dict[str, Any]
-    ) -> NodeResult:
+    async def execute(self, context: NodeContext, inputs: Dict[str, Any]) -> NodeResult:
         """
         Execute the while loop conditional.
 
@@ -196,9 +194,7 @@ class WhileConditional(BaseNode):
 
         # Check if max iterations exceeded
         if current_iteration >= max_iterations:
-            context.log_info(
-                f"While loop: max iterations ({max_iterations}) reached"
-            )
+            context.log_info(f"While loop: max iterations ({max_iterations}) reached")
             return NodeResult.success_result(
                 outputs={"done": input_data},
                 execution_time_ms=(time.perf_counter() - start_time) * 1000,
@@ -221,7 +217,9 @@ class WhileConditional(BaseNode):
                 execution_time_ms=(time.perf_counter() - start_time) * 1000,
             )
         else:
-            context.log_info(f"While loop: condition false, exiting after {current_iteration} iterations")
+            context.log_info(
+                f"While loop: condition false, exiting after {current_iteration} iterations"
+            )
             return NodeResult.success_result(
                 outputs={"done": input_data},
                 execution_time_ms=(time.perf_counter() - start_time) * 1000,

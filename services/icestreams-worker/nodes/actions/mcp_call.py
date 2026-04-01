@@ -120,7 +120,7 @@ class McpCallAction(BaseNode):
                 "params": {
                     "name": tool,
                     "arguments": parameters or {},
-                }
+                },
             }
 
             request_json = json.dumps(request_data)
@@ -168,9 +168,7 @@ class McpCallAction(BaseNode):
         except Exception as e:
             return False, None, f"MCP setup error: {e}"
 
-    async def execute(
-        self, context: NodeContext, inputs: Dict[str, Any]
-    ) -> NodeResult:
+    async def execute(self, context: NodeContext, inputs: Dict[str, Any]) -> NodeResult:
         """Execute MCP tool call."""
         start_time = time.perf_counter()
 

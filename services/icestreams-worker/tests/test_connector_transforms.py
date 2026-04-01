@@ -52,6 +52,7 @@ class TestJsonTransform:
     def import_node(self):
         """Import and register the JsonTransform node."""
         from nodes.transforms.json_transform import JsonTransform
+
         self.node_class = JsonTransform
         self.node = JsonTransform()
 
@@ -83,7 +84,9 @@ class TestJsonTransform:
     @pytest.mark.asyncio
     async def test_set_operation(self):
         """Set operation must set a value at jsonPath."""
-        ctx = _make_context(config={"operation": "set", "jsonPath": "status", "value": "active"})
+        ctx = _make_context(
+            config={"operation": "set", "jsonPath": "status", "value": "active"}
+        )
         result = await self.node.execute(ctx, {"in": {"id": 1}})
         assert result.success is True
         assert result.outputs["out"]["status"] == "active"
@@ -101,7 +104,9 @@ class TestJsonTransform:
     @pytest.mark.asyncio
     async def test_rename_operation(self):
         """Rename operation must move a key to a new path."""
-        ctx = _make_context(config={"operation": "rename", "fromPath": "old_name", "toPath": "new_name"})
+        ctx = _make_context(
+            config={"operation": "rename", "fromPath": "old_name", "toPath": "new_name"}
+        )
         result = await self.node.execute(ctx, {"in": {"old_name": "value", "other": 1}})
         assert result.success is True
         out = result.outputs["out"]
@@ -112,7 +117,9 @@ class TestJsonTransform:
     @pytest.mark.asyncio
     async def test_merge_operation(self):
         """Merge operation must combine mergeData with input."""
-        ctx = _make_context(config={"operation": "merge", "mergeData": {"new_key": "new_val"}})
+        ctx = _make_context(
+            config={"operation": "merge", "mergeData": {"new_key": "new_val"}}
+        )
         result = await self.node.execute(ctx, {"in": {"existing": "data"}})
         assert result.success is True
         out = result.outputs["out"]
@@ -150,6 +157,7 @@ class TestFilterTransform:
     @pytest.fixture(autouse=True)
     def import_node(self):
         from nodes.transforms.filter import FilterTransform
+
         self.node_class = FilterTransform
         self.node = FilterTransform()
 
@@ -164,10 +172,14 @@ class TestFilterTransform:
     @pytest.mark.asyncio
     async def test_filter_passes_matching_item(self):
         """Items matching conditions must appear in 'out'."""
-        ctx = _make_context(config={
-            "conditions": [{"field": "status", "operator": "eq", "value": "active"}],
-            "logic": "and",
-        })
+        ctx = _make_context(
+            config={
+                "conditions": [
+                    {"field": "status", "operator": "eq", "value": "active"}
+                ],
+                "logic": "and",
+            }
+        )
         result = await self.node.execute(ctx, {"in": {"status": "active", "id": 1}})
         assert result.success is True
         assert result.outputs["out"] is not None
@@ -175,10 +187,14 @@ class TestFilterTransform:
     @pytest.mark.asyncio
     async def test_filter_rejects_non_matching_item(self):
         """Items not matching conditions must appear in 'rejected'."""
-        ctx = _make_context(config={
-            "conditions": [{"field": "status", "operator": "eq", "value": "active"}],
-            "logic": "and",
-        })
+        ctx = _make_context(
+            config={
+                "conditions": [
+                    {"field": "status", "operator": "eq", "value": "active"}
+                ],
+                "logic": "and",
+            }
+        )
         result = await self.node.execute(ctx, {"in": {"status": "inactive", "id": 2}})
         assert result.success is True
         assert result.outputs["out"] is None
@@ -187,11 +203,17 @@ class TestFilterTransform:
     @pytest.mark.asyncio
     async def test_filter_array_input(self):
         """Array input must filter each item individually."""
-        ctx = _make_context(config={
-            "conditions": [{"field": "active", "operator": "eq", "value": True}],
-            "logic": "and",
-        })
-        items = [{"active": True, "id": 1}, {"active": False, "id": 2}, {"active": True, "id": 3}]
+        ctx = _make_context(
+            config={
+                "conditions": [{"field": "active", "operator": "eq", "value": True}],
+                "logic": "and",
+            }
+        )
+        items = [
+            {"active": True, "id": 1},
+            {"active": False, "id": 2},
+            {"active": True, "id": 3},
+        ]
         result = await self.node.execute(ctx, {"in": items})
         assert result.success is True
         assert len(result.outputs["out"]) == 2
@@ -200,13 +222,15 @@ class TestFilterTransform:
     @pytest.mark.asyncio
     async def test_filter_or_logic(self):
         """OR logic must pass if any condition matches."""
-        ctx = _make_context(config={
-            "conditions": [
-                {"field": "type", "operator": "eq", "value": "A"},
-                {"field": "type", "operator": "eq", "value": "B"},
-            ],
-            "logic": "or",
-        })
+        ctx = _make_context(
+            config={
+                "conditions": [
+                    {"field": "type", "operator": "eq", "value": "A"},
+                    {"field": "type", "operator": "eq", "value": "B"},
+                ],
+                "logic": "or",
+            }
+        )
         result = await self.node.execute(ctx, {"in": {"type": "B"}})
         assert result.success is True
         assert result.outputs["out"] is not None
@@ -214,10 +238,12 @@ class TestFilterTransform:
     @pytest.mark.asyncio
     async def test_filter_gt_operator(self):
         """gt operator must pass when field value > expected."""
-        ctx = _make_context(config={
-            "conditions": [{"field": "score", "operator": "gt", "value": 50}],
-            "logic": "and",
-        })
+        ctx = _make_context(
+            config={
+                "conditions": [{"field": "score", "operator": "gt", "value": 50}],
+                "logic": "and",
+            }
+        )
         result = await self.node.execute(ctx, {"in": {"score": 75}})
         assert result.success is True
         assert result.outputs["out"] is not None
@@ -229,6 +255,7 @@ class TestExpressionTransform:
     @pytest.fixture(autouse=True)
     def import_node(self):
         from nodes.transforms.expression import ExpressionTransform
+
         self.node_class = ExpressionTransform
         self.node = ExpressionTransform()
 
@@ -292,6 +319,7 @@ class TestMergeTransform:
     @pytest.fixture(autouse=True)
     def import_node(self):
         from nodes.transforms.merge import MergeTransform
+
         self.node_class = MergeTransform
         self.node = MergeTransform()
 
@@ -302,10 +330,13 @@ class TestMergeTransform:
     async def test_object_mode_shallow_merge(self):
         """Object mode must shallow-merge input dicts."""
         ctx = _make_context(config={"mode": "object"})
-        result = await self.node.execute(ctx, {
-            "in1": {"a": 1, "b": 2},
-            "in2": {"b": 99, "c": 3},
-        })
+        result = await self.node.execute(
+            ctx,
+            {
+                "in1": {"a": 1, "b": 2},
+                "in2": {"b": 99, "c": 3},
+            },
+        )
         assert result.success is True
         out = result.outputs["out"]
         assert out["a"] == 1
@@ -316,10 +347,13 @@ class TestMergeTransform:
     async def test_array_mode_flattens_lists(self):
         """Array mode must concatenate lists."""
         ctx = _make_context(config={"mode": "array"})
-        result = await self.node.execute(ctx, {
-            "in1": [1, 2],
-            "in2": [3, 4],
-        })
+        result = await self.node.execute(
+            ctx,
+            {
+                "in1": [1, 2],
+                "in2": [3, 4],
+            },
+        )
         assert result.success is True
         assert result.outputs["out"] == [1, 2, 3, 4]
 
@@ -327,10 +361,13 @@ class TestMergeTransform:
     async def test_concat_mode_joins_strings(self):
         """Concat mode must join strings with separator."""
         ctx = _make_context(config={"mode": "concat", "separator": ", "})
-        result = await self.node.execute(ctx, {
-            "in1": "Hello",
-            "in2": "World",
-        })
+        result = await self.node.execute(
+            ctx,
+            {
+                "in1": "Hello",
+                "in2": "World",
+            },
+        )
         assert result.success is True
         assert result.outputs["out"] == "Hello, World"
 
@@ -338,10 +375,13 @@ class TestMergeTransform:
     async def test_deep_mode_recursive_merge(self):
         """Deep mode must recursively merge nested dicts."""
         ctx = _make_context(config={"mode": "deep"})
-        result = await self.node.execute(ctx, {
-            "in1": {"a": {"x": 1, "y": 2}},
-            "in2": {"a": {"y": 99, "z": 3}},
-        })
+        result = await self.node.execute(
+            ctx,
+            {
+                "in1": {"a": {"x": 1, "y": 2}},
+                "in2": {"a": {"y": 99, "z": 3}},
+            },
+        )
         assert result.success is True
         out = result.outputs["out"]
         assert out["a"]["x"] == 1
@@ -362,6 +402,7 @@ class TestSplitTransform:
     @pytest.fixture(autouse=True)
     def import_node(self):
         from nodes.transforms.split import SplitTransform
+
         self.node_class = SplitTransform
         self.node = SplitTransform()
 
@@ -424,6 +465,7 @@ class TestDelayTransform:
     @pytest.fixture(autouse=True)
     def import_node(self):
         from nodes.transforms.delay import DelayTransform
+
         self.node_class = DelayTransform
         self.node = DelayTransform()
 
@@ -434,7 +476,9 @@ class TestDelayTransform:
     async def test_delay_ms_calls_sleep(self):
         """delayMs config must call asyncio.sleep with correct duration."""
         ctx = _make_context(config={"delayMs": 100})
-        with patch("nodes.transforms.delay.asyncio.sleep", new_callable=AsyncMock) as mock_sleep:
+        with patch(
+            "nodes.transforms.delay.asyncio.sleep", new_callable=AsyncMock
+        ) as mock_sleep:
             result = await self.node.execute(ctx, {"in": {"data": "test"}})
             mock_sleep.assert_called_once_with(0.1)
         assert result.success is True
@@ -443,7 +487,9 @@ class TestDelayTransform:
     async def test_delay_seconds_calls_sleep(self):
         """delaySeconds config must call asyncio.sleep with correct seconds."""
         ctx = _make_context(config={"delaySeconds": 2})
-        with patch("nodes.transforms.delay.asyncio.sleep", new_callable=AsyncMock) as mock_sleep:
+        with patch(
+            "nodes.transforms.delay.asyncio.sleep", new_callable=AsyncMock
+        ) as mock_sleep:
             result = await self.node.execute(ctx, {"in": "hello"})
             mock_sleep.assert_called_once_with(2.0)
         assert result.success is True
@@ -452,7 +498,9 @@ class TestDelayTransform:
     async def test_zero_delay_no_sleep(self):
         """Zero delay must not call asyncio.sleep."""
         ctx = _make_context(config={"delayMs": 0})
-        with patch("nodes.transforms.delay.asyncio.sleep", new_callable=AsyncMock) as mock_sleep:
+        with patch(
+            "nodes.transforms.delay.asyncio.sleep", new_callable=AsyncMock
+        ) as mock_sleep:
             result = await self.node.execute(ctx, {"in": "data"})
             mock_sleep.assert_not_called()
         assert result.success is True
@@ -464,7 +512,9 @@ class TestDelayTransform:
         with patch("nodes.transforms.delay.asyncio.sleep", new_callable=AsyncMock):
             result = await self.node.execute(ctx, {"in": {"key": "value"}})
         assert "_delay" in result.outputs["out"]
-        assert result.outputs["out"]["_delay"]["duration_seconds"] == pytest.approx(0.05)
+        assert result.outputs["out"]["_delay"]["duration_seconds"] == pytest.approx(
+            0.05
+        )
 
     @pytest.mark.asyncio
     async def test_non_dict_input_passed_through(self):
@@ -488,6 +538,7 @@ class TestAskAiTransform:
     @pytest.fixture(autouse=True)
     def import_node(self):
         from nodes.transforms.ask_ai import AskAiTransform
+
         self.node_class = AskAiTransform
         self.node = AskAiTransform()
 
@@ -503,10 +554,12 @@ class TestAskAiTransform:
     @pytest.mark.asyncio
     async def test_missing_api_key_returns_failure(self):
         """Missing API key for non-ollama providers must return failure."""
-        ctx = _make_context(config={
-            "prompt": "Summarize: {{data}}",
-            "provider": "anthropic",
-        })
+        ctx = _make_context(
+            config={
+                "prompt": "Summarize: {{data}}",
+                "provider": "anthropic",
+            }
+        )
         # Ensure no API key env var is set
         with patch.dict("os.environ", {}, clear=False):
             result = await self.node.execute(ctx, {"in": "some data"})
@@ -516,18 +569,25 @@ class TestAskAiTransform:
     @pytest.mark.asyncio
     async def test_anthropic_api_call_mocked(self):
         """Successful Anthropic call must return parsed response."""
-        ctx = _make_context(config={
-            "prompt": "Process: {{data}}",
-            "provider": "anthropic",
-            "apiKey": "test-key",
-            "outputFormat": "text",
-        })
+        ctx = _make_context(
+            config={
+                "prompt": "Process: {{data}}",
+                "provider": "anthropic",
+                "apiKey": "test-key",
+                "outputFormat": "text",
+            }
+        )
         mock_response = {
             "content": "Processed result",
             "usage": {"input_tokens": 10, "output_tokens": 5},
             "model": "claude-3-5-sonnet-20241022",
         }
-        with patch.object(self.node, "_call_anthropic", new_callable=AsyncMock, return_value=mock_response):
+        with patch.object(
+            self.node,
+            "_call_anthropic",
+            new_callable=AsyncMock,
+            return_value=mock_response,
+        ):
             result = await self.node.execute(ctx, {"in": "test data"})
         assert result.success is True
         assert result.outputs["raw"] == "Processed result"
@@ -536,18 +596,25 @@ class TestAskAiTransform:
     @pytest.mark.asyncio
     async def test_json_output_format_parses_json(self):
         """outputFormat=json must parse the AI response as JSON."""
-        ctx = _make_context(config={
-            "prompt": "Return JSON: {{data}}",
-            "provider": "anthropic",
-            "apiKey": "test-key",
-            "outputFormat": "json",
-        })
+        ctx = _make_context(
+            config={
+                "prompt": "Return JSON: {{data}}",
+                "provider": "anthropic",
+                "apiKey": "test-key",
+                "outputFormat": "json",
+            }
+        )
         mock_response = {
             "content": '{"result": 42, "status": "ok"}',
             "usage": {"input_tokens": 5, "output_tokens": 10},
             "model": "test",
         }
-        with patch.object(self.node, "_call_anthropic", new_callable=AsyncMock, return_value=mock_response):
+        with patch.object(
+            self.node,
+            "_call_anthropic",
+            new_callable=AsyncMock,
+            return_value=mock_response,
+        ):
             result = await self.node.execute(ctx, {"in": "data"})
         assert result.success is True
         assert result.outputs["out"] == {"result": 42, "status": "ok"}
@@ -559,6 +626,7 @@ class TestCodeTransform:
     @pytest.fixture(autouse=True)
     def import_node(self):
         from nodes.transforms.code import CodeTransform
+
         self.node_class = CodeTransform
         self.node = CodeTransform()
 

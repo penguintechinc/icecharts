@@ -25,6 +25,7 @@ logger = logging.getLogger(__name__)
 @dataclass(slots=True, frozen=True)
 class RetryConfig:
     """Retry configuration for HTTP requests."""
+
     max_retries: int = 3
     backoff_factor: float = 1.0
     backoff_multiplier: float = 2.0
@@ -158,10 +159,11 @@ class HttpRequestAction(BaseNode):
 
                     if attempt < retry_config.max_retries:
                         wait_time = retry_config.backoff_factor * (
-                            retry_config.backoff_multiplier ** attempt
+                            retry_config.backoff_multiplier**attempt
                         )
                         if retry_config.jitter:
                             import random
+
                             wait_time *= random.uniform(0.5, 1.5)
                         context.log_warning(
                             f"HTTP request failed with {response.status_code}, "
@@ -174,7 +176,7 @@ class HttpRequestAction(BaseNode):
                 except httpx.TimeoutException as e:
                     if attempt < retry_config.max_retries:
                         wait_time = retry_config.backoff_factor * (
-                            retry_config.backoff_multiplier ** attempt
+                            retry_config.backoff_multiplier**attempt
                         )
                         context.log_warning(
                             f"HTTP request timeout, retrying in {wait_time:.2f}s "
@@ -187,7 +189,7 @@ class HttpRequestAction(BaseNode):
                 except (httpx.ConnectError, httpx.NetworkError) as e:
                     if attempt < retry_config.max_retries:
                         wait_time = retry_config.backoff_factor * (
-                            retry_config.backoff_multiplier ** attempt
+                            retry_config.backoff_multiplier**attempt
                         )
                         context.log_warning(
                             f"HTTP connection error, retrying in {wait_time:.2f}s "
@@ -221,9 +223,7 @@ class HttpRequestAction(BaseNode):
 
         return response.text
 
-    async def execute(
-        self, context: NodeContext, inputs: Dict[str, Any]
-    ) -> NodeResult:
+    async def execute(self, context: NodeContext, inputs: Dict[str, Any]) -> NodeResult:
         """Execute HTTP request."""
         start_time = time.perf_counter()
 
@@ -254,7 +254,9 @@ class HttpRequestAction(BaseNode):
         retry_config = RetryConfig(
             max_retries=max_retries,
             backoff_factor=float(context.get_config_value("backoffFactor", 1.0)),
-            backoff_multiplier=float(context.get_config_value("backoffMultiplier", 2.0)),
+            backoff_multiplier=float(
+                context.get_config_value("backoffMultiplier", 2.0)
+            ),
             jitter=context.get_config_value("jitter", True),
         )
 

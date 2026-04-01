@@ -56,7 +56,9 @@ class TestOpenWhiskAuthentication:
             "oauth_scope": "read write",
             "auth_key": None,
         }
-        node_context.get_config_value.side_effect = lambda key, default=None: config_map.get(key, default)
+        node_context.get_config_value.side_effect = (
+            lambda key, default=None: config_map.get(key, default)
+        )
 
         mock_oauth2_instance = MockOAuth2Client()
         mock_oauth2_class.return_value = mock_oauth2_instance
@@ -66,9 +68,7 @@ class TestOpenWhiskAuthentication:
         assert auth_client is mock_oauth2_instance
         mock_oauth2_class.assert_called_once()
 
-    def test_authenticate_with_basic_auth(
-        self, openwhisk_node, node_context
-    ):
+    def test_authenticate_with_basic_auth(self, openwhisk_node, node_context):
         """Test authentication with basic auth (auth_key)."""
         config_map = {
             "oauth_client_id": None,
@@ -77,16 +77,16 @@ class TestOpenWhiskAuthentication:
             "oauth_scope": None,
             "auth_key": "uuid:key",
         }
-        node_context.get_config_value.side_effect = lambda key, default=None: config_map.get(key, default)
+        node_context.get_config_value.side_effect = (
+            lambda key, default=None: config_map.get(key, default)
+        )
 
         auth_client = asyncio.run(openwhisk_node._authenticate(node_context))
 
         # Basic auth returns None (no OAuth client needed)
         assert auth_client is None
 
-    def test_authenticate_no_credentials(
-        self, openwhisk_node, node_context
-    ):
+    def test_authenticate_no_credentials(self, openwhisk_node, node_context):
         """Test authentication fails when no credentials are provided."""
         node_context.get_config_value.return_value = None
 
@@ -109,7 +109,10 @@ class TestOpenWhiskConfigValidation:
         namespace = "test_namespace"
         action_name = "my-action"
         url = f"{api_host}/api/v1/namespaces/{namespace}/actions/{action_name}"
-        assert url == "https://openwhisk.example.com/api/v1/namespaces/test_namespace/actions/my-action"
+        assert (
+            url
+            == "https://openwhisk.example.com/api/v1/namespaces/test_namespace/actions/my-action"
+        )
 
     def test_default_namespace(self):
         """Test default namespace is underscore."""
@@ -161,13 +164,17 @@ class TestOpenWhiskPayloadHandling:
     def test_string_payload_handling(self):
         """Test string payload is wrapped."""
         payload = "string value"
-        payload_json = payload if isinstance(payload, (dict, list)) else {"value": payload}
+        payload_json = (
+            payload if isinstance(payload, (dict, list)) else {"value": payload}
+        )
         assert payload_json == {"value": "string value"}
 
     def test_numeric_payload_handling(self):
         """Test numeric payload is wrapped."""
         payload = 42
-        payload_json = payload if isinstance(payload, (dict, list)) else {"value": payload}
+        payload_json = (
+            payload if isinstance(payload, (dict, list)) else {"value": payload}
+        )
         assert payload_json == {"value": 42}
 
 
@@ -201,16 +208,14 @@ class TestOpenWhiskActivationParsing:
         """Test parsing blocking action response."""
         response_data = {
             "activationId": "activation-123",
-            "result": {"message": "success"}
+            "result": {"message": "success"},
         }
         activation_id = response_data.get("activationId")
         assert activation_id == "activation-123"
 
     def test_parse_non_blocking_response(self):
         """Test parsing non-blocking action response."""
-        response_data = {
-            "activationId": "activation-456"
-        }
+        response_data = {"activationId": "activation-456"}
         activation_id = response_data.get("activationId")
         assert activation_id == "activation-456"
 
@@ -219,10 +224,7 @@ class TestOpenWhiskActivationParsing:
         activation = {
             "activationId": "activation-789",
             "end": 1234567890,
-            "response": {
-                "success": True,
-                "result": {"data": "test"}
-            }
+            "response": {"success": True, "result": {"data": "test"}},
         }
         is_complete = activation.get("end") is not None
         assert is_complete is True
@@ -233,7 +235,7 @@ class TestOpenWhiskActivationParsing:
             "activationId": "activation-789",
             "response": {
                 "success": True,
-            }
+            },
         }
         is_complete = activation.get("end") is not None
         assert is_complete is False
@@ -243,10 +245,7 @@ class TestOpenWhiskActivationParsing:
         activation = {
             "activationId": "activation-789",
             "end": 1234567890,
-            "response": {
-                "success": True,
-                "result": {"message": "done"}
-            }
+            "response": {"success": True, "result": {"message": "done"}},
         }
         result = activation.get("response", {}).get("result", {})
         assert result == {"message": "done"}
@@ -256,10 +255,7 @@ class TestOpenWhiskActivationParsing:
         activation = {
             "activationId": "activation-789",
             "end": 1234567890,
-            "response": {
-                "success": True,
-                "result": {"data": "test"}
-            }
+            "response": {"success": True, "result": {"data": "test"}},
         }
         success = activation.get("response", {}).get("success", False)
         assert success is True
@@ -269,10 +265,7 @@ class TestOpenWhiskActivationParsing:
         activation = {
             "activationId": "activation-789",
             "end": 1234567890,
-            "response": {
-                "success": False,
-                "error": "Action failed"
-            }
+            "response": {"success": False, "error": "Action failed"},
         }
         success = activation.get("response", {}).get("success", False)
         assert success is False
@@ -297,7 +290,9 @@ class TestOpenWhiskExecute:
             "api_host": "https://openwhisk.example.com",
             "action_name": "test-action",
         }
-        node_context.get_config_value.side_effect = lambda key, default=None: config_map.get(key, default)
+        node_context.get_config_value.side_effect = (
+            lambda key, default=None: config_map.get(key, default)
+        )
         inputs = {"payload": {"test": "data"}}
 
         result = asyncio.run(openwhisk_node.execute(node_context, inputs))
@@ -305,9 +300,7 @@ class TestOpenWhiskExecute:
         assert result.success is False
         assert result.error is not None
 
-    def test_execute_missing_required_input(
-        self, openwhisk_node, node_context
-    ):
+    def test_execute_missing_required_input(self, openwhisk_node, node_context):
         """Test execution fails with missing required payload."""
         inputs = {}  # Missing required payload
 

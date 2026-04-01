@@ -22,7 +22,7 @@ from ....executor.node_registry import register_node
     node_type="aws_lambda",
     category="cloud",
     display_name="AWS Lambda",
-    description="Invoke AWS Lambda function with payload"
+    description="Invoke AWS Lambda function with payload",
 )
 class AwsLambdaAction(BaseCloudFunction):
     """
@@ -157,7 +157,9 @@ class AwsLambdaAction(BaseCloudFunction):
             aws_access_key_id=credentials["access_key_id"],
             aws_secret_access_key=credentials["secret_access_key"],
             aws_session_token=credentials.get("session_token"),
-            region_name=function_config.get("aws_region", context.get_config_value("aws_region")),
+            region_name=function_config.get(
+                "aws_region", context.get_config_value("aws_region")
+            ),
         )
 
         # Serialize payload
@@ -188,8 +190,7 @@ class AwsLambdaAction(BaseCloudFunction):
         # Invoke Lambda function in thread pool (boto3 is synchronous)
         loop = asyncio.get_event_loop()
         response = await loop.run_in_executor(
-            None,
-            lambda: lambda_client.invoke(**invoke_params)
+            None, lambda: lambda_client.invoke(**invoke_params)
         )
 
         # Parse response
@@ -233,11 +234,7 @@ class AwsLambdaAction(BaseCloudFunction):
 
         return result
 
-    async def execute(
-        self,
-        context: NodeContext,
-        inputs: Dict[str, Any]
-    ) -> NodeResult:
+    async def execute(self, context: NodeContext, inputs: Dict[str, Any]) -> NodeResult:
         """
         Execute AWS Lambda invocation.
 
@@ -249,6 +246,7 @@ class AwsLambdaAction(BaseCloudFunction):
             NodeResult with Lambda response or error.
         """
         import time
+
         start_time = time.time()
 
         try:
@@ -282,7 +280,9 @@ class AwsLambdaAction(BaseCloudFunction):
             self._auth_client = auth_client
 
             # Invoke Lambda with retry
-            context.log_debug(f"Invoking Lambda function: {function_config['function_name']}")
+            context.log_debug(
+                f"Invoking Lambda function: {function_config['function_name']}"
+            )
 
             async def invoke_operation():
                 return await self._invoke_function(
@@ -300,7 +300,9 @@ class AwsLambdaAction(BaseCloudFunction):
             standardized = self._standardize_response(response, success=True)
 
             execution_time_ms = (time.time() - start_time) * 1000
-            context.log_info(f"Lambda invocation completed in {execution_time_ms:.2f}ms")
+            context.log_info(
+                f"Lambda invocation completed in {execution_time_ms:.2f}ms"
+            )
 
             return NodeResult.success_result(
                 outputs={"result": standardized},

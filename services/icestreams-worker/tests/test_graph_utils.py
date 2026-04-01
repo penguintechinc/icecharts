@@ -31,15 +31,8 @@ class TestTopologicalSorter:
 
     def test_simple_linear_graph(self):
         """Test sorting a simple linear graph."""
-        nodes = [
-            {"id": "n1"},
-            {"id": "n2"},
-            {"id": "n3"}
-        ]
-        edges = [
-            {"source": "n1", "target": "n2"},
-            {"source": "n2", "target": "n3"}
-        ]
+        nodes = [{"id": "n1"}, {"id": "n2"}, {"id": "n3"}]
+        edges = [{"source": "n1", "target": "n2"}, {"source": "n2", "target": "n3"}]
 
         sorter = TopologicalSorter(nodes, edges)
         result = sorter.sort()
@@ -48,17 +41,12 @@ class TestTopologicalSorter:
 
     def test_diamond_graph(self):
         """Test sorting a diamond-shaped graph."""
-        nodes = [
-            {"id": "n1"},
-            {"id": "n2"},
-            {"id": "n3"},
-            {"id": "n4"}
-        ]
+        nodes = [{"id": "n1"}, {"id": "n2"}, {"id": "n3"}, {"id": "n4"}]
         edges = [
             {"source": "n1", "target": "n2"},
             {"source": "n1", "target": "n3"},
             {"source": "n2", "target": "n4"},
-            {"source": "n3", "target": "n4"}
+            {"source": "n3", "target": "n4"},
         ]
 
         sorter = TopologicalSorter(nodes, edges)
@@ -72,16 +60,8 @@ class TestTopologicalSorter:
 
     def test_disconnected_graph(self):
         """Test sorting a graph with disconnected components."""
-        nodes = [
-            {"id": "n1"},
-            {"id": "n2"},
-            {"id": "n3"},
-            {"id": "n4"}
-        ]
-        edges = [
-            {"source": "n1", "target": "n2"},
-            {"source": "n3", "target": "n4"}
-        ]
+        nodes = [{"id": "n1"}, {"id": "n2"}, {"id": "n3"}, {"id": "n4"}]
+        edges = [{"source": "n1", "target": "n2"}, {"source": "n3", "target": "n4"}]
 
         sorter = TopologicalSorter(nodes, edges)
         result = sorter.sort()
@@ -96,15 +76,11 @@ class TestTopologicalSorter:
 
     def test_cycle_detection(self):
         """Test that cycles are detected and reported."""
-        nodes = [
-            {"id": "n1"},
-            {"id": "n2"},
-            {"id": "n3"}
-        ]
+        nodes = [{"id": "n1"}, {"id": "n2"}, {"id": "n3"}]
         edges = [
             {"source": "n1", "target": "n2"},
             {"source": "n2", "target": "n3"},
-            {"source": "n3", "target": "n1"}
+            {"source": "n3", "target": "n1"},
         ]
 
         sorter = TopologicalSorter(nodes, edges)
@@ -118,14 +94,8 @@ class TestTopologicalSorter:
 
     def test_self_loop(self):
         """Test detection of self-loop (node pointing to itself)."""
-        nodes = [
-            {"id": "n1"},
-            {"id": "n2"}
-        ]
-        edges = [
-            {"source": "n1", "target": "n2"},
-            {"source": "n2", "target": "n2"}
-        ]
+        nodes = [{"id": "n1"}, {"id": "n2"}]
+        edges = [{"source": "n1", "target": "n2"}, {"source": "n2", "target": "n2"}]
 
         sorter = TopologicalSorter(nodes, edges)
 
@@ -150,16 +120,8 @@ class TestTopologicalSorter:
 
     def test_multiple_entry_points(self):
         """Test graph with multiple nodes having no incoming edges."""
-        nodes = [
-            {"id": "n1"},
-            {"id": "n2"},
-            {"id": "n3"},
-            {"id": "n4"}
-        ]
-        edges = [
-            {"source": "n1", "target": "n3"},
-            {"source": "n2", "target": "n4"}
-        ]
+        nodes = [{"id": "n1"}, {"id": "n2"}, {"id": "n3"}, {"id": "n4"}]
+        edges = [{"source": "n1", "target": "n3"}, {"source": "n2", "target": "n4"}]
 
         sorter = TopologicalSorter(nodes, edges)
         result = sorter.sort()
@@ -181,10 +143,7 @@ class TestGetUpstreamNodes:
 
     def test_multiple_upstream(self):
         """Test node with multiple upstream connections."""
-        edges = [
-            {"source": "n1", "target": "n3"},
-            {"source": "n2", "target": "n3"}
-        ]
+        edges = [{"source": "n1", "target": "n3"}, {"source": "n2", "target": "n3"}]
         result = get_upstream_nodes("n3", edges)
         assert set(result) == {"n1", "n2"}
 
@@ -211,10 +170,7 @@ class TestGetDownstreamNodes:
 
     def test_multiple_downstream(self):
         """Test node with multiple downstream connections."""
-        edges = [
-            {"source": "n1", "target": "n2"},
-            {"source": "n1", "target": "n3"}
-        ]
+        edges = [{"source": "n1", "target": "n2"}, {"source": "n1", "target": "n3"}]
         result = get_downstream_nodes("n1", edges)
         assert set(result) == {"n2", "n3"}
 
@@ -236,7 +192,12 @@ class TestGetNodeInputs:
     def test_single_input(self):
         """Test node with single input."""
         edges = [
-            {"source": "n1", "sourceHandle": "out", "target": "n2", "targetHandle": "in"}
+            {
+                "source": "n1",
+                "sourceHandle": "out",
+                "target": "n2",
+                "targetHandle": "in",
+            }
         ]
         result = get_node_inputs("n2", edges)
         assert result == {"in": ("n1", "out")}
@@ -244,28 +205,31 @@ class TestGetNodeInputs:
     def test_multiple_inputs(self):
         """Test node with multiple inputs."""
         edges = [
-            {"source": "n1", "sourceHandle": "out", "target": "n3", "targetHandle": "in1"},
-            {"source": "n2", "sourceHandle": "result", "target": "n3", "targetHandle": "in2"}
+            {
+                "source": "n1",
+                "sourceHandle": "out",
+                "target": "n3",
+                "targetHandle": "in1",
+            },
+            {
+                "source": "n2",
+                "sourceHandle": "result",
+                "target": "n3",
+                "targetHandle": "in2",
+            },
         ]
         result = get_node_inputs("n3", edges)
-        assert result == {
-            "in1": ("n1", "out"),
-            "in2": ("n2", "result")
-        }
+        assert result == {"in1": ("n1", "out"), "in2": ("n2", "result")}
 
     def test_default_handles(self):
         """Test that default handles are used when not specified."""
-        edges = [
-            {"source": "n1", "target": "n2"}
-        ]
+        edges = [{"source": "n1", "target": "n2"}]
         result = get_node_inputs("n2", edges)
         assert result == {"in": ("n1", "out")}
 
     def test_no_inputs(self):
         """Test node with no inputs."""
-        edges = [
-            {"source": "n1", "target": "n2"}
-        ]
+        edges = [{"source": "n1", "target": "n2"}]
         result = get_node_inputs("n1", edges)
         assert result == {}
 
@@ -276,7 +240,12 @@ class TestGetNodeOutputs:
     def test_single_output(self):
         """Test node with single output."""
         edges = [
-            {"source": "n1", "sourceHandle": "out", "target": "n2", "targetHandle": "in"}
+            {
+                "source": "n1",
+                "sourceHandle": "out",
+                "target": "n2",
+                "targetHandle": "in",
+            }
         ]
         result = get_node_outputs("n1", edges)
         assert result == {"out": [("n2", "in")]}
@@ -284,8 +253,18 @@ class TestGetNodeOutputs:
     def test_multiple_outputs_same_handle(self):
         """Test node with multiple connections from same handle."""
         edges = [
-            {"source": "n1", "sourceHandle": "out", "target": "n2", "targetHandle": "in"},
-            {"source": "n1", "sourceHandle": "out", "target": "n3", "targetHandle": "data"}
+            {
+                "source": "n1",
+                "sourceHandle": "out",
+                "target": "n2",
+                "targetHandle": "in",
+            },
+            {
+                "source": "n1",
+                "sourceHandle": "out",
+                "target": "n3",
+                "targetHandle": "data",
+            },
         ]
         result = get_node_outputs("n1", edges)
         assert "out" in result
@@ -294,20 +273,25 @@ class TestGetNodeOutputs:
     def test_multiple_handles(self):
         """Test node with multiple output handles."""
         edges = [
-            {"source": "n1", "sourceHandle": "true", "target": "n2", "targetHandle": "in"},
-            {"source": "n1", "sourceHandle": "false", "target": "n3", "targetHandle": "in"}
+            {
+                "source": "n1",
+                "sourceHandle": "true",
+                "target": "n2",
+                "targetHandle": "in",
+            },
+            {
+                "source": "n1",
+                "sourceHandle": "false",
+                "target": "n3",
+                "targetHandle": "in",
+            },
         ]
         result = get_node_outputs("n1", edges)
-        assert result == {
-            "true": [("n2", "in")],
-            "false": [("n3", "in")]
-        }
+        assert result == {"true": [("n2", "in")], "false": [("n3", "in")]}
 
     def test_no_outputs(self):
         """Test node with no outputs."""
-        edges = [
-            {"source": "n1", "target": "n2"}
-        ]
+        edges = [{"source": "n1", "target": "n2"}]
         result = get_node_outputs("n2", edges)
         assert result == {}
 
@@ -319,7 +303,7 @@ class TestFindTriggerNodes:
         """Test finding single trigger node."""
         nodes = [
             {"id": "n1", "category": "triggers"},
-            {"id": "n2", "category": "actions"}
+            {"id": "n2", "category": "actions"},
         ]
         result = find_trigger_nodes(nodes)
         assert result == ["n1"]
@@ -329,17 +313,14 @@ class TestFindTriggerNodes:
         nodes = [
             {"id": "n1", "category": "triggers"},
             {"id": "n2", "category": "actions"},
-            {"id": "n3", "category": "triggers"}
+            {"id": "n3", "category": "triggers"},
         ]
         result = find_trigger_nodes(nodes)
         assert set(result) == {"n1", "n3"}
 
     def test_no_triggers(self):
         """Test when no trigger nodes exist."""
-        nodes = [
-            {"id": "n1", "category": "actions"},
-            {"id": "n2", "category": "logic"}
-        ]
+        nodes = [{"id": "n1", "category": "actions"}, {"id": "n2", "category": "logic"}]
         result = find_trigger_nodes(nodes)
         assert result == []
 
@@ -356,20 +337,15 @@ class TestValidateGraph:
         """Test validation of a valid graph."""
         nodes = [
             {"id": "n1", "category": "triggers"},
-            {"id": "n2", "category": "actions"}
+            {"id": "n2", "category": "actions"},
         ]
-        edges = [
-            {"source": "n1", "target": "n2"}
-        ]
+        edges = [{"source": "n1", "target": "n2"}]
         errors = validate_graph(nodes, edges)
         assert errors == []
 
     def test_missing_node_id(self):
         """Test detection of missing node ID."""
-        nodes = [
-            {"category": "triggers"},
-            {"id": "n2"}
-        ]
+        nodes = [{"category": "triggers"}, {"id": "n2"}]
         edges = []
         errors = validate_graph(nodes, edges)
         assert len(errors) > 0
@@ -377,11 +353,7 @@ class TestValidateGraph:
 
     def test_duplicate_node_ids(self):
         """Test detection of duplicate node IDs."""
-        nodes = [
-            {"id": "n1"},
-            {"id": "n1"},
-            {"id": "n2"}
-        ]
+        nodes = [{"id": "n1"}, {"id": "n1"}, {"id": "n2"}]
         edges = []
         errors = validate_graph(nodes, edges)
         assert len(errors) > 0
@@ -389,53 +361,32 @@ class TestValidateGraph:
 
     def test_invalid_edge_source(self):
         """Test detection of edge with non-existent source."""
-        nodes = [
-            {"id": "n1"},
-            {"id": "n2"}
-        ]
-        edges = [
-            {"source": "n99", "target": "n2"}
-        ]
+        nodes = [{"id": "n1"}, {"id": "n2"}]
+        edges = [{"source": "n99", "target": "n2"}]
         errors = validate_graph(nodes, edges)
         assert len(errors) > 0
         assert any("source node not found" in e for e in errors)
 
     def test_invalid_edge_target(self):
         """Test detection of edge with non-existent target."""
-        nodes = [
-            {"id": "n1"},
-            {"id": "n2"}
-        ]
-        edges = [
-            {"source": "n1", "target": "n99"}
-        ]
+        nodes = [{"id": "n1"}, {"id": "n2"}]
+        edges = [{"source": "n1", "target": "n99"}]
         errors = validate_graph(nodes, edges)
         assert len(errors) > 0
         assert any("target node not found" in e for e in errors)
 
     def test_orphan_node(self):
         """Test detection of orphan nodes."""
-        nodes = [
-            {"id": "n1"},
-            {"id": "n2"},
-            {"id": "n3"}
-        ]
-        edges = [
-            {"source": "n1", "target": "n2"}
-        ]
+        nodes = [{"id": "n1"}, {"id": "n2"}, {"id": "n3"}]
+        edges = [{"source": "n1", "target": "n2"}]
         errors = validate_graph(nodes, edges)
         assert len(errors) > 0
         assert any("Orphan node" in e and "n3" in e for e in errors)
 
     def test_orphan_node_trigger_excluded(self):
         """Test that trigger nodes are not reported as orphans."""
-        nodes = [
-            {"id": "n1", "category": "triggers"},
-            {"id": "n2"}
-        ]
-        edges = [
-            {"source": "n1", "target": "n2"}
-        ]
+        nodes = [{"id": "n1", "category": "triggers"}, {"id": "n2"}]
+        edges = [{"source": "n1", "target": "n2"}]
         errors = validate_graph(nodes, edges)
         # n1 is a trigger with outgoing edge, should be valid
         # n2 has incoming edge, should be valid
@@ -443,15 +394,11 @@ class TestValidateGraph:
 
     def test_cycle_detection_in_validation(self):
         """Test that cycles are detected during validation."""
-        nodes = [
-            {"id": "n1"},
-            {"id": "n2"},
-            {"id": "n3"}
-        ]
+        nodes = [{"id": "n1"}, {"id": "n2"}, {"id": "n3"}]
         edges = [
             {"source": "n1", "target": "n2"},
             {"source": "n2", "target": "n3"},
-            {"source": "n3", "target": "n1"}
+            {"source": "n3", "target": "n1"},
         ]
         errors = validate_graph(nodes, edges)
         assert len(errors) > 0
@@ -463,29 +410,15 @@ class TestGetExecutionPaths:
 
     def test_single_path(self):
         """Test finding single linear path."""
-        nodes = [
-            {"id": "n1"},
-            {"id": "n2"},
-            {"id": "n3"}
-        ]
-        edges = [
-            {"source": "n1", "target": "n2"},
-            {"source": "n2", "target": "n3"}
-        ]
+        nodes = [{"id": "n1"}, {"id": "n2"}, {"id": "n3"}]
+        edges = [{"source": "n1", "target": "n2"}, {"source": "n2", "target": "n3"}]
         paths = get_execution_paths(nodes, edges, "n1")
         assert paths == [["n1", "n2", "n3"]]
 
     def test_multiple_paths(self):
         """Test finding multiple paths from branch."""
-        nodes = [
-            {"id": "n1"},
-            {"id": "n2"},
-            {"id": "n3"}
-        ]
-        edges = [
-            {"source": "n1", "target": "n2"},
-            {"source": "n1", "target": "n3"}
-        ]
+        nodes = [{"id": "n1"}, {"id": "n2"}, {"id": "n3"}]
+        edges = [{"source": "n1", "target": "n2"}, {"source": "n1", "target": "n3"}]
         paths = get_execution_paths(nodes, edges, "n1")
         assert len(paths) == 2
         path_sets = [set(p) for p in paths]
@@ -494,17 +427,12 @@ class TestGetExecutionPaths:
 
     def test_diamond_paths(self):
         """Test paths in diamond-shaped graph."""
-        nodes = [
-            {"id": "n1"},
-            {"id": "n2"},
-            {"id": "n3"},
-            {"id": "n4"}
-        ]
+        nodes = [{"id": "n1"}, {"id": "n2"}, {"id": "n3"}, {"id": "n4"}]
         edges = [
             {"source": "n1", "target": "n2"},
             {"source": "n1", "target": "n3"},
             {"source": "n2", "target": "n4"},
-            {"source": "n3", "target": "n4"}
+            {"source": "n3", "target": "n4"},
         ]
         paths = get_execution_paths(nodes, edges, "n1")
         assert len(paths) == 2
@@ -515,13 +443,8 @@ class TestGetExecutionPaths:
 
     def test_leaf_node_path(self):
         """Test path from leaf node (no outgoing edges)."""
-        nodes = [
-            {"id": "n1"},
-            {"id": "n2"}
-        ]
-        edges = [
-            {"source": "n1", "target": "n2"}
-        ]
+        nodes = [{"id": "n1"}, {"id": "n2"}]
+        edges = [{"source": "n1", "target": "n2"}]
         paths = get_execution_paths(nodes, edges, "n2")
         assert paths == [["n2"]]
 
@@ -545,63 +468,38 @@ class TestGetGraphStatistics:
 
     def test_basic_stats(self):
         """Test basic statistics calculation."""
-        nodes = [
-            {"id": "n1", "category": "triggers"},
-            {"id": "n2"},
-            {"id": "n3"}
-        ]
-        edges = [
-            {"source": "n1", "target": "n2"},
-            {"source": "n2", "target": "n3"}
-        ]
+        nodes = [{"id": "n1", "category": "triggers"}, {"id": "n2"}, {"id": "n3"}]
+        edges = [{"source": "n1", "target": "n2"}, {"source": "n2", "target": "n3"}]
         stats = get_graph_statistics(nodes, edges)
 
         assert stats["node_count"] == 3
         assert stats["edge_count"] == 2
         assert stats["trigger_count"] == 1
-        assert stats["avg_edges_per_node"] == pytest.approx(2/3)
+        assert stats["avg_edges_per_node"] == pytest.approx(2 / 3)
         assert stats["has_cycles"] is False
 
     def test_max_depth_calculation(self):
         """Test maximum depth calculation."""
-        nodes = [
-            {"id": "n1"},
-            {"id": "n2"},
-            {"id": "n3"},
-            {"id": "n4"}
-        ]
+        nodes = [{"id": "n1"}, {"id": "n2"}, {"id": "n3"}, {"id": "n4"}]
         edges = [
             {"source": "n1", "target": "n2"},
             {"source": "n2", "target": "n3"},
-            {"source": "n3", "target": "n4"}
+            {"source": "n3", "target": "n4"},
         ]
         stats = get_graph_statistics(nodes, edges)
         assert stats["max_depth"] == 4
 
     def test_cycle_detection_in_stats(self):
         """Test that cycles are detected in statistics."""
-        nodes = [
-            {"id": "n1"},
-            {"id": "n2"}
-        ]
-        edges = [
-            {"source": "n1", "target": "n2"},
-            {"source": "n2", "target": "n1"}
-        ]
+        nodes = [{"id": "n1"}, {"id": "n2"}]
+        edges = [{"source": "n1", "target": "n2"}, {"source": "n2", "target": "n1"}]
         stats = get_graph_statistics(nodes, edges)
         assert stats["has_cycles"] is True
 
     def test_orphan_count(self):
         """Test orphan node counting."""
-        nodes = [
-            {"id": "n1"},
-            {"id": "n2"},
-            {"id": "n3"},
-            {"id": "n4"}
-        ]
-        edges = [
-            {"source": "n1", "target": "n2"}
-        ]
+        nodes = [{"id": "n1"}, {"id": "n2"}, {"id": "n3"}, {"id": "n4"}]
+        edges = [{"source": "n1", "target": "n2"}]
         stats = get_graph_statistics(nodes, edges)
         # n3 and n4 are orphans
         assert stats["orphan_count"] == 2

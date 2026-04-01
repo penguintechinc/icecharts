@@ -66,8 +66,17 @@ class TestExportServiceConstants:
     def test_valid_page_sizes(self):
         """Test VALID_PAGE_SIZES set contains expected page sizes."""
         expected = {
-            "A0", "A1", "A2", "A3", "A4", "A5", "A6",
-            "Letter", "Legal", "Tabloid", "Ledger"
+            "A0",
+            "A1",
+            "A2",
+            "A3",
+            "A4",
+            "A5",
+            "A6",
+            "Letter",
+            "Legal",
+            "Tabloid",
+            "Ledger",
         }
         assert ExportService.VALID_PAGE_SIZES == expected
 
@@ -91,7 +100,7 @@ class TestExportServicePNG:
         assert isinstance(result, bytes)
         assert len(result) > 0
         # PNG magic bytes
-        assert result[:8] == b'\x89PNG\r\n\x1a\n'
+        assert result[:8] == b"\x89PNG\r\n\x1a\n"
 
     def test_png_export_from_dict_no_background(self):
         """Test PNG export from dict with transparent background."""
@@ -105,7 +114,7 @@ class TestExportServicePNG:
         )
         assert isinstance(result, bytes)
         assert len(result) > 0
-        assert result[:8] == b'\x89PNG\r\n\x1a\n'
+        assert result[:8] == b"\x89PNG\r\n\x1a\n"
 
     def test_png_export_from_dict_with_elements(self):
         """Test PNG export from dict containing drawable elements."""
@@ -134,11 +143,11 @@ class TestExportServicePNG:
         svg_content = (
             '<svg xmlns="http://www.w3.org/2000/svg" width="100" height="100">'
             '<rect x="10" y="10" width="50" height="50" fill="red"/>'
-            '</svg>'
+            "</svg>"
         )
         with patch(
-            'app.services.export_service.svg2png',
-            return_value=b'\x89PNG\r\n\x1a\n' + b'MOCK_PNG_DATA'
+            "app.services.export_service.svg2png",
+            return_value=b"\x89PNG\r\n\x1a\n" + b"MOCK_PNG_DATA",
         ):
             result = ExportService.export_to_png(svg_content, width=100, height=100)
             assert isinstance(result, bytes)
@@ -199,7 +208,7 @@ class TestExportServiceJPG:
         assert isinstance(result, bytes)
         assert len(result) > 0
         # JPEG magic bytes
-        assert result[:2] == b'\xff\xd8'
+        assert result[:2] == b"\xff\xd8"
 
     def test_jpg_export_from_dict_with_elements(self):
         """Test JPG export from dict with drawable elements."""
@@ -227,11 +236,11 @@ class TestExportServiceJPG:
         svg_content = (
             '<svg xmlns="http://www.w3.org/2000/svg" width="100" height="100">'
             '<circle cx="50" cy="50" r="40" fill="green"/>'
-            '</svg>'
+            "</svg>"
         )
         with patch(
-            'app.services.export_service.svg2png',
-            return_value=b'\x89PNG\r\n\x1a\n' + b'MOCK_PNG_DATA'
+            "app.services.export_service.svg2png",
+            return_value=b"\x89PNG\r\n\x1a\n" + b"MOCK_PNG_DATA",
         ):
             result = ExportService.export_to_jpg(svg_content, width=100, height=100)
             assert isinstance(result, bytes)
@@ -282,7 +291,7 @@ class TestExportServiceSVG:
         svg_content = (
             '<svg xmlns="http://www.w3.org/2000/svg" width="100" height="100">'
             '<rect x="0" y="0" width="100" height="100" fill="blue"/>'
-            '</svg>'
+            "</svg>"
         )
         result = ExportService.export_to_svg(svg_content)
         assert isinstance(result, str)
@@ -323,8 +332,8 @@ class TestExportServiceSVG:
         assert isinstance(result, str)
         assert "<svg" in result
         # Should not have background rect when include_background is False
-        lines = result.split('\n')
-        rects = [l for l in lines if '<rect' in l and 'width="100"' in l]
+        lines = result.split("\n")
+        rects = [l for l in lines if "<rect" in l and 'width="100"' in l]
         assert len(rects) == 0
 
     def test_svg_export_from_dict_with_elements(self):
@@ -369,27 +378,27 @@ class TestExportServicePDF:
     def test_pdf_export_from_dict_a4(self):
         """Test PDF export from dict with A4 page size."""
         drawing_data = {"width": 200, "height": 200, "elements": []}
-        with patch('app.services.export_service.HTML') as mock_html:
+        with patch("app.services.export_service.HTML") as mock_html:
             mock_html_instance = MagicMock()
             mock_html.return_value = mock_html_instance
             mock_html_instance.write_pdf = MagicMock(
-                side_effect=lambda f: f.write(b'%PDF-1.4MOCKPDF')
+                side_effect=lambda f: f.write(b"%PDF-1.4MOCKPDF")
             )
             result = ExportService.export_to_pdf(
                 drawing_data, page_size="A4", include_background=True
             )
             assert isinstance(result, bytes)
-            assert b'PDF' in result
+            assert b"PDF" in result
             mock_html.assert_called_once()
 
     def test_pdf_export_from_dict_letter(self):
         """Test PDF export with Letter page size."""
         drawing_data = {"width": 200, "height": 200, "elements": []}
-        with patch('app.services.export_service.HTML') as mock_html:
+        with patch("app.services.export_service.HTML") as mock_html:
             mock_html_instance = MagicMock()
             mock_html.return_value = mock_html_instance
             mock_html_instance.write_pdf = MagicMock(
-                side_effect=lambda f: f.write(b'%PDF-1.4LETTER')
+                side_effect=lambda f: f.write(b"%PDF-1.4LETTER")
             )
             result = ExportService.export_to_pdf(drawing_data, page_size="Letter")
             assert isinstance(result, bytes)
@@ -399,13 +408,13 @@ class TestExportServicePDF:
         svg_content = (
             '<svg xmlns="http://www.w3.org/2000/svg" width="100" height="100">'
             '<rect x="0" y="0" width="100" height="100" fill="purple"/>'
-            '</svg>'
+            "</svg>"
         )
-        with patch('app.services.export_service.HTML') as mock_html:
+        with patch("app.services.export_service.HTML") as mock_html:
             mock_html_instance = MagicMock()
             mock_html.return_value = mock_html_instance
             mock_html_instance.write_pdf = MagicMock(
-                side_effect=lambda f: f.write(b'%PDF-1.4MOCK')
+                side_effect=lambda f: f.write(b"%PDF-1.4MOCK")
             )
             result = ExportService.export_to_pdf(svg_content, page_size="A4")
             assert isinstance(result, bytes)
@@ -419,11 +428,11 @@ class TestExportServicePDF:
     def test_pdf_export_all_valid_page_sizes(self):
         """Test PDF export works with all valid page sizes."""
         drawing_data = {"width": 100, "height": 100, "elements": []}
-        with patch('app.services.export_service.HTML') as mock_html:
+        with patch("app.services.export_service.HTML") as mock_html:
             mock_html_instance = MagicMock()
             mock_html.return_value = mock_html_instance
             mock_html_instance.write_pdf = MagicMock(
-                side_effect=lambda f: f.write(b'%PDF')
+                side_effect=lambda f: f.write(b"%PDF")
             )
             for page_size in ExportService.VALID_PAGE_SIZES:
                 result = ExportService.export_to_pdf(drawing_data, page_size=page_size)
@@ -431,23 +440,21 @@ class TestExportServicePDF:
 
     def test_pdf_export_invalid_data_type_raises(self):
         """Test PDF export with invalid data type raises exception."""
-        with patch('app.services.export_service.HTML'):
+        with patch("app.services.export_service.HTML"):
             with pytest.raises(Exception, match="Failed to export to PDF"):
                 ExportService.export_to_pdf(12345, page_size="A4")
 
     def test_pdf_export_include_background_parameter(self):
         """Test PDF export respects include_background parameter."""
         drawing_data = {"width": 100, "height": 100, "elements": []}
-        with patch('app.services.export_service.HTML') as mock_html:
+        with patch("app.services.export_service.HTML") as mock_html:
             mock_html_instance = MagicMock()
             mock_html.return_value = mock_html_instance
             mock_html_instance.write_pdf = MagicMock(
-                side_effect=lambda f: f.write(b'%PDF')
+                side_effect=lambda f: f.write(b"%PDF")
             )
             # Both should succeed, actual background handling is in HTML conversion
-            result1 = ExportService.export_to_pdf(
-                drawing_data, include_background=True
-            )
+            result1 = ExportService.export_to_pdf(drawing_data, include_background=True)
             result2 = ExportService.export_to_pdf(
                 drawing_data, include_background=False
             )
@@ -463,9 +470,7 @@ class TestExportServiceJSON:
         drawing_data = {
             "width": 100,
             "height": 100,
-            "elements": [
-                {"type": "rect", "x": 0, "y": 0, "width": 50, "height": 50}
-            ],
+            "elements": [{"type": "rect", "x": 0, "y": 0, "width": 50, "height": 50}],
         }
         result = ExportService.export_to_json(drawing_data)
         assert isinstance(result, str)
@@ -522,7 +527,9 @@ class TestExportServiceJSON:
 
     def test_json_export_invalid_data_type_raises(self):
         """Test JSON export with invalid data type raises ValueError."""
-        with pytest.raises(ValueError, match="Drawing data must be dict or JSON string"):
+        with pytest.raises(
+            ValueError, match="Drawing data must be dict or JSON string"
+        ):
             ExportService.export_to_json(12345)
 
 
@@ -535,7 +542,7 @@ class TestExportServiceDispatch:
         opts = ExportOptions(format="png", width=100, height=100)
         result = ExportService.export(opts, drawing_data)
         assert isinstance(result, bytes)
-        assert result[:8] == b'\x89PNG\r\n\x1a\n'
+        assert result[:8] == b"\x89PNG\r\n\x1a\n"
 
     def test_export_dispatches_to_jpg(self):
         """Test export() dispatches JPG format correctly."""
@@ -543,7 +550,7 @@ class TestExportServiceDispatch:
         opts = ExportOptions(format="jpg", width=100, height=100)
         result = ExportService.export(opts, drawing_data)
         assert isinstance(result, bytes)
-        assert result[:2] == b'\xff\xd8'
+        assert result[:2] == b"\xff\xd8"
 
     def test_export_dispatches_to_svg(self):
         """Test export() dispatches SVG format correctly."""
@@ -566,11 +573,11 @@ class TestExportServiceDispatch:
         """Test export() dispatches PDF format correctly."""
         drawing_data = {"width": 100, "height": 100, "elements": []}
         opts = ExportOptions(format="pdf", page_size="A4")
-        with patch('app.services.export_service.HTML') as mock_html:
+        with patch("app.services.export_service.HTML") as mock_html:
             mock_html_instance = MagicMock()
             mock_html.return_value = mock_html_instance
             mock_html_instance.write_pdf = MagicMock(
-                side_effect=lambda f: f.write(b'%PDF')
+                side_effect=lambda f: f.write(b"%PDF")
             )
             result = ExportService.export(opts, drawing_data)
             assert isinstance(result, bytes)
@@ -601,11 +608,11 @@ class TestExportServiceDispatch:
         """Test export() uses page_size from options."""
         drawing_data = {"width": 100, "height": 100, "elements": []}
         opts = ExportOptions(format="pdf", page_size="Letter")
-        with patch('app.services.export_service.HTML') as mock_html:
+        with patch("app.services.export_service.HTML") as mock_html:
             mock_html_instance = MagicMock()
             mock_html.return_value = mock_html_instance
             mock_html_instance.write_pdf = MagicMock(
-                side_effect=lambda f: f.write(b'%PDF')
+                side_effect=lambda f: f.write(b"%PDF")
             )
             result = ExportService.export(opts, drawing_data)
             assert isinstance(result, bytes)

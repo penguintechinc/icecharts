@@ -1,6 +1,6 @@
 """Tests for Playbooks API endpoints."""
-import pytest
 
+import pytest
 
 NONEXISTENT_ID = "999999"
 

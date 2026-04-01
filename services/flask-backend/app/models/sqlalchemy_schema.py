@@ -1124,7 +1124,7 @@ def initialize_database(db_uri: str):
         sqlalchemy_uri = "sqlite:///:memory:"
     elif db_uri.startswith("sqlite://") and not db_uri.startswith("sqlite:///"):
         # Convert PyDAL sqlite://filename to SQLAlchemy sqlite:///filename
-        sqlalchemy_uri = "sqlite:///" + db_uri[len("sqlite://"):]
+        sqlalchemy_uri = "sqlite:///" + db_uri[len("sqlite://") :]
 
     engine = create_engine(sqlalchemy_uri)
 

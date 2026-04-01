@@ -18,6 +18,7 @@ from dataclasses import dataclass
 @dataclass(slots=True, frozen=True)
 class GraphError(Exception):
     """Base exception for graph-related errors."""
+
     message: str
 
     def __str__(self) -> str:
@@ -27,6 +28,7 @@ class GraphError(Exception):
 @dataclass(slots=True, frozen=True)
 class CycleDetectedError(GraphError):
     """Raised when a cycle is detected in the graph."""
+
     cycle_nodes: Tuple[str, ...]
 
     def __str__(self) -> str:
@@ -82,7 +84,12 @@ class TopologicalSorter:
             source = edge.get("source")
             target = edge.get("target")
 
-            if source and target and source in self._node_ids and target in self._node_ids:
+            if (
+                source
+                and target
+                and source in self._node_ids
+                and target in self._node_ids
+            ):
                 adj_list[source].add(target)
 
         return dict(adj_list)
@@ -141,8 +148,7 @@ class TopologicalSorter:
             cycle = self._find_cycle(remaining)
 
             raise CycleDetectedError(
-                message="Cycle detected in playbook graph",
-                cycle_nodes=tuple(cycle)
+                message="Cycle detected in playbook graph", cycle_nodes=tuple(cycle)
             )
 
         return result
@@ -295,7 +301,9 @@ def get_node_inputs(node_id: str, edges: List[Dict]) -> Dict[str, Tuple[str, str
     return inputs
 
 
-def get_node_outputs(node_id: str, edges: List[Dict]) -> Dict[str, List[Tuple[str, str]]]:
+def get_node_outputs(
+    node_id: str, edges: List[Dict]
+) -> Dict[str, List[Tuple[str, str]]]:
     """
     Get output routing for a node.
 
@@ -464,9 +472,7 @@ def validate_graph(nodes: List[Dict], edges: List[Dict]) -> List[str]:
 
 
 def get_execution_paths(
-    nodes: List[Dict],
-    edges: List[Dict],
-    from_node: str
+    nodes: List[Dict], edges: List[Dict], from_node: str
 ) -> List[List[str]]:
     """
     Get all possible execution paths starting from a given node.
@@ -558,7 +564,7 @@ def get_graph_statistics(nodes: List[Dict], edges: List[Dict]) -> Dict[str, any]
         "avg_edges_per_node": 0.0,
         "max_depth": 0,
         "has_cycles": False,
-        "orphan_count": 0
+        "orphan_count": 0,
     }
 
     if not nodes:

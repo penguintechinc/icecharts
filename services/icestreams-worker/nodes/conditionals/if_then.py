@@ -176,9 +176,7 @@ class IfThenConditional(BaseNode):
         except Exception:
             return False
 
-    def _matches(
-        self, data: Any, conditions: List[Dict], logic: str
-    ) -> bool:
+    def _matches(self, data: Any, conditions: List[Dict], logic: str) -> bool:
         """
         Check if data matches all or any conditions based on logic.
 
@@ -200,9 +198,7 @@ class IfThenConditional(BaseNode):
         else:  # or
             return any(results)
 
-    async def execute(
-        self, context: NodeContext, inputs: Dict[str, Any]
-    ) -> NodeResult:
+    async def execute(self, context: NodeContext, inputs: Dict[str, Any]) -> NodeResult:
         """
         Execute the if-then conditional.
 

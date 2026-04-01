@@ -1,4 +1,5 @@
 """Tests for Admin License Management API endpoints."""
+
 import pytest
 
 

@@ -1,4 +1,5 @@
 """Tests for Admin Users API endpoints."""
+
 import pytest
 
 
@@ -163,9 +164,7 @@ class TestAdminActivateDeactivate:
         assert response.status_code == 401
 
     def test_activate_requires_admin(self, client, auth_headers):
-        response = client.post(
-            "/api/v1/admin/users/1/activate", headers=auth_headers
-        )
+        response = client.post("/api/v1/admin/users/1/activate", headers=auth_headers)
         assert response.status_code == 403
 
     def test_activate_with_admin(self, client, admin_auth_headers, test_user):
@@ -180,9 +179,7 @@ class TestAdminActivateDeactivate:
         assert response.status_code == 401
 
     def test_deactivate_requires_admin(self, client, auth_headers):
-        response = client.post(
-            "/api/v1/admin/users/1/deactivate", headers=auth_headers
-        )
+        response = client.post("/api/v1/admin/users/1/deactivate", headers=auth_headers)
         assert response.status_code == 403
 
     def test_deactivate_self_returns_400(self, client, admin_auth_headers, test_admin):
@@ -298,9 +295,7 @@ class TestAdminSystemEndpoints:
         assert response.status_code == 403
 
     def test_system_config_with_admin(self, client, admin_auth_headers):
-        response = client.get(
-            "/api/v1/admin/system/config", headers=admin_auth_headers
-        )
+        response = client.get("/api/v1/admin/system/config", headers=admin_auth_headers)
         assert response.status_code == 200
         data = response.get_json()
         assert "config" in data
@@ -334,7 +329,9 @@ class TestAdminStorage:
         )
         assert response.status_code == 403
 
-    def test_create_storage_invalid_provider_returns_400(self, client, admin_auth_headers):
+    def test_create_storage_invalid_provider_returns_400(
+        self, client, admin_auth_headers
+    ):
         response = client.post(
             "/api/v1/admin/storage",
             json={"provider": "dropbox"},

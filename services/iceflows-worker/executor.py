@@ -166,7 +166,9 @@ class PipelineExecutor:
                 }
 
                 test_results.append(test_result)
-                logger.info(f"Test {test_name} completed: passed={test_result['passed']}")
+                logger.info(
+                    f"Test {test_name} completed: passed={test_result['passed']}"
+                )
 
             # Check if all tests passed
             all_passed = all(result.get("passed", False) for result in test_results)
@@ -175,7 +177,9 @@ class PipelineExecutor:
             return all_passed
 
         except Exception as e:
-            logger.error(f"Error running tests for stage {stage_id}: {e}", exc_info=True)
+            logger.error(
+                f"Error running tests for stage {stage_id}: {e}", exc_info=True
+            )
             return False
 
     async def execute_git_merge(
@@ -266,9 +270,7 @@ class PipelineExecutor:
                 )
 
             # Check if all calls succeeded
-            all_succeeded = all(
-                result.get("success", False) for result in call_results
-            )
+            all_succeeded = all(result.get("success", False) for result in call_results)
             logger.info(f"External calls completed: all_succeeded={all_succeeded}")
 
             return all_succeeded

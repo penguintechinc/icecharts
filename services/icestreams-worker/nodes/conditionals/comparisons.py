@@ -62,9 +62,7 @@ class EqualsConditional(BaseNode):
             ),
         ]
 
-    async def execute(
-        self, context: NodeContext, inputs: Dict[str, Any]
-    ) -> NodeResult:
+    async def execute(self, context: NodeContext, inputs: Dict[str, Any]) -> NodeResult:
         """
         Execute the equals comparison.
 
@@ -145,9 +143,7 @@ class GreaterThanConditional(BaseNode):
             ),
         ]
 
-    async def execute(
-        self, context: NodeContext, inputs: Dict[str, Any]
-    ) -> NodeResult:
+    async def execute(self, context: NodeContext, inputs: Dict[str, Any]) -> NodeResult:
         """
         Execute the greater than comparison.
 
@@ -234,9 +230,7 @@ class LessThanConditional(BaseNode):
             ),
         ]
 
-    async def execute(
-        self, context: NodeContext, inputs: Dict[str, Any]
-    ) -> NodeResult:
+    async def execute(self, context: NodeContext, inputs: Dict[str, Any]) -> NodeResult:
         """
         Execute the less than comparison.
 
@@ -323,9 +317,7 @@ class ContainsConditional(BaseNode):
             ),
         ]
 
-    async def execute(
-        self, context: NodeContext, inputs: Dict[str, Any]
-    ) -> NodeResult:
+    async def execute(self, context: NodeContext, inputs: Dict[str, Any]) -> NodeResult:
         """
         Execute the contains comparison.
 
@@ -353,7 +345,11 @@ class ContainsConditional(BaseNode):
         try:
             # Support both string and array/list contains checks
             if isinstance(haystack, str):
-                contains = needle in haystack if isinstance(needle, str) else str(needle) in haystack
+                contains = (
+                    needle in haystack
+                    if isinstance(needle, str)
+                    else str(needle) in haystack
+                )
             elif isinstance(haystack, (list, tuple, set)):
                 contains = needle in haystack
             elif isinstance(haystack, dict):
@@ -366,7 +362,9 @@ class ContainsConditional(BaseNode):
                 execution_time_ms=(time.perf_counter() - start_time) * 1000,
             )
 
-        context.log_info(f"Contains: {needle!r} in {type(haystack).__name__} -> {contains}")
+        context.log_info(
+            f"Contains: {needle!r} in {type(haystack).__name__} -> {contains}"
+        )
 
         output_port = "true" if contains else "false"
         output_value = haystack if contains else None
@@ -420,9 +418,7 @@ class RegexConditional(BaseNode):
             ),
         ]
 
-    async def execute(
-        self, context: NodeContext, inputs: Dict[str, Any]
-    ) -> NodeResult:
+    async def execute(self, context: NodeContext, inputs: Dict[str, Any]) -> NodeResult:
         """
         Execute the regex match comparison.
 

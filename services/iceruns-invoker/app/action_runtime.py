@@ -35,11 +35,19 @@ class BaseRuntime(ABC):
         """
         pass
 
-    def execute(self, code_dir: str, entrypoint: str, handler: str,
-                input_data: Dict[str, Any], env_vars: Dict[str, str],
-                secrets: Dict[str, str], memory_limit_mb: int,
-                timeout_seconds: int, cpu_limit: float,
-                execution_id: str) -> Dict[str, Any]:
+    def execute(
+        self,
+        code_dir: str,
+        entrypoint: str,
+        handler: str,
+        input_data: Dict[str, Any],
+        env_vars: Dict[str, str],
+        secrets: Dict[str, str],
+        memory_limit_mb: int,
+        timeout_seconds: int,
+        cpu_limit: float,
+        execution_id: str,
+    ) -> Dict[str, Any]:
         """Execute function in Docker container.
 
         Args:
@@ -61,24 +69,24 @@ class BaseRuntime(ABC):
 
         # Merge env vars and secrets
         environment = {**env_vars, **secrets}
-        environment['ICERUN_INPUT'] = json.dumps(input_data)
-        environment['ICERUN_EXECUTION_ID'] = execution_id
+        environment["ICERUN_INPUT"] = json.dumps(input_data)
+        environment["ICERUN_EXECUTION_ID"] = execution_id
 
         # Create container with resource limits
         try:
             container = self.docker_client.containers.run(
                 image=self.image_name,
                 command=self.prepare_entrypoint(handler),
-                volumes={code_dir: {'bind': '/function', 'mode': 'ro'}},
-                working_dir='/function',
+                volumes={code_dir: {"bind": "/function", "mode": "ro"}},
+                working_dir="/function",
                 environment=environment,
                 mem_limit=f"{memory_limit_mb}m",
                 memswap_limit=f"{memory_limit_mb}m",  # No swap
                 cpu_quota=int(cpu_limit * 100000),  # CPU shares
-                network_mode='none',  # No network access by default
-                security_opt=['no-new-privileges'],
+                network_mode="none",  # No network access by default
+                security_opt=["no-new-privileges"],
                 read_only=True,  # Read-only filesystem
-                tmpfs={'/tmp': 'size=100M,mode=1777'},  # Writable /tmp
+                tmpfs={"/tmp": "size=100M,mode=1777"},  # Writable /tmp
                 detach=True,
                 remove=False,  # Keep for inspection
             )
@@ -86,16 +94,24 @@ class BaseRuntime(ABC):
             # Wait for completion with timeout
             try:
                 result = container.wait(timeout=timeout_seconds)
-                exit_code = result['StatusCode']
+                exit_code = result["StatusCode"]
 
                 # Collect logs
-                stdout = container.logs(stdout=True, stderr=False).decode('utf-8', errors='replace')
-                stderr = container.logs(stdout=False, stderr=True).decode('utf-8', errors='replace')
+                stdout = container.logs(stdout=True, stderr=False).decode(
+                    "utf-8", errors="replace"
+                )
+                stderr = container.logs(stdout=False, stderr=True).decode(
+                    "utf-8", errors="replace"
+                )
 
                 # Get resource usage
                 stats = container.stats(stream=False)
-                memory_used_mb = stats['memory_stats'].get('max_usage', 0) // (1024 * 1024)
-                cpu_time_ms = stats['cpu_stats']['cpu_usage']['total_usage'] // 1_000_000
+                memory_used_mb = stats["memory_stats"].get("max_usage", 0) // (
+                    1024 * 1024
+                )
+                cpu_time_ms = (
+                    stats["cpu_stats"]["cpu_usage"]["total_usage"] // 1_000_000
+                )
 
                 # Parse output JSON from stdout
                 output = self._parse_output(stdout)
@@ -103,30 +119,36 @@ class BaseRuntime(ABC):
                 duration_ms = int((time.time() - start_time) * 1000)
 
                 return {
-                    'exit_code': exit_code,
-                    'stdout': stdout,
-                    'stderr': stderr,
-                    'output': output,
-                    'duration_ms': duration_ms,
-                    'memory_used_mb': memory_used_mb,
-                    'cpu_time_ms': cpu_time_ms,
-                    'container_id': container.id,
+                    "exit_code": exit_code,
+                    "stdout": stdout,
+                    "stderr": stderr,
+                    "output": output,
+                    "duration_ms": duration_ms,
+                    "memory_used_mb": memory_used_mb,
+                    "cpu_time_ms": cpu_time_ms,
+                    "container_id": container.id,
                 }
 
             except Exception as e:
                 # Timeout or error
                 container.stop(timeout=5)
-                raise TimeoutError(f"Execution timed out after {timeout_seconds}s") from e
+                raise TimeoutError(
+                    f"Execution timed out after {timeout_seconds}s"
+                ) from e
 
         except docker.errors.ContainerError as e:
             # Container exited with error
             return {
-                'exit_code': e.exit_status,
-                'stdout': e.stdout.decode('utf-8', errors='replace') if e.stdout else '',
-                'stderr': e.stderr.decode('utf-8', errors='replace') if e.stderr else '',
-                'output': None,
-                'error': str(e),
-                'duration_ms': int((time.time() - start_time) * 1000),
+                "exit_code": e.exit_status,
+                "stdout": (
+                    e.stdout.decode("utf-8", errors="replace") if e.stdout else ""
+                ),
+                "stderr": (
+                    e.stderr.decode("utf-8", errors="replace") if e.stderr else ""
+                ),
+                "output": None,
+                "error": str(e),
+                "duration_ms": int((time.time() - start_time) * 1000),
             }
         finally:
             try:
@@ -143,10 +165,10 @@ class BaseRuntime(ABC):
         Returns:
             Parsed JSON output or None
         """
-        for line in reversed(stdout.split('\n')):
-            if line.startswith('__ICERUN_OUTPUT__:'):
+        for line in reversed(stdout.split("\n")):
+            if line.startswith("__ICERUN_OUTPUT__:"):
                 try:
-                    return json.loads(line.split(':', 1)[1])
+                    return json.loads(line.split(":", 1)[1])
                 except json.JSONDecodeError:
                     return None
         return None
@@ -181,6 +203,8 @@ class RuntimeManager:
             ValueError: If runtime not supported
         """
         if runtime_name not in cls._RUNTIMES:
-            raise ValueError(f"Unsupported runtime: {runtime_name}. "
-                           f"Available: {', '.join(cls._RUNTIMES.keys())}")
+            raise ValueError(
+                f"Unsupported runtime: {runtime_name}. "
+                f"Available: {', '.join(cls._RUNTIMES.keys())}"
+            )
         return cls._RUNTIMES[runtime_name]()

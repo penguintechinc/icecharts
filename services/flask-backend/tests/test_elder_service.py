@@ -293,9 +293,7 @@ class TestElderClientGetEntities:
         with patch("app.services.elder_service.httpx.AsyncClient") as mock_client:
             mock_async_client = AsyncMock()
             mock_client.return_value.__aenter__.return_value = mock_async_client
-            mock_async_client.get.side_effect = httpx.ConnectError(
-                "Connection failed"
-            )
+            mock_async_client.get.side_effect = httpx.ConnectError("Connection failed")
 
             with pytest.raises(httpx.HTTPError):
                 await client.get_entities(org_id=10)
@@ -419,9 +417,7 @@ class TestElderClientGetGraph:
                 {"id": 1, "name": "entity1"},
                 {"id": 2, "name": "entity2"},
             ],
-            "dependencies": [
-                {"id": 1, "source": 1, "target": 2}
-            ],
+            "dependencies": [{"id": 1, "source": 1, "target": 2}],
         }
 
         mock_response = MagicMock()
@@ -661,7 +657,9 @@ class TestCalculateLayoutPositions:
     def test_calculate_layout_positions_multiple_entities(self):
         """Test layout calculation distributes entities."""
         entities = [
-            ElderEntity(id=i, unique_id=100 + i, name=f"entity{i}", entity_type="compute")
+            ElderEntity(
+                id=i, unique_id=100 + i, name=f"entity{i}", entity_type="compute"
+            )
             for i in range(1, 10)
         ]
 
@@ -681,7 +679,9 @@ class TestCalculateLayoutPositions:
     def test_calculate_layout_positions_within_canvas_bounds(self):
         """Test that positions are within canvas bounds."""
         entities = [
-            ElderEntity(id=i, unique_id=100 + i, name=f"entity{i}", entity_type="compute")
+            ElderEntity(
+                id=i, unique_id=100 + i, name=f"entity{i}", entity_type="compute"
+            )
             for i in range(1, 10)
         ]
 

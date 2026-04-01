@@ -46,7 +46,6 @@ from connectors.executor import ConnectorActionExecutor, ConnectorExecutionError
 from connectors.registry import ConnectorRegistry
 from executor.node_registry import NodeRegistry
 
-
 # ---------------------------------------------------------------------------
 # Fixtures & helpers
 # ---------------------------------------------------------------------------
@@ -78,7 +77,9 @@ def _make_manifest(
         auth_methods=(
             AuthMethod(
                 type=auth_type,
-                header="X-API-Key" if auth_type == AuthType.API_KEY else "Authorization",
+                header=(
+                    "X-API-Key" if auth_type == AuthType.API_KEY else "Authorization"
+                ),
                 env_var="TEST_CRED",
             ),
         ),
@@ -159,7 +160,9 @@ class TestCallApiSuccess:
             mock_client.request = AsyncMock(return_value=mock_response)
             mock_get_client.return_value = mock_client
 
-            result = await connector.call_api("/api/action", method="POST", body={"x": 1})
+            result = await connector.call_api(
+                "/api/action", method="POST", body={"x": 1}
+            )
 
         assert result == expected
         mock_client.request.assert_called_once()
@@ -175,7 +178,9 @@ class TestCallApiSuccess:
         mock_response.raise_for_status = MagicMock()
         mock_response.json = MagicMock(return_value={})
 
-        with patch.object(connector, "_get_client", new_callable=AsyncMock) as mock_get_client:
+        with patch.object(
+            connector, "_get_client", new_callable=AsyncMock
+        ) as mock_get_client:
             mock_client = AsyncMock()
             mock_client.request = AsyncMock(return_value=mock_response)
             mock_get_client.return_value = mock_client
@@ -197,7 +202,9 @@ class TestCallApiSuccess:
         mock_response.raise_for_status = MagicMock()
         mock_response.json = MagicMock(return_value={})
 
-        with patch.object(connector, "_get_client", new_callable=AsyncMock) as mock_get_client:
+        with patch.object(
+            connector, "_get_client", new_callable=AsyncMock
+        ) as mock_get_client:
             mock_client = AsyncMock()
             mock_client.request = AsyncMock(return_value=mock_response)
             mock_get_client.return_value = mock_client
@@ -217,12 +224,16 @@ class TestCallApiSuccess:
         mock_response.raise_for_status = MagicMock()
         mock_response.json = MagicMock(return_value=[])
 
-        with patch.object(connector, "_get_client", new_callable=AsyncMock) as mock_get_client:
+        with patch.object(
+            connector, "_get_client", new_callable=AsyncMock
+        ) as mock_get_client:
             mock_client = AsyncMock()
             mock_client.request = AsyncMock(return_value=mock_response)
             mock_get_client.return_value = mock_client
 
-            await connector.call_api("/api/search", method="GET", params={"q": "test", "limit": 10})
+            await connector.call_api(
+                "/api/search", method="GET", params={"q": "test", "limit": 10}
+            )
 
         _, kwargs = mock_client.request.call_args
         assert kwargs.get("params") == {"q": "test", "limit": 10}
@@ -237,7 +248,9 @@ class TestCallApiSuccess:
         mock_response.raise_for_status = MagicMock()
         mock_response.json = MagicMock(return_value={"created": True})
 
-        with patch.object(connector, "_get_client", new_callable=AsyncMock) as mock_get_client:
+        with patch.object(
+            connector, "_get_client", new_callable=AsyncMock
+        ) as mock_get_client:
             mock_client = AsyncMock()
             mock_client.request = AsyncMock(return_value=mock_response)
             mock_get_client.return_value = mock_client
@@ -258,7 +271,9 @@ class TestCallApiSuccess:
         mock_response.raise_for_status = MagicMock()
         mock_response.json = MagicMock(return_value={})
 
-        with patch.object(connector, "_get_client", new_callable=AsyncMock) as mock_get_client:
+        with patch.object(
+            connector, "_get_client", new_callable=AsyncMock
+        ) as mock_get_client:
             mock_client = AsyncMock()
             mock_client.request = AsyncMock(return_value=mock_response)
             mock_get_client.return_value = mock_client
@@ -302,7 +317,9 @@ class TestCallApiRetries:
                 raise rate_limited_error
             return ok_response
 
-        with patch.object(connector, "_get_client", new_callable=AsyncMock) as mock_get_client:
+        with patch.object(
+            connector, "_get_client", new_callable=AsyncMock
+        ) as mock_get_client:
             mock_client = AsyncMock()
             mock_client.request = mock_request
             mock_get_client.return_value = mock_client
@@ -332,7 +349,9 @@ class TestCallApiRetries:
                 raise server_error
             return ok_response
 
-        with patch.object(connector, "_get_client", new_callable=AsyncMock) as mock_get_client:
+        with patch.object(
+            connector, "_get_client", new_callable=AsyncMock
+        ) as mock_get_client:
             mock_client = AsyncMock()
             mock_client.request = mock_request
             mock_get_client.return_value = mock_client
@@ -362,7 +381,9 @@ class TestCallApiRetries:
                 raise network_error
             return ok_response
 
-        with patch.object(connector, "_get_client", new_callable=AsyncMock) as mock_get_client:
+        with patch.object(
+            connector, "_get_client", new_callable=AsyncMock
+        ) as mock_get_client:
             mock_client = AsyncMock()
             mock_client.request = mock_request
             mock_get_client.return_value = mock_client
@@ -382,7 +403,9 @@ class TestCallApiRetries:
         async def always_rate_limited(*args, **kwargs):
             raise rate_limited_error
 
-        with patch.object(connector, "_get_client", new_callable=AsyncMock) as mock_get_client:
+        with patch.object(
+            connector, "_get_client", new_callable=AsyncMock
+        ) as mock_get_client:
             mock_client = AsyncMock()
             mock_client.request = always_rate_limited
             mock_get_client.return_value = mock_client
@@ -400,7 +423,9 @@ class TestCallApiRetries:
         async def always_server_error(*args, **kwargs):
             raise server_error
 
-        with patch.object(connector, "_get_client", new_callable=AsyncMock) as mock_get_client:
+        with patch.object(
+            connector, "_get_client", new_callable=AsyncMock
+        ) as mock_get_client:
             mock_client = AsyncMock()
             mock_client.request = always_server_error
             mock_get_client.return_value = mock_client
@@ -421,7 +446,9 @@ class TestCallApiRetries:
             call_count += 1
             raise not_found_error
 
-        with patch.object(connector, "_get_client", new_callable=AsyncMock) as mock_get_client:
+        with patch.object(
+            connector, "_get_client", new_callable=AsyncMock
+        ) as mock_get_client:
             mock_client = AsyncMock()
             mock_client.request = mock_request
             mock_get_client.return_value = mock_client
@@ -444,7 +471,9 @@ class TestCallApiRetries:
             call_count += 1
             raise auth_error
 
-        with patch.object(connector, "_get_client", new_callable=AsyncMock) as mock_get_client:
+        with patch.object(
+            connector, "_get_client", new_callable=AsyncMock
+        ) as mock_get_client:
             mock_client = AsyncMock()
             mock_client.request = mock_request
             mock_get_client.return_value = mock_client
@@ -603,7 +632,9 @@ class TestCreateConfigFromEnv:
             vendor="test",
             default_url="http://env-service:8080",
             auth_methods=(
-                AuthMethod(type=AuthType.API_KEY, header="X-API-Key", env_var="MY_API_KEY"),
+                AuthMethod(
+                    type=AuthType.API_KEY, header="X-API-Key", env_var="MY_API_KEY"
+                ),
             ),
         )
         ConnectorRegistry.register_manifest(manifest)
@@ -625,14 +656,18 @@ class TestCreateConfigFromEnv:
             vendor="test",
             default_url="http://no-auth:8080",
             auth_methods=(
-                AuthMethod(type=AuthType.API_KEY, header="X-API-Key", env_var="MISSING_KEY"),
+                AuthMethod(
+                    type=AuthType.API_KEY, header="X-API-Key", env_var="MISSING_KEY"
+                ),
             ),
         )
         ConnectorRegistry.register_manifest(manifest)
 
         with patch.dict(os.environ, {}, clear=True):
             # Remove the env var if present
-            env_without_key = {k: v for k, v in os.environ.items() if k != "MISSING_KEY"}
+            env_without_key = {
+                k: v for k, v in os.environ.items() if k != "MISSING_KEY"
+            }
             with patch.dict(os.environ, env_without_key, clear=True):
                 connector = ConnectorRegistry.get_instance("no_auth_conn", config=None)
 

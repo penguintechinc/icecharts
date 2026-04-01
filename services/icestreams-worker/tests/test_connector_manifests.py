@@ -54,7 +54,9 @@ PENGUINTECH_IDS = {
 DB_PREFIX = "db_"
 
 
-@pytest.fixture(params=MANIFEST_FILES, ids=lambda f: f.replace(".yaml", "").replace(".yml", ""))
+@pytest.fixture(
+    params=MANIFEST_FILES, ids=lambda f: f.replace(".yaml", "").replace(".yml", "")
+)
 def manifest(request):
     """Load each manifest YAML from the manifests directory."""
     return ConnectorManifest.from_yaml(os.path.join(MANIFESTS_DIR, request.param))
@@ -127,9 +129,9 @@ class TestManifestAuthTypes:
         """Auth types must not include connection_string or service_account."""
         forbidden = {"connection_string", "service_account"}
         for auth_method in manifest.auth_methods:
-            assert auth_method.type.value not in forbidden, (
-                f"Connector '{manifest.id}' uses forbidden auth type: {auth_method.type.value}"
-            )
+            assert (
+                auth_method.type.value not in forbidden
+            ), f"Connector '{manifest.id}' uses forbidden auth type: {auth_method.type.value}"
 
 
 class TestConfigFieldStructure:
@@ -149,19 +151,19 @@ class TestConfigFieldStructure:
     def test_config_fields_are_configfield_instances(self, manifest):
         """All config schema entries must be ConfigField instances."""
         for item in self._collect_all_config_fields(manifest):
-            assert isinstance(item, ConfigField), (
-                f"Connector '{manifest.id}': expected ConfigField, got {type(item)}"
-            )
+            assert isinstance(
+                item, ConfigField
+            ), f"Connector '{manifest.id}': expected ConfigField, got {type(item)}"
 
     def test_config_fields_have_field_attribute(self, manifest):
         """Each ConfigField must have a non-empty 'field' attribute."""
         for item in self._collect_all_config_fields(manifest):
-            assert hasattr(item, "field"), (
-                f"Connector '{manifest.id}': ConfigField missing 'field' attribute"
-            )
-            assert isinstance(item.field, str) and len(item.field) > 0, (
-                f"Connector '{manifest.id}': ConfigField.field must be non-empty string"
-            )
+            assert hasattr(
+                item, "field"
+            ), f"Connector '{manifest.id}': ConfigField missing 'field' attribute"
+            assert (
+                isinstance(item.field, str) and len(item.field) > 0
+            ), f"Connector '{manifest.id}': ConfigField.field must be non-empty string"
 
     def test_config_field_options_are_flat_tuples(self, manifest):
         """Options for select fields must be flat tuples, not object arrays."""
@@ -218,9 +220,9 @@ class TestTriggerOutputs:
     def test_trigger_ids_are_non_empty(self, manifest):
         """Each trigger must have a non-empty id."""
         for trigger in manifest.triggers:
-            assert isinstance(trigger.id, str) and len(trigger.id) > 0, (
-                f"Connector '{manifest.id}': trigger missing non-empty id"
-            )
+            assert (
+                isinstance(trigger.id, str) and len(trigger.id) > 0
+            ), f"Connector '{manifest.id}': trigger missing non-empty id"
 
 
 class TestActionStructure:
@@ -275,17 +277,17 @@ class TestPenguinTechConnectors:
     def test_penguintech_connectors_have_actions(self, manifest):
         """PenguinTech service connectors must define at least one action."""
         if manifest.vendor == "penguintech":
-            assert len(manifest.actions) > 0, (
-                f"PenguinTech connector '{manifest.id}' has no actions defined"
-            )
+            assert (
+                len(manifest.actions) > 0
+            ), f"PenguinTech connector '{manifest.id}' has no actions defined"
 
     def test_penguintech_connector_has_default_url(self, manifest):
         """PenguinTech connectors should have a default URL or env var."""
         if manifest.vendor == "penguintech":
             has_url = bool(manifest.default_url) or bool(manifest.base_url_env)
-            assert has_url, (
-                f"PenguinTech connector '{manifest.id}' has no default_url or base_url_env"
-            )
+            assert (
+                has_url
+            ), f"PenguinTech connector '{manifest.id}' has no default_url or base_url_env"
 
 
 class TestDatabaseConnectors:
@@ -294,16 +296,16 @@ class TestDatabaseConnectors:
     def test_db_connector_has_actions(self, manifest):
         """Database connectors must define at least one action."""
         if manifest.id.startswith(DB_PREFIX):
-            assert len(manifest.actions) > 0, (
-                f"DB connector '{manifest.id}' has no actions defined"
-            )
+            assert (
+                len(manifest.actions) > 0
+            ), f"DB connector '{manifest.id}' has no actions defined"
 
     def test_db_connector_has_at_least_one_trigger(self, manifest):
         """Database connectors should have at least one trigger."""
         if manifest.id.startswith(DB_PREFIX):
-            assert len(manifest.triggers) >= 1, (
-                f"DB connector '{manifest.id}' has no triggers"
-            )
+            assert (
+                len(manifest.triggers) >= 1
+            ), f"DB connector '{manifest.id}' has no triggers"
 
     def test_db_connector_has_execute_query_or_equivalent(self, manifest):
         """Database connectors should have a query or execute action."""

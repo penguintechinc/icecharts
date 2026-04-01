@@ -22,7 +22,8 @@ from app.middleware import auth_required
 # Local dev: ../../../icestreams-worker from this file
 worker_paths = [
     Path("/app/icestreams-worker"),  # Container path
-    Path(__file__).parent.parent.parent.parent.parent / "icestreams-worker",  # Local dev path
+    Path(__file__).parent.parent.parent.parent.parent
+    / "icestreams-worker",  # Local dev path
 ]
 for worker_path in worker_paths:
     if worker_path.exists() and str(worker_path) not in sys.path:
@@ -142,48 +143,60 @@ def get_connector_nodes(connector_id: str):
 
             # Add triggers
             for trigger in connector.get("triggers", []):
-                nodes.append({
-                    "node_type": f"trigger_{connector_id}_{trigger['id']}",
-                    "category": "triggers",
-                    "name": f"{connector['name']}: {trigger['name']}",
-                    "description": trigger.get("description", ""),
-                    "icon": trigger.get("icon", connector.get("icon", "")),
-                    "inputs": [],
-                    "outputs": trigger.get("outputs", []),
-                    "config_schema": trigger.get("config_schema", []),
-                    "connector_id": connector_id,
-                    "connector_color": connector.get("color", "#6366F1"),
-                })
+                nodes.append(
+                    {
+                        "node_type": f"trigger_{connector_id}_{trigger['id']}",
+                        "category": "triggers",
+                        "name": f"{connector['name']}: {trigger['name']}",
+                        "description": trigger.get("description", ""),
+                        "icon": trigger.get("icon", connector.get("icon", "")),
+                        "inputs": [],
+                        "outputs": trigger.get("outputs", []),
+                        "config_schema": trigger.get("config_schema", []),
+                        "connector_id": connector_id,
+                        "connector_color": connector.get("color", "#6366F1"),
+                    }
+                )
 
             # Add actions
             for action in connector.get("actions", []):
-                nodes.append({
-                    "node_type": f"action_{connector_id}_{action['id']}",
-                    "category": "actions",
-                    "name": f"{connector['name']}: {action['name']}",
-                    "description": action.get("description", ""),
-                    "icon": action.get("icon", connector.get("icon", "")),
-                    "inputs": action.get("inputs", [{"name": "in", "type": "any"}]),
-                    "outputs": action.get("outputs", [{"name": "out", "type": "object"}]),
-                    "config_schema": action.get("config_schema", []),
-                    "connector_id": connector_id,
-                    "connector_color": connector.get("color", "#6366F1"),
-                })
+                nodes.append(
+                    {
+                        "node_type": f"action_{connector_id}_{action['id']}",
+                        "category": "actions",
+                        "name": f"{connector['name']}: {action['name']}",
+                        "description": action.get("description", ""),
+                        "icon": action.get("icon", connector.get("icon", "")),
+                        "inputs": action.get("inputs", [{"name": "in", "type": "any"}]),
+                        "outputs": action.get(
+                            "outputs", [{"name": "out", "type": "object"}]
+                        ),
+                        "config_schema": action.get("config_schema", []),
+                        "connector_id": connector_id,
+                        "connector_color": connector.get("color", "#6366F1"),
+                    }
+                )
 
             # Add transforms
             for transform in connector.get("transforms", []):
-                nodes.append({
-                    "node_type": f"transform_{connector_id}_{transform['id']}",
-                    "category": "transforms",
-                    "name": f"{connector['name']}: {transform['name']}",
-                    "description": transform.get("description", ""),
-                    "icon": transform.get("icon", connector.get("icon", "")),
-                    "inputs": transform.get("inputs", [{"name": "in", "type": "any"}]),
-                    "outputs": transform.get("outputs", [{"name": "out", "type": "any"}]),
-                    "config_schema": transform.get("config_schema", []),
-                    "connector_id": connector_id,
-                    "connector_color": connector.get("color", "#6366F1"),
-                })
+                nodes.append(
+                    {
+                        "node_type": f"transform_{connector_id}_{transform['id']}",
+                        "category": "transforms",
+                        "name": f"{connector['name']}: {transform['name']}",
+                        "description": transform.get("description", ""),
+                        "icon": transform.get("icon", connector.get("icon", "")),
+                        "inputs": transform.get(
+                            "inputs", [{"name": "in", "type": "any"}]
+                        ),
+                        "outputs": transform.get(
+                            "outputs", [{"name": "out", "type": "any"}]
+                        ),
+                        "config_schema": transform.get("config_schema", []),
+                        "connector_id": connector_id,
+                        "connector_color": connector.get("color", "#6366F1"),
+                    }
+                )
 
             return jsonify({"nodes": nodes}), 200
 
@@ -214,53 +227,65 @@ def get_all_connector_nodes():
         # Add triggers
         if not category_filter or category_filter == "triggers":
             for trigger in connector.get("triggers", []):
-                nodes.append({
-                    "node_type": f"trigger_{connector_id}_{trigger['id']}",
-                    "category": "triggers",
-                    "name": f"{connector['name']}: {trigger['name']}",
-                    "description": trigger.get("description", ""),
-                    "icon": trigger.get("icon", connector.get("icon", "")),
-                    "inputs": [],
-                    "outputs": trigger.get("outputs", []),
-                    "config_schema": trigger.get("config_schema", []),
-                    "connector_id": connector_id,
-                    "connector_name": connector["name"],
-                    "connector_color": connector.get("color", "#6366F1"),
-                })
+                nodes.append(
+                    {
+                        "node_type": f"trigger_{connector_id}_{trigger['id']}",
+                        "category": "triggers",
+                        "name": f"{connector['name']}: {trigger['name']}",
+                        "description": trigger.get("description", ""),
+                        "icon": trigger.get("icon", connector.get("icon", "")),
+                        "inputs": [],
+                        "outputs": trigger.get("outputs", []),
+                        "config_schema": trigger.get("config_schema", []),
+                        "connector_id": connector_id,
+                        "connector_name": connector["name"],
+                        "connector_color": connector.get("color", "#6366F1"),
+                    }
+                )
 
         # Add actions
         if not category_filter or category_filter == "actions":
             for action in connector.get("actions", []):
-                nodes.append({
-                    "node_type": f"action_{connector_id}_{action['id']}",
-                    "category": "actions",
-                    "name": f"{connector['name']}: {action['name']}",
-                    "description": action.get("description", ""),
-                    "icon": action.get("icon", connector.get("icon", "")),
-                    "inputs": action.get("inputs", [{"name": "in", "type": "any"}]),
-                    "outputs": action.get("outputs", [{"name": "out", "type": "object"}]),
-                    "config_schema": action.get("config_schema", []),
-                    "connector_id": connector_id,
-                    "connector_name": connector["name"],
-                    "connector_color": connector.get("color", "#6366F1"),
-                })
+                nodes.append(
+                    {
+                        "node_type": f"action_{connector_id}_{action['id']}",
+                        "category": "actions",
+                        "name": f"{connector['name']}: {action['name']}",
+                        "description": action.get("description", ""),
+                        "icon": action.get("icon", connector.get("icon", "")),
+                        "inputs": action.get("inputs", [{"name": "in", "type": "any"}]),
+                        "outputs": action.get(
+                            "outputs", [{"name": "out", "type": "object"}]
+                        ),
+                        "config_schema": action.get("config_schema", []),
+                        "connector_id": connector_id,
+                        "connector_name": connector["name"],
+                        "connector_color": connector.get("color", "#6366F1"),
+                    }
+                )
 
         # Add transforms
         if not category_filter or category_filter == "transforms":
             for transform in connector.get("transforms", []):
-                nodes.append({
-                    "node_type": f"transform_{connector_id}_{transform['id']}",
-                    "category": "transforms",
-                    "name": f"{connector['name']}: {transform['name']}",
-                    "description": transform.get("description", ""),
-                    "icon": transform.get("icon", connector.get("icon", "")),
-                    "inputs": transform.get("inputs", [{"name": "in", "type": "any"}]),
-                    "outputs": transform.get("outputs", [{"name": "out", "type": "any"}]),
-                    "config_schema": transform.get("config_schema", []),
-                    "connector_id": connector_id,
-                    "connector_name": connector["name"],
-                    "connector_color": connector.get("color", "#6366F1"),
-                })
+                nodes.append(
+                    {
+                        "node_type": f"transform_{connector_id}_{transform['id']}",
+                        "category": "transforms",
+                        "name": f"{connector['name']}: {transform['name']}",
+                        "description": transform.get("description", ""),
+                        "icon": transform.get("icon", connector.get("icon", "")),
+                        "inputs": transform.get(
+                            "inputs", [{"name": "in", "type": "any"}]
+                        ),
+                        "outputs": transform.get(
+                            "outputs", [{"name": "out", "type": "any"}]
+                        ),
+                        "config_schema": transform.get("config_schema", []),
+                        "connector_id": connector_id,
+                        "connector_name": connector["name"],
+                        "connector_color": connector.get("color", "#6366F1"),
+                    }
+                )
 
     return jsonify({"nodes": nodes}), 200
 

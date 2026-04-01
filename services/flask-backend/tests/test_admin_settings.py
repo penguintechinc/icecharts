@@ -1,4 +1,5 @@
 """Tests for Admin Settings API endpoints."""
+
 import pytest
 
 
@@ -129,9 +130,7 @@ class TestSiteSettings:
 
     def test_get_site_settings_as_admin(self, client, admin_auth_headers):
         """Admin can get site settings."""
-        response = client.get(
-            "/api/v1/admin/settings/site", headers=admin_auth_headers
-        )
+        response = client.get("/api/v1/admin/settings/site", headers=admin_auth_headers)
         assert response.status_code == 200
         data = response.get_json()
         assert "site" in data

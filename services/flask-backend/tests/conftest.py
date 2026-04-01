@@ -3,6 +3,7 @@
 import os
 import sys
 
+
 # PostgreSQL test database connection details - MUST be set before app imports
 # Uses the icecharts-postgres Docker container.
 # TEST_DB_HOST env var overrides; otherwise auto-discovers via docker inspect.
@@ -11,9 +12,12 @@ def _discover_pg_host() -> str:
         return os.environ["TEST_DB_HOST"]
     try:
         import subprocess
+
         ip = subprocess.check_output(
             [
-                "docker", "inspect", "icecharts-postgres",
+                "docker",
+                "inspect",
+                "icecharts-postgres",
                 "--format={{range .NetworkSettings.Networks}}{{.IPAddress}}{{end}}",
             ],
             text=True,
@@ -79,17 +83,17 @@ def app() -> Flask:
     )
     os.makedirs(instance_folder, exist_ok=True)
 
-    db_uri = (
-        f"postgres://{_PG_USER}:{_PG_PASSWORD}@"
-        f"{_PG_HOST}:{_PG_PORT}/{_PG_DB}"
-    )
+    db_uri = f"postgres://{_PG_USER}:{_PG_PASSWORD}@" f"{_PG_HOST}:{_PG_PORT}/{_PG_DB}"
 
     # ── Phase 1: Clean slate ──────────────────────────────────────
     # DROP all tables directly via psycopg2 (bypasses PyDAL)
     try:
         conn = psycopg2.connect(
-            host=_PG_HOST, port=_PG_PORT, dbname=_PG_DB,
-            user=_PG_USER, password=_PG_PASSWORD,
+            host=_PG_HOST,
+            port=_PG_PORT,
+            dbname=_PG_DB,
+            user=_PG_USER,
+            password=_PG_PASSWORD,
         )
         conn.autocommit = True
         cur = conn.cursor()
@@ -99,14 +103,10 @@ def app() -> Flask:
             "AND state = 'idle in transaction'",
             (_PG_DB,),
         )
-        cur.execute(
-            "SELECT tablename FROM pg_tables WHERE schemaname = 'public'"
-        )
+        cur.execute("SELECT tablename FROM pg_tables WHERE schemaname = 'public'")
         tables = [r[0] for r in cur.fetchall()]
         if tables:
-            cur.execute(
-                f"DROP TABLE IF EXISTS {', '.join(tables)} CASCADE"
-            )
+            cur.execute(f"DROP TABLE IF EXISTS {', '.join(tables)} CASCADE")
         cur.close()
         conn.close()
     except Exception:
@@ -188,16 +188,12 @@ def _clean_data(app: Flask):
         if all_tables:
             quoted = ", ".join(f'"{t}"' for t in all_tables)
             try:
-                db.executesql(
-                    f"TRUNCATE TABLE {quoted} RESTART IDENTITY CASCADE"
-                )
+                db.executesql(f"TRUNCATE TABLE {quoted} RESTART IDENTITY CASCADE")
             except Exception:
                 # Transaction may be in error state; rollback and retry
                 try:
                     db.rollback()
-                    db.executesql(
-                        f"TRUNCATE TABLE {quoted} RESTART IDENTITY CASCADE"
-                    )
+                    db.executesql(f"TRUNCATE TABLE {quoted} RESTART IDENTITY CASCADE")
                 except Exception:
                     pass
         # Ensure we are in a clean transaction state before re-seeding.

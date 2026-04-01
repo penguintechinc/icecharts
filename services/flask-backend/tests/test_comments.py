@@ -1,4 +1,5 @@
 """Tests for Drawing Comments API endpoints."""
+
 import pytest
 
 
@@ -37,6 +38,7 @@ class TestCreateComment:
     ):
         with app.app_context():
             from app.models import get_db
+
             db = get_db()
             uid = test_user["id"]
             drawing_id = db.drawings.insert(
@@ -81,6 +83,7 @@ class TestGetComment:
     ):
         with app.app_context():
             from app.models import get_db
+
             db = get_db()
             uid = test_user["id"]
             drawing_id = db.drawings.insert(
@@ -142,6 +145,7 @@ class TestResolveComment:
     ):
         with app.app_context():
             from app.models import get_db
+
             db = get_db()
             uid = test_user["id"]
             drawing_id = db.drawings.insert(
@@ -191,6 +195,7 @@ class TestCommentReplies:
     ):
         with app.app_context():
             from app.models import get_db
+
             db = get_db()
             uid = test_user["id"]
             drawing_id = db.drawings.insert(

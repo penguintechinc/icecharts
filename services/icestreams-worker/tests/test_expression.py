@@ -588,7 +588,9 @@ class TestConditionalExpressions:
         """Test nested ternary operators."""
         node = ExpressionTransform()
         context = MagicMock(spec=NodeContext)
-        context.config = {"expression": "'high' if data > 10 else 'low' if data > 5 else 'very low'"}
+        context.config = {
+            "expression": "'high' if data > 10 else 'low' if data > 5 else 'very low'"
+        }
         context.log_info = MagicMock()
         context.log_error = MagicMock()
 
@@ -687,7 +689,9 @@ class TestDataAccess:
         context.log_info = MagicMock()
         context.log_error = MagicMock()
 
-        result = await node.execute(context, {"in": {"user": {"email": "test@example.com"}}})
+        result = await node.execute(
+            context, {"in": {"user": {"email": "test@example.com"}}}
+        )
         assert result.success is True
         assert result.outputs["out"] == "test@example.com"
 

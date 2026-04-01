@@ -111,9 +111,7 @@ class TestGroupRead:
         group_id = json.loads(create_response.data)["group"]["id"]
 
         # Retrieve the group (admin can see all groups)
-        response = client.get(
-            f"/api/v1/groups/{group_id}", headers=admin_auth_headers
-        )
+        response = client.get(f"/api/v1/groups/{group_id}", headers=admin_auth_headers)
         assert response.status_code == 200
         data = json.loads(response.data)
         assert "group" in data
@@ -122,13 +120,12 @@ class TestGroupRead:
 
     def test_get_group_not_found(self, client, admin_auth_headers):
         """Test retrieving non-existent group."""
-        response = client.get(
-            "/api/v1/groups/99999", headers=admin_auth_headers
-        )
+        response = client.get("/api/v1/groups/99999", headers=admin_auth_headers)
         assert response.status_code == 404
 
-    def test_get_group_viewer_not_member_forbidden(self, client, auth_headers,
-                                                   admin_auth_headers):
+    def test_get_group_viewer_not_member_forbidden(
+        self, client, auth_headers, admin_auth_headers
+    ):
         """Test that a viewer who is not a group member cannot access it."""
         # Create a group as admin
         create_response = client.post(
@@ -142,9 +139,7 @@ class TestGroupRead:
         group_id = json.loads(create_response.data)["group"]["id"]
 
         # Viewer (not a member) tries to access
-        response = client.get(
-            f"/api/v1/groups/{group_id}", headers=auth_headers
-        )
+        response = client.get(f"/api/v1/groups/{group_id}", headers=auth_headers)
         assert response.status_code == 403
 
     def test_list_groups_as_admin(self, client, admin_auth_headers):
@@ -248,8 +243,9 @@ class TestGroupUpdate:
         )
         assert response.status_code == 401
 
-    def test_update_group_viewer_forbidden(self, client, auth_headers,
-                                           admin_auth_headers):
+    def test_update_group_viewer_forbidden(
+        self, client, auth_headers, admin_auth_headers
+    ):
         """Test that a viewer cannot update a group."""
         # Create a group as admin
         create_response = client.post(
@@ -325,8 +321,9 @@ class TestGroupDelete:
         response = client.delete("/api/v1/groups/1")
         assert response.status_code == 401
 
-    def test_delete_group_viewer_forbidden(self, client, auth_headers,
-                                           admin_auth_headers):
+    def test_delete_group_viewer_forbidden(
+        self, client, auth_headers, admin_auth_headers
+    ):
         """Test that a viewer cannot delete a group."""
         # Create a group as admin
         create_response = client.post(
@@ -350,8 +347,7 @@ class TestGroupDelete:
 class TestGroupMembers:
     """Test group member management."""
 
-    def test_add_member_to_group(self, client, admin_auth_headers,
-                                 create_test_user):
+    def test_add_member_to_group(self, client, admin_auth_headers, create_test_user):
         """Test adding a member to a group."""
         # Create a group as admin (admin becomes group admin member)
         group_response = client.post(
@@ -377,9 +373,9 @@ class TestGroupMembers:
         data = json.loads(response.data)
         assert "message" in data
 
-    def test_add_member_viewer_forbidden(self, client, auth_headers,
-                                         admin_auth_headers,
-                                         create_test_user):
+    def test_add_member_viewer_forbidden(
+        self, client, auth_headers, admin_auth_headers, create_test_user
+    ):
         """Test that a viewer cannot add members to a group."""
         # Create a group as admin
         group_response = client.post(
@@ -450,8 +446,9 @@ class TestGroupMembers:
         )
         assert response.status_code == 403
 
-    def test_remove_member_from_group(self, client, admin_auth_headers,
-                                      create_test_user):
+    def test_remove_member_from_group(
+        self, client, admin_auth_headers, create_test_user
+    ):
         """Test removing a member from a group."""
         # Create a group as admin
         group_response = client.post(

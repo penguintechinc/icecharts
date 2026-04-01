@@ -64,9 +64,7 @@ class TestFilterValidateConfig:
         assert any("field" in e for e in errors)
 
     def test_condition_invalid_operator(self) -> None:
-        config = {
-            "conditions": [{"field": "x", "operator": "invalid_op", "value": 1}]
-        }
+        config = {"conditions": [{"field": "x", "operator": "invalid_op", "value": 1}]}
         errors = FilterTransform.validate_config(config)
         assert any("invalid operator" in e.lower() for e in errors)
 
@@ -89,12 +87,11 @@ class TestFilterValidateConfig:
     def test_all_operators_are_valid(self) -> None:
         """Every operator in OPERATORS passes validation."""
         for op in OPERATORS:
-            config = {
-                "conditions": [{"field": "x", "operator": op, "value": None}]
-            }
+            config = {"conditions": [{"field": "x", "operator": op, "value": None}]}
             errors = FilterTransform.validate_config(config)
-            assert not any("invalid operator" in e.lower() for e in errors), \
-                f"Operator '{op}' should be valid but got errors: {errors}"
+            assert not any(
+                "invalid operator" in e.lower() for e in errors
+            ), f"Operator '{op}' should be valid but got errors: {errors}"
 
 
 class TestGetFieldValue:
@@ -170,23 +167,46 @@ class TestEvaluateCondition:
 
     def test_contains_string(self) -> None:
         node = FilterTransform()
-        assert node._evaluate_condition({"x": "hello world"}, self._cond("x", "contains", "world")) is True
+        assert (
+            node._evaluate_condition(
+                {"x": "hello world"}, self._cond("x", "contains", "world")
+            )
+            is True
+        )
 
     def test_not_contains(self) -> None:
         node = FilterTransform()
-        assert node._evaluate_condition({"x": "hello"}, self._cond("x", "not_contains", "world")) is True
+        assert (
+            node._evaluate_condition(
+                {"x": "hello"}, self._cond("x", "not_contains", "world")
+            )
+            is True
+        )
 
     def test_starts_with(self) -> None:
         node = FilterTransform()
-        assert node._evaluate_condition({"x": "hello"}, self._cond("x", "starts_with", "hel")) is True
+        assert (
+            node._evaluate_condition(
+                {"x": "hello"}, self._cond("x", "starts_with", "hel")
+            )
+            is True
+        )
 
     def test_ends_with(self) -> None:
         node = FilterTransform()
-        assert node._evaluate_condition({"x": "hello"}, self._cond("x", "ends_with", "llo")) is True
+        assert (
+            node._evaluate_condition(
+                {"x": "hello"}, self._cond("x", "ends_with", "llo")
+            )
+            is True
+        )
 
     def test_regex(self) -> None:
         node = FilterTransform()
-        assert node._evaluate_condition({"x": "abc123"}, self._cond("x", "regex", r"\d+")) is True
+        assert (
+            node._evaluate_condition({"x": "abc123"}, self._cond("x", "regex", r"\d+"))
+            is True
+        )
 
     def test_is_null_true(self) -> None:
         node = FilterTransform()
@@ -194,30 +214,46 @@ class TestEvaluateCondition:
 
     def test_is_null_false(self) -> None:
         node = FilterTransform()
-        assert node._evaluate_condition({"x": "val"}, self._cond("x", "is_null")) is False
+        assert (
+            node._evaluate_condition({"x": "val"}, self._cond("x", "is_null")) is False
+        )
 
     def test_is_not_null(self) -> None:
         node = FilterTransform()
-        assert node._evaluate_condition({"x": "val"}, self._cond("x", "is_not_null")) is True
+        assert (
+            node._evaluate_condition({"x": "val"}, self._cond("x", "is_not_null"))
+            is True
+        )
 
     def test_in_operator(self) -> None:
         node = FilterTransform()
-        assert node._evaluate_condition({"x": "b"}, self._cond("x", "in", ["a", "b", "c"])) is True
+        assert (
+            node._evaluate_condition({"x": "b"}, self._cond("x", "in", ["a", "b", "c"]))
+            is True
+        )
 
     def test_not_in_operator(self) -> None:
         node = FilterTransform()
-        assert node._evaluate_condition({"x": "z"}, self._cond("x", "not_in", ["a", "b"])) is True
+        assert (
+            node._evaluate_condition({"x": "z"}, self._cond("x", "not_in", ["a", "b"]))
+            is True
+        )
 
     def test_contains_no_contains_method(self) -> None:
         """contains on a number returns False."""
         node = FilterTransform()
-        assert node._evaluate_condition({"x": 42}, self._cond("x", "contains", "4")) is False
+        assert (
+            node._evaluate_condition({"x": 42}, self._cond("x", "contains", "4"))
+            is False
+        )
 
     def test_condition_exception_returns_false(self) -> None:
         """Exception in operator returns False."""
         node = FilterTransform()
         # gt on incompatible types raises TypeError, should be caught
-        assert node._evaluate_condition({"x": "string"}, self._cond("x", "gt", 5)) is False
+        assert (
+            node._evaluate_condition({"x": "string"}, self._cond("x", "gt", 5)) is False
+        )
 
 
 class TestMatchesLogic:
@@ -267,10 +303,14 @@ class TestFilterExecute:
     async def test_filter_array_input(self) -> None:
         """Array input: matching items in out, rejected in rejected."""
         node = FilterTransform()
-        ctx = _make_context({
-            "conditions": [{"field": "status", "operator": "eq", "value": "active"}],
-            "logic": "and",
-        })
+        ctx = _make_context(
+            {
+                "conditions": [
+                    {"field": "status", "operator": "eq", "value": "active"}
+                ],
+                "logic": "and",
+            }
+        )
         data = [
             {"status": "active", "name": "Alice"},
             {"status": "inactive", "name": "Bob"},
@@ -285,9 +325,9 @@ class TestFilterExecute:
     async def test_filter_single_object_match(self) -> None:
         """Single dict input that matches returns it in out, None in rejected."""
         node = FilterTransform()
-        ctx = _make_context({
-            "conditions": [{"field": "age", "operator": "gte", "value": 18}]
-        })
+        ctx = _make_context(
+            {"conditions": [{"field": "age", "operator": "gte", "value": 18}]}
+        )
         result = await node.execute(ctx, {"in": {"age": 25}})
         assert result.success is True
         assert result.outputs["out"] == {"age": 25}
@@ -297,9 +337,9 @@ class TestFilterExecute:
     async def test_filter_single_object_no_match(self) -> None:
         """Single dict that doesn't match returns None in out, item in rejected."""
         node = FilterTransform()
-        ctx = _make_context({
-            "conditions": [{"field": "age", "operator": "gte", "value": 18}]
-        })
+        ctx = _make_context(
+            {"conditions": [{"field": "age", "operator": "gte", "value": 18}]}
+        )
         result = await node.execute(ctx, {"in": {"age": 10}})
         assert result.success is True
         assert result.outputs["out"] is None
@@ -309,9 +349,9 @@ class TestFilterExecute:
     async def test_filter_non_dict_items_pass_through(self) -> None:
         """Non-dict items in array pass through to matching."""
         node = FilterTransform()
-        ctx = _make_context({
-            "conditions": [{"field": "x", "operator": "eq", "value": 1}]
-        })
+        ctx = _make_context(
+            {"conditions": [{"field": "x", "operator": "eq", "value": 1}]}
+        )
         result = await node.execute(ctx, {"in": ["string", 42, None]})
         assert result.success is True
         # Non-dict items pass through to matching, not rejected
@@ -322,9 +362,9 @@ class TestFilterExecute:
     async def test_filter_missing_required_input(self) -> None:
         """Missing 'in' input returns failure."""
         node = FilterTransform()
-        ctx = _make_context({
-            "conditions": [{"field": "x", "operator": "eq", "value": 1}]
-        })
+        ctx = _make_context(
+            {"conditions": [{"field": "x", "operator": "eq", "value": 1}]}
+        )
         result = await node.execute(ctx, {})
         assert result.success is False
 
@@ -332,13 +372,15 @@ class TestFilterExecute:
     async def test_filter_or_logic_array(self) -> None:
         """OR logic: items matching any condition pass."""
         node = FilterTransform()
-        ctx = _make_context({
-            "conditions": [
-                {"field": "type", "operator": "eq", "value": "A"},
-                {"field": "type", "operator": "eq", "value": "B"},
-            ],
-            "logic": "or",
-        })
+        ctx = _make_context(
+            {
+                "conditions": [
+                    {"field": "type", "operator": "eq", "value": "A"},
+                    {"field": "type", "operator": "eq", "value": "B"},
+                ],
+                "logic": "or",
+            }
+        )
         data = [{"type": "A"}, {"type": "B"}, {"type": "C"}]
         result = await node.execute(ctx, {"in": data})
         assert result.success is True
@@ -349,9 +391,9 @@ class TestFilterExecute:
     async def test_filter_all_rejected(self) -> None:
         """All items rejected returns empty out list and all in rejected."""
         node = FilterTransform()
-        ctx = _make_context({
-            "conditions": [{"field": "x", "operator": "eq", "value": 999}]
-        })
+        ctx = _make_context(
+            {"conditions": [{"field": "x", "operator": "eq", "value": 999}]}
+        )
         data = [{"x": 1}, {"x": 2}]
         result = await node.execute(ctx, {"in": data})
         assert result.success is True
@@ -362,9 +404,9 @@ class TestFilterExecute:
     async def test_filter_empty_array(self) -> None:
         """Empty array input returns empty out and rejected."""
         node = FilterTransform()
-        ctx = _make_context({
-            "conditions": [{"field": "x", "operator": "eq", "value": 1}]
-        })
+        ctx = _make_context(
+            {"conditions": [{"field": "x", "operator": "eq", "value": 1}]}
+        )
         result = await node.execute(ctx, {"in": []})
         assert result.success is True
         assert result.outputs["out"] == []
@@ -374,9 +416,9 @@ class TestFilterExecute:
     async def test_filter_nested_field(self) -> None:
         """Filter on nested field using dot notation."""
         node = FilterTransform()
-        ctx = _make_context({
-            "conditions": [{"field": "user.active", "operator": "eq", "value": True}]
-        })
+        ctx = _make_context(
+            {"conditions": [{"field": "user.active", "operator": "eq", "value": True}]}
+        )
         data = [
             {"user": {"active": True, "name": "Alice"}},
             {"user": {"active": False, "name": "Bob"}},

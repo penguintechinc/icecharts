@@ -37,7 +37,9 @@ class TestJWTAlgorithmConfusion:
                         "sub": str(test_user["id"]),
                         "role": "admin",
                         "type": "access",
-                        "exp": int((datetime.utcnow() + timedelta(hours=1)).timestamp()),
+                        "exp": int(
+                            (datetime.utcnow() + timedelta(hours=1)).timestamp()
+                        ),
                         "iat": int(datetime.utcnow().timestamp()),
                     }
                 ).encode()
@@ -94,9 +96,7 @@ class TestJWTAlgorithmConfusion:
             header = base64.urlsafe_b64encode(
                 json.dumps({"alg": "RS256", "typ": "JWT"}).encode()
             ).rstrip(b"=")
-            body = base64.urlsafe_b64encode(
-                json.dumps(payload).encode()
-            ).rstrip(b"=")
+            body = base64.urlsafe_b64encode(json.dumps(payload).encode()).rstrip(b"=")
             # Sign with HS256 secret — decoding must fail
             import hmac
             import hashlib
@@ -174,9 +174,7 @@ class TestClaimsValidation:
                 "exp": datetime.utcnow() + timedelta(hours=1),
                 "iat": datetime.utcnow(),
             }
-            token = jwt.encode(
-                payload, app.config["JWT_SECRET_KEY"], algorithm="HS256"
-            )
+            token = jwt.encode(payload, app.config["JWT_SECRET_KEY"], algorithm="HS256")
             response = client.get(
                 "/api/v1/drawings",
                 headers={"Authorization": f"Bearer {token}"},
@@ -198,9 +196,7 @@ class TestClaimsValidation:
                 "exp": datetime.utcnow() + timedelta(hours=1),
                 "iat": datetime.utcnow() + timedelta(hours=24),  # future iat
             }
-            token = jwt.encode(
-                payload, app.config["JWT_SECRET_KEY"], algorithm="HS256"
-            )
+            token = jwt.encode(payload, app.config["JWT_SECRET_KEY"], algorithm="HS256")
             # Even if the token decodes, the user DB lookup will find a viewer
             # The role in DB must take precedence over token role claim
             response = client.get(
@@ -237,9 +233,7 @@ class TestRoleEnforcement:
         response = client.get("/api/v1/admin/users", headers=auth_headers)
         assert response.status_code == 403
 
-    def test_forged_admin_role_in_token_for_viewer_user(
-        self, app, client, test_user
-    ):
+    def test_forged_admin_role_in_token_for_viewer_user(self, app, client, test_user):
         """A viewer user with a forged admin role in the token must still be blocked.
 
         The middleware reads the role from the database row, not the token payload,
@@ -255,9 +249,7 @@ class TestRoleEnforcement:
                 "exp": datetime.utcnow() + timedelta(hours=1),
                 "iat": datetime.utcnow(),
             }
-            token = jwt.encode(
-                payload, app.config["JWT_SECRET_KEY"], algorithm="HS256"
-            )
+            token = jwt.encode(payload, app.config["JWT_SECRET_KEY"], algorithm="HS256")
             response = client.get(
                 "/api/v1/admin/users",
                 headers={"Authorization": f"Bearer {token}"},

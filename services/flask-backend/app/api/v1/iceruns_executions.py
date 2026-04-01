@@ -13,7 +13,9 @@ from ...models import get_db
 from ...services.iceruns_storage_service import IceRunsStorageService
 from ...services.redis_streams import RedisStreams
 
-iceruns_executions_v1_bp = Blueprint("iceruns_executions_v1", __name__, url_prefix="/iceruns")
+iceruns_executions_v1_bp = Blueprint(
+    "iceruns_executions_v1", __name__, url_prefix="/iceruns"
+)
 
 
 def serialize_execution(execution):
@@ -32,13 +34,19 @@ def serialize_execution(execution):
         "error_message": execution.error_message,
         "worker_id": execution.worker_id,
         "container_id": execution.container_id,
-        "started_at": execution.started_at.isoformat() if execution.started_at else None,
-        "completed_at": execution.completed_at.isoformat() if execution.completed_at else None,
+        "started_at": (
+            execution.started_at.isoformat() if execution.started_at else None
+        ),
+        "completed_at": (
+            execution.completed_at.isoformat() if execution.completed_at else None
+        ),
         "duration_ms": execution.duration_ms,
         "memory_used_mb": execution.memory_used_mb,
         "cpu_time_ms": execution.cpu_time_ms,
         "retry_count": execution.retry_count or 0,
-        "created_at": execution.created_at.isoformat() if execution.created_at else None,
+        "created_at": (
+            execution.created_at.isoformat() if execution.created_at else None
+        ),
     }
 
 
@@ -61,7 +69,14 @@ def list_executions():
         # Build query
         query = db.iceruns.created_by_id == user_id
         if function_id:
-            func = db((db.iceruns.function_id == function_id) & (db.iceruns.created_by_id == user_id)).select().first()
+            func = (
+                db(
+                    (db.iceruns.function_id == function_id)
+                    & (db.iceruns.created_by_id == user_id)
+                )
+                .select()
+                .first()
+            )
             if not func:
                 return jsonify({"error": "Function not found"}), 404
             query = db.iceruns_executions.function_id == func.id
@@ -69,9 +84,10 @@ def list_executions():
         if status:
             query &= db.iceruns_executions.status == status
 
-        executions = (
-            db(query)
-            .select(db.iceruns_executions.ALL, orderby=~db.iceruns_executions.created_at, limitby=(offset, offset + limit))
+        executions = db(query).select(
+            db.iceruns_executions.ALL,
+            orderby=~db.iceruns_executions.created_at,
+            limitby=(offset, offset + limit),
         )
 
         result = [serialize_execution(e) for e in executions]
@@ -93,7 +109,14 @@ def list_function_executions(function_id: str):
         user_id = user["id"]
         db = get_db()
 
-        func = db((db.iceruns.function_id == function_id) & (db.iceruns.created_by_id == user_id)).select().first()
+        func = (
+            db(
+                (db.iceruns.function_id == function_id)
+                & (db.iceruns.created_by_id == user_id)
+            )
+            .select()
+            .first()
+        )
 
         if not func:
             return jsonify({"error": "Function not found"}), 404
@@ -101,9 +124,8 @@ def list_function_executions(function_id: str):
         limit = int(request.args.get("limit", 100))
         offset = int(request.args.get("offset", 0))
 
-        executions = (
-            db(db.iceruns_executions.function_id == func.id)
-            .select(orderby=~db.iceruns_executions.created_at, limitby=(offset, offset + limit))
+        executions = db(db.iceruns_executions.function_id == func.id).select(
+            orderby=~db.iceruns_executions.created_at, limitby=(offset, offset + limit)
         )
 
         result = [serialize_execution(e) for e in executions]
@@ -127,13 +149,23 @@ def execute_function(function_id: str):
         db = get_db()
 
         # Get function
-        func = db((db.iceruns.function_id == function_id) & (db.iceruns.created_by_id == user_id)).select().first()
+        func = (
+            db(
+                (db.iceruns.function_id == function_id)
+                & (db.iceruns.created_by_id == user_id)
+            )
+            .select()
+            .first()
+        )
 
         if not func:
             return jsonify({"error": "Function not found"}), 404
 
         if func.status != "active":
-            return jsonify({"error": f"Function is not active (status: {func.status})"}), 400
+            return (
+                jsonify({"error": f"Function is not active (status: {func.status})"}),
+                400,
+            )
 
         if not func.package_key:
             return jsonify({"error": "Function has no package"}), 400
@@ -202,7 +234,15 @@ def execute_function(function_id: str):
                 time.sleep(0.5)
                 execution = db.iceruns_executions[exec_id]
                 if execution.status in ["completed", "failed", "timeout", "cancelled"]:
-                    return jsonify({"success": True, "execution": serialize_execution(execution)}), 200
+                    return (
+                        jsonify(
+                            {
+                                "success": True,
+                                "execution": serialize_execution(execution),
+                            }
+                        ),
+                        200,
+                    )
 
             return jsonify({"error": "Execution timeout waiting for result"}), 504
 
@@ -221,16 +261,23 @@ def get_execution(execution_id: str):
         user_id = user["id"]
         db = get_db()
 
-        execution = db(
-            (db.iceruns_executions.execution_id == execution_id)
-            & (db.iceruns_executions.function_id == db.iceruns.id)
-            & (db.iceruns.created_by_id == user_id)
-        ).select(db.iceruns_executions.ALL).first()
+        execution = (
+            db(
+                (db.iceruns_executions.execution_id == execution_id)
+                & (db.iceruns_executions.function_id == db.iceruns.id)
+                & (db.iceruns.created_by_id == user_id)
+            )
+            .select(db.iceruns_executions.ALL)
+            .first()
+        )
 
         if not execution:
             return jsonify({"error": "Execution not found"}), 404
 
-        return jsonify({"success": True, "execution": serialize_execution(execution)}), 200
+        return (
+            jsonify({"success": True, "execution": serialize_execution(execution)}),
+            200,
+        )
 
     except Exception as e:
         current_app.logger.error(f"Error getting execution: {e}")
@@ -247,17 +294,26 @@ def cancel_execution(execution_id: str):
         user_id = user["id"]
         db = get_db()
 
-        execution = db(
-            (db.iceruns_executions.execution_id == execution_id)
-            & (db.iceruns_executions.function_id == db.iceruns.id)
-            & (db.iceruns.created_by_id == user_id)
-        ).select(db.iceruns_executions.ALL).first()
+        execution = (
+            db(
+                (db.iceruns_executions.execution_id == execution_id)
+                & (db.iceruns_executions.function_id == db.iceruns.id)
+                & (db.iceruns.created_by_id == user_id)
+            )
+            .select(db.iceruns_executions.ALL)
+            .first()
+        )
 
         if not execution:
             return jsonify({"error": "Execution not found"}), 404
 
         if execution.status not in ["queued", "running"]:
-            return jsonify({"error": f"Cannot cancel execution in status: {execution.status}"}), 400
+            return (
+                jsonify(
+                    {"error": f"Cannot cancel execution in status: {execution.status}"}
+                ),
+                400,
+            )
 
         db(db.iceruns_executions.execution_id == execution_id).update(
             status="cancelled", completed_at=datetime.datetime.utcnow()
@@ -281,11 +337,15 @@ def get_execution_logs(execution_id: str):
         user_id = user["id"]
         db = get_db()
 
-        execution = db(
-            (db.iceruns_executions.execution_id == execution_id)
-            & (db.iceruns_executions.function_id == db.iceruns.id)
-            & (db.iceruns.created_by_id == user_id)
-        ).select(db.iceruns_executions.ALL).first()
+        execution = (
+            db(
+                (db.iceruns_executions.execution_id == execution_id)
+                & (db.iceruns_executions.function_id == db.iceruns.id)
+                & (db.iceruns.created_by_id == user_id)
+            )
+            .select(db.iceruns_executions.ALL)
+            .first()
+        )
 
         if not execution:
             return jsonify({"error": "Execution not found"}), 404
@@ -314,11 +374,15 @@ def get_execution_output(execution_id: str):
         user_id = user["id"]
         db = get_db()
 
-        execution = db(
-            (db.iceruns_executions.execution_id == execution_id)
-            & (db.iceruns_executions.function_id == db.iceruns.id)
-            & (db.iceruns.created_by_id == user_id)
-        ).select(db.iceruns_executions.ALL).first()
+        execution = (
+            db(
+                (db.iceruns_executions.execution_id == execution_id)
+                & (db.iceruns_executions.function_id == db.iceruns.id)
+                & (db.iceruns.created_by_id == user_id)
+            )
+            .select(db.iceruns_executions.ALL)
+            .first()
+        )
 
         if not execution:
             return jsonify({"error": "Execution not found"}), 404
@@ -340,11 +404,15 @@ def get_execution_status(execution_id: str):
         user_id = user["id"]
         db = get_db()
 
-        execution = db(
-            (db.iceruns_executions.execution_id == execution_id)
-            & (db.iceruns_executions.function_id == db.iceruns.id)
-            & (db.iceruns.created_by_id == user_id)
-        ).select(db.iceruns_executions.ALL).first()
+        execution = (
+            db(
+                (db.iceruns_executions.execution_id == execution_id)
+                & (db.iceruns_executions.function_id == db.iceruns.id)
+                & (db.iceruns.created_by_id == user_id)
+            )
+            .select(db.iceruns_executions.ALL)
+            .first()
+        )
 
         if not execution:
             return jsonify({"error": "Execution not found"}), 404
@@ -385,17 +453,24 @@ def retry_execution(execution_id: str):
         user_id = user["id"]
         db = get_db()
 
-        execution = db(
-            (db.iceruns_executions.execution_id == execution_id)
-            & (db.iceruns_executions.function_id == db.iceruns.id)
-            & (db.iceruns.created_by_id == user_id)
-        ).select(db.iceruns_executions.ALL).first()
+        execution = (
+            db(
+                (db.iceruns_executions.execution_id == execution_id)
+                & (db.iceruns_executions.function_id == db.iceruns.id)
+                & (db.iceruns.created_by_id == user_id)
+            )
+            .select(db.iceruns_executions.ALL)
+            .first()
+        )
 
         if not execution:
             return jsonify({"error": "Execution not found"}), 404
 
         if execution.status not in ["failed", "timeout"]:
-            return jsonify({"error": "Can only retry failed or timeout executions"}), 400
+            return (
+                jsonify({"error": "Can only retry failed or timeout executions"}),
+                400,
+            )
 
         # Get function
         func = db.iceruns[execution.function_id]
@@ -431,7 +506,9 @@ def retry_execution(execution_id: str):
             "package_key": func.package_key,
         }
 
-        redis.publish_icerun_task(new_execution_id, func.function_id, execution.input_json, config)
+        redis.publish_icerun_task(
+            new_execution_id, func.function_id, execution.input_json, config
+        )
 
         return (
             jsonify(
@@ -460,11 +537,15 @@ def list_artifacts(execution_id: str):
         user_id = user["id"]
         db = get_db()
 
-        execution = db(
-            (db.iceruns_executions.execution_id == execution_id)
-            & (db.iceruns_executions.function_id == db.iceruns.id)
-            & (db.iceruns.created_by_id == user_id)
-        ).select(db.iceruns_executions.ALL).first()
+        execution = (
+            db(
+                (db.iceruns_executions.execution_id == execution_id)
+                & (db.iceruns_executions.function_id == db.iceruns.id)
+                & (db.iceruns.created_by_id == user_id)
+            )
+            .select(db.iceruns_executions.ALL)
+            .first()
+        )
 
         if not execution:
             return jsonify({"error": "Execution not found"}), 404
@@ -473,7 +554,16 @@ def list_artifacts(execution_id: str):
             return jsonify({"success": True, "artifacts": []}), 200
 
         # List artifacts from S3 (stub - implement in storage service)
-        return jsonify({"success": True, "artifacts": [], "artifacts_key": execution.artifacts_key}), 200
+        return (
+            jsonify(
+                {
+                    "success": True,
+                    "artifacts": [],
+                    "artifacts_key": execution.artifacts_key,
+                }
+            ),
+            200,
+        )
 
     except Exception as e:
         current_app.logger.error(f"Error listing artifacts: {e}")
@@ -490,7 +580,14 @@ def get_function_stats(function_id: str):
         user_id = user["id"]
         db = get_db()
 
-        func = db((db.iceruns.function_id == function_id) & (db.iceruns.created_by_id == user_id)).select().first()
+        func = (
+            db(
+                (db.iceruns.function_id == function_id)
+                & (db.iceruns.created_by_id == user_id)
+            )
+            .select()
+            .first()
+        )
 
         if not func:
             return jsonify({"error": "Function not found"}), 404
@@ -498,15 +595,17 @@ def get_function_stats(function_id: str):
         # Calculate stats
         total = db(db.iceruns_executions.function_id == func.id).count()
         completed = db(
-            (db.iceruns_executions.function_id == func.id) & (db.iceruns_executions.status == "completed")
+            (db.iceruns_executions.function_id == func.id)
+            & (db.iceruns_executions.status == "completed")
         ).count()
         failed = db(
-            (db.iceruns_executions.function_id == func.id) & (db.iceruns_executions.status == "failed")
+            (db.iceruns_executions.function_id == func.id)
+            & (db.iceruns_executions.status == "failed")
         ).count()
         avg_duration = (
-            db(db.iceruns_executions.function_id == func.id).select(
-                db.iceruns_executions.duration_ms.avg().with_alias("avg_duration")
-            ).first()
+            db(db.iceruns_executions.function_id == func.id)
+            .select(db.iceruns_executions.duration_ms.avg().with_alias("avg_duration"))
+            .first()
         )
 
         return (
@@ -518,7 +617,9 @@ def get_function_stats(function_id: str):
                         "completed": completed,
                         "failed": failed,
                         "success_rate": (completed / total * 100) if total > 0 else 0,
-                        "avg_duration_ms": avg_duration.avg_duration if avg_duration else 0,
+                        "avg_duration_ms": (
+                            avg_duration.avg_duration if avg_duration else 0
+                        ),
                     },
                 }
             ),

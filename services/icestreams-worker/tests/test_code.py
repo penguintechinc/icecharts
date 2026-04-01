@@ -97,7 +97,10 @@ class TestCodeValidation:
         """Test validation fails for timeout exceeding max."""
         config = {"code": "result = data", "timeout": 40}
         errors = CodeTransform.validate_config(config)
-        assert any("timeout" in e.lower() and ("exceed" in e.lower() or "30" in e) for e in errors)
+        assert any(
+            "timeout" in e.lower() and ("exceed" in e.lower() or "30" in e)
+            for e in errors
+        )
 
 
 class TestSimpleCodeExecution:
@@ -343,6 +346,7 @@ class TestJsonOperations:
         result = await node.execute(context, {"in": {"key": "value"}})
         assert result.success is True
         import json
+
         assert json.loads(result.outputs["out"]) == {"key": "value"}
 
     @pytest.mark.asyncio

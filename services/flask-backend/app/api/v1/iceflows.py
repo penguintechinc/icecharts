@@ -69,7 +69,9 @@ def serialize_flow(flow, include_stages=False):
         stages = db(db.iceflows_stages.flow_id == flow.id).select(
             orderby=db.iceflows_stages.stage_order
         )
-        result["stages"] = [serialize_stage(stage, include_details=True) for stage in stages]
+        result["stages"] = [
+            serialize_stage(stage, include_details=True) for stage in stages
+        ]
         result["stage_count"] = len(stages)
 
     return result
@@ -241,9 +243,10 @@ def create_flow():
         if not data.get("name"):
             return jsonify({"success": False, "error": "name is required"}), 400
         if not data.get("repository_url"):
-            return jsonify(
-                {"success": False, "error": "repository_url is required"}
-            ), 400
+            return (
+                jsonify({"success": False, "error": "repository_url is required"}),
+                400,
+            )
 
         # Auto-detect repository provider from URL
         repo_url = data["repository_url"].lower()
@@ -259,12 +262,19 @@ def create_flow():
         # Validate credential_id if provided
         credential_db_id = None
         if data.get("credential_id"):
-            credential = db(
-                (db.iceflows_credentials.credential_id == data["credential_id"])
-                & (db.iceflows_credentials.created_by_id == user_id)
-            ).select().first()
+            credential = (
+                db(
+                    (db.iceflows_credentials.credential_id == data["credential_id"])
+                    & (db.iceflows_credentials.created_by_id == user_id)
+                )
+                .select()
+                .first()
+            )
             if not credential:
-                return jsonify({"success": False, "error": "Invalid credential_id"}), 400
+                return (
+                    jsonify({"success": False, "error": "Invalid credential_id"}),
+                    400,
+                )
             credential_db_id = credential.id
 
         # Generate flow_id and webhook_secret
@@ -278,7 +288,9 @@ def create_flow():
             description=data.get("description", ""),
             repository_url=data["repository_url"],
             repository_provider=provider,
-            repository_name=data.get("repository_url").split("/")[-1].replace(".git", ""),
+            repository_name=data.get("repository_url")
+            .split("/")[-1]
+            .replace(".git", ""),
             default_branch=data.get("default_branch", "main"),
             credential_id=credential_db_id,
             gitops_enabled=data.get("gitops_enabled", False),
@@ -405,12 +417,19 @@ def update_flow(flow_id: str):
         if "credential_id" in data:
             # Validate credential if provided
             if data["credential_id"]:
-                credential = db(
-                    (db.iceflows_credentials.credential_id == data["credential_id"])
-                    & (db.iceflows_credentials.created_by_id == user_id)
-                ).select().first()
+                credential = (
+                    db(
+                        (db.iceflows_credentials.credential_id == data["credential_id"])
+                        & (db.iceflows_credentials.created_by_id == user_id)
+                    )
+                    .select()
+                    .first()
+                )
                 if not credential:
-                    return jsonify({"success": False, "error": "Invalid credential_id"}), 400
+                    return (
+                        jsonify({"success": False, "error": "Invalid credential_id"}),
+                        400,
+                    )
                 update_data["credential_id"] = credential.id
             else:
                 update_data["credential_id"] = None
@@ -660,9 +679,9 @@ def duplicate_flow(flow_id: str):
         db.commit()
 
         # Copy all stages
-        original_stages = db(
-            db.iceflows_stages.flow_id == original.id
-        ).select(orderby=db.iceflows_stages.stage_order)
+        original_stages = db(db.iceflows_stages.flow_id == original.id).select(
+            orderby=db.iceflows_stages.stage_order
+        )
 
         stage_mapping = {}  # Map old stage IDs to new stage IDs
 
@@ -689,9 +708,7 @@ def duplicate_flow(flow_id: str):
             stage_mapping[stage.id] = stage_db_id
 
             # Copy approvers
-            approvers = db(
-                db.iceflows_stage_approvers.stage_id == stage.id
-            ).select()
+            approvers = db(db.iceflows_stage_approvers.stage_id == stage.id).select()
             for approver in approvers:
                 db.iceflows_stage_approvers.insert(
                     approver_id=str(uuid.uuid4()),
@@ -704,9 +721,7 @@ def duplicate_flow(flow_id: str):
             db.commit()
 
             # Copy tests
-            tests = db(
-                db.iceflows_stage_tests.stage_id == stage.id
-            ).select()
+            tests = db(db.iceflows_stage_tests.stage_id == stage.id).select()
             for test in tests:
                 db.iceflows_stage_tests.insert(
                     test_id=str(uuid.uuid4()),
@@ -726,9 +741,7 @@ def duplicate_flow(flow_id: str):
             db.commit()
 
             # Copy calls
-            calls = db(
-                db.iceflows_stage_calls.stage_id == stage.id
-            ).select()
+            calls = db(db.iceflows_stage_calls.stage_id == stage.id).select()
             for call in calls:
                 db.iceflows_stage_calls.insert(
                     call_id=str(uuid.uuid4()),
@@ -806,7 +819,9 @@ def list_stages(flow_id: str):
             jsonify(
                 {
                     "success": True,
-                    "stages": [serialize_stage(stage, include_details=True) for stage in stages],
+                    "stages": [
+                        serialize_stage(stage, include_details=True) for stage in stages
+                    ],
                 }
             ),
             200,
@@ -867,9 +882,11 @@ def create_stage(flow_id: str):
             )
 
         # Get max stage_order
-        max_order = db(
-            db.iceflows_stages.flow_id == flow.id
-        ).select(db.iceflows_stages.stage_order.max()).first()
+        max_order = (
+            db(db.iceflows_stages.flow_id == flow.id)
+            .select(db.iceflows_stages.stage_order.max())
+            .first()
+        )
         next_order = (max_order[db.iceflows_stages.stage_order.max()] or 0) + 1
 
         # Create stage
@@ -943,10 +960,14 @@ def get_stage(flow_id: str, stage_id: str):
                 403,
             )
 
-        stage = db(
-            (db.iceflows_stages.stage_id == stage_id)
-            & (db.iceflows_stages.flow_id == flow.id)
-        ).select().first()
+        stage = (
+            db(
+                (db.iceflows_stages.stage_id == stage_id)
+                & (db.iceflows_stages.flow_id == flow.id)
+            )
+            .select()
+            .first()
+        )
 
         if not stage:
             return (
@@ -1053,10 +1074,14 @@ def update_stage(flow_id: str, stage_id: str):
                 403,
             )
 
-        stage = db(
-            (db.iceflows_stages.stage_id == stage_id)
-            & (db.iceflows_stages.flow_id == flow.id)
-        ).select().first()
+        stage = (
+            db(
+                (db.iceflows_stages.stage_id == stage_id)
+                & (db.iceflows_stages.flow_id == flow.id)
+            )
+            .select()
+            .first()
+        )
 
         if not stage:
             return (
@@ -1095,10 +1120,14 @@ def update_stage(flow_id: str, stage_id: str):
         stage.update_record(**update_data)
         db.commit()
 
-        updated_stage = db(
-            (db.iceflows_stages.stage_id == stage_id)
-            & (db.iceflows_stages.flow_id == flow.id)
-        ).select().first()
+        updated_stage = (
+            db(
+                (db.iceflows_stages.stage_id == stage_id)
+                & (db.iceflows_stages.flow_id == flow.id)
+            )
+            .select()
+            .first()
+        )
 
         return (
             jsonify(
@@ -1147,10 +1176,14 @@ def delete_stage(flow_id: str, stage_id: str):
                 403,
             )
 
-        stage = db(
-            (db.iceflows_stages.stage_id == stage_id)
-            & (db.iceflows_stages.flow_id == flow.id)
-        ).select().first()
+        stage = (
+            db(
+                (db.iceflows_stages.stage_id == stage_id)
+                & (db.iceflows_stages.flow_id == flow.id)
+            )
+            .select()
+            .first()
+        )
 
         if not stage:
             return (
@@ -1230,16 +1263,18 @@ def reorder_stages(flow_id: str):
 
         # Update order for each stage
         for order, stage_id in enumerate(stage_ids, start=1):
-            stage = db(
-                (db.iceflows_stages.stage_id == stage_id)
-                & (db.iceflows_stages.flow_id == flow.id)
-            ).select().first()
+            stage = (
+                db(
+                    (db.iceflows_stages.stage_id == stage_id)
+                    & (db.iceflows_stages.flow_id == flow.id)
+                )
+                .select()
+                .first()
+            )
 
             if not stage:
                 return (
-                    jsonify(
-                        {"success": False, "error": f"Stage {stage_id} not found"}
-                    ),
+                    jsonify({"success": False, "error": f"Stage {stage_id} not found"}),
                     404,
                 )
 
@@ -1319,9 +1354,7 @@ def export_flow_yaml(flow_id: str):
                 if approver.identity_id:
                     identity = db.identities[approver.identity_id]
                     if identity:
-                        approver_emails.append(
-                            identity.email or identity.username
-                        )
+                        approver_emails.append(identity.email or identity.username)
                 elif approver.group_id:
                     group = db.groups[approver.group_id]
                     if group:
@@ -1431,9 +1464,9 @@ def export_flow_yaml(flow_id: str):
 
         # Return YAML response
         response = Response(yaml_output, mimetype="application/x-yaml")
-        response.headers[
-            "Content-Disposition"
-        ] = f'attachment; filename="{flow.name}-flow.yaml"'
+        response.headers["Content-Disposition"] = (
+            f'attachment; filename="{flow.name}-flow.yaml"'
+        )
 
         return response, 200
 

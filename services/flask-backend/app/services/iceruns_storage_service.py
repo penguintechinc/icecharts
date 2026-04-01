@@ -254,9 +254,7 @@ class IceRunsStorageService:
             files = cls._run_async(provider.list_files(prefix=prefix))
 
             if not files:
-                raise FileNotFoundError(
-                    f"Package not found for function {function_id}"
-                )
+                raise FileNotFoundError(f"Package not found for function {function_id}")
 
             # Get the package file (should be only one)
             package_key = files[0].key
@@ -297,7 +295,9 @@ class IceRunsStorageService:
             files = cls._run_async(provider.list_files(prefix=prefix))
 
             if not files:
-                current_app.logger.warning(f"Package not found for deletion: {function_id}")
+                current_app.logger.warning(
+                    f"Package not found for deletion: {function_id}"
+                )
                 return False
 
             # Delete the package file
@@ -507,7 +507,9 @@ class IceRunsStorageService:
             files = cls._run_async(provider.list_files(prefix=prefix))
 
             if not files:
-                current_app.logger.debug(f"Package not found for function {function_id}")
+                current_app.logger.debug(
+                    f"Package not found for function {function_id}"
+                )
                 return None
 
             package_key = files[0].key
@@ -556,9 +558,7 @@ class IceRunsStorageService:
             # Check if exists
             exists = cls._run_async(provider.exists(artifact_key))
             if not exists:
-                current_app.logger.debug(
-                    f"Artifact not found: {artifact_key}"
-                )
+                current_app.logger.debug(f"Artifact not found: {artifact_key}")
                 return None
 
             # Generate presigned URL
@@ -605,7 +605,9 @@ class IceRunsStorageService:
                         "key": f.key,
                         "filename": filename,
                         "size": f.size,
-                        "modified": f.last_modified.isoformat() if f.last_modified else None,
+                        "modified": (
+                            f.last_modified.isoformat() if f.last_modified else None
+                        ),
                     }
                 )
 
@@ -638,7 +640,9 @@ class IceRunsStorageService:
             files = cls._run_async(provider.list_files(prefix=prefix))
 
             if not files:
-                current_app.logger.debug(f"No artifacts to delete for execution {execution_id}")
+                current_app.logger.debug(
+                    f"No artifacts to delete for execution {execution_id}"
+                )
                 return True
 
             # Delete all artifact files

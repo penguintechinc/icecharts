@@ -23,12 +23,22 @@ def example_simple_playbook():
     nodes = [
         {"id": "trigger_1", "category": "triggers", "type": "interval"},
         {"id": "fetch_data", "category": "actions", "type": "http"},
-        {"id": "log_result", "category": "actions", "type": "log"}
+        {"id": "log_result", "category": "actions", "type": "log"},
     ]
 
     edges = [
-        {"source": "trigger_1", "sourceHandle": "out", "target": "fetch_data", "targetHandle": "in"},
-        {"source": "fetch_data", "sourceHandle": "out", "target": "log_result", "targetHandle": "in"}
+        {
+            "source": "trigger_1",
+            "sourceHandle": "out",
+            "target": "fetch_data",
+            "targetHandle": "in",
+        },
+        {
+            "source": "fetch_data",
+            "sourceHandle": "out",
+            "target": "log_result",
+            "targetHandle": "in",
+        },
     ]
 
     # Validate graph
@@ -63,20 +73,43 @@ def example_conditional_playbook():
         {"id": "process_request", "category": "actions", "type": "process"},
         {"id": "reject_request", "category": "actions", "type": "reject"},
         {"id": "log_success", "category": "actions", "type": "log"},
-        {"id": "log_failure", "category": "actions", "type": "log"}
+        {"id": "log_failure", "category": "actions", "type": "log"},
     ]
 
     edges = [
         # Trigger to auth check
-        {"source": "trigger_1", "sourceHandle": "out", "target": "check_auth", "targetHandle": "in"},
-
+        {
+            "source": "trigger_1",
+            "sourceHandle": "out",
+            "target": "check_auth",
+            "targetHandle": "in",
+        },
         # Auth success path
-        {"source": "check_auth", "sourceHandle": "true", "target": "process_request", "targetHandle": "in"},
-        {"source": "process_request", "sourceHandle": "out", "target": "log_success", "targetHandle": "in"},
-
+        {
+            "source": "check_auth",
+            "sourceHandle": "true",
+            "target": "process_request",
+            "targetHandle": "in",
+        },
+        {
+            "source": "process_request",
+            "sourceHandle": "out",
+            "target": "log_success",
+            "targetHandle": "in",
+        },
         # Auth failure path
-        {"source": "check_auth", "sourceHandle": "false", "target": "reject_request", "targetHandle": "in"},
-        {"source": "reject_request", "sourceHandle": "out", "target": "log_failure", "targetHandle": "in"}
+        {
+            "source": "check_auth",
+            "sourceHandle": "false",
+            "target": "reject_request",
+            "targetHandle": "in",
+        },
+        {
+            "source": "reject_request",
+            "sourceHandle": "out",
+            "target": "log_failure",
+            "targetHandle": "in",
+        },
     ]
 
     # Validate
@@ -110,13 +143,13 @@ def example_invalid_playbook():
     nodes = [
         {"id": "node_1", "category": "actions"},
         {"id": "node_2", "category": "actions"},
-        {"id": "node_3", "category": "actions"}
+        {"id": "node_3", "category": "actions"},
     ]
 
     edges = [
         {"source": "node_1", "target": "node_2"},
         {"source": "node_2", "target": "node_3"},
-        {"source": "node_3", "target": "node_1"}  # Creates cycle
+        {"source": "node_3", "target": "node_1"},  # Creates cycle
     ]
 
     # Validate - should detect cycle
@@ -140,23 +173,50 @@ def example_complex_playbook():
         {"id": "fetch_orders", "category": "actions", "type": "database"},
         {"id": "join_data", "category": "logic", "type": "merge"},
         {"id": "transform", "category": "actions", "type": "transform"},
-        {"id": "save_report", "category": "actions", "type": "database"}
+        {"id": "save_report", "category": "actions", "type": "database"},
     ]
 
     edges = [
         # Trigger starts two parallel fetches
-        {"source": "trigger_1", "sourceHandle": "out", "target": "fetch_users", "targetHandle": "in"},
-        {"source": "trigger_1", "sourceHandle": "out", "target": "fetch_orders", "targetHandle": "in"},
-
+        {
+            "source": "trigger_1",
+            "sourceHandle": "out",
+            "target": "fetch_users",
+            "targetHandle": "in",
+        },
+        {
+            "source": "trigger_1",
+            "sourceHandle": "out",
+            "target": "fetch_orders",
+            "targetHandle": "in",
+        },
         # Both fetches feed into join
-        {"source": "fetch_users", "sourceHandle": "out", "target": "join_data", "targetHandle": "users"},
-        {"source": "fetch_orders", "sourceHandle": "out", "target": "join_data", "targetHandle": "orders"},
-
+        {
+            "source": "fetch_users",
+            "sourceHandle": "out",
+            "target": "join_data",
+            "targetHandle": "users",
+        },
+        {
+            "source": "fetch_orders",
+            "sourceHandle": "out",
+            "target": "join_data",
+            "targetHandle": "orders",
+        },
         # Join feeds into transform
-        {"source": "join_data", "sourceHandle": "out", "target": "transform", "targetHandle": "in"},
-
+        {
+            "source": "join_data",
+            "sourceHandle": "out",
+            "target": "transform",
+            "targetHandle": "in",
+        },
         # Transform saves result
-        {"source": "transform", "sourceHandle": "out", "target": "save_report", "targetHandle": "in"}
+        {
+            "source": "transform",
+            "sourceHandle": "out",
+            "target": "save_report",
+            "targetHandle": "in",
+        },
     ]
 
     # Validate
@@ -178,7 +238,9 @@ def example_complex_playbook():
     join_idx = execution_order.index("join_data")
 
     print(f"\nParallelization opportunity:")
-    print(f"  'fetch_users' (position {fetch_users_idx}) and 'fetch_orders' (position {fetch_orders_idx})")
+    print(
+        f"  'fetch_users' (position {fetch_users_idx}) and 'fetch_orders' (position {fetch_orders_idx})"
+    )
     print(f"  can execute in parallel before 'join_data' (position {join_idx})")
 
     # Analyze join node inputs

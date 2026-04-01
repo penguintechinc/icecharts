@@ -37,7 +37,8 @@ def admin_list_users():
 
     if search:
         conditions.append(
-            (db.identities.email.contains(search)) | (db.identities.full_name.contains(search))
+            (db.identities.email.contains(search))
+            | (db.identities.full_name.contains(search))
         )
 
     if role:

@@ -6,7 +6,9 @@ import json
 import pytest
 from unittest.mock import MagicMock, patch
 
-sys.path.insert(0, os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), 'app'))
+sys.path.insert(
+    0, os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "app")
+)
 
 
 class ConcreteRuntime:
@@ -23,23 +25,42 @@ class ConcreteRuntime:
         return ["test", handler]
 
     def _parse_output(self, stdout):
-        for line in reversed(stdout.split('\n')):
-            if line.startswith('__ICERUN_OUTPUT__:'):
+        for line in reversed(stdout.split("\n")):
+            if line.startswith("__ICERUN_OUTPUT__:"):
                 try:
-                    return json.loads(line.split(':', 1)[1])
+                    return json.loads(line.split(":", 1)[1])
                 except json.JSONDecodeError:
                     return None
         return None
 
-    def execute(self, code_dir, entrypoint, handler, input_data, env_vars,
-                secrets, memory_limit_mb, timeout_seconds, cpu_limit, execution_id):
+    def execute(
+        self,
+        code_dir,
+        entrypoint,
+        handler,
+        input_data,
+        env_vars,
+        secrets,
+        memory_limit_mb,
+        timeout_seconds,
+        cpu_limit,
+        execution_id,
+    ):
         from app.action_runtime import BaseRuntime
+
         # Delegate to BaseRuntime.execute by calling it directly
         return BaseRuntime.execute(
-            self, code_dir=code_dir, entrypoint=entrypoint, handler=handler,
-            input_data=input_data, env_vars=env_vars, secrets=secrets,
-            memory_limit_mb=memory_limit_mb, timeout_seconds=timeout_seconds,
-            cpu_limit=cpu_limit, execution_id=execution_id,
+            self,
+            code_dir=code_dir,
+            entrypoint=entrypoint,
+            handler=handler,
+            input_data=input_data,
+            env_vars=env_vars,
+            secrets=secrets,
+            memory_limit_mb=memory_limit_mb,
+            timeout_seconds=timeout_seconds,
+            cpu_limit=cpu_limit,
+            execution_id=execution_id,
         )
 
 
@@ -71,6 +92,7 @@ class TestRuntimeManager:
     def test_get_unknown_runtime_raises_value_error(self, reset_runtime_manager):
         """get_runtime raises ValueError for unknown runtime."""
         from app.action_runtime import RuntimeManager
+
         with pytest.raises(ValueError, match="Unsupported runtime"):
             RuntimeManager.get_runtime("unknown_runtime_xyz")
 
@@ -127,9 +149,16 @@ class TestBaseRuntimeExecute:
 
         runtime = TestRuntime()
         runtime.execute(
-            code_dir="/tmp/code", entrypoint="main", handler="main.h",
-            input_data={}, env_vars={}, secrets={}, memory_limit_mb=256,
-            timeout_seconds=30, cpu_limit=0.5, execution_id="exec-1",
+            code_dir="/tmp/code",
+            entrypoint="main",
+            handler="main.h",
+            input_data={},
+            env_vars={},
+            secrets={},
+            memory_limit_mb=256,
+            timeout_seconds=30,
+            cpu_limit=0.5,
+            execution_id="exec-1",
         )
         call_kwargs = mock_docker_client.containers.run.call_args[1]
         assert call_kwargs["mem_limit"] == "256m"
@@ -151,9 +180,16 @@ class TestBaseRuntimeExecute:
 
         runtime = TestRuntime()
         runtime.execute(
-            code_dir="/tmp/code", entrypoint="main", handler="main.h",
-            input_data={}, env_vars={}, secrets={}, memory_limit_mb=128,
-            timeout_seconds=30, cpu_limit=1.0, execution_id="exec-1",
+            code_dir="/tmp/code",
+            entrypoint="main",
+            handler="main.h",
+            input_data={},
+            env_vars={},
+            secrets={},
+            memory_limit_mb=128,
+            timeout_seconds=30,
+            cpu_limit=1.0,
+            execution_id="exec-1",
         )
         call_kwargs = mock_docker_client.containers.run.call_args[1]
         assert call_kwargs["cpu_quota"] == 100000
@@ -175,9 +211,16 @@ class TestBaseRuntimeExecute:
 
         runtime = TestRuntime()
         runtime.execute(
-            code_dir="/tmp/mycode", entrypoint="main", handler="main.h",
-            input_data={}, env_vars={}, secrets={}, memory_limit_mb=128,
-            timeout_seconds=30, cpu_limit=0.5, execution_id="exec-1",
+            code_dir="/tmp/mycode",
+            entrypoint="main",
+            handler="main.h",
+            input_data={},
+            env_vars={},
+            secrets={},
+            memory_limit_mb=128,
+            timeout_seconds=30,
+            cpu_limit=0.5,
+            execution_id="exec-1",
         )
         call_kwargs = mock_docker_client.containers.run.call_args[1]
         volumes = call_kwargs["volumes"]
@@ -201,9 +244,16 @@ class TestBaseRuntimeExecute:
 
         runtime = TestRuntime()
         runtime.execute(
-            code_dir="/tmp/code", entrypoint="main", handler="main.h",
-            input_data={"name": "test"}, env_vars={}, secrets={}, memory_limit_mb=128,
-            timeout_seconds=30, cpu_limit=0.5, execution_id="exec-1",
+            code_dir="/tmp/code",
+            entrypoint="main",
+            handler="main.h",
+            input_data={"name": "test"},
+            env_vars={},
+            secrets={},
+            memory_limit_mb=128,
+            timeout_seconds=30,
+            cpu_limit=0.5,
+            execution_id="exec-1",
         )
         call_kwargs = mock_docker_client.containers.run.call_args[1]
         environment = call_kwargs["environment"]
@@ -227,9 +277,16 @@ class TestBaseRuntimeExecute:
 
         runtime = TestRuntime()
         runtime.execute(
-            code_dir="/tmp/code", entrypoint="main", handler="main.h",
-            input_data={}, env_vars={}, secrets={}, memory_limit_mb=128,
-            timeout_seconds=30, cpu_limit=0.5, execution_id="exec-1",
+            code_dir="/tmp/code",
+            entrypoint="main",
+            handler="main.h",
+            input_data={},
+            env_vars={},
+            secrets={},
+            memory_limit_mb=128,
+            timeout_seconds=30,
+            cpu_limit=0.5,
+            execution_id="exec-1",
         )
         call_kwargs = mock_docker_client.containers.run.call_args[1]
         assert call_kwargs["network_mode"] == "none"
@@ -251,9 +308,16 @@ class TestBaseRuntimeExecute:
 
         runtime = TestRuntime()
         result = runtime.execute(
-            code_dir="/tmp/code", entrypoint="main", handler="main.h",
-            input_data={}, env_vars={}, secrets={}, memory_limit_mb=128,
-            timeout_seconds=30, cpu_limit=0.5, execution_id="exec-1",
+            code_dir="/tmp/code",
+            entrypoint="main",
+            handler="main.h",
+            input_data={},
+            env_vars={},
+            secrets={},
+            memory_limit_mb=128,
+            timeout_seconds=30,
+            cpu_limit=0.5,
+            execution_id="exec-1",
         )
         assert "exit_code" in result
         assert "stdout" in result
@@ -276,9 +340,16 @@ class TestBaseRuntimeExecute:
 
         runtime = TestRuntime()
         result = runtime.execute(
-            code_dir="/tmp/code", entrypoint="main", handler="main.h",
-            input_data={}, env_vars={}, secrets={}, memory_limit_mb=128,
-            timeout_seconds=30, cpu_limit=0.5, execution_id="exec-1",
+            code_dir="/tmp/code",
+            entrypoint="main",
+            handler="main.h",
+            input_data={},
+            env_vars={},
+            secrets={},
+            memory_limit_mb=128,
+            timeout_seconds=30,
+            cpu_limit=0.5,
+            execution_id="exec-1",
         )
         assert "memory_used_mb" in result
         assert "cpu_time_ms" in result

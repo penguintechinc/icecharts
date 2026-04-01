@@ -43,7 +43,9 @@ class TestJsonTransformValidation:
         config = {"jsonPath": "user.name"}
         errors = JsonTransform.validate_config(config)
         # Missing operation defaults to "extract", check for missing jsonPath instead
-        assert len(errors) == 0 or any("operation" in e.lower() or "path" in e.lower() for e in errors)
+        assert len(errors) == 0 or any(
+            "operation" in e.lower() or "path" in e.lower() for e in errors
+        )
 
     def test_validate_config_invalid_operation(self) -> None:
         """Test validation fails for invalid operation."""
@@ -77,9 +79,23 @@ class TestJsonTransformValidation:
 
     def test_validate_config_all_operations(self) -> None:
         """Test all valid operations."""
-        operations = ["extract", "set", "delete", "rename", "merge", "flatten", "unflatten"]
+        operations = [
+            "extract",
+            "set",
+            "delete",
+            "rename",
+            "merge",
+            "flatten",
+            "unflatten",
+        ]
         for op in operations:
-            config = {"operation": op, "jsonPath": "test", "value": "test", "fromPath": "from", "toPath": "to"}
+            config = {
+                "operation": op,
+                "jsonPath": "test",
+                "value": "test",
+                "fromPath": "from",
+                "toPath": "to",
+            }
             errors = JsonTransform.validate_config(config)
             # Should not have operation-specific errors
             assert not any("Invalid operation" in e for e in errors)
@@ -195,7 +211,11 @@ class TestSetOperation:
         """Test setting a nested value."""
         node = JsonTransform()
         context = MagicMock(spec=NodeContext)
-        context.config = {"operation": "set", "jsonPath": "user.email", "value": "new@example.com"}
+        context.config = {
+            "operation": "set",
+            "jsonPath": "user.email",
+            "value": "new@example.com",
+        }
         context.log_info = MagicMock()
         context.log_error = MagicMock()
 
@@ -340,7 +360,11 @@ class TestRenameOperation:
         """Test renaming a simple key."""
         node = JsonTransform()
         context = MagicMock(spec=NodeContext)
-        context.config = {"operation": "rename", "fromPath": "old_name", "toPath": "new_name"}
+        context.config = {
+            "operation": "rename",
+            "fromPath": "old_name",
+            "toPath": "new_name",
+        }
         context.log_info = MagicMock()
         context.log_error = MagicMock()
 
@@ -356,7 +380,11 @@ class TestRenameOperation:
         """Test renaming nested keys."""
         node = JsonTransform()
         context = MagicMock(spec=NodeContext)
-        context.config = {"operation": "rename", "fromPath": "user.email_address", "toPath": "user.email"}
+        context.config = {
+            "operation": "rename",
+            "fromPath": "user.email_address",
+            "toPath": "user.email",
+        }
         context.log_info = MagicMock()
         context.log_error = MagicMock()
 
@@ -394,7 +422,9 @@ class TestRenameOperation:
         result = await node.execute(context, {"in": data})
         assert result.success is True
         # Rename sets None if source missing, so new will be None
-        assert result.outputs["out"]["new"] is None or "new" not in result.outputs["out"]
+        assert (
+            result.outputs["out"]["new"] is None or "new" not in result.outputs["out"]
+        )
 
 
 class TestMergeOperation:

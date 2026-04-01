@@ -42,9 +42,7 @@ class TestIceStreamsWorkerInit:
     def test_init_with_custom_params(self):
         """Worker initializes with provided parameters."""
         worker = IceStreamsWorker(
-            redis_url="redis://custom:6379/0",
-            worker_id="worker-custom",
-            concurrency=5
+            redis_url="redis://custom:6379/0", worker_id="worker-custom", concurrency=5
         )
         assert worker.worker_id == "worker-custom"
         assert worker.concurrency == 5
@@ -52,6 +50,7 @@ class TestIceStreamsWorkerInit:
 
     def test_init_with_env_variables(self, monkeypatch):
         """Worker reads configuration from environment variables."""
+
         # Override os.getenv for this test
         def mock_getenv(key, default=None):
             env_map = {
@@ -110,7 +109,7 @@ class TestIceStreamsWorkerConnection:
 
         with patch(
             "redis.asyncio.from_url",
-            side_effect=redis.exceptions.ConnectionError("Failed to connect")
+            side_effect=redis.exceptions.ConnectionError("Failed to connect"),
         ):
             with pytest.raises(redis.exceptions.ConnectionError):
                 await worker.connect()
@@ -158,7 +157,9 @@ class TestConsumerGroup:
         worker = IceStreamsWorker()
         worker.redis_client = AsyncMock()
         worker.redis_client.xgroup_create = AsyncMock(
-            side_effect=redis.ResponseError("BUSYGROUP Consumer Group name already exists")
+            side_effect=redis.ResponseError(
+                "BUSYGROUP Consumer Group name already exists"
+            )
         )
 
         # Should not raise
@@ -204,7 +205,7 @@ class TestMessageProcessing:
             execution_time_ms=100.0,
             completed_nodes=["node1"],
             failed_nodes=[],
-            skipped_nodes=[]
+            skipped_nodes=[],
         )
         mock_executor.execute = AsyncMock(return_value=mock_result)
 
@@ -216,8 +217,8 @@ class TestMessageProcessing:
                     "payload": {
                         "playbook_id": "pb-001",
                         "playbook_data": {"nodes": [], "connections": []},
-                    }
-                }
+                    },
+                },
             )
 
         assert result is True
@@ -231,8 +232,7 @@ class TestMessageProcessing:
         worker.redis_client.xack = AsyncMock()
 
         result = await worker.process_message(
-            "msg-001",
-            {"type": "health_check", "payload": {}}
+            "msg-001", {"type": "health_check", "payload": {}}
         )
 
         assert result is True
@@ -246,8 +246,7 @@ class TestMessageProcessing:
         worker.redis_client.xack = AsyncMock()
 
         result = await worker.process_message(
-            "msg-001",
-            {"type": "unknown_type", "payload": {}}
+            "msg-001", {"type": "unknown_type", "payload": {}}
         )
 
         assert result is True
@@ -265,8 +264,8 @@ class TestMessageProcessing:
             "msg-001",
             {
                 "type": "playbook_execute",
-                "payload": {"playbook_data": {}}  # Missing playbook_id
-            }
+                "payload": {"playbook_data": {}},  # Missing playbook_id
+            },
         )
 
         assert result is True
@@ -279,8 +278,7 @@ class TestMessageProcessing:
         worker.redis_client.xack = AsyncMock(side_effect=Exception("ACK failed"))
 
         result = await worker.process_message(
-            "msg-001",
-            {"type": "health_check", "payload": {}}
+            "msg-001", {"type": "health_check", "payload": {}}
         )
 
         assert result is False
@@ -304,7 +302,7 @@ class TestPlaybookExecution:
             execution_time_ms=100.0,
             completed_nodes=["node1", "node2"],
             failed_nodes=[],
-            skipped_nodes=[]
+            skipped_nodes=[],
         )
         mock_executor.execute = AsyncMock(return_value=mock_result)
 
@@ -316,7 +314,7 @@ class TestPlaybookExecution:
                     "execution_id": "exec-001",
                     "playbook_data": {"nodes": [], "connections": []},
                     "node_timeout_seconds": 30.0,
-                }
+                },
             )
 
         # Verify xadd was called for status and result
@@ -334,7 +332,7 @@ class TestPlaybookExecution:
             {
                 "playbook_id": "pb-001",
                 "execution_id": "exec-001",
-            }
+            },
         )
 
         # Should publish error
@@ -347,10 +345,7 @@ class TestPlaybookExecution:
         worker.redis_client = AsyncMock()
         worker.redis_client.xadd = AsyncMock()
 
-        await worker._handle_playbook_execute(
-            "msg-001",
-            {"playbook_data": {}}
-        )
+        await worker._handle_playbook_execute("msg-001", {"playbook_data": {}})
 
         # Should publish error
         assert worker.redis_client.xadd.called
@@ -370,7 +365,7 @@ class TestPlaybookExecution:
             execution_time_ms=100.0,
             completed_nodes=[],
             failed_nodes=[],
-            skipped_nodes=[]
+            skipped_nodes=[],
         )
         mock_executor.execute = AsyncMock(return_value=mock_result)
 
@@ -381,7 +376,7 @@ class TestPlaybookExecution:
                     "playbook_id": "pb-001",
                     "playbook_data": {},
                     # No execution_id provided
-                }
+                },
             )
 
         # Should generate an execution_id
@@ -399,8 +394,7 @@ class TestPublishMethods:
         worker.redis_client.xadd = AsyncMock()
 
         await worker._publish_status(
-            "exec-001",
-            {"status": "running", "playbook_id": "pb-001"}
+            "exec-001", {"status": "running", "playbook_id": "pb-001"}
         )
 
         worker.redis_client.xadd.assert_called_once()
@@ -421,7 +415,7 @@ class TestPublishMethods:
             execution_time_ms=100.0,
             completed_nodes=["node1"],
             failed_nodes=[],
-            skipped_nodes=[]
+            skipped_nodes=[],
         )
 
         await worker._publish_result("exec-001", mock_result)
@@ -481,7 +475,7 @@ class TestConsumerLoop:
                         "icestreams:tasks",
                         [
                             ("msg-001", {"type": "health_check", "payload": {}}),
-                        ]
+                        ],
                     )
                 ],
             ]
@@ -601,8 +595,7 @@ class TestConcurrency:
         results = []
         for i in range(3):
             result = await worker.process_message(
-                f"msg-{i:03d}",
-                {"type": "health_check", "payload": {}}
+                f"msg-{i:03d}", {"type": "health_check", "payload": {}}
             )
             results.append(result)
 

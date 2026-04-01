@@ -452,9 +452,7 @@ class TestGenerateNodesErrorHandling:
             transforms=(),
         )
 
-        with patch(
-            "connectors.node_generator.create_trigger_node"
-        ) as mock_create:
+        with patch("connectors.node_generator.create_trigger_node") as mock_create:
             mock_create.side_effect = ValueError("Invalid definition")
 
             with patch("connectors.node_generator.logger") as mock_logger:

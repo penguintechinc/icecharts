@@ -26,6 +26,7 @@ logger = logging.getLogger(__name__)
 @dataclass(slots=True, frozen=True)
 class AuthConfig:
     """Authentication configuration for webhooks."""
+
     auth_type: str = "none"  # none, bearer, basic, apikey
     bearer_token: Optional[str] = None
     basic_username: Optional[str] = None
@@ -58,7 +59,9 @@ class WebhookOutAction(BaseNode):
 
     node_type = "action_webhook_out"
     name = "Webhook Out"
-    description = "Send webhooks with authentication and exponential backoff retry logic"
+    description = (
+        "Send webhooks with authentication and exponential backoff retry logic"
+    )
     category = "actions"
 
     @classmethod
@@ -184,18 +187,22 @@ class WebhookOutAction(BaseNode):
                         return success, response.status_code, message
 
                     if attempt < max_retries:
-                        wait_time = (2 ** attempt) * 1.0
+                        wait_time = (2**attempt) * 1.0
                         context.log_warning(
                             f"Webhook send failed with {response.status_code}, "
                             f"retrying in {wait_time:.2f}s (attempt {attempt + 1}/{max_retries})"
                         )
                         await asyncio.sleep(wait_time)
                     else:
-                        return False, response.status_code, f"HTTP {response.status_code}"
+                        return (
+                            False,
+                            response.status_code,
+                            f"HTTP {response.status_code}",
+                        )
 
                 except (asyncio.TimeoutError, httpx.TimeoutException) as e:
                     if attempt < max_retries:
-                        wait_time = (2 ** attempt) * 1.0
+                        wait_time = (2**attempt) * 1.0
                         context.log_warning(
                             f"Webhook send timeout, retrying in {wait_time:.2f}s "
                             f"(attempt {attempt + 1}/{max_retries})"
@@ -206,7 +213,7 @@ class WebhookOutAction(BaseNode):
 
                 except (httpx.ConnectError, httpx.NetworkError) as e:
                     if attempt < max_retries:
-                        wait_time = (2 ** attempt) * 1.0
+                        wait_time = (2**attempt) * 1.0
                         context.log_warning(
                             f"Webhook connect error, retrying in {wait_time:.2f}s "
                             f"(attempt {attempt + 1}/{max_retries})"
@@ -217,9 +224,7 @@ class WebhookOutAction(BaseNode):
 
         return False, 0, "Failed after retries"
 
-    async def execute(
-        self, context: NodeContext, inputs: Dict[str, Any]
-    ) -> NodeResult:
+    async def execute(self, context: NodeContext, inputs: Dict[str, Any]) -> NodeResult:
         """Execute webhook send."""
         start_time = time.perf_counter()
 

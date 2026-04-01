@@ -72,11 +72,17 @@ class JsonTransform(BaseNode):
         errors = []
 
         operation = config.get("operation", "extract")
-        valid_ops = {"extract", "set", "delete", "rename", "merge", "flatten", "unflatten"}
+        valid_ops = {
+            "extract",
+            "set",
+            "delete",
+            "rename",
+            "merge",
+            "flatten",
+            "unflatten",
+        }
         if operation not in valid_ops:
-            errors.append(
-                f"Invalid operation: {operation}. Valid: {sorted(valid_ops)}"
-            )
+            errors.append(f"Invalid operation: {operation}. Valid: {sorted(valid_ops)}")
 
         if operation == "extract":
             path = config.get("jsonPath", "")
@@ -113,6 +119,7 @@ class JsonTransform(BaseNode):
         """
         try:
             import jmespath
+
             return jmespath.search(path, data)
         except ImportError:
             # Fallback to simple dot notation
@@ -212,9 +219,7 @@ class JsonTransform(BaseNode):
 
         return data
 
-    def _rename_path(
-        self, data: Dict, from_path: str, to_path: str
-    ) -> Dict:
+    def _rename_path(self, data: Dict, from_path: str, to_path: str) -> Dict:
         """
         Rename a field by extracting from one path and setting at another.
 
@@ -231,9 +236,7 @@ class JsonTransform(BaseNode):
         data = self._set_path(data, to_path, value)
         return data
 
-    def _flatten(
-        self, data: Dict, prefix: str = "", sep: str = "."
-    ) -> Dict:
+    def _flatten(self, data: Dict, prefix: str = "", sep: str = ".") -> Dict:
         """
         Flatten nested dictionary to single level with concatenated keys.
 
@@ -298,9 +301,7 @@ class JsonTransform(BaseNode):
 
         return result
 
-    async def execute(
-        self, context: NodeContext, inputs: Dict[str, Any]
-    ) -> NodeResult:
+    async def execute(self, context: NodeContext, inputs: Dict[str, Any]) -> NodeResult:
         """
         Execute the JSON transform operation.
 

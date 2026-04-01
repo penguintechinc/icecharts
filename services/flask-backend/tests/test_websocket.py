@@ -444,11 +444,7 @@ class TestCollaborationManagerEdgeCases:
         # First 10 should be unique
         if len(colors_used) <= 10:
             assert len(colors_used) == len(
-                [
-                    c
-                    for c in colors_used
-                    if colors_used.count(c) == 1
-                ]
+                [c for c in colors_used if colors_used.count(c) == 1]
             )
 
     def test_cleanup_user_locks_removes_all_locks_for_session(self, manager):
@@ -479,10 +475,7 @@ class TestCollaborationManagerEdgeCases:
         shape_id = "shape-expiring"
 
         # Lock with first user
-        assert (
-            manager.lock_shape(room_id, shape_id, "user-1", "session-1")
-            is True
-        )
+        assert manager.lock_shape(room_id, shape_id, "user-1", "session-1") is True
 
         # Manually expire the lock if using in-memory storage
         if not manager.redis_client:
@@ -496,9 +489,7 @@ class TestCollaborationManagerEdgeCases:
         # Try to lock again with second user
         # Note: Redis expiration is handled by Redis, in-memory is manual check
         if not manager.redis_client:
-            result = manager.lock_shape(
-                room_id, shape_id, "user-2", "session-2"
-            )
+            result = manager.lock_shape(room_id, shape_id, "user-2", "session-2")
             assert result is True
 
     def test_cursor_position_update_persists(self, manager):

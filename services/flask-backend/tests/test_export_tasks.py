@@ -17,7 +17,6 @@ from app.tasks.export_tasks import (
     get_export_status,
 )
 
-
 _REDIS_PATCH = "redis.Redis"
 _EXPORT_PATCH = "app.tasks.export_tasks.ExportService.export"
 
@@ -254,7 +253,9 @@ class TestExportDrawingTask:
             )
 
             calls = [c[0] for c in redis_inst.setex.call_args_list]
-            status_calls = [c for c in calls if "export:task:" in c[0] and "error" not in c[0]]
+            status_calls = [
+                c for c in calls if "export:task:" in c[0] and "error" not in c[0]
+            ]
             assert len(status_calls) > 0
 
     def test_export_task_failure_stores_error_in_redis(self):
@@ -334,7 +335,9 @@ class TestExportDrawingTask:
         for fmt in formats:
             redis_cls, _ = _mock_redis()
             with patch(_REDIS_PATCH, redis_cls), patch(_EXPORT_PATCH) as mock_export:
-                mock_export.return_value = b"DATA" if fmt != "json" else '{"data": "test"}'
+                mock_export.return_value = (
+                    b"DATA" if fmt != "json" else '{"data": "test"}'
+                )
 
                 result = export_drawing_task.run(
                     drawing_id=1,

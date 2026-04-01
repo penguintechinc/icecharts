@@ -29,9 +29,7 @@ from app.models import DB_TYPE_TO_PYDAL_SCHEME, VALID_DB_TYPES
 
 logger = logging.getLogger(__name__)
 
-database_ops_v1_bp = Blueprint(
-    "database_ops", __name__, url_prefix="/database-ops"
-)
+database_ops_v1_bp = Blueprint("database_ops", __name__, url_prefix="/database-ops")
 
 # NoSQL databases that don't support stored procedures
 NOSQL_DB_TYPES = {"mongodb", "couchdb", "firestore"}
@@ -57,8 +55,7 @@ def _build_db_uri(config: Dict[str, Any]) -> str:
     db_type = config.get("db_type", "").lower()
     if db_type not in VALID_DB_TYPES:
         raise ValueError(
-            f"Invalid db_type: {db_type}. "
-            f"Must be one of: {sorted(VALID_DB_TYPES)}"
+            f"Invalid db_type: {db_type}. " f"Must be one of: {sorted(VALID_DB_TYPES)}"
         )
 
     scheme = DB_TYPE_TO_PYDAL_SCHEME[db_type]
@@ -190,9 +187,7 @@ def execute_query():
 
         # Define table dynamically if it doesn't exist in DAL
         if table_name not in db.tables:
-            db.define_table(
-                table_name, migrate=False, fake_migrate=True
-            )
+            db.define_table(table_name, migrate=False, fake_migrate=True)
 
         table = db[table_name]
 
@@ -204,9 +199,7 @@ def execute_query():
 
         # Select fields
         if fields:
-            select_fields = [
-                table[f] for f in fields if hasattr(table, f)
-            ]
+            select_fields = [table[f] for f in fields if hasattr(table, f)]
         else:
             select_fields = [table.ALL]
 
@@ -217,12 +210,17 @@ def execute_query():
 
         result = [row.as_dict() for row in rows]
 
-        return jsonify({
-            "data": result,
-            "count": len(result),
-            "limit": limit,
-            "offset": offset,
-        }), 200
+        return (
+            jsonify(
+                {
+                    "data": result,
+                    "count": len(result),
+                    "limit": limit,
+                    "offset": offset,
+                }
+            ),
+            200,
+        )
 
     except ValueError as e:
         return jsonify({"error": str(e)}), 400
@@ -262,9 +260,7 @@ def insert_row():
         db = _get_connection(connection)
 
         if table_name not in db.tables:
-            db.define_table(
-                table_name, migrate=False, fake_migrate=True
-            )
+            db.define_table(table_name, migrate=False, fake_migrate=True)
 
         row_id = db[table_name].insert(**row_data)
         db.commit()
@@ -315,9 +311,7 @@ def update_rows():
         db = _get_connection(connection)
 
         if table_name not in db.tables:
-            db.define_table(
-                table_name, migrate=False, fake_migrate=True
-            )
+            db.define_table(table_name, migrate=False, fake_migrate=True)
 
         table = db[table_name]
         query = table.id > 0
@@ -370,9 +364,7 @@ def delete_rows():
         db = _get_connection(connection)
 
         if table_name not in db.tables:
-            db.define_table(
-                table_name, migrate=False, fake_migrate=True
-            )
+            db.define_table(table_name, migrate=False, fake_migrate=True)
 
         table = db[table_name]
         query = table.id > 0
@@ -425,16 +417,15 @@ def bulk_insert():
         if not rows:
             return jsonify({"error": "rows is required"}), 400
         if len(rows) > MAX_BULK_INSERT_ROWS:
-            return jsonify({
-                "error": f"Maximum {MAX_BULK_INSERT_ROWS} rows per request"
-            }), 400
+            return (
+                jsonify({"error": f"Maximum {MAX_BULK_INSERT_ROWS} rows per request"}),
+                400,
+            )
 
         db = _get_connection(connection)
 
         if table_name not in db.tables:
-            db.define_table(
-                table_name, migrate=False, fake_migrate=True
-            )
+            db.define_table(table_name, migrate=False, fake_migrate=True)
 
         inserted_ids = []
         for row in rows:
@@ -443,11 +434,16 @@ def bulk_insert():
 
         db.commit()
 
-        return jsonify({
-            "ids": inserted_ids,
-            "count": len(inserted_ids),
-            "status": "inserted",
-        }), 201
+        return (
+            jsonify(
+                {
+                    "ids": inserted_ids,
+                    "count": len(inserted_ids),
+                    "status": "inserted",
+                }
+            ),
+            201,
+        )
 
     except ValueError as e:
         return jsonify({"error": str(e)}), 400
@@ -481,9 +477,10 @@ def call_procedure():
 
         db_type = connection.get("db_type", "").lower()
         if db_type in NOSQL_DB_TYPES:
-            return jsonify({
-                "error": f"Stored procedures not supported for {db_type}"
-            }), 400
+            return (
+                jsonify({"error": f"Stored procedures not supported for {db_type}"}),
+                400,
+            )
 
         procedure = data.get("procedure")
         params = data.get("params", [])
@@ -497,10 +494,15 @@ def call_procedure():
         sql = f"CALL {procedure}({param_placeholders})"
         result = db.executesql(sql, placeholders=params)
 
-        return jsonify({
-            "result": result if result else [],
-            "status": "executed",
-        }), 200
+        return (
+            jsonify(
+                {
+                    "result": result if result else [],
+                    "status": "executed",
+                }
+            ),
+            200,
+        )
 
     except ValueError as e:
         return jsonify({"error": str(e)}), 400
@@ -541,18 +543,22 @@ def get_schema():
         if table_name:
             # Get specific table schema
             if table_name not in db.tables:
-                db.define_table(
-                    table_name, migrate=False, fake_migrate=True
-                )
+                db.define_table(table_name, migrate=False, fake_migrate=True)
             table = db[table_name]
             fields = [
                 {"name": f.name, "type": str(f.type)}
-                for f in table.fields if f != "id" or True
+                for f in table.fields
+                if f != "id" or True
             ]
-            return jsonify({
-                "table": table_name,
-                "fields": fields,
-            }), 200
+            return (
+                jsonify(
+                    {
+                        "table": table_name,
+                        "fields": fields,
+                    }
+                ),
+                200,
+            )
 
         # List all tables
         tables = db.tables
@@ -599,9 +605,7 @@ def count_rows():
         db = _get_connection(config)
 
         if table_name not in db.tables:
-            db.define_table(
-                table_name, migrate=False, fake_migrate=True
-            )
+            db.define_table(table_name, migrate=False, fake_migrate=True)
 
         table = db[table_name]
         query = table.id > 0
@@ -657,9 +661,7 @@ def check_exists():
         db = _get_connection(config)
 
         if table_name not in db.tables:
-            db.define_table(
-                table_name, migrate=False, fake_migrate=True
-            )
+            db.define_table(table_name, migrate=False, fake_migrate=True)
 
         table = db[table_name]
         query = table.id > 0

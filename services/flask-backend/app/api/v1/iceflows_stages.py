@@ -200,9 +200,9 @@ def list_approvers(stage_id: str):
                 403,
             )
 
-        approvers = db(
-            db.iceflows_stage_approvers.stage_id == stage.id
-        ).select(orderby=db.iceflows_stage_approvers.created_at)
+        approvers = db(db.iceflows_stage_approvers.stage_id == stage.id).select(
+            orderby=db.iceflows_stage_approvers.created_at
+        )
 
         result = []
         for approver in approvers:
@@ -330,13 +330,17 @@ def add_approver(stage_id: str):
                     400,
                 )
 
-        existing = db(
-            (db.iceflows_stage_approvers.stage_id == stage.id)
-            & (
-                (db.iceflows_stage_approvers.identity_id == identity_id)
-                | (db.iceflows_stage_approvers.group_id == group_id)
+        existing = (
+            db(
+                (db.iceflows_stage_approvers.stage_id == stage.id)
+                & (
+                    (db.iceflows_stage_approvers.identity_id == identity_id)
+                    | (db.iceflows_stage_approvers.group_id == group_id)
+                )
             )
-        ).select().first()
+            .select()
+            .first()
+        )
 
         if existing:
             return (
@@ -373,9 +377,9 @@ def add_approver(stage_id: str):
         )
         db.commit()
 
-        approver = db(
-            db.iceflows_stage_approvers.approver_id == approver_id
-        ).select().first()
+        approver = (
+            db(db.iceflows_stage_approvers.approver_id == approver_id).select().first()
+        )
 
         user_data = None
         group_data = None
@@ -443,10 +447,14 @@ def remove_approver(stage_id: str, approver_id: str):
                 403,
             )
 
-        approver = db(
-            (db.iceflows_stage_approvers.approver_id == approver_id)
-            & (db.iceflows_stage_approvers.stage_id == stage.id)
-        ).select().first()
+        approver = (
+            db(
+                (db.iceflows_stage_approvers.approver_id == approver_id)
+                & (db.iceflows_stage_approvers.stage_id == stage.id)
+            )
+            .select()
+            .first()
+        )
 
         if not approver:
             return (
@@ -608,12 +616,12 @@ def add_test(stage_id: str):
                 400,
             )
 
-        max_order = db(
-            db.iceflows_stage_tests.stage_id == stage.id
-        ).select(db.iceflows_stage_tests.execution_order.max()).first()
-        next_order = (
-            (max_order[db.iceflows_stage_tests.execution_order.max()] or 0) + 1
+        max_order = (
+            db(db.iceflows_stage_tests.stage_id == stage.id)
+            .select(db.iceflows_stage_tests.execution_order.max())
+            .first()
         )
+        next_order = (max_order[db.iceflows_stage_tests.execution_order.max()] or 0) + 1
 
         test_id = str(uuid.uuid4())
 
@@ -682,10 +690,14 @@ def get_test(stage_id: str, test_id: str):
                 403,
             )
 
-        test = db(
-            (db.iceflows_stage_tests.test_id == test_id)
-            & (db.iceflows_stage_tests.stage_id == stage.id)
-        ).select().first()
+        test = (
+            db(
+                (db.iceflows_stage_tests.test_id == test_id)
+                & (db.iceflows_stage_tests.stage_id == stage.id)
+            )
+            .select()
+            .first()
+        )
 
         if not test:
             return (
@@ -742,10 +754,14 @@ def update_test(stage_id: str, test_id: str):
                 403,
             )
 
-        test = db(
-            (db.iceflows_stage_tests.test_id == test_id)
-            & (db.iceflows_stage_tests.stage_id == stage.id)
-        ).select().first()
+        test = (
+            db(
+                (db.iceflows_stage_tests.test_id == test_id)
+                & (db.iceflows_stage_tests.stage_id == stage.id)
+            )
+            .select()
+            .first()
+        )
 
         if not test:
             return (
@@ -801,10 +817,14 @@ def update_test(stage_id: str, test_id: str):
         db(db.iceflows_stage_tests.id == test.id).update(**update_data)
         db.commit()
 
-        updated_test = db(
-            (db.iceflows_stage_tests.test_id == test_id)
-            & (db.iceflows_stage_tests.stage_id == stage.id)
-        ).select().first()
+        updated_test = (
+            db(
+                (db.iceflows_stage_tests.test_id == test_id)
+                & (db.iceflows_stage_tests.stage_id == stage.id)
+            )
+            .select()
+            .first()
+        )
 
         return (
             jsonify(
@@ -854,10 +874,14 @@ def delete_test(stage_id: str, test_id: str):
                 403,
             )
 
-        test = db(
-            (db.iceflows_stage_tests.test_id == test_id)
-            & (db.iceflows_stage_tests.stage_id == stage.id)
-        ).select().first()
+        test = (
+            db(
+                (db.iceflows_stage_tests.test_id == test_id)
+                & (db.iceflows_stage_tests.stage_id == stage.id)
+            )
+            .select()
+            .first()
+        )
 
         if not test:
             return (
@@ -929,19 +953,27 @@ def list_calls(stage_id: str):
             target_name = None
 
             if call.call_type == "icestreams":
-                playbook = db(
-                    db.playbooks.id == int(call.target_id)
-                    if call.target_id and call.target_id.isdigit()
-                    else False
-                ).select().first()
+                playbook = (
+                    db(
+                        db.playbooks.id == int(call.target_id)
+                        if call.target_id and call.target_id.isdigit()
+                        else False
+                    )
+                    .select()
+                    .first()
+                )
                 if playbook:
                     target_name = playbook.name
             elif call.call_type == "iceruns":
-                function = db(
-                    db.iceruns.id == int(call.target_id)
-                    if call.target_id and call.target_id.isdigit()
-                    else False
-                ).select().first()
+                function = (
+                    db(
+                        db.iceruns.id == int(call.target_id)
+                        if call.target_id and call.target_id.isdigit()
+                        else False
+                    )
+                    .select()
+                    .first()
+                )
                 if function:
                     target_name = function.name
 
@@ -1037,7 +1069,11 @@ def add_call(stage_id: str):
         target_id = str(data.get("target_id"))
 
         if call_type == "icestreams":
-            target = db(db.playbooks.id == int(target_id) if target_id.isdigit() else False).select().first()
+            target = (
+                db(db.playbooks.id == int(target_id) if target_id.isdigit() else False)
+                .select()
+                .first()
+            )
             if not target:
                 return (
                     jsonify(
@@ -1050,7 +1086,11 @@ def add_call(stage_id: str):
                 )
 
         elif call_type == "iceruns":
-            target = db(db.iceruns.id == int(target_id) if target_id.isdigit() else False).select().first()
+            target = (
+                db(db.iceruns.id == int(target_id) if target_id.isdigit() else False)
+                .select()
+                .first()
+            )
             if not target:
                 return (
                     jsonify(
@@ -1074,12 +1114,12 @@ def add_call(stage_id: str):
                 400,
             )
 
-        max_order = db(
-            db.iceflows_stage_calls.stage_id == stage.id
-        ).select(db.iceflows_stage_calls.execution_order.max()).first()
-        next_order = (
-            (max_order[db.iceflows_stage_calls.execution_order.max()] or 0) + 1
+        max_order = (
+            db(db.iceflows_stage_calls.stage_id == stage.id)
+            .select(db.iceflows_stage_calls.execution_order.max())
+            .first()
         )
+        next_order = (max_order[db.iceflows_stage_calls.execution_order.max()] or 0) + 1
 
         call_id = str(uuid.uuid4())
 
@@ -1102,11 +1142,19 @@ def add_call(stage_id: str):
 
         target_name = None
         if call_type == "icestreams":
-            playbook = db(db.playbooks.id == int(target_id) if target_id.isdigit() else False).select().first()
+            playbook = (
+                db(db.playbooks.id == int(target_id) if target_id.isdigit() else False)
+                .select()
+                .first()
+            )
             if playbook:
                 target_name = playbook.name
         elif call_type == "iceruns":
-            function = db(db.iceruns.id == int(target_id) if target_id.isdigit() else False).select().first()
+            function = (
+                db(db.iceruns.id == int(target_id) if target_id.isdigit() else False)
+                .select()
+                .first()
+            )
             if function:
                 target_name = function.name
 
@@ -1156,10 +1204,14 @@ def get_call(stage_id: str, call_id: str):
                 403,
             )
 
-        call = db(
-            (db.iceflows_stage_calls.call_id == call_id)
-            & (db.iceflows_stage_calls.stage_id == stage.id)
-        ).select().first()
+        call = (
+            db(
+                (db.iceflows_stage_calls.call_id == call_id)
+                & (db.iceflows_stage_calls.stage_id == stage.id)
+            )
+            .select()
+            .first()
+        )
 
         if not call:
             return (
@@ -1169,11 +1221,27 @@ def get_call(stage_id: str, call_id: str):
 
         target_name = None
         if call.call_type == "icestreams":
-            playbook = db(db.playbooks.id == int(call.target_id) if call.target_id and call.target_id.isdigit() else False).select().first()
+            playbook = (
+                db(
+                    db.playbooks.id == int(call.target_id)
+                    if call.target_id and call.target_id.isdigit()
+                    else False
+                )
+                .select()
+                .first()
+            )
             if playbook:
                 target_name = playbook.name
         elif call.call_type == "iceruns":
-            function = db(db.iceruns.id == int(call.target_id) if call.target_id and call.target_id.isdigit() else False).select().first()
+            function = (
+                db(
+                    db.iceruns.id == int(call.target_id)
+                    if call.target_id and call.target_id.isdigit()
+                    else False
+                )
+                .select()
+                .first()
+            )
             if function:
                 target_name = function.name
 
@@ -1226,10 +1294,14 @@ def update_call(stage_id: str, call_id: str):
                 403,
             )
 
-        call = db(
-            (db.iceflows_stage_calls.call_id == call_id)
-            & (db.iceflows_stage_calls.stage_id == stage.id)
-        ).select().first()
+        call = (
+            db(
+                (db.iceflows_stage_calls.call_id == call_id)
+                & (db.iceflows_stage_calls.stage_id == stage.id)
+            )
+            .select()
+            .first()
+        )
 
         if not call:
             return (
@@ -1286,18 +1358,38 @@ def update_call(stage_id: str, call_id: str):
         db(db.iceflows_stage_calls.id == call.id).update(**update_data)
         db.commit()
 
-        updated_call = db(
-            (db.iceflows_stage_calls.call_id == call_id)
-            & (db.iceflows_stage_calls.stage_id == stage.id)
-        ).select().first()
+        updated_call = (
+            db(
+                (db.iceflows_stage_calls.call_id == call_id)
+                & (db.iceflows_stage_calls.stage_id == stage.id)
+            )
+            .select()
+            .first()
+        )
 
         target_name = None
         if updated_call.call_type == "icestreams":
-            playbook = db(db.playbooks.id == int(updated_call.target_id) if updated_call.target_id and updated_call.target_id.isdigit() else False).select().first()
+            playbook = (
+                db(
+                    db.playbooks.id == int(updated_call.target_id)
+                    if updated_call.target_id and updated_call.target_id.isdigit()
+                    else False
+                )
+                .select()
+                .first()
+            )
             if playbook:
                 target_name = playbook.name
         elif updated_call.call_type == "iceruns":
-            function = db(db.iceruns.id == int(updated_call.target_id) if updated_call.target_id and updated_call.target_id.isdigit() else False).select().first()
+            function = (
+                db(
+                    db.iceruns.id == int(updated_call.target_id)
+                    if updated_call.target_id and updated_call.target_id.isdigit()
+                    else False
+                )
+                .select()
+                .first()
+            )
             if function:
                 target_name = function.name
 
@@ -1349,10 +1441,14 @@ def delete_call(stage_id: str, call_id: str):
                 403,
             )
 
-        call = db(
-            (db.iceflows_stage_calls.call_id == call_id)
-            & (db.iceflows_stage_calls.stage_id == stage.id)
-        ).select().first()
+        call = (
+            db(
+                (db.iceflows_stage_calls.call_id == call_id)
+                & (db.iceflows_stage_calls.stage_id == stage.id)
+            )
+            .select()
+            .first()
+        )
 
         if not call:
             return (
@@ -1415,9 +1511,7 @@ def get_review(stage_id: str):
                 403,
             )
 
-        review = db(
-            db.iceflows_stage_reviews.stage_id == stage.id
-        ).select().first()
+        review = db(db.iceflows_stage_reviews.stage_id == stage.id).select().first()
 
         if not review:
             review_id = str(uuid.uuid4())
@@ -1432,9 +1526,9 @@ def get_review(stage_id: str):
                 reviewers_notified=True,
             )
             db.commit()
-            review = db(
-                db.iceflows_stage_reviews.review_id == review_id
-            ).select().first()
+            review = (
+                db(db.iceflows_stage_reviews.review_id == review_id).select().first()
+            )
 
         return (
             jsonify(
@@ -1490,9 +1584,7 @@ def update_review(stage_id: str):
                 403,
             )
 
-        review = db(
-            db.iceflows_stage_reviews.stage_id == stage.id
-        ).select().first()
+        review = db(db.iceflows_stage_reviews.stage_id == stage.id).select().first()
 
         if not review:
             review_id = str(uuid.uuid4())
@@ -1507,9 +1599,9 @@ def update_review(stage_id: str):
                 reviewers_notified=data.get("reviewers_notified", True),
             )
             db.commit()
-            review = db(
-                db.iceflows_stage_reviews.review_id == review_id
-            ).select().first()
+            review = (
+                db(db.iceflows_stage_reviews.review_id == review_id).select().first()
+            )
         else:
             update_data = {}
 
@@ -1545,9 +1637,7 @@ def update_review(stage_id: str):
 
             db(db.iceflows_stage_reviews.id == review.id).update(**update_data)
             db.commit()
-            review = db(
-                db.iceflows_stage_reviews.stage_id == stage.id
-            ).select().first()
+            review = db(db.iceflows_stage_reviews.stage_id == stage.id).select().first()
 
         return (
             jsonify(

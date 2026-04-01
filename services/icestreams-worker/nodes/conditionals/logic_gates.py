@@ -69,9 +69,7 @@ class AndConditional(BaseNode):
             ),
         ]
 
-    async def execute(
-        self, context: NodeContext, inputs: Dict[str, Any]
-    ) -> NodeResult:
+    async def execute(self, context: NodeContext, inputs: Dict[str, Any]) -> NodeResult:
         """
         Execute the AND gate logic.
 
@@ -168,9 +166,7 @@ class OrConditional(BaseNode):
             ),
         ]
 
-    async def execute(
-        self, context: NodeContext, inputs: Dict[str, Any]
-    ) -> NodeResult:
+    async def execute(self, context: NodeContext, inputs: Dict[str, Any]) -> NodeResult:
         """
         Execute the OR gate logic.
 
@@ -249,9 +245,7 @@ class NotConditional(BaseNode):
             ),
         ]
 
-    async def execute(
-        self, context: NodeContext, inputs: Dict[str, Any]
-    ) -> NodeResult:
+    async def execute(self, context: NodeContext, inputs: Dict[str, Any]) -> NodeResult:
         """
         Execute the NOT gate logic.
 

@@ -130,9 +130,9 @@ class TestMergeExecuteObjectMode:
     async def test_object_mode_four_dicts(self) -> None:
         node = MergeTransform()
         ctx = _make_context({"mode": "object"})
-        result = await node.execute(ctx, {
-            "in1": {"a": 1}, "in2": {"b": 2}, "in3": {"c": 3}, "in4": {"d": 4}
-        })
+        result = await node.execute(
+            ctx, {"in1": {"a": 1}, "in2": {"b": 2}, "in3": {"c": 3}, "in4": {"d": 4}}
+        )
         assert result.success is True
         assert result.outputs["out"] == {"a": 1, "b": 2, "c": 3, "d": 4}
 
@@ -220,10 +220,13 @@ class TestMergeExecuteDeepMode:
     async def test_deep_merge_nested(self) -> None:
         node = MergeTransform()
         ctx = _make_context({"mode": "deep"})
-        result = await node.execute(ctx, {
-            "in1": {"a": {"x": 1, "y": 2}},
-            "in2": {"a": {"y": 99, "z": 3}},
-        })
+        result = await node.execute(
+            ctx,
+            {
+                "in1": {"a": {"x": 1, "y": 2}},
+                "in2": {"a": {"y": 99, "z": 3}},
+            },
+        )
         assert result.success is True
         out = result.outputs["out"]
         assert out["a"]["x"] == 1
@@ -246,10 +249,13 @@ class TestMergeExecuteDeepMode:
         """Deeply nested dicts are recursively merged."""
         node = MergeTransform()
         ctx = _make_context({"mode": "deep"})
-        result = await node.execute(ctx, {
-            "in1": {"level1": {"level2": {"a": 1}}},
-            "in2": {"level1": {"level2": {"b": 2}}},
-        })
+        result = await node.execute(
+            ctx,
+            {
+                "in1": {"level1": {"level2": {"a": 1}}},
+                "in2": {"level1": {"level2": {"b": 2}}},
+            },
+        )
         assert result.success is True
         assert result.outputs["out"]["level1"]["level2"] == {"a": 1, "b": 2}
 

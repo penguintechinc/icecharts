@@ -162,9 +162,7 @@ class TriggerDefinition:
     @classmethod
     def from_dict(cls, data: Dict[str, Any]) -> TriggerDefinition:
         """Create TriggerDefinition from dictionary."""
-        outputs = tuple(
-            PortDefinition.from_dict(o) for o in data.get("outputs", [])
-        )
+        outputs = tuple(PortDefinition.from_dict(o) for o in data.get("outputs", []))
         config_schema = tuple(
             ConfigField.from_dict(f) for f in data.get("config_schema", [])
         )
@@ -213,12 +211,8 @@ class ActionDefinition:
     @classmethod
     def from_dict(cls, data: Dict[str, Any]) -> ActionDefinition:
         """Create ActionDefinition from dictionary."""
-        inputs = tuple(
-            PortDefinition.from_dict(i) for i in data.get("inputs", [])
-        )
-        outputs = tuple(
-            PortDefinition.from_dict(o) for o in data.get("outputs", [])
-        )
+        inputs = tuple(PortDefinition.from_dict(i) for i in data.get("inputs", []))
+        outputs = tuple(PortDefinition.from_dict(o) for o in data.get("outputs", []))
         config_schema = tuple(
             ConfigField.from_dict(f) for f in data.get("config_schema", [])
         )
@@ -268,12 +262,8 @@ class TransformDefinition:
     @classmethod
     def from_dict(cls, data: Dict[str, Any]) -> TransformDefinition:
         """Create TransformDefinition from dictionary."""
-        inputs = tuple(
-            PortDefinition.from_dict(i) for i in data.get("inputs", [])
-        )
-        outputs = tuple(
-            PortDefinition.from_dict(o) for o in data.get("outputs", [])
-        )
+        inputs = tuple(PortDefinition.from_dict(i) for i in data.get("inputs", []))
+        outputs = tuple(PortDefinition.from_dict(o) for o in data.get("outputs", []))
         config_schema = tuple(
             ConfigField.from_dict(f) for f in data.get("config_schema", [])
         )
@@ -377,18 +367,15 @@ class ConnectorManifest:
         connection = connector.get("connection", {})
 
         triggers = tuple(
-            TriggerDefinition.from_dict(t)
-            for t in connector.get("triggers", [])
+            TriggerDefinition.from_dict(t) for t in connector.get("triggers", [])
         )
 
         actions = tuple(
-            ActionDefinition.from_dict(a)
-            for a in connector.get("actions", [])
+            ActionDefinition.from_dict(a) for a in connector.get("actions", [])
         )
 
         transforms = tuple(
-            TransformDefinition.from_dict(t)
-            for t in connector.get("transforms", [])
+            TransformDefinition.from_dict(t) for t in connector.get("transforms", [])
         )
 
         return cls(
@@ -549,10 +536,7 @@ class BaseConnector(ABC):
 
     def _create_config_from_env(self) -> ConnectorConfig:
         """Create configuration from environment variables."""
-        base_url = os.getenv(
-            self.manifest.base_url_env,
-            self.manifest.default_url
-        )
+        base_url = os.getenv(self.manifest.base_url_env, self.manifest.default_url)
 
         # Determine auth type and credentials from environment
         auth_type = AuthType.NONE
@@ -639,18 +623,21 @@ class BaseConnector(ABC):
                 if e.response.status_code == 429:
                     # Rate limited - wait and retry
                     import asyncio
-                    await asyncio.sleep(2 ** attempt)
+
+                    await asyncio.sleep(2**attempt)
                 elif e.response.status_code >= 500:
                     # Server error - retry with backoff
                     import asyncio
-                    await asyncio.sleep(2 ** attempt)
+
+                    await asyncio.sleep(2**attempt)
                 else:
                     # Client error - don't retry
                     raise
             except httpx.RequestError as e:
                 last_error = e
                 import asyncio
-                await asyncio.sleep(2 ** attempt)
+
+                await asyncio.sleep(2**attempt)
 
         raise last_error
 

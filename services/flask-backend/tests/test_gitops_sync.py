@@ -518,7 +518,9 @@ spec:
             with pytest.raises(GitOpsSyncError):
                 sync_service.sync_flow_from_yaml("invalid: [yaml", test_user["id"])
 
-    def test_sync_missing_required_fields_raises_error(self, app, sync_service, test_user):
+    def test_sync_missing_required_fields_raises_error(
+        self, app, sync_service, test_user
+    ):
         """Test syncing YAML missing required fields raises error."""
         yaml_content = """
 apiVersion: iceflows/v1

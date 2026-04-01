@@ -143,27 +143,19 @@ class NodeContext:
 
     def log_info(self, message: str) -> None:
         """Log an info message with execution context."""
-        self.logger.info(
-            f"[{self.execution_id}][{self.node_id}] {message}"
-        )
+        self.logger.info(f"[{self.execution_id}][{self.node_id}] {message}")
 
     def log_warning(self, message: str) -> None:
         """Log a warning message with execution context."""
-        self.logger.warning(
-            f"[{self.execution_id}][{self.node_id}] {message}"
-        )
+        self.logger.warning(f"[{self.execution_id}][{self.node_id}] {message}")
 
     def log_error(self, message: str) -> None:
         """Log an error message with execution context."""
-        self.logger.error(
-            f"[{self.execution_id}][{self.node_id}] {message}"
-        )
+        self.logger.error(f"[{self.execution_id}][{self.node_id}] {message}")
 
     def log_debug(self, message: str) -> None:
         """Log a debug message with execution context."""
-        self.logger.debug(
-            f"[{self.execution_id}][{self.node_id}] {message}"
-        )
+        self.logger.debug(f"[{self.execution_id}][{self.node_id}] {message}")
 
 
 @dataclass(slots=True)
@@ -195,9 +187,7 @@ class NodeResult:
 
     @classmethod
     def success_result(
-        cls,
-        outputs: Dict[str, Any],
-        execution_time_ms: float = 0.0
+        cls, outputs: Dict[str, Any], execution_time_ms: float = 0.0
     ) -> NodeResult:
         """
         Create a successful node result.
@@ -213,15 +203,11 @@ class NodeResult:
             success=True,
             outputs=outputs,
             error=None,
-            execution_time_ms=execution_time_ms
+            execution_time_ms=execution_time_ms,
         )
 
     @classmethod
-    def failure_result(
-        cls,
-        error: str,
-        execution_time_ms: float = 0.0
-    ) -> NodeResult:
+    def failure_result(cls, error: str, execution_time_ms: float = 0.0) -> NodeResult:
         """
         Create a failed node result.
 
@@ -233,10 +219,7 @@ class NodeResult:
             NodeResult instance indicating failure.
         """
         return cls(
-            success=False,
-            outputs={},
-            error=error,
-            execution_time_ms=execution_time_ms
+            success=False, outputs={}, error=error, execution_time_ms=execution_time_ms
         )
 
 
@@ -295,6 +278,7 @@ class CloudAuth:
         if self.expires_at is None:
             return True
         from datetime import timedelta
+
         refresh_time = self.expires_at - timedelta(seconds=buffer_seconds)
         return datetime.now(UTC) >= refresh_time
 
@@ -367,11 +351,7 @@ class BaseNode(ABC):
         return []
 
     @abstractmethod
-    async def execute(
-        self,
-        context: NodeContext,
-        inputs: Dict[str, Any]
-    ) -> NodeResult:
+    async def execute(self, context: NodeContext, inputs: Dict[str, Any]) -> NodeResult:
         """
         Execute the node's operation asynchronously.
 
@@ -420,10 +400,7 @@ class BaseNode(ABC):
         """
         pass
 
-    def _validate_inputs(
-        self,
-        inputs: Dict[str, Any]
-    ) -> List[str]:
+    def _validate_inputs(self, inputs: Dict[str, Any]) -> List[str]:
         """
         Validate that required inputs are provided.
 
@@ -442,10 +419,7 @@ class BaseNode(ABC):
         return errors
 
     def _get_input_value(
-        self,
-        inputs: Dict[str, Any],
-        port_name: str,
-        default: Any = None
+        self, inputs: Dict[str, Any], port_name: str, default: Any = None
     ) -> Any:
         """
         Safely retrieve an input value with an optional default.

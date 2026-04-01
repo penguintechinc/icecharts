@@ -29,9 +29,7 @@ class TestSelfEscalation:
             # role must remain "viewer"
             assert data.get("role") != "admin"
 
-    def test_viewer_cannot_update_own_role_via_profile(
-        self, client, auth_headers
-    ):
+    def test_viewer_cannot_update_own_role_via_profile(self, client, auth_headers):
         """profile/me PATCH must not accept a 'role' field."""
         response = client.patch(
             "/api/v1/profile/me",
@@ -157,9 +155,7 @@ class TestExecutionIsolation:
             from app.models import get_db
 
             db = get_db()
-            owner = create_test_user(
-                email="pb-exec-owner@example.com", role="admin"
-            )
+            owner = create_test_user(email="pb-exec-owner@example.com", role="admin")
             pb_id = db.playbooks.insert(
                 name="Restricted Playbook",
                 created_by_id=owner["id"],
@@ -211,9 +207,7 @@ class TestExecutionIsolation:
             from app.models import get_db
 
             db = get_db()
-            owner = create_test_user(
-                email="group-owner@example.com", role="admin"
-            )
+            owner = create_test_user(email="group-owner@example.com", role="admin")
             # Create a group (test_user is NOT a member)
             group_id = db.groups.insert(
                 name="Secret Group",

@@ -265,9 +265,7 @@ class CodeTransform(BaseNode):
 
         return sandbox
 
-    async def execute(
-        self, context: NodeContext, inputs: Dict[str, Any]
-    ) -> NodeResult:
+    async def execute(self, context: NodeContext, inputs: Dict[str, Any]) -> NodeResult:
         """
         Execute the sandboxed code transform.
 

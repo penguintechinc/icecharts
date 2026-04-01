@@ -298,7 +298,11 @@ class TestFieldMode:
         context.log_info = MagicMock()
         context.log_error = MagicMock()
 
-        data = [{"id": 1, "name": "Alice"}, {"id": 2, "name": "Bob"}, {"id": 3, "name": "Charlie"}]
+        data = [
+            {"id": 1, "name": "Alice"},
+            {"id": 2, "name": "Bob"},
+            {"id": 3, "name": "Charlie"},
+        ]
         result = await node.execute(context, {"in": data})
         assert result.success is True
         assert result.outputs["out"] == [1, 2, 3]
@@ -315,7 +319,7 @@ class TestFieldMode:
 
         data = [
             {"user": {"email": "alice@example.com"}},
-            {"user": {"email": "bob@example.com"}}
+            {"user": {"email": "bob@example.com"}},
         ]
         result = await node.execute(context, {"in": data})
         assert result.success is True

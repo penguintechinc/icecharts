@@ -84,9 +84,7 @@ class TestAPIRateLimiting:
         """Standard API endpoints should return 429 after exceeding limits."""
         responses = []
         for _ in range(200):
-            responses.append(
-                client.get("/api/v1/drawings", headers=auth_headers)
-            )
+            responses.append(client.get("/api/v1/drawings", headers=auth_headers))
 
         status_codes = [r.status_code for r in responses]
         assert 429 in status_codes
@@ -124,9 +122,9 @@ class TestAPIRateLimiting:
         # First few requests should succeed
         for i in range(5):
             response = client.get("/api/v1/drawings", headers=auth_headers)
-            assert response.status_code == 200, (
-                f"Request {i + 1} should not be rate limited in burst tolerance window"
-            )
+            assert (
+                response.status_code == 200
+            ), f"Request {i + 1} should not be rate limited in burst tolerance window"
 
     @pytest.mark.xfail(reason="Rate limiting disabled in test config")
     def test_different_endpoints_different_limits(
@@ -145,9 +143,7 @@ class TestAPIRateLimiting:
         # Standard endpoint with same number of requests
         std_responses = []
         for _ in range(30):
-            std_responses.append(
-                client.get("/api/v1/drawings", headers=auth_headers)
-            )
+            std_responses.append(client.get("/api/v1/drawings", headers=auth_headers))
 
         std_429 = sum(1 for r in std_responses if r.status_code == 429)
 

@@ -38,11 +38,15 @@ class ContainerPool:
             container_info = self.warm_containers[key]
 
             # Check if container is still alive and not expired
-            if self._is_container_alive(container_info['container_id']):
-                if datetime.utcnow() - container_info['last_used'] < timedelta(seconds=self.ttl_seconds):
-                    container_info['last_used'] = datetime.utcnow()
-                    logger.info(f"Reusing warm container {container_info['container_id'][:12]} for {key}")
-                    return container_info['container_id']
+            if self._is_container_alive(container_info["container_id"]):
+                if datetime.utcnow() - container_info["last_used"] < timedelta(
+                    seconds=self.ttl_seconds
+                ):
+                    container_info["last_used"] = datetime.utcnow()
+                    logger.info(
+                        f"Reusing warm container {container_info['container_id'][:12]} for {key}"
+                    )
+                    return container_info["container_id"]
                 else:
                     # Expired - remove
                     self._remove_container(key)
@@ -62,9 +66,9 @@ class ContainerPool:
         """
         key = f"{runtime}:{function_id}"
         self.warm_containers[key] = {
-            'container_id': container_id,
-            'last_used': datetime.utcnow(),
-            'created_at': datetime.utcnow()
+            "container_id": container_id,
+            "last_used": datetime.utcnow(),
+            "created_at": datetime.utcnow(),
         }
         logger.info(f"Added container {container_id[:12]} to warm pool for {key}")
 
@@ -74,7 +78,7 @@ class ContainerPool:
         expired_keys = []
 
         for key, info in self.warm_containers.items():
-            if now - info['last_used'] > timedelta(seconds=self.ttl_seconds):
+            if now - info["last_used"] > timedelta(seconds=self.ttl_seconds):
                 expired_keys.append(key)
 
         for key in expired_keys:
@@ -92,7 +96,7 @@ class ContainerPool:
         """
         try:
             container = self.docker_client.containers.get(container_id)
-            return container.status == 'running'
+            return container.status == "running"
         except docker.errors.NotFound:
             return False
         except Exception as e:
@@ -108,7 +112,7 @@ class ContainerPool:
         if key not in self.warm_containers:
             return
 
-        container_id = self.warm_containers[key]['container_id']
+        container_id = self.warm_containers[key]["container_id"]
         try:
             container = self.docker_client.containers.get(container_id)
             container.stop(timeout=5)
@@ -122,6 +126,8 @@ class ContainerPool:
 
     def shutdown(self):
         """Shutdown pool and cleanup all containers."""
-        logger.info(f"Shutting down container pool ({len(self.warm_containers)} containers)")
+        logger.info(
+            f"Shutting down container pool ({len(self.warm_containers)} containers)"
+        )
         for key in list(self.warm_containers.keys()):
             self._remove_container(key)

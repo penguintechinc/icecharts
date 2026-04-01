@@ -148,9 +148,7 @@ class SplitTransform(BaseNode):
         """
         return [lst[i : i + size] for i in range(0, len(lst), size)]
 
-    async def execute(
-        self, context: NodeContext, inputs: Dict[str, Any]
-    ) -> NodeResult:
+    async def execute(self, context: NodeContext, inputs: Dict[str, Any]) -> NodeResult:
         """
         Execute the split transform.
 
@@ -240,9 +238,7 @@ class SplitTransform(BaseNode):
             first = items[0] if items else None
             last = items[-1] if items else None
 
-            context.log_info(
-                f"Split into {count} items using mode '{mode}'"
-            )
+            context.log_info(f"Split into {count} items using mode '{mode}'")
 
             return NodeResult.success_result(
                 outputs={

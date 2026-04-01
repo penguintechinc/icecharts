@@ -12,7 +12,9 @@ def _get_drawing_from_response(response):
     return data.get("drawing", data)
 
 
-def _create_drawing_via_api(client, headers, name="Test Drawing", description="A test drawing"):
+def _create_drawing_via_api(
+    client, headers, name="Test Drawing", description="A test drawing"
+):
     """Create a drawing via the API and return (response, drawing_dict_or_none)."""
     resp = client.post(
         "/api/v1/drawings",
@@ -128,7 +130,10 @@ class TestDrawingRead:
         """Test listing user's drawings."""
         for i in range(3):
             _create_drawing_via_api(
-                client, auth_headers, name=f"Drawing {i}", description=f"Test drawing {i}"
+                client,
+                auth_headers,
+                name=f"Drawing {i}",
+                description=f"Test drawing {i}",
             )
 
         response = client.get("/api/v1/drawings", headers=auth_headers)
@@ -142,7 +147,10 @@ class TestDrawingRead:
         """Test drawing list returns all items (no server-side pagination)."""
         for i in range(15):
             _create_drawing_via_api(
-                client, auth_headers, name=f"Drawing {i}", description=f"Test drawing {i}"
+                client,
+                auth_headers,
+                name=f"Drawing {i}",
+                description=f"Test drawing {i}",
             )
 
         response = client.get("/api/v1/drawings", headers=auth_headers)
@@ -158,9 +166,7 @@ class TestDrawingUpdate:
 
     def test_update_drawing_name(self, client, auth_headers):
         """Test updating drawing name."""
-        _, created = _create_drawing_via_api(
-            client, auth_headers, name="Original Name"
-        )
+        _, created = _create_drawing_via_api(client, auth_headers, name="Original Name")
         assert created is not None
         drawing_id = created["id"]
 
@@ -182,7 +188,11 @@ class TestDrawingUpdate:
         new_content = {
             "nodes": [
                 {"id": "1", "data": {"label": "Node 1"}, "position": {"x": 0, "y": 0}},
-                {"id": "2", "data": {"label": "Node 2"}, "position": {"x": 100, "y": 0}},
+                {
+                    "id": "2",
+                    "data": {"label": "Node 2"},
+                    "position": {"x": 100, "y": 0},
+                },
             ],
             "edges": [{"id": "e1-2", "source": "1", "target": "2"}],
         }
@@ -308,12 +318,13 @@ class TestDrawingSearch:
     def test_search_drawings_by_name(self, client, auth_headers):
         """Test listing drawings returns created drawings."""
         _create_drawing_via_api(
-            client, auth_headers,
-            name="Architecture Diagram", description="System architecture"
+            client,
+            auth_headers,
+            name="Architecture Diagram",
+            description="System architecture",
         )
         _create_drawing_via_api(
-            client, auth_headers,
-            name="Database Schema", description="Database design"
+            client, auth_headers, name="Database Schema", description="Database design"
         )
 
         # List all drawings (no search param supported)
@@ -326,8 +337,10 @@ class TestDrawingSearch:
     def test_search_drawings_by_description(self, client, auth_headers):
         """Test listing drawings after creating one."""
         _create_drawing_via_api(
-            client, auth_headers,
-            name="Drawing 1", description="This diagram shows the flow"
+            client,
+            auth_headers,
+            name="Drawing 1",
+            description="This diagram shows the flow",
         )
 
         response = client.get("/api/v1/drawings", headers=auth_headers)
@@ -368,35 +381,33 @@ class TestDrawingErrorPaths:
 
     def test_get_nonexistent_drawing_returns_404(self, client, auth_headers):
         """Getting a drawing that doesn't exist returns 404."""
-        response = client.get(
-            "/api/v1/drawings/99999",
-            headers=auth_headers
-        )
+        response = client.get("/api/v1/drawings/99999", headers=auth_headers)
         assert response.status_code == 404
 
-    def test_create_drawing_missing_required_fields_returns_400(self, client, auth_headers):
+    def test_create_drawing_missing_required_fields_returns_400(
+        self, client, auth_headers
+    ):
         """Creating a drawing without required fields returns 400."""
         response = client.post(
             "/api/v1/drawings",
             json={},  # missing name/title/required fields
-            headers=auth_headers
+            headers=auth_headers,
         )
         assert response.status_code == 400
 
     def test_delete_nonexistent_drawing_returns_404(self, client, auth_headers):
         """Deleting a drawing that doesn't exist returns 404."""
-        response = client.delete(
-            "/api/v1/drawings/99999",
-            headers=auth_headers
-        )
+        response = client.delete("/api/v1/drawings/99999", headers=auth_headers)
         assert response.status_code == 404
 
-    def test_update_nonexistent_drawing_returns_404_duplicate(self, client, auth_headers):
+    def test_update_nonexistent_drawing_returns_404_duplicate(
+        self, client, auth_headers
+    ):
         """Test updating non-existent drawing returns 404 (second test)."""
         response = client.put(
             "/api/v1/drawings/99999",
             headers=auth_headers,
-            json={"name": "Updated Name"}
+            json={"name": "Updated Name"},
         )
         assert response.status_code == 404
 

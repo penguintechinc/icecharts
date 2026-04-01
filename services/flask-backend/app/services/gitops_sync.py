@@ -129,9 +129,7 @@ class GitOpsSyncService:
             logger.error(f"Unexpected error during GitOps sync: {str(e)}")
             raise GitOpsSyncError(f"Sync failed: {str(e)}")
 
-    def sync_from_gitops_repo(
-        self, flow_id: int, git_token: str = None
-    ) -> dict:
+    def sync_from_gitops_repo(self, flow_id: int, git_token: str = None) -> dict:
         """
         Clone GitOps repo, find YAML files, and sync flow.
 
@@ -146,9 +144,7 @@ class GitOpsSyncService:
             GitOpsSyncError: If repo cloning or sync fails
         """
         if not self.git_operations:
-            raise GitOpsSyncError(
-                "GitOperations instance required for repo syncing"
-            )
+            raise GitOpsSyncError("GitOperations instance required for repo syncing")
 
         repo_path = None
         try:
@@ -173,9 +169,7 @@ class GitOpsSyncService:
             )
 
             # Find YAML files in the specified path
-            yaml_files = self._find_yaml_files(
-                clone_path, flow.gitops_path or "."
-            )
+            yaml_files = self._find_yaml_files(clone_path, flow.gitops_path or ".")
 
             if not yaml_files:
                 raise GitOpsSyncError(
@@ -326,9 +320,7 @@ class GitOpsSyncService:
 
         return len(errors) == 0, errors
 
-    def diff_flow_config(
-        self, yaml_config: dict, flow_id: int
-    ) -> dict:
+    def diff_flow_config(self, yaml_config: dict, flow_id: int) -> dict:
         """
         Show changes before applying sync.
 
@@ -359,17 +351,13 @@ class GitOpsSyncService:
 
             # Compare stages
             yaml_stages = {s["name"]: s for s in yaml_config["spec"].get("stages", [])}
-            db_stages = self.db(
-                self.db.iceflows_stages.flow_id == flow_id
-            ).select()
+            db_stages = self.db(self.db.iceflows_stages.flow_id == flow_id).select()
             db_stage_names = {s.display_name: s for s in db_stages}
 
             diff["changes"]["stages"] = {
                 "added": list(set(yaml_stages.keys()) - set(db_stage_names.keys())),
                 "removed": list(set(db_stage_names.keys()) - set(yaml_stages.keys())),
-                "updated": list(
-                    set(yaml_stages.keys()) & set(db_stage_names.keys())
-                ),
+                "updated": list(set(yaml_stages.keys()) & set(db_stage_names.keys())),
             }
 
             return diff
@@ -404,9 +392,7 @@ class GitOpsSyncService:
         except Exception as e:
             raise GitOpsSyncError(f"Failed to parse YAML: {str(e)}")
 
-    def _get_or_create_flow(
-        self, yaml_config: dict, user_id: int
-    ) -> tuple[int, bool]:
+    def _get_or_create_flow(self, yaml_config: dict, user_id: int) -> tuple[int, bool]:
         """
         Get or create flow from YAML config.
 
@@ -423,9 +409,7 @@ class GitOpsSyncService:
 
         try:
             # Try to find existing flow by name
-            existing_flow = self.db(
-                self.db.iceflows.name == flow_name
-            ).select().first()
+            existing_flow = self.db(self.db.iceflows.name == flow_name).select().first()
 
             if existing_flow:
                 # Update existing flow
@@ -535,12 +519,8 @@ class GitOpsSyncService:
                     logger.info(f"Created new stage: {stage_name}")
 
                 # Sync tests and calls for this stage
-                self._sync_stage_tests(
-                    stage_id, stage_config.get("tests", []), changes
-                )
-                self._sync_stage_calls(
-                    stage_id, stage_config.get("calls", []), changes
-                )
+                self._sync_stage_tests(stage_id, stage_config.get("tests", []), changes)
+                self._sync_stage_calls(stage_id, stage_config.get("calls", []), changes)
 
         except Exception as e:
             self.db.rollback()
@@ -608,7 +588,9 @@ class GitOpsSyncService:
                 elif call_type == "iceruns":
                     call_type = "iceruns"
                 else:
-                    logger.warning(f"Unknown call type: {call_type}, defaulting to icestreams")
+                    logger.warning(
+                        f"Unknown call type: {call_type}, defaulting to icestreams"
+                    )
                     call_type = "icestreams"
 
                 call_id = self.db.iceflows_stage_calls.insert(

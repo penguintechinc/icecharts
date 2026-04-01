@@ -16,6 +16,7 @@ class TestIceFlowsWorkerInit:
     def test_init_defaults(self):
         """Worker initializes with default stream/group names."""
         from worker import IceFlowsWorker
+
         worker = IceFlowsWorker(redis_url="redis://localhost:6379", worker_id="w1")
         assert worker.STREAM_NAME == "iceflows:tasks"
         assert worker.CONSUMER_GROUP == "iceflows-workers"
@@ -23,30 +24,35 @@ class TestIceFlowsWorkerInit:
     def test_init_custom_worker_id(self):
         """Worker stores custom worker_id."""
         from worker import IceFlowsWorker
+
         worker = IceFlowsWorker(worker_id="my-worker-42")
         assert worker.worker_id == "my-worker-42"
 
     def test_init_custom_redis_url(self):
         """Worker stores custom redis_url."""
         from worker import IceFlowsWorker
+
         worker = IceFlowsWorker(redis_url="redis://myhost:6380/1")
         assert worker.redis_url == "redis://myhost:6380/1"
 
     def test_init_concurrency(self):
         """Worker stores concurrency setting."""
         from worker import IceFlowsWorker
+
         worker = IceFlowsWorker(concurrency=4)
         assert worker.concurrency == 4
 
     def test_init_running_false(self):
         """Worker starts with running=False."""
         from worker import IceFlowsWorker
+
         worker = IceFlowsWorker()
         assert worker.running is False
 
     def test_init_redis_client_none(self):
         """Worker starts with no redis_client."""
         from worker import IceFlowsWorker
+
         worker = IceFlowsWorker()
         assert worker.redis_client is None
 
@@ -58,8 +64,11 @@ class TestIceFlowsWorkerConnect:
     async def test_connect_creates_redis_client(self, mock_redis):
         """connect() creates and pings Redis client."""
         from worker import IceFlowsWorker
+
         worker = IceFlowsWorker(redis_url="redis://localhost:6379")
-        with patch("worker.aioredis.from_url", new_callable=AsyncMock, return_value=mock_redis):
+        with patch(
+            "worker.aioredis.from_url", new_callable=AsyncMock, return_value=mock_redis
+        ):
             await worker.connect()
         assert worker.redis_client == mock_redis
         mock_redis.ping.assert_awaited_once()
@@ -68,6 +77,7 @@ class TestIceFlowsWorkerConnect:
     async def test_disconnect_closes_redis(self, mock_redis):
         """disconnect() closes the Redis client."""
         from worker import IceFlowsWorker
+
         worker = IceFlowsWorker()
         worker.redis_client = mock_redis
         await worker.disconnect()
@@ -77,6 +87,7 @@ class TestIceFlowsWorkerConnect:
     async def test_disconnect_noop_when_no_client(self):
         """disconnect() does nothing when redis_client is None."""
         from worker import IceFlowsWorker
+
         worker = IceFlowsWorker()
         worker.redis_client = None
         await worker.disconnect()  # Should not raise
@@ -86,7 +97,9 @@ class TestEnsureConsumerGroup:
     """Tests for consumer group management."""
 
     @pytest.mark.asyncio
-    async def test_ensure_consumer_group_creates_group(self, worker_instance, mock_redis):
+    async def test_ensure_consumer_group_creates_group(
+        self, worker_instance, mock_redis
+    ):
         """ensure_consumer_group creates stream group successfully."""
         mock_redis.xgroup_create = AsyncMock(return_value=True)
         await worker_instance.ensure_consumer_group()
@@ -98,15 +111,21 @@ class TestEnsureConsumerGroup:
         )
 
     @pytest.mark.asyncio
-    async def test_ensure_consumer_group_handles_busygroup(self, worker_instance, mock_redis):
+    async def test_ensure_consumer_group_handles_busygroup(
+        self, worker_instance, mock_redis
+    ):
         """ensure_consumer_group ignores BUSYGROUP error gracefully."""
         mock_redis.xgroup_create = AsyncMock(
-            side_effect=redis.ResponseError("BUSYGROUP Consumer Group name already exists")
+            side_effect=redis.ResponseError(
+                "BUSYGROUP Consumer Group name already exists"
+            )
         )
         await worker_instance.ensure_consumer_group()  # Should not raise
 
     @pytest.mark.asyncio
-    async def test_ensure_consumer_group_raises_other_errors(self, worker_instance, mock_redis):
+    async def test_ensure_consumer_group_raises_other_errors(
+        self, worker_instance, mock_redis
+    ):
         """ensure_consumer_group re-raises non-BUSYGROUP errors."""
         mock_redis.xgroup_create = AsyncMock(
             side_effect=redis.ResponseError("ERR some other error")
@@ -118,6 +137,7 @@ class TestEnsureConsumerGroup:
     async def test_ensure_consumer_group_requires_client(self):
         """ensure_consumer_group raises RuntimeError if client not initialized."""
         from worker import IceFlowsWorker
+
         worker = IceFlowsWorker()
         worker.redis_client = None
         with pytest.raises(RuntimeError, match="Redis client not initialized"):
@@ -232,6 +252,7 @@ class TestConsumerLoop:
     async def test_consumer_loop_requires_client(self):
         """consumer_loop raises RuntimeError if client not initialized."""
         from worker import IceFlowsWorker
+
         worker = IceFlowsWorker()
         worker.redis_client = None
         with pytest.raises(RuntimeError, match="Redis client not initialized"):

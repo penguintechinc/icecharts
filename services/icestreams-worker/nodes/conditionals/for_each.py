@@ -105,9 +105,7 @@ class ForEachConditional(BaseNode):
                 return None
         return value
 
-    async def execute(
-        self, context: NodeContext, inputs: Dict[str, Any]
-    ) -> NodeResult:
+    async def execute(self, context: NodeContext, inputs: Dict[str, Any]) -> NodeResult:
         """
         Execute the for-each iteration.
 
@@ -152,10 +150,7 @@ class ForEachConditional(BaseNode):
 
             # Extract field from each item if configured
             if field:
-                items = [
-                    self._get_field_value(item, field)
-                    for item in items
-                ]
+                items = [self._get_field_value(item, field) for item in items]
                 # Filter out None values from failed extractions
                 items = [item for item in items if item is not None]
 
