@@ -27,6 +27,7 @@ import type { Drawing, UpdateDrawingData } from '../types';
 import { iconMap, cloudProviders, otherIconSources, type ProviderInfo } from '../components/diagram/icons/index';
 import IconSearch from '../components/diagram/icons/search/IconSearch';
 import EdgeControls from '../components/diagram/EdgeControls';
+import NodePropertiesModal from '../../components/canvas/NodePropertiesModal';
 import StoragePickerDialog from '../components/storage/StoragePickerDialog';
 import type { IconDefinition, IconCategory } from '../components/diagram/icons/types';
 
@@ -187,6 +188,11 @@ export default function DrawingEditor() {
   const [selectedColor, setSelectedColor] = useState('#3B82F6');
   const [selectedEdge, setSelectedEdge] = useState<Edge | null>(null);
   const [edgeControlsPosition, setEdgeControlsPosition] = useState({ x: 0, y: 0 });
+  const [isPropertiesModalOpen, setIsPropertiesModalOpen] = useState(false);
+  const [modalTargetId, setModalTargetId] = useState<{ id: string | null; type: 'node' | 'edge' | null }>({
+    id: null,
+    type: null,
+  });
   const nodeIdCounter = useRef(1);
 
   // Editor theme state (light/dark mode for canvas only)
@@ -196,6 +202,9 @@ export default function DrawingEditor() {
   const [showStoragePicker, setShowStoragePicker] = useState(false);
 
   const isNewDrawing = !id || id === 'new';
+
+  const modalNode = modalTargetId.type === 'node' ? (nodes.find((n) => n.id === modalTargetId.id) || null) : null;
+  const modalEdge = modalTargetId.type === 'edge' ? (edges.find((e) => e.id === modalTargetId.id) || null) : null;
 
   // Add back button handler that directs to DrawingDetail after saving
   const handleBackToDetail = () => {
@@ -310,6 +319,31 @@ export default function DrawingEditor() {
     }, eds)),
     []
   );
+
+  const handleUpdateNode = useCallback((nodeId: string, updates: any) => {
+    setNodes((nds) =>
+      nds.map((node) => {
+        if (node.id !== nodeId) return node;
+        return {
+          ...node,
+          data: {
+            ...node.data,
+            ...updates,
+          },
+        };
+      })
+    );
+  }, []);
+
+  const onNodeDoubleClick = useCallback((_event: React.MouseEvent, node: Node) => {
+    setModalTargetId({ id: node.id, type: 'node' });
+    setIsPropertiesModalOpen(true);
+  }, []);
+
+  const onEdgeDoubleClick = useCallback((_event: React.MouseEvent, edge: Edge) => {
+    setModalTargetId({ id: edge.id, type: 'edge' });
+    setIsPropertiesModalOpen(true);
+  }, []);
 
   // Add icon node from any category
   const addIconNode = useCallback((iconId: string, label: string, color: string, isCloudProvider: boolean = false) => {
@@ -733,6 +767,8 @@ export default function DrawingEditor() {
             onNodesChange={onNodesChange}
             onEdgesChange={onEdgesChange}
             onConnect={onConnect}
+            onNodeDoubleClick={onNodeDoubleClick}
+            onEdgeDoubleClick={onEdgeDoubleClick}
             nodeTypes={nodeTypes}
             fitView
             snapToGrid
@@ -792,6 +828,16 @@ export default function DrawingEditor() {
               position={edgeControlsPosition}
             />
           )}
+
+          {/* Node/Edge Properties Modal */}
+          <NodePropertiesModal
+            isOpen={isPropertiesModalOpen}
+            onClose={() => setIsPropertiesModalOpen(false)}
+            selectedNode={modalNode}
+            selectedEdge={modalEdge}
+            onUpdateNode={handleUpdateNode}
+            onUpdateEdge={handleUpdateEdge}
+          />
         </div>
       </div>
 

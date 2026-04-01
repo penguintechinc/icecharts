@@ -25,6 +25,7 @@ import ConnectorEdge from './edges/ConnectorEdge';
 import Toolbar from './Toolbar';
 import ShapePanel from './ShapePanel';
 import PropertiesPanel from './PropertiesPanel';
+import NodePropertiesModal from './NodePropertiesModal';
 import ElderImportDialog from '../drawing/ElderImportDialog';
 
 const nodeTypes: NodeTypes = {
@@ -62,6 +63,11 @@ const Canvas: React.FC<CanvasProps> = ({
   const [selectedEdges, setSelectedEdges] = useState<string[]>([]);
   const [clipboard, setClipboard] = useState<{ nodes: Node[]; edges: Edge[] } | null>(null);
   const [isElderDialogOpen, setIsElderDialogOpen] = useState(false);
+  const [isPropertiesModalOpen, setIsPropertiesModalOpen] = useState(false);
+  const [modalTargetId, setModalTargetId] = useState<{ id: string | null; type: 'node' | 'edge' | null }>({
+    id: null,
+    type: null,
+  });
 
   // History for undo/redo
   const [history, setHistory] = useState<HistoryState[]>([{ nodes: initialNodes, edges: initialEdges }]);
@@ -323,6 +329,18 @@ const Canvas: React.FC<CanvasProps> = ({
     [nodes, edges, setNodes, saveToHistory, onNodesChange]
   );
 
+  // Handle double click on node
+  const onNodeDoubleClick = useCallback((_event: React.MouseEvent, node: Node) => {
+    setModalTargetId({ id: node.id, type: 'node' });
+    setIsPropertiesModalOpen(true);
+  }, []);
+
+  // Handle double click on edge
+  const onEdgeDoubleClick = useCallback((_event: React.MouseEvent, edge: Edge) => {
+    setModalTargetId({ id: edge.id, type: 'edge' });
+    setIsPropertiesModalOpen(true);
+  }, []);
+
   // Handle Elder import
   const handleElderImport = useCallback(
     (importedNodes: any[], importedConnectors: any[]) => {
@@ -341,6 +359,9 @@ const Canvas: React.FC<CanvasProps> = ({
   const selectedNode = selectedNodes.length === 1 ? (nodes.find((n) => n.id === selectedNodes[0]) || null) : null;
   const selectedEdge = selectedEdges.length === 1 ? (edges.find((e) => e.id === selectedEdges[0]) || null) : null;
 
+  const modalNode = modalTargetId.type === 'node' ? (nodes.find((n) => n.id === modalTargetId.id) || null) : null;
+  const modalEdge = modalTargetId.type === 'edge' ? (edges.find((e) => e.id === modalTargetId.id) || null) : null;
+
   return (
     <div className="flex h-screen w-screen">
       {/* Left Sidebar - Shape Panel */}
@@ -355,6 +376,8 @@ const Canvas: React.FC<CanvasProps> = ({
           onEdgesChange={handleEdgesChange}
           onConnect={onConnect}
           onSelectionChange={onSelectionChange}
+          onNodeDoubleClick={onNodeDoubleClick}
+          onEdgeDoubleClick={onEdgeDoubleClick}
           nodeTypes={nodeTypes}
           edgeTypes={edgeTypes}
           fitView
@@ -388,6 +411,16 @@ const Canvas: React.FC<CanvasProps> = ({
       <PropertiesPanel
         selectedNode={selectedNode}
         selectedEdge={selectedEdge}
+        onUpdateNode={updateNodeData}
+        onUpdateEdge={updateEdgeData}
+      />
+
+      {/* Node/Edge Properties Modal */}
+      <NodePropertiesModal
+        isOpen={isPropertiesModalOpen}
+        onClose={() => setIsPropertiesModalOpen(false)}
+        selectedNode={modalNode}
+        selectedEdge={modalEdge}
         onUpdateNode={updateNodeData}
         onUpdateEdge={updateEdgeData}
       />
