@@ -9,14 +9,9 @@ import json
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
-
-from app.services.trigger_executor import (
-    BaseTrigger,
-    NodeContext,
-    NodeResult,
-    TriggerExecutor,
-    TriggerResult,
-)
+from app.services.trigger_executor import (BaseTrigger, NodeContext,
+                                           NodeResult, TriggerExecutor,
+                                           TriggerResult)
 
 
 class TestNodeContext:

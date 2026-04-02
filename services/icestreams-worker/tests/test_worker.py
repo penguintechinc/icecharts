@@ -17,15 +17,15 @@ import asyncio
 import json
 import os
 import sys
-from unittest.mock import AsyncMock, MagicMock, Mock, patch, call
+from unittest.mock import AsyncMock, MagicMock, Mock, call, patch
 
 import pytest
 import redis
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from worker import IceStreamsWorker
 from executor.playbook_executor import ExecutionResult
+from worker import IceStreamsWorker
 
 
 class TestIceStreamsWorkerInit:

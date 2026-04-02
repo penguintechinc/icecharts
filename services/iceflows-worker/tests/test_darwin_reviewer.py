@@ -2,23 +2,18 @@
 
 import os
 import sys
-import pytest
 from datetime import datetime
 from unittest.mock import MagicMock, patch
 
+import pytest
+
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from darwin_reviewer import (
-    DarwinReviewer,
-    DarwinReviewerException,
-    DarwinReviewerConnectionError,
-    DarwinReviewerTimeoutError,
-    ReviewIssue,
-    ReviewResult,
-    ReviewStatus,
-)
-
 import requests as req_module
+from darwin_reviewer import (DarwinReviewer, DarwinReviewerConnectionError,
+                             DarwinReviewerException,
+                             DarwinReviewerTimeoutError, ReviewIssue,
+                             ReviewResult, ReviewStatus)
 
 
 @pytest.fixture

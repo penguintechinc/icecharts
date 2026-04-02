@@ -18,7 +18,6 @@ from dataclasses import dataclass, field
 from typing import Optional
 
 import yaml
-
 from app.models import get_db
 
 logger = logging.getLogger(__name__)

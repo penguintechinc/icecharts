@@ -1,10 +1,11 @@
 """Tests for IceRunsInvoker main loop - Redis stream consumption and worker lifecycle."""
 
+import json
 import os
 import sys
-import json
+from unittest.mock import ANY, MagicMock, call, patch
+
 import pytest
-from unittest.mock import MagicMock, patch, call, ANY
 import redis
 
 sys.path.insert(

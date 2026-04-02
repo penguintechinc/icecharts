@@ -24,7 +24,8 @@ from flask import Blueprint, current_app, jsonify, request
 
 from ...middleware import auth_required, get_current_user, scopes_required
 from ...models import get_db
-from ...services.iceflows_notification_service import IceFlowsNotificationService
+from ...services.iceflows_notification_service import \
+    IceFlowsNotificationService
 
 iceflows_promotions_bp = Blueprint(
     "iceflows_promotions", __name__, url_prefix="/iceflows"

@@ -4,13 +4,12 @@ import logging
 import os
 
 import structlog
+from app.config import get_config
+from app.models import init_db
 from flask import Flask, jsonify
 from flask_cors import CORS
 from flask_socketio import SocketIO
 from prometheus_flask_exporter import PrometheusMetrics
-
-from app.config import get_config
-from app.models import init_db
 
 # Configure logging
 log_level = os.getenv("LOG_LEVEL", "INFO").upper()

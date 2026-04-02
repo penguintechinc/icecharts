@@ -2,10 +2,9 @@
 
 import logging
 
-from flask import Blueprint, jsonify, request
-
 from app.licensing import check_feature, get_all_features
 from app.middleware import admin_required, auth_required, get_current_user
+from flask import Blueprint, jsonify, request
 
 from ...models import get_db
 

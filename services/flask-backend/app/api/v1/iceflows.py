@@ -11,7 +11,7 @@ import secrets
 import uuid
 
 import yaml
-from flask import Blueprint, current_app, jsonify, request, Response
+from flask import Blueprint, Response, current_app, jsonify, request
 
 from ...middleware import auth_required, get_current_user, scopes_required
 from ...models import get_db

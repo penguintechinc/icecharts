@@ -4,21 +4,13 @@ Unit tests for authentication clients.
 Tests OAuth2Client, AWSSTSClient, and OIDCClient with mocked dependencies.
 """
 
-import pytest
-from unittest.mock import Mock, patch, MagicMock
-from datetime import datetime, timedelta
 import json
+from datetime import datetime, timedelta
+from unittest.mock import MagicMock, Mock, patch
 
-from auth import (
-    OAuth2Client,
-    OAuth2Config,
-    AWSSTSClient,
-    AWSSTSConfig,
-    OIDCClient,
-    OIDCConfig,
-    CachedToken,
-    CachedIDToken,
-)
+import pytest
+from auth import (AWSSTSClient, AWSSTSConfig, CachedIDToken, CachedToken,
+                  OAuth2Client, OAuth2Config, OIDCClient, OIDCConfig)
 
 # Check if optional dependencies are available
 try:

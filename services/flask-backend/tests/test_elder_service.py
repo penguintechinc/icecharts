@@ -5,15 +5,9 @@ from unittest.mock import AsyncMock, MagicMock, patch
 
 import httpx
 import pytest
-
-from app.services.elder_service import (
-    ElderClient,
-    ElderDependency,
-    ElderEntity,
-    EntityTypeMapping,
-    IceChartsConnector,
-    IceChartsNode,
-)
+from app.services.elder_service import (ElderClient, ElderDependency,
+                                        ElderEntity, EntityTypeMapping,
+                                        IceChartsConnector, IceChartsNode)
 
 
 class TestElderEntity:

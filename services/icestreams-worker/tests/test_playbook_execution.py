@@ -19,25 +19,14 @@ from unittest.mock import AsyncMock, MagicMock, Mock, patch
 
 import pytest
 import redis.asyncio as aioredis
-
-from executor.playbook_executor import (
-    BaseNode,
-    ExecutionResult,
-    NodeContext,
-    NodeData,
-    NodeResult,
-    NodeStatus,
-    PlaybookExecutor,
-    PassThroughNode,
-)
 from executor.node_registry import NodeRegistry, register_node
-from nodes.base import (
-    BaseNode as BaseNodeFramework,
-    NodeContext as NodeContextFramework,
-    NodeInput,
-    NodeOutput,
-    NodeResult as NodeResultFramework,
-)
+from executor.playbook_executor import (BaseNode, ExecutionResult, NodeContext,
+                                        NodeData, NodeResult, NodeStatus,
+                                        PassThroughNode, PlaybookExecutor)
+from nodes.base import BaseNode as BaseNodeFramework
+from nodes.base import NodeContext as NodeContextFramework
+from nodes.base import NodeInput, NodeOutput
+from nodes.base import NodeResult as NodeResultFramework
 
 
 # Mock node implementations for testing

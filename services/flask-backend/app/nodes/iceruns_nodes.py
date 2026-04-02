@@ -144,10 +144,11 @@ class IceRunExecuteNode(BaseNode):
 
         try:
             # Import here to avoid circular dependencies
+            import datetime
+            import secrets
+
             from ..models import get_db
             from ..services.redis_streams import RedisStreams
-            import secrets
-            import datetime
 
             config = context.config
             function_id = config.get("function_id")

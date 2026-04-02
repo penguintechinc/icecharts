@@ -12,12 +12,12 @@ Tests cover:
 - Error handling and validation
 """
 
-import pytest
-from unittest.mock import MagicMock
 from typing import Any, Dict
+from unittest.mock import MagicMock
 
-from nodes.transforms.split import SplitTransform
+import pytest
 from nodes.base import NodeContext, NodeResult
+from nodes.transforms.split import SplitTransform
 
 
 class TestSplitValidation:

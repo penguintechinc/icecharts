@@ -12,18 +12,11 @@ Tests cover:
 """
 
 import pytest
-from executor.graph_utils import (
-    TopologicalSorter,
-    CycleDetectedError,
-    get_upstream_nodes,
-    get_downstream_nodes,
-    get_node_inputs,
-    get_node_outputs,
-    find_trigger_nodes,
-    validate_graph,
-    get_execution_paths,
-    get_graph_statistics,
-)
+from executor.graph_utils import (CycleDetectedError, TopologicalSorter,
+                                  find_trigger_nodes, get_downstream_nodes,
+                                  get_execution_paths, get_graph_statistics,
+                                  get_node_inputs, get_node_outputs,
+                                  get_upstream_nodes, validate_graph)
 
 
 class TestTopologicalSorter:

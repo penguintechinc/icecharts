@@ -4,7 +4,6 @@ Unit and integration tests for storage usage calculation and quota management.
 """
 
 import pytest
-
 from app.models import get_db
 from app.services.storage_usage_service import StorageUsageService
 

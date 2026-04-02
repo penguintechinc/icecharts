@@ -4,9 +4,10 @@ Verifies that the JWT middleware correctly rejects malformed, forged, expired,
 and algorithm-confused tokens across all protected endpoints.
 """
 
-import pytest
-import jwt
 from datetime import datetime, timedelta
+
+import jwt
+import pytest
 
 
 class TestJWTAlgorithmConfusion:
@@ -98,8 +99,8 @@ class TestJWTAlgorithmConfusion:
             ).rstrip(b"=")
             body = base64.urlsafe_b64encode(json.dumps(payload).encode()).rstrip(b"=")
             # Sign with HS256 secret — decoding must fail
-            import hmac
             import hashlib
+            import hmac
 
             signing_input = f"{header.decode()}.{body.decode()}"
             sig = hmac.new(

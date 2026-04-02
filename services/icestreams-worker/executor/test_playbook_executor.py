@@ -15,14 +15,8 @@ from unittest.mock import MagicMock
 # Add parent directory to path for imports
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
-from executor import (
-    PlaybookExecutor,
-    ExecutionResult,
-    NodeContext,
-    NodeData,
-    BaseNode,
-    NodeRegistry,
-)
+from executor import (BaseNode, ExecutionResult, NodeContext, NodeData,
+                      NodeRegistry, PlaybookExecutor)
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)

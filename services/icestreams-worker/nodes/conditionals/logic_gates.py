@@ -10,8 +10,8 @@ from __future__ import annotations
 import time
 from typing import Any, Dict, List
 
-from ..base import BaseNode, NodeContext, NodeInput, NodeOutput, NodeResult
 from ...executor.node_registry import register_node
+from ..base import BaseNode, NodeContext, NodeInput, NodeOutput, NodeResult
 
 
 @register_node("conditional_and", "conditionals", "AND Gate")

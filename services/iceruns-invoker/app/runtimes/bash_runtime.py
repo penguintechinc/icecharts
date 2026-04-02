@@ -1,6 +1,7 @@
 """Bash 5.2 runtime implementation."""
 
 from typing import List
+
 from app.action_runtime import BaseRuntime
 
 

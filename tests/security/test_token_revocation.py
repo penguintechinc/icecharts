@@ -9,9 +9,10 @@ table is implemented.
 """
 
 import hashlib
-import pytest
-import jwt
 from datetime import datetime, timedelta
+
+import jwt
+import pytest
 
 REVOCATION_STUBBED = pytest.mark.xfail(
     reason="revoke_refresh_token() currently stubbed — refresh_tokens table not yet implemented"
@@ -25,7 +26,8 @@ class TestRevocationStorage:
     def test_revoke_stores_in_db(self, app, test_user, refresh_token):
         """revoke_refresh_token() must mark the token as revoked in the DB."""
         with app.app_context():
-            from app.models import get_db, revoke_refresh_token, is_refresh_token_valid
+            from app.models import (get_db, is_refresh_token_valid,
+                                    revoke_refresh_token)
 
             token_hash = hashlib.sha256(refresh_token.encode()).hexdigest()
 
@@ -107,12 +109,9 @@ class TestRevocationEnforcement:
     def test_revoke_all_user_tokens_invalidates_all(self, app, client, test_user):
         """revoke_all_user_tokens() must invalidate all tokens for the user."""
         with app.app_context():
-            from app.models import (
-                get_db,
-                revoke_all_user_tokens,
-                is_refresh_token_valid,
-            )
             from app.api.v1.auth import create_refresh_token
+            from app.models import (get_db, is_refresh_token_valid,
+                                    revoke_all_user_tokens)
 
             # Create two refresh tokens for the user
             token1, _ = create_refresh_token(test_user["id"])
@@ -156,8 +155,8 @@ class TestStatelessAccessTokens:
     def test_per_token_revocation_leaves_others_valid(self, app, client, test_user):
         """Revoking one refresh token must not invalidate other tokens for the same user."""
         with app.app_context():
-            from app.models import is_refresh_token_valid, revoke_refresh_token
             from app.api.v1.auth import create_refresh_token
+            from app.models import is_refresh_token_valid, revoke_refresh_token
 
             token1, _ = create_refresh_token(test_user["id"])
             token2, _ = create_refresh_token(test_user["id"])

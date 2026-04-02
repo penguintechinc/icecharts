@@ -349,11 +349,8 @@ def test_storage_provider(provider_id: int):
 def _test_s3_provider(config: dict) -> dict:
     """Test AWS S3 provider connectivity."""
     import boto3
-    from botocore.exceptions import (
-        ClientError,
-        NoCredentialsError,
-        PartialCredentialsError,
-    )
+    from botocore.exceptions import (ClientError, NoCredentialsError,
+                                     PartialCredentialsError)
 
     required = ["bucket", "access_key_id", "secret_access_key"]
     missing = [f for f in required if f not in config]

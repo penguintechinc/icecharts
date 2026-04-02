@@ -9,16 +9,12 @@ from datetime import datetime
 from typing import Any, Dict, List, Optional
 
 import boto3
-from botocore.exceptions import ClientError, NoCredentialsError, PartialCredentialsError
+from botocore.exceptions import (ClientError, NoCredentialsError,
+                                 PartialCredentialsError)
 
-from .base import (
-    StorageAuthenticationError,
-    StorageConfigError,
-    StorageConnectionError,
-    StorageError,
-    StorageFile,
-    StorageProvider,
-)
+from .base import (StorageAuthenticationError, StorageConfigError,
+                   StorageConnectionError, StorageError, StorageFile,
+                   StorageProvider)
 
 
 class S3Provider(StorageProvider):

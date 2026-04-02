@@ -1,7 +1,8 @@
 """Performance tests for warm vs cold start container execution."""
 
-import pytest
 import time
+
+import pytest
 
 
 class TestWarmVsColdStart:

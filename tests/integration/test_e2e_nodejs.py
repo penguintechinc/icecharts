@@ -1,7 +1,8 @@
 """End-to-end Node.js runtime execution tests."""
 
-import pytest
 import time
+
+import pytest
 
 
 class TestNodeJSE2E:

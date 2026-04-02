@@ -8,18 +8,13 @@ import logging
 import re
 from typing import Any, Dict, Optional
 
-from flask import Blueprint, jsonify, request
-
-from app.licensing import (
-    LicenseValidationError,
-    check_feature,
-    get_all_features,
-    get_client,
-    reinitialize_licensing,
-)
+from app.licensing import (LicenseValidationError, check_feature,
+                           get_all_features, get_client,
+                           reinitialize_licensing)
 from app.licensing.client import PenguinTechLicenseClient
 from app.middleware import admin_required, auth_required, get_current_user
 from app.services.system_settings_service import SystemSettingsService
+from flask import Blueprint, jsonify, request
 
 logger = logging.getLogger(__name__)
 

@@ -7,14 +7,8 @@ from typing import Any, Dict, Optional
 from flask import Blueprint, current_app, jsonify, redirect, request, session
 from flask_cors import cross_origin
 
-from ...auth import (
-    JITConfig,
-    JITProvisioner,
-    OIDCConfig,
-    OIDCHandler,
-    SAMLConfig,
-    SAMLHandler,
-)
+from ...auth import (JITConfig, JITProvisioner, OIDCConfig, OIDCHandler,
+                     SAMLConfig, SAMLHandler)
 from ...licensing.decorators import feature_required
 from ...middleware import auth_required, get_current_user
 

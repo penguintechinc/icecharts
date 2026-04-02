@@ -84,8 +84,8 @@ def create_app(config_class=None):
     def metrics_endpoint():
         """Prometheus metrics endpoint."""
         try:
-            from prometheus_client import generate_latest
             from flask import Response
+            from prometheus_client import generate_latest
 
             return Response(generate_latest(), mimetype="text/plain; version=0.0.4")
         except Exception as e:

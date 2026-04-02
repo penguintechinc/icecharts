@@ -13,27 +13,16 @@ Tests cover:
 """
 
 import logging
-from datetime import datetime, timedelta, UTC
+from datetime import UTC, datetime, timedelta
 from typing import Any, Dict
 from unittest.mock import MagicMock, patch
 
 import pytest
-
-from nodes.base import (
-    BaseNode,
-    CloudAuth,
-    NodeContext,
-    NodeInput,
-    NodeOutput,
-    NodeResult,
-)
-from executor.node_registry import (
-    DuplicateNodeError,
-    NodeInfo,
-    NodeNotFoundError,
-    NodeRegistry,
-    register_node,
-)
+from executor.node_registry import (DuplicateNodeError, NodeInfo,
+                                    NodeNotFoundError, NodeRegistry,
+                                    register_node)
+from nodes.base import (BaseNode, CloudAuth, NodeContext, NodeInput,
+                        NodeOutput, NodeResult)
 
 
 class TestNodeInput:

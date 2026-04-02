@@ -19,18 +19,12 @@ import pytest
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from connectors.base import (
-    ActionDefinition,
-    AuthMethod,
-    AuthType,
-    ConfigField,
-    ConnectorConfig,
-    ConnectorManifest,
-    PortDefinition,
-    TransformDefinition,
-)
-from connectors.executor import ConnectorActionExecutor, ConnectorExecutionError
-from connectors.registry import ConnectorRegistry, ConnectorNotFoundError
+from connectors.base import (ActionDefinition, AuthMethod, AuthType,
+                             ConfigField, ConnectorConfig, ConnectorManifest,
+                             PortDefinition, TransformDefinition)
+from connectors.executor import (ConnectorActionExecutor,
+                                 ConnectorExecutionError)
+from connectors.registry import ConnectorNotFoundError, ConnectorRegistry
 from executor.node_registry import NodeRegistry
 
 

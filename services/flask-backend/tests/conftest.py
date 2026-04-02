@@ -48,7 +48,7 @@ os.environ["DB_PASSWORD"] = _PG_PASSWORD
 os.environ["RATELIMIT_ENABLED"] = "false"
 os.environ["JWT_SECRET_KEY"] = "test-secret-key"
 
-from datetime import datetime, timedelta, UTC
+from datetime import UTC, datetime, timedelta
 
 import pytest
 from flask import Flask
@@ -72,6 +72,7 @@ def app() -> Flask:
     tests.
     """
     import glob
+
     import psycopg2
     from pydal import DAL
 

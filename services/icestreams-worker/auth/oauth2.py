@@ -5,15 +5,15 @@ This module provides thread-safe OAuth2 authentication with automatic token
 refresh and caching for cloud function integrations.
 """
 
+import logging
 from dataclasses import dataclass, field
 from datetime import datetime, timedelta
-from typing import Optional, Dict, Any
 from threading import Lock
-import logging
+from typing import Any, Dict, Optional
 
 try:
     import boto3
-    from botocore.exceptions import ClientError, BotoCoreError
+    from botocore.exceptions import BotoCoreError, ClientError
 
     HAS_BOTO3 = True
 except ImportError:

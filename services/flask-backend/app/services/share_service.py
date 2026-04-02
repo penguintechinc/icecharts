@@ -5,10 +5,9 @@ import secrets
 from dataclasses import dataclass
 from typing import Optional
 
-from flask import request
-
 from app.models import get_db
 from app.services.permission_service import Permission, PermissionService
+from flask import request
 
 
 @dataclass(slots=True)

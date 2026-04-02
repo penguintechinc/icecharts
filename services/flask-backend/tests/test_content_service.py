@@ -4,7 +4,6 @@ import json
 from unittest.mock import MagicMock, patch
 
 import pytest
-
 from app.models import get_db
 from app.services.content_service import ContentService, VersionData
 from app.storage import StorageError

@@ -22,14 +22,9 @@ Usage:
 import os
 from typing import Any, Dict, Optional
 
-from .base import (
-    StorageAuthenticationError,
-    StorageConfigError,
-    StorageConnectionError,
-    StorageError,
-    StorageFile,
-    StorageProvider,
-)
+from .base import (StorageAuthenticationError, StorageConfigError,
+                   StorageConnectionError, StorageError, StorageFile,
+                   StorageProvider)
 
 __all__ = [
     "get_storage_provider",

@@ -26,13 +26,9 @@ import pytest
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from connectors.base import ConnectorManifest, AuthType
-from connectors.registry import (
-    ConnectorRegistry,
-    ConnectorNotFoundError,
-    DuplicateConnectorError,
-    discover_connectors,
-)
+from connectors.base import AuthType, ConnectorManifest
+from connectors.registry import (ConnectorNotFoundError, ConnectorRegistry,
+                                 DuplicateConnectorError, discover_connectors)
 from executor.node_registry import NodeRegistry
 
 MANIFESTS_DIR = os.path.join(

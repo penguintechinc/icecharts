@@ -13,11 +13,11 @@ Covers:
 - execute: exception handling
 """
 
-import pytest
 from unittest.mock import MagicMock
 
-from nodes.conditionals.for_each import ForEachConditional
+import pytest
 from nodes.base import NodeContext
+from nodes.conditionals.for_each import ForEachConditional
 
 
 def _make_context(config: dict) -> NodeContext:

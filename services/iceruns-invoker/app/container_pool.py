@@ -1,8 +1,9 @@
 """Container pool management for warm/cold start optimization."""
 
 import logging
-from typing import Dict, Optional
 from datetime import datetime, timedelta
+from typing import Dict, Optional
+
 import docker
 
 logger = logging.getLogger(__name__)

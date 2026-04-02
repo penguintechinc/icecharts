@@ -7,10 +7,9 @@ from object storage and manage user/tenant storage quotas.
 import json
 from typing import Any, Dict, Optional
 
-from flask import current_app
-
 from app.models import get_db
 from app.services.drawing_storage_service import DrawingStorageService
+from flask import current_app
 
 
 class StorageUsageService:

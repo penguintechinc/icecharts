@@ -11,11 +11,11 @@ import time
 
 import jwt
 import pytest
+from app import create_app
+from app.websocket.collaboration import (CollaborationManager,
+                                         get_collaboration_manager)
 from flask import Flask
 from flask_socketio import SocketIOTestClient
-
-from app import create_app
-from app.websocket.collaboration import CollaborationManager, get_collaboration_manager
 
 
 @pytest.fixture
@@ -551,9 +551,9 @@ class TestCollaborationManagerRedisFailover:
     def test_redis_error_during_join_room_falls_back_to_memory(self):
         """When Redis fails during join_room, the call succeeds via in-memory fallback."""
         from unittest.mock import MagicMock, patch
-        from redis.exceptions import RedisError
 
         from app.websocket.collaboration import CollaborationManager
+        from redis.exceptions import RedisError
 
         # Build a manager with a Redis client that always fails
         manager = CollaborationManager.__new__(CollaborationManager)
@@ -580,9 +580,9 @@ class TestCollaborationManagerRedisFailover:
     def test_redis_error_during_get_room_users_returns_empty_list(self):
         """When Redis fails during get_room_users, an empty list is returned."""
         from unittest.mock import MagicMock
-        from redis.exceptions import RedisError
 
         from app.websocket.collaboration import CollaborationManager
+        from redis.exceptions import RedisError
 
         manager = CollaborationManager.__new__(CollaborationManager)
         mock_redis = MagicMock()
@@ -597,9 +597,9 @@ class TestCollaborationManagerRedisFailover:
     def test_redis_error_during_lock_shape_returns_false(self):
         """When Redis fails during lock_shape, False is returned (safe default)."""
         from unittest.mock import MagicMock
-        from redis.exceptions import RedisError
 
         from app.websocket.collaboration import CollaborationManager
+        from redis.exceptions import RedisError
 
         manager = CollaborationManager.__new__(CollaborationManager)
         mock_redis = MagicMock()
@@ -614,9 +614,9 @@ class TestCollaborationManagerRedisFailover:
     def test_redis_error_during_unlock_shape_returns_false(self):
         """When Redis fails during unlock_shape, False is returned (safe default)."""
         from unittest.mock import MagicMock
-        from redis.exceptions import RedisError
 
         from app.websocket.collaboration import CollaborationManager
+        from redis.exceptions import RedisError
 
         manager = CollaborationManager.__new__(CollaborationManager)
         mock_redis = MagicMock()
@@ -631,9 +631,9 @@ class TestCollaborationManagerRedisFailover:
     def test_redis_error_during_update_cursor_is_silent(self):
         """When Redis fails during update_cursor, no exception propagates."""
         from unittest.mock import MagicMock
-        from redis.exceptions import RedisError
 
         from app.websocket.collaboration import CollaborationManager
+        from redis.exceptions import RedisError
 
         manager = CollaborationManager.__new__(CollaborationManager)
         mock_redis = MagicMock()

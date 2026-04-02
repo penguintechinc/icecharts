@@ -21,11 +21,10 @@ Endpoints:
 import logging
 from typing import Any, Dict
 
-from flask import Blueprint, jsonify, request
-from pydal import DAL
-
 from app.middleware import auth_required
 from app.models import DB_TYPE_TO_PYDAL_SCHEME, VALID_DB_TYPES
+from flask import Blueprint, jsonify, request
+from pydal import DAL
 
 logger = logging.getLogger(__name__)
 

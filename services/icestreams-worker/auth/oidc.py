@@ -5,12 +5,12 @@ This module provides thread-safe OIDC authentication with automatic token
 refresh and caching for GCP Cloud Run and other GCP services.
 """
 
-from dataclasses import dataclass
-from datetime import datetime, timedelta
-from typing import Optional, Dict, Any
-from threading import Lock
 import json
 import logging
+from dataclasses import dataclass
+from datetime import datetime, timedelta
+from threading import Lock
+from typing import Any, Dict, Optional
 
 try:
     from google.auth import jwt

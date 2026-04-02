@@ -1,7 +1,8 @@
 """Tests for IceRuns container pool warm/cold start management."""
 
-import pytest
 from unittest.mock import MagicMock, patch
+
+import pytest
 
 
 class TestContainerPool:

@@ -13,9 +13,8 @@ import sys
 from pathlib import Path
 from typing import Any, Dict, List, Optional
 
-from flask import Blueprint, current_app, jsonify, request
-
 from app.middleware import auth_required
+from flask import Blueprint, current_app, jsonify, request
 
 # Add icestreams-worker to path for connector imports
 # In container: /app/icestreams-worker

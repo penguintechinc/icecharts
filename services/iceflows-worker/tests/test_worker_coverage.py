@@ -1,10 +1,11 @@
 """Additional tests for IceFlowsWorker to increase coverage."""
 
+import asyncio
 import os
 import sys
-import pytest
-import asyncio
 from unittest.mock import AsyncMock, MagicMock, patch
+
+import pytest
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
@@ -403,8 +404,8 @@ class TestWorkerConnectErrors:
     @pytest.mark.asyncio
     async def test_connect_raises_on_redis_error(self, mock_redis):
         """connect() raises ConnectionError if Redis connection fails."""
-        from worker import IceFlowsWorker
         from redis.exceptions import ConnectionError
+        from worker import IceFlowsWorker
 
         worker = IceFlowsWorker()
         with patch(

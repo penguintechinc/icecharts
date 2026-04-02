@@ -2,8 +2,9 @@
 
 import os
 import sys
-import pytest
 from unittest.mock import MagicMock, patch
+
+import pytest
 
 sys.path.insert(
     0, os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "app")
@@ -15,7 +16,7 @@ class TestMetricsRecorder:
 
     def test_record_execution_start_increments_gauge(self):
         """record_execution_start increments ACTIVE_EXECUTIONS gauge."""
-        from app.metrics import MetricsRecorder, ACTIVE_EXECUTIONS
+        from app.metrics import ACTIVE_EXECUTIONS, MetricsRecorder
 
         mock_labels = MagicMock()
         with patch.object(
@@ -27,7 +28,7 @@ class TestMetricsRecorder:
 
     def test_record_execution_end_decrements_gauge(self):
         """record_execution_end decrements ACTIVE_EXECUTIONS gauge."""
-        from app.metrics import MetricsRecorder, ACTIVE_EXECUTIONS
+        from app.metrics import ACTIVE_EXECUTIONS, MetricsRecorder
 
         mock_labels = MagicMock()
         with patch.object(ACTIVE_EXECUTIONS, "labels", return_value=mock_labels):
@@ -36,7 +37,7 @@ class TestMetricsRecorder:
 
     def test_record_execution_complete_increments_counter(self):
         """record_execution_complete increments EXECUTIONS_TOTAL."""
-        from app.metrics import MetricsRecorder, EXECUTIONS_TOTAL
+        from app.metrics import EXECUTIONS_TOTAL, MetricsRecorder
 
         mock_labels = MagicMock()
         with patch.object(
@@ -57,7 +58,7 @@ class TestMetricsRecorder:
 
     def test_record_execution_complete_observes_duration(self):
         """record_execution_complete observes execution duration histogram."""
-        from app.metrics import MetricsRecorder, EXECUTION_DURATION
+        from app.metrics import EXECUTION_DURATION, MetricsRecorder
 
         mock_labels = MagicMock()
         with patch.object(EXECUTION_DURATION, "labels", return_value=mock_labels):
@@ -73,7 +74,7 @@ class TestMetricsRecorder:
 
     def test_record_execution_complete_observes_memory_when_provided(self):
         """record_execution_complete observes memory histogram when memory_mb given."""
-        from app.metrics import MetricsRecorder, EXECUTION_MEMORY
+        from app.metrics import EXECUTION_MEMORY, MetricsRecorder
 
         mock_labels = MagicMock()
         with patch.object(EXECUTION_MEMORY, "labels", return_value=mock_labels):
@@ -92,7 +93,7 @@ class TestMetricsRecorder:
 
     def test_record_execution_error_increments_error_counter(self):
         """record_execution_error increments EXECUTION_ERRORS counter."""
-        from app.metrics import MetricsRecorder, EXECUTION_ERRORS
+        from app.metrics import EXECUTION_ERRORS, MetricsRecorder
 
         mock_labels = MagicMock()
         with patch.object(
@@ -104,7 +105,7 @@ class TestMetricsRecorder:
 
     def test_set_queue_size(self):
         """set_queue_size sets QUEUE_SIZE gauge."""
-        from app.metrics import MetricsRecorder, QUEUE_SIZE
+        from app.metrics import QUEUE_SIZE, MetricsRecorder
 
         with patch.object(QUEUE_SIZE, "set") as mock_set:
             MetricsRecorder.set_queue_size(42)

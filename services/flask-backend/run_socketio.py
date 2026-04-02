@@ -11,8 +11,9 @@ Usage:
     python run_socketio.py --debug
 """
 
-import os
 import argparse
+import os
+
 from app import create_app
 
 

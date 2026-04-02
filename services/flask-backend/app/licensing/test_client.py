@@ -4,11 +4,8 @@ import unittest
 from datetime import datetime, timedelta
 from unittest.mock import MagicMock, Mock, patch
 
-from .client import (
-    FeatureNotAvailableError,
-    LicenseValidationError,
-    PenguinTechLicenseClient,
-)
+from .client import (FeatureNotAvailableError, LicenseValidationError,
+                     PenguinTechLicenseClient)
 
 
 class TestLicenseKeyValidation(unittest.TestCase):

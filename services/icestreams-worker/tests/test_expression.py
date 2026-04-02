@@ -15,12 +15,12 @@ Tests cover:
 - Input/output handling
 """
 
-import pytest
-from unittest.mock import AsyncMock, MagicMock
 from typing import Any, Dict
+from unittest.mock import AsyncMock, MagicMock
 
-from nodes.transforms.expression import ExpressionTransform
+import pytest
 from nodes.base import NodeContext, NodeInput, NodeOutput, NodeResult
+from nodes.transforms.expression import ExpressionTransform
 
 
 class TestExpressionValidation:

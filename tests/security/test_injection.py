@@ -5,8 +5,9 @@ path traversal, CRLF injection, and HTML injection payloads without executing
 them or returning dangerous content.
 """
 
-import pytest
 import json
+
+import pytest
 
 # Payloads grouped by attack type
 SQL_INJECTION_PAYLOADS = [
@@ -244,8 +245,9 @@ class TestHeaderInjection:
     def test_crlf_injection_in_authorization_header(self, client, app, test_user):
         """CRLF sequences in header values must not split the HTTP response."""
         with app.app_context():
-            import jwt
             from datetime import datetime, timedelta
+
+            import jwt
 
             payload = {
                 "sub": str(test_user["id"]),

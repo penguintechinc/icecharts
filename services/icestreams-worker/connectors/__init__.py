@@ -22,19 +22,12 @@ Usage:
     result = await waddlebot.execute_action("send_chat", config, inputs)
 """
 
-from connectors.base import (
-    BaseConnector,
-    ConnectorConfig,
-    ConnectorManifest,
-    AuthMethod,
-    TriggerDefinition,
-    ActionDefinition,
-    TransformDefinition,
-    ConfigField,
-)
-from connectors.registry import ConnectorRegistry, discover_connectors
-from connectors.node_generator import generate_nodes_from_connector
+from connectors.base import (ActionDefinition, AuthMethod, BaseConnector,
+                             ConfigField, ConnectorConfig, ConnectorManifest,
+                             TransformDefinition, TriggerDefinition)
 from connectors.executor import ConnectorActionExecutor
+from connectors.node_generator import generate_nodes_from_connector
+from connectors.registry import ConnectorRegistry, discover_connectors
 
 __all__ = [
     # Base classes

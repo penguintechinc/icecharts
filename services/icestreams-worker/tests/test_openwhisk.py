@@ -4,12 +4,12 @@ Unit tests for Apache OpenWhisk cloud action node.
 Tests OpenWhiskAction with mocked authentication and HTTP calls.
 """
 
-import pytest
-import json
 import asyncio
 import base64
-from unittest.mock import Mock, patch, MagicMock, AsyncMock
+import json
+from unittest.mock import AsyncMock, MagicMock, Mock, patch
 
+import pytest
 from nodes.actions.cloud.openwhisk import OpenWhiskAction
 from nodes.base import NodeContext, NodeResult
 

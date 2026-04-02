@@ -12,15 +12,13 @@ from flask import Blueprint, current_app, jsonify, request
 
 from ...middleware import auth_required, get_current_user, scopes_required
 from ...models import get_db
-from ...schemas.playbook_schemas import (
-    AcquireLockRequest,
-    CreatePlaybookRequest,
-    CreateScheduleRequest,
-    CreateWebhookRequest,
-    ExecutePlaybookRequest,
-    PlaybookNodeMetadataRequest,
-    UpdatePlaybookRequest,
-)
+from ...schemas.playbook_schemas import (AcquireLockRequest,
+                                         CreatePlaybookRequest,
+                                         CreateScheduleRequest,
+                                         CreateWebhookRequest,
+                                         ExecutePlaybookRequest,
+                                         PlaybookNodeMetadataRequest,
+                                         UpdatePlaybookRequest)
 from ...services.redis_streams import publish_task as redis_publish_task
 from ...utils.validation import validate_json
 

@@ -9,11 +9,9 @@ from pydantic import ValidationError
 
 from ...auth.scopes import AVAILABLE_SCOPES, SCOPE_GROUPS
 from ...middleware import admin_required, auth_required, get_current_user
-from ...schemas.service_account_schemas import (
-    CreateServiceAccountRequest,
-    GenerateTokenRequest,
-    UpdateServiceAccountRequest,
-)
+from ...schemas.service_account_schemas import (CreateServiceAccountRequest,
+                                                GenerateTokenRequest,
+                                                UpdateServiceAccountRequest)
 from ...services.service_account_service import ServiceAccountService
 
 service_accounts_v1_bp = Blueprint(

@@ -3,7 +3,6 @@
 from unittest.mock import MagicMock, patch
 
 import pytest
-
 from app.services.health_check_service import HealthCheckService
 
 

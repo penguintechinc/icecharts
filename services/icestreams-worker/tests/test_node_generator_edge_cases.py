@@ -18,22 +18,15 @@ import pytest
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from connectors.base import (
-    ActionDefinition,
-    ConfigField,
-    ConnectorManifest,
-    PortDefinition,
-    TransformDefinition,
-    TriggerDefinition,
-)
-from connectors.node_generator import (
-    create_action_node,
-    create_transform_node,
-    create_trigger_node,
-    generate_nodes_from_connector,
-)
-from executor.node_registry import NodeRegistry
+from connectors.base import (ActionDefinition, ConfigField, ConnectorManifest,
+                             PortDefinition, TransformDefinition,
+                             TriggerDefinition)
+from connectors.node_generator import (create_action_node,
+                                       create_transform_node,
+                                       create_trigger_node,
+                                       generate_nodes_from_connector)
 from connectors.registry import ConnectorRegistry
+from executor.node_registry import NodeRegistry
 from nodes.base import NodeContext
 
 

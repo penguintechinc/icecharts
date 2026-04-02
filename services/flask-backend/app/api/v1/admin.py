@@ -6,15 +6,8 @@ from typing import Optional
 from flask import Blueprint, jsonify, request
 
 from ...middleware import admin_required, auth_required, get_current_user
-from ...models import (
-    create_user,
-    delete_user,
-    get_db,
-    get_user_by_email,
-    get_user_by_id,
-    list_users,
-    update_user,
-)
+from ...models import (create_user, delete_user, get_db, get_user_by_email,
+                       get_user_by_id, list_users, update_user)
 
 admin_v1_bp = Blueprint("admin_v1", __name__, url_prefix="/admin")
 

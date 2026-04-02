@@ -3,16 +3,9 @@
 from datetime import datetime
 from typing import Optional
 
-from ..models import (
-    create_comment,
-    delete_comment,
-    get_comment_by_id,
-    get_comments_by_drawing,
-    get_comments_tree,
-    resolve_comment,
-    unresolve_comment,
-    update_comment,
-)
+from ..models import (create_comment, delete_comment, get_comment_by_id,
+                      get_comments_by_drawing, get_comments_tree,
+                      resolve_comment, unresolve_comment, update_comment)
 
 
 class CommentService:

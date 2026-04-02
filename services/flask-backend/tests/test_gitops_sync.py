@@ -6,12 +6,8 @@ and error handling in the GitOpsSyncService.
 
 import pytest
 import yaml
-
-from app.services.gitops_sync import (
-    GitOpsSyncError,
-    GitOpsSyncService,
-    SyncChanges,
-)
+from app.services.gitops_sync import (GitOpsSyncError, GitOpsSyncService,
+                                      SyncChanges)
 
 
 class TestGitOpsSyncYAMLParsing:

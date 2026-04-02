@@ -1,9 +1,8 @@
 """Admin statistics API endpoints."""
 
-from flask import Blueprint, jsonify, request
-
 from app.middleware import admin_required, auth_required
 from app.services.statistics_service import StatisticsService
+from flask import Blueprint, jsonify, request
 
 # Create admin statistics blueprint
 admin_stats_v1_bp = Blueprint(

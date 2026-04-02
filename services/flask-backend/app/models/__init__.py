@@ -5,9 +5,8 @@ from threading import local
 from typing import Optional
 
 import structlog
-from pydal import DAL
-
 from app.config import get_config
+from pydal import DAL
 
 logger = structlog.get_logger()
 

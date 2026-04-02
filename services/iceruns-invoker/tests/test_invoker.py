@@ -1,10 +1,11 @@
 """Tests for IceRunsInvoker - main worker process for executing IceRuns functions."""
 
+import json
 import os
 import sys
-import json
+from unittest.mock import MagicMock, call, patch
+
 import pytest
-from unittest.mock import MagicMock, patch, call
 
 sys.path.insert(
     0, os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "app")

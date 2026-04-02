@@ -2,26 +2,24 @@
 py4web application with license integration
 """
 
+import logging
 import os
 import sys
-import logging
-from py4web import action, request, response, DAL, Field, redirect, URL
-from py4web.utils.cors import CORS
+
+from py4web import DAL, URL, Field, action, redirect, request, response
 from py4web.utils.auth import Auth
-from py4web.utils.mailer import Mailer
+from py4web.utils.cors import CORS
 from py4web.utils.form import Form, FormStyleBulma
-from pydal.validators import IS_NOT_EMPTY, IS_EMAIL, IS_IN_SET
+from py4web.utils.mailer import Mailer
+from pydal.validators import IS_EMAIL, IS_IN_SET, IS_NOT_EMPTY
 
 # Add shared modules to path
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", ".."))
 
-from shared.licensing.python_client import (
-    initialize_licensing,
-    get_client,
-    requires_feature,
-    FeatureNotAvailableError,
-    LicenseValidationError,
-)
+from shared.licensing.python_client import (FeatureNotAvailableError,
+                                            LicenseValidationError, get_client,
+                                            initialize_licensing,
+                                            requires_feature)
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)

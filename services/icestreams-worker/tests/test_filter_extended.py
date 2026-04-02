@@ -11,11 +11,11 @@ Covers:
 - execute: array input, single object, no match, all operators, non-dict items
 """
 
-import pytest
 from unittest.mock import MagicMock
 
-from nodes.transforms.filter import FilterTransform, OPERATORS
+import pytest
 from nodes.base import NodeContext
+from nodes.transforms.filter import OPERATORS, FilterTransform
 
 
 def _make_context(config: dict) -> NodeContext:

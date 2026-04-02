@@ -1,7 +1,8 @@
 """Tests for IceRuns function CRUD operations."""
 
+from unittest.mock import MagicMock, patch
+
 import pytest
-from unittest.mock import patch, MagicMock
 
 
 class TestFunctionCRUD:

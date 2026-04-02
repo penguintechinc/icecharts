@@ -1,16 +1,17 @@
 """Tests for TestRunner module - test execution and result collection."""
 
 import os
-import sys
-import pytest
 import subprocess
+import sys
 from datetime import datetime
 from pathlib import Path
-from unittest.mock import AsyncMock, MagicMock, patch, call
+from unittest.mock import AsyncMock, MagicMock, call, patch
+
+import pytest
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from test_runner import TestRunner, TestResult, TestRunnerError
+from test_runner import TestResult, TestRunner, TestRunnerError
 
 
 class TestTestRunnerInit:

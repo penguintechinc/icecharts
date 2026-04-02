@@ -1,7 +1,8 @@
 """End-to-end Python runtime execution tests."""
 
-import pytest
 import time
+
+import pytest
 
 
 class TestPythonE2E:

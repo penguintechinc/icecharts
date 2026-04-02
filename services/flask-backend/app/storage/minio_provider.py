@@ -13,14 +13,9 @@ from urllib.parse import urlparse
 from minio import Minio
 from minio.error import S3Error
 
-from .base import (
-    StorageAuthenticationError,
-    StorageConfigError,
-    StorageConnectionError,
-    StorageError,
-    StorageFile,
-    StorageProvider,
-)
+from .base import (StorageAuthenticationError, StorageConfigError,
+                   StorageConnectionError, StorageError, StorageFile,
+                   StorageProvider)
 
 
 class MinIOProvider(StorageProvider):

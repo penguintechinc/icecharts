@@ -4,11 +4,11 @@ Unit tests for GCP Cloud Run cloud action node.
 Tests GcpCloudRunAction with mocked aiohttp and OIDC authentication.
 """
 
-import pytest
-import json
 import asyncio
-from unittest.mock import Mock, patch, MagicMock, AsyncMock
+import json
+from unittest.mock import AsyncMock, MagicMock, Mock, patch
 
+import pytest
 from nodes.actions.cloud.gcp_cloudrun import GcpCloudRunAction
 from nodes.base import NodeContext, NodeResult
 

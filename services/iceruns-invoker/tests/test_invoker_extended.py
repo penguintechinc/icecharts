@@ -1,13 +1,14 @@
 """Extended tests for IceRunsInvoker - covering additional error paths and edge cases."""
 
-import os
-import sys
 import json
-import tempfile
+import os
 import shutil
-import pytest
-from unittest.mock import MagicMock, patch, call
+import sys
+import tempfile
 from datetime import datetime
+from unittest.mock import MagicMock, call, patch
+
+import pytest
 
 sys.path.insert(
     0, os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "app")
@@ -263,8 +264,8 @@ class TestIceRunsInvokerPackageHandling:
 
     def test_extract_package_from_zip(self, invoker_instance):
         """_extract_package handles zip files."""
-        import zipfile
         import io
+        import zipfile
 
         # Create a zip file in memory
         zip_buffer = io.BytesIO()
@@ -279,8 +280,8 @@ class TestIceRunsInvokerPackageHandling:
 
     def test_extract_package_from_tar(self, invoker_instance):
         """_extract_package handles tar.gz files."""
-        import tarfile
         import io
+        import tarfile
 
         # Create a tar.gz file in memory
         tar_buffer = io.BytesIO()

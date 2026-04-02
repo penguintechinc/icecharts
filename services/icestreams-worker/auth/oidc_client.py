@@ -8,7 +8,7 @@ require ID tokens for authentication, such as GCP Cloud Run.
 from __future__ import annotations
 
 import json
-from datetime import datetime, timedelta, UTC
+from datetime import UTC, datetime, timedelta
 from typing import Any, Dict, Optional
 
 import aiohttp
@@ -82,8 +82,9 @@ class OIDCClient(BaseAuthClient):
             )
 
         # Create JWT assertion for ID token request
-        import jwt
         import time
+
+        import jwt
 
         now = int(time.time())
         payload = {

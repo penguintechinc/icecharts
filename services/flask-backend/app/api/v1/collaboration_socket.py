@@ -4,10 +4,9 @@ import os
 from typing import Any, Dict
 
 import jwt
+from app.services.collaboration_service import CollaborationService
 from flask import request
 from flask_socketio import emit, join_room, leave_room
-
-from app.services.collaboration_service import CollaborationService
 
 
 def verify_token(token: str) -> Dict[str, Any]:

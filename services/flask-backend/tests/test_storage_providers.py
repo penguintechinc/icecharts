@@ -205,7 +205,7 @@ class TestStorageProviderUnitTests:
 
     def test_storage_file_dataclass_creation(self):
         """StorageFile dataclass has expected fields and is immutable."""
-        from datetime import datetime, UTC
+        from datetime import UTC, datetime
 
         from app.storage.base import StorageFile
 
@@ -225,7 +225,7 @@ class TestStorageProviderUnitTests:
 
     def test_storage_file_with_optional_fields(self):
         """StorageFile accepts optional etag and metadata."""
-        from datetime import datetime, UTC
+        from datetime import UTC, datetime
 
         from app.storage.base import StorageFile
 
@@ -244,7 +244,7 @@ class TestStorageProviderUnitTests:
 
     def test_storage_file_is_frozen(self):
         """StorageFile is immutable (frozen dataclass)."""
-        from datetime import datetime, UTC
+        from datetime import UTC, datetime
 
         from app.storage.base import StorageFile
 
@@ -310,12 +310,9 @@ class TestStorageProviderUnitTests:
 
     def test_storage_error_exception_hierarchy(self):
         """StorageError and subclasses have correct exception hierarchy."""
-        from app.storage.base import (
-            StorageAuthenticationError,
-            StorageConfigError,
-            StorageConnectionError,
-            StorageError,
-        )
+        from app.storage.base import (StorageAuthenticationError,
+                                      StorageConfigError,
+                                      StorageConnectionError, StorageError)
 
         # All should be subclasses of StorageError
         assert issubclass(StorageConfigError, StorageError)
@@ -331,11 +328,9 @@ class TestStorageProviderUnitTests:
 
     def test_storage_errors_have_messages(self):
         """StorageError subclasses preserve error messages."""
-        from app.storage.base import (
-            StorageAuthenticationError,
-            StorageConfigError,
-            StorageConnectionError,
-        )
+        from app.storage.base import (StorageAuthenticationError,
+                                      StorageConfigError,
+                                      StorageConnectionError)
 
         msg1 = "Endpoint not configured"
         msg2 = "Connection refused on localhost:9000"
@@ -364,8 +359,8 @@ class TestMinIOProviderUnitTests:
         """MinIOProvider raises StorageConfigError when endpoint is missing."""
         from unittest.mock import MagicMock, patch
 
-        from app.storage.minio_provider import MinIOProvider
         from app.storage.base import StorageConfigError
+        from app.storage.minio_provider import MinIOProvider
 
         with pytest.raises(StorageConfigError) as exc_info:
             MinIOProvider(
@@ -385,8 +380,8 @@ class TestMinIOProviderUnitTests:
         """MinIOProvider raises StorageConfigError when bucket is missing."""
         from unittest.mock import MagicMock, patch
 
-        from app.storage.minio_provider import MinIOProvider
         from app.storage.base import StorageConfigError
+        from app.storage.minio_provider import MinIOProvider
 
         with pytest.raises(StorageConfigError) as exc_info:
             MinIOProvider(
@@ -406,8 +401,8 @@ class TestMinIOProviderUnitTests:
         """MinIOProvider raises StorageConfigError when endpoint is empty string."""
         from unittest.mock import MagicMock, patch
 
-        from app.storage.minio_provider import MinIOProvider
         from app.storage.base import StorageConfigError
+        from app.storage.minio_provider import MinIOProvider
 
         with pytest.raises(StorageConfigError):
             MinIOProvider(
@@ -423,8 +418,8 @@ class TestMinIOProviderUnitTests:
         """MinIOProvider raises StorageConnectionError when Minio client fails."""
         from unittest.mock import MagicMock, patch
 
-        from app.storage.minio_provider import MinIOProvider
         from app.storage.base import StorageConnectionError
+        from app.storage.minio_provider import MinIOProvider
 
         with patch("app.storage.minio_provider.Minio") as mock_minio_cls:
             mock_minio_cls.side_effect = Exception("Connection refused")
@@ -514,8 +509,8 @@ class TestMinIOProviderUnitTests:
         import asyncio
         from unittest.mock import MagicMock, patch
 
-        from app.storage.minio_provider import MinIOProvider
         from app.storage.base import StorageError
+        from app.storage.minio_provider import MinIOProvider
 
         with patch("app.storage.minio_provider.Minio") as mock_minio_cls:
             mock_instance = MagicMock()
@@ -545,8 +540,8 @@ class TestS3ProviderUnitTests:
         """S3Provider raises StorageConfigError when access_key is missing."""
         from unittest.mock import MagicMock, patch
 
-        from app.storage.s3_provider import S3Provider
         from app.storage.base import StorageConfigError
+        from app.storage.s3_provider import S3Provider
 
         with pytest.raises(StorageConfigError) as exc_info:
             S3Provider(
@@ -565,8 +560,8 @@ class TestS3ProviderUnitTests:
         """S3Provider raises StorageConfigError when bucket is missing."""
         from unittest.mock import MagicMock, patch
 
-        from app.storage.s3_provider import S3Provider
         from app.storage.base import StorageConfigError
+        from app.storage.s3_provider import S3Provider
 
         with pytest.raises(StorageConfigError) as exc_info:
             S3Provider(
@@ -583,8 +578,8 @@ class TestS3ProviderUnitTests:
 
     def test_s3_validate_config_missing_secret_key_raises(self):
         """S3Provider raises StorageConfigError when secret_key is missing."""
-        from app.storage.s3_provider import S3Provider
         from app.storage.base import StorageConfigError
+        from app.storage.s3_provider import S3Provider
 
         with pytest.raises(StorageConfigError):
             S3Provider(
@@ -598,10 +593,10 @@ class TestS3ProviderUnitTests:
     def test_s3_bucket_not_found_raises_storage_config_error(self):
         """S3Provider raises StorageConfigError when the bucket does not exist (404)."""
         from unittest.mock import MagicMock, patch
-        from botocore.exceptions import ClientError
 
-        from app.storage.s3_provider import S3Provider
         from app.storage.base import StorageConfigError
+        from app.storage.s3_provider import S3Provider
+        from botocore.exceptions import ClientError
 
         with patch("app.storage.s3_provider.boto3") as mock_boto3:
             mock_session = MagicMock()
@@ -631,10 +626,10 @@ class TestS3ProviderUnitTests:
     def test_s3_bucket_access_denied_raises_auth_error(self):
         """S3Provider raises StorageAuthenticationError when access to bucket is denied (403)."""
         from unittest.mock import MagicMock, patch
-        from botocore.exceptions import ClientError
 
-        from app.storage.s3_provider import S3Provider
         from app.storage.base import StorageAuthenticationError
+        from app.storage.s3_provider import S3Provider
+        from botocore.exceptions import ClientError
 
         with patch("app.storage.s3_provider.boto3") as mock_boto3:
             mock_session = MagicMock()
@@ -720,10 +715,10 @@ class TestS3ProviderUnitTests:
         """S3Provider upload raises StorageAuthenticationError on access denied."""
         import asyncio
         from unittest.mock import MagicMock, patch
-        from botocore.exceptions import ClientError
 
-        from app.storage.s3_provider import S3Provider
         from app.storage.base import StorageAuthenticationError
+        from app.storage.s3_provider import S3Provider
+        from botocore.exceptions import ClientError
 
         with patch("app.storage.s3_provider.boto3") as mock_boto3:
             mock_session = MagicMock()

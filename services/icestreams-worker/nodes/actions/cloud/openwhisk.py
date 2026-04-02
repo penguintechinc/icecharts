@@ -14,10 +14,10 @@ from typing import Any, Dict, List, Optional
 
 import aiohttp
 
-from ...base import NodeContext, NodeInput, NodeOutput, NodeResult
-from ...auth.oauth2 import OAuth2Client, OAuth2Config
-from .base_cloud import BaseCloudFunction
 from ....executor.node_registry import register_node
+from ...auth.oauth2 import OAuth2Client, OAuth2Config
+from ...base import NodeContext, NodeInput, NodeOutput, NodeResult
+from .base_cloud import BaseCloudFunction
 
 
 @register_node(

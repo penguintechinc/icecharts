@@ -2,8 +2,9 @@
 
 import os
 import sys
+from unittest.mock import MagicMock, call, patch
+
 import pytest
-from unittest.mock import MagicMock, patch, call
 
 sys.path.insert(
     0, os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "app")
@@ -121,8 +122,8 @@ class TestCreateMetricsApp:
 
     def test_metrics_endpoint_with_metrics_recorded(self):
         """metrics endpoint returns recorded metrics data."""
-        from app.metrics_server import create_metrics_app
         from app.metrics import EXECUTIONS_TOTAL
+        from app.metrics_server import create_metrics_app
 
         # Record a metric
         EXECUTIONS_TOTAL.labels(
@@ -263,8 +264,9 @@ class TestMetricsServerIntegration:
 
     def test_metrics_endpoint_performance(self):
         """metrics endpoint responds quickly."""
-        from app.metrics_server import create_metrics_app
         import time
+
+        from app.metrics_server import create_metrics_app
 
         app = create_metrics_app()
         client = app.test_client()

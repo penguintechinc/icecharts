@@ -5,15 +5,10 @@ This demonstrates how to use the graph utilities to analyze and execute
 IceStreams playbooks.
 """
 
-from executor.graph_utils import (
-    TopologicalSorter,
-    get_node_inputs,
-    get_node_outputs,
-    find_trigger_nodes,
-    validate_graph,
-    get_execution_paths,
-    get_graph_statistics,
-)
+from executor.graph_utils import (TopologicalSorter, find_trigger_nodes,
+                                  get_execution_paths, get_graph_statistics,
+                                  get_node_inputs, get_node_outputs,
+                                  validate_graph)
 
 
 def example_simple_playbook():

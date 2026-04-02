@@ -12,8 +12,8 @@ import logging
 import time
 from typing import Any, Dict, List, Optional
 
-from ..base import BaseNode, NodeContext, NodeInput, NodeOutput, NodeResult
 from ...executor.node_registry import register_node
+from ..base import BaseNode, NodeContext, NodeInput, NodeOutput, NodeResult
 
 logger = logging.getLogger(__name__)
 
@@ -93,8 +93,8 @@ class McpCallAction(BaseNode):
     ) -> tuple[bool, Any, Optional[str]]:
         """Call MCP tool and return result."""
         try:
-            import subprocess
             import asyncio
+            import subprocess
 
             mcp_config = context.get_config_value("mcpServers", {})
 

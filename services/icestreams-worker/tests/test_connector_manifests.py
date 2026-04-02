@@ -21,7 +21,8 @@ import pytest
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from connectors.base import AuthType, ConfigField, ConnectorManifest, PortDefinition
+from connectors.base import (AuthType, ConfigField, ConnectorManifest,
+                             PortDefinition)
 
 MANIFESTS_DIR = os.path.join(
     os.path.dirname(os.path.dirname(os.path.abspath(__file__))),

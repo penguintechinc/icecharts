@@ -2,10 +2,11 @@
 
 import os
 import sys
-import pytest
 import time
 from datetime import datetime, timedelta
 from unittest.mock import MagicMock, patch
+
+import pytest
 
 sys.path.insert(
     0, os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "app")

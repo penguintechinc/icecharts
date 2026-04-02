@@ -12,8 +12,8 @@ import operator
 import time
 from typing import Any, Callable, Dict, List
 
-from ..base import BaseNode, NodeContext, NodeInput, NodeOutput, NodeResult
 from ...executor.node_registry import register_node
+from ..base import BaseNode, NodeContext, NodeInput, NodeOutput, NodeResult
 
 logger = logging.getLogger(__name__)
 

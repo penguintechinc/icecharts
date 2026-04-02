@@ -5,15 +5,8 @@ This module provides the node framework for building and executing workflow node
 in IceCharts. It includes base classes, triggers, processors, and other node types.
 """
 
-from .base import (
-    BaseNode,
-    BaseTrigger,
-    CloudAuth,
-    NodeContext,
-    NodeInput,
-    NodeOutput,
-    NodeResult,
-)
+from .base import (BaseNode, BaseTrigger, CloudAuth, NodeContext, NodeInput,
+                   NodeOutput, NodeResult)
 from .iceruns_nodes import IceRunExecuteNode, IceRunWaitNode
 
 __all__ = [

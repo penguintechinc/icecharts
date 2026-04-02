@@ -1,8 +1,9 @@
 """Tests for IceRuns execution lifecycle."""
 
-import pytest
 import time
 from unittest.mock import patch
+
+import pytest
 
 
 class TestExecutionLifecycle:

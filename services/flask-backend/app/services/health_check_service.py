@@ -72,9 +72,8 @@ class HealthCheckService:
         """
         start_time = time.time()
         try:
-            from flask import current_app
-
             from app.models import get_db
+            from flask import current_app
 
             db = get_db()
 
@@ -181,9 +180,8 @@ class HealthCheckService:
         """
         start_time = time.time()
         try:
-            from flask import current_app
-
             from app.models import get_db
+            from flask import current_app
 
             db = get_db()
 

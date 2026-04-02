@@ -9,18 +9,9 @@ This package provides thread-safe authentication clients for:
 All clients support token caching and automatic refresh.
 """
 
-from .oauth2 import (
-    OAuth2Client,
-    OAuth2Config,
-    AWSSTSClient,
-    AWSSTSConfig,
-    CachedToken,
-)
-from .oidc import (
-    OIDCClient,
-    OIDCConfig,
-    CachedIDToken,
-)
+from .oauth2 import (AWSSTSClient, AWSSTSConfig, CachedToken, OAuth2Client,
+                     OAuth2Config)
+from .oidc import CachedIDToken, OIDCClient, OIDCConfig
 
 __all__ = [
     # OAuth2

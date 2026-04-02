@@ -7,10 +7,10 @@ and dependencies as connectors into IceCharts drawings.
 import logging
 from typing import Optional
 
-from flask import Blueprint, current_app, jsonify, request
-
 from app.middleware import auth_required
-from app.services.elder_service import ElderClient, ElderDependency, ElderEntity
+from app.services.elder_service import (ElderClient, ElderDependency,
+                                        ElderEntity)
+from flask import Blueprint, current_app, jsonify, request
 
 logger = logging.getLogger(__name__)
 

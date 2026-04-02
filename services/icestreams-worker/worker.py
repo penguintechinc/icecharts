@@ -16,9 +16,8 @@ from typing import Any, Dict, Optional
 
 import redis
 import redis.asyncio as aioredis
+from executor.playbook_executor import ExecutionResult, PlaybookExecutor
 from redis.exceptions import ConnectionError, RedisError
-
-from executor.playbook_executor import PlaybookExecutor, ExecutionResult
 
 # Configure logging
 logging.basicConfig(

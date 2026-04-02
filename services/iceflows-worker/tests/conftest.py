@@ -1,7 +1,8 @@
 import os
 import sys
-import pytest
 from unittest.mock import AsyncMock, MagicMock, patch
+
+import pytest
 
 # Add parent directory to path so bare module imports work (e.g., `from worker import IceFlowsWorker`)
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))

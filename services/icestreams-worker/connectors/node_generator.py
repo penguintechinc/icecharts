@@ -10,16 +10,11 @@ from __future__ import annotations
 import logging
 from typing import Any, Dict, List, Type
 
-from nodes.base import BaseNode, NodeContext, NodeInput, NodeOutput, NodeResult
 from executor.node_registry import NodeRegistry
+from nodes.base import BaseNode, NodeContext, NodeInput, NodeOutput, NodeResult
 
-from .base import (
-    ActionDefinition,
-    ConnectorManifest,
-    PortDefinition,
-    TransformDefinition,
-    TriggerDefinition,
-)
+from .base import (ActionDefinition, ConnectorManifest, PortDefinition,
+                   TransformDefinition, TriggerDefinition)
 
 logger = logging.getLogger(__name__)
 

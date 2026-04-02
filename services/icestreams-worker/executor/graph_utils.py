@@ -10,9 +10,9 @@ This module provides comprehensive graph analysis tools for IceStreams playbooks
 All functions are pure (no side effects) and thread-safe.
 """
 
-from typing import Dict, List, Tuple, Set, Optional
 from collections import defaultdict, deque
 from dataclasses import dataclass
+from typing import Dict, List, Optional, Set, Tuple
 
 
 @dataclass(slots=True, frozen=True)

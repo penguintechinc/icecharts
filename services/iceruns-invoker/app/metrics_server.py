@@ -1,9 +1,10 @@
 """Flask server for Prometheus metrics endpoint."""
 
-import os
 import logging
-from flask import Flask, Response
+import os
+
 from app.metrics import MetricsRecorder
+from flask import Flask, Response
 
 logging.basicConfig(
     level=os.getenv("LOG_LEVEL", "INFO"),

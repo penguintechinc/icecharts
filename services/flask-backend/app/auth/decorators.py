@@ -4,9 +4,8 @@ import inspect
 from functools import wraps
 from typing import Callable, List, Union
 
-from flask import current_app, g, jsonify
-
 from app.auth.jwt_handler import get_current_user
+from flask import current_app, g, jsonify
 
 
 def login_required(f: Callable) -> Callable:

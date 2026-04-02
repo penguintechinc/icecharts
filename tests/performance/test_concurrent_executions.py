@@ -1,8 +1,9 @@
 """Performance tests for concurrent IceRuns executions."""
 
-import pytest
 import concurrent.futures
 import time
+
+import pytest
 
 
 class TestConcurrentExecutions:

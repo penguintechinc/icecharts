@@ -9,7 +9,6 @@ import json
 from unittest.mock import MagicMock, Mock, patch
 
 import pytest
-
 from app.services.export_service import ExportOptions, ExportService
 
 

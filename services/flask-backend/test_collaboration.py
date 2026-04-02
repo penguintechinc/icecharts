@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 """Simple test script for collaboration service and WebSocket handlers."""
 
-import sys
 import os
+import sys
 
 # Add app to path
 sys.path.insert(0, os.path.dirname(__file__))

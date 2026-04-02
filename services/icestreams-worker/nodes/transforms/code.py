@@ -36,8 +36,8 @@ import re
 import time
 from typing import Any, Dict, List
 
-from ..base import BaseNode, NodeContext, NodeInput, NodeOutput, NodeResult
 from ...executor.node_registry import register_node
+from ..base import BaseNode, NodeContext, NodeInput, NodeOutput, NodeResult
 
 logger = logging.getLogger(__name__)
 
@@ -241,9 +241,9 @@ class CodeTransform(BaseNode):
 
         # Build sandbox with safe utilities
         # We import these modules here to give them to the sandbox
+        import datetime as datetime_module
         import json as json_module
         import re as re_module
-        import datetime as datetime_module
 
         sandbox = {
             **SAFE_BUILTINS,

@@ -1,7 +1,8 @@
 """Tests for IceRuns container sandbox security."""
 
+from unittest.mock import MagicMock, patch
+
 import pytest
-from unittest.mock import patch, MagicMock
 
 
 class TestSandboxSecurity:

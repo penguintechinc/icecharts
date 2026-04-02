@@ -11,8 +11,8 @@ Thread-safe singleton pattern ensures consistent registration across the applica
 
 import logging
 import threading
-from typing import Dict, List, Optional, Type, Callable
 from dataclasses import dataclass
+from typing import Callable, Dict, List, Optional, Type
 
 logger = logging.getLogger(__name__)
 

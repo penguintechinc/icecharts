@@ -1,8 +1,9 @@
 """Performance tests for IceRuns throughput and capacity."""
 
-import pytest
-import time
 import concurrent.futures
+import time
+
+import pytest
 
 
 class TestThroughput:

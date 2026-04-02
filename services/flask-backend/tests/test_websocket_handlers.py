@@ -4,8 +4,8 @@ Tests cover JWT token verification, connection/disconnection,
 room joining/leaving, cursor movement, and shape locking.
 """
 
+from datetime import UTC, datetime, timedelta
 from unittest.mock import MagicMock, Mock, patch
-from datetime import datetime, timedelta, UTC
 
 import jwt
 import pytest

@@ -4,12 +4,12 @@ Unit tests for AWS Lambda cloud action node.
 Tests AwsLambdaAction with mocked boto3 and AWS SDK calls.
 """
 
-import pytest
-import json
 import asyncio
-from unittest.mock import Mock, patch, MagicMock, AsyncMock
+import json
 from io import BytesIO
+from unittest.mock import AsyncMock, MagicMock, Mock, patch
 
+import pytest
 from nodes.actions.cloud.aws_lambda import AwsLambdaAction
 from nodes.base import NodeContext, NodeResult
 

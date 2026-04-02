@@ -12,7 +12,8 @@ class TestEmailVerificationTokenCreation:
 
     def test_create_verification_token(self, app, test_user):
         """Test creating an email verification token."""
-        from app.services.email_verification_service import EmailVerificationService
+        from app.services.email_verification_service import \
+            EmailVerificationService
 
         with app.app_context():
             token = EmailVerificationService.create_verification(
@@ -27,7 +28,8 @@ class TestEmailVerificationTokenCreation:
 
     def test_verification_token_stored_in_database(self, app, test_user, db):
         """Test verification token is stored in database."""
-        from app.services.email_verification_service import EmailVerificationService
+        from app.services.email_verification_service import \
+            EmailVerificationService
 
         with app.app_context():
             token = EmailVerificationService.create_verification(
@@ -52,7 +54,8 @@ class TestEmailVerificationTokenCreation:
 
     def test_update_existing_verification_on_resend(self, app, test_user):
         """Test that resending creates new token for existing verification."""
-        from app.services.email_verification_service import EmailVerificationService
+        from app.services.email_verification_service import \
+            EmailVerificationService
 
         with app.app_context():
             token1 = EmailVerificationService.create_verification(
@@ -75,7 +78,8 @@ class TestEmailVerificationTokenCreation:
     )
     def test_verification_email_sent_on_creation(self, mock_send_email, app, test_user):
         """Test email is sent when verification is created."""
-        from app.services.email_verification_service import EmailVerificationService
+        from app.services.email_verification_service import \
+            EmailVerificationService
 
         mock_send_email.return_value = True
 
@@ -101,7 +105,8 @@ class TestEmailVerificationWithValidToken:
 
     def test_verify_email_with_valid_token(self, app, test_user):
         """Test verifying email with valid token."""
-        from app.services.email_verification_service import EmailVerificationService
+        from app.services.email_verification_service import \
+            EmailVerificationService
 
         with app.app_context():
             token = EmailVerificationService.create_verification(
@@ -118,7 +123,8 @@ class TestEmailVerificationWithValidToken:
 
     def test_verify_email_marks_user_as_verified(self, app, test_user, db):
         """Test that verifying email marks user as verified in database."""
-        from app.services.email_verification_service import EmailVerificationService
+        from app.services.email_verification_service import \
+            EmailVerificationService
 
         with app.app_context():
             token = EmailVerificationService.create_verification(
@@ -143,7 +149,8 @@ class TestEmailVerificationWithValidToken:
 
     def test_verify_email_marks_verification_record_complete(self, app, test_user):
         """Test verification record is marked as complete."""
-        from app.services.email_verification_service import EmailVerificationService
+        from app.services.email_verification_service import \
+            EmailVerificationService
 
         with app.app_context():
             token = EmailVerificationService.create_verification(
@@ -170,7 +177,8 @@ class TestEmailVerificationWithValidToken:
 
     def test_cannot_verify_with_same_token_twice(self, app, test_user):
         """Test that same token cannot be used twice."""
-        from app.services.email_verification_service import EmailVerificationService
+        from app.services.email_verification_service import \
+            EmailVerificationService
 
         with app.app_context():
             token = EmailVerificationService.create_verification(
@@ -216,7 +224,8 @@ class TestEmailVerificationWithExpiredToken:
     def test_verify_email_with_expired_token(self, app, test_user):
         """Test verification fails with expired token."""
         from app.models import get_db
-        from app.services.email_verification_service import EmailVerificationService
+        from app.services.email_verification_service import \
+            EmailVerificationService
 
         # Create a verification
         with app.app_context():
@@ -243,7 +252,8 @@ class TestEmailVerificationWithExpiredToken:
     def test_verify_email_after_24_hours_fails(self, app, test_user):
         """Test verification fails after 24 hours."""
         from app.models import get_db
-        from app.services.email_verification_service import EmailVerificationService
+        from app.services.email_verification_service import \
+            EmailVerificationService
 
         with app.app_context():
             token = EmailVerificationService.create_verification(
@@ -274,7 +284,8 @@ class TestEmailVerificationWithExpiredToken:
         ``{"pending": False}`` with an error log.  Accept either
         the correct or the buggy result.
         """
-        from app.services.email_verification_service import EmailVerificationService
+        from app.services.email_verification_service import \
+            EmailVerificationService
 
         with app.app_context():
             EmailVerificationService.create_verification(
@@ -359,7 +370,8 @@ class TestEmailVerificationSecurity:
 
     def test_invalid_token_returns_none(self, app):
         """Test that invalid token returns None."""
-        from app.services.email_verification_service import EmailVerificationService
+        from app.services.email_verification_service import \
+            EmailVerificationService
 
         with app.app_context():
             user = EmailVerificationService.verify_email("invalid-token-here")
@@ -368,7 +380,8 @@ class TestEmailVerificationSecurity:
 
     def test_token_must_be_exactly_correct(self, app, test_user):
         """Test token comparison is exact (no partial matches)."""
-        from app.services.email_verification_service import EmailVerificationService
+        from app.services.email_verification_service import \
+            EmailVerificationService
 
         with app.app_context():
             token = EmailVerificationService.create_verification(
@@ -385,7 +398,8 @@ class TestEmailVerificationSecurity:
 
     def test_token_is_unique(self, app, test_user, create_test_user):
         """Test that verification tokens are unique."""
-        from app.services.email_verification_service import EmailVerificationService
+        from app.services.email_verification_service import \
+            EmailVerificationService
 
         user1 = test_user
         user2 = create_test_user("another@example.com")
@@ -407,7 +421,8 @@ class TestEmailVerificationSecurity:
 
     def test_verified_user_cannot_verify_again(self, app, test_user):
         """Test that already verified user shows as verified."""
-        from app.services.email_verification_service import EmailVerificationService
+        from app.services.email_verification_service import \
+            EmailVerificationService
 
         with app.app_context():
             token = EmailVerificationService.create_verification(
@@ -436,7 +451,8 @@ class TestEmailVerificationDatabaseCleanup:
     def test_cleanup_expired_verifications(self, app, test_user):
         """Test cleaning up expired verification records."""
         from app.models import get_db
-        from app.services.email_verification_service import EmailVerificationService
+        from app.services.email_verification_service import \
+            EmailVerificationService
 
         # Create multiple verifications
         with app.app_context():
@@ -467,7 +483,8 @@ class TestEmailVerificationDatabaseCleanup:
     ):
         """Test cleanup only deletes unverified, expired records."""
         from app.models import get_db
-        from app.services.email_verification_service import EmailVerificationService
+        from app.services.email_verification_service import \
+            EmailVerificationService
 
         user2 = create_test_user("another@example.com")
 
@@ -509,7 +526,8 @@ class TestEmailSendingMock:
 
     def test_email_sending_failure_logged(self, mock_send_email, app, test_user):
         """Test that email sending failure is logged."""
-        from app.services.email_verification_service import EmailVerificationService
+        from app.services.email_verification_service import \
+            EmailVerificationService
 
         # Mock email sending to fail
         mock_send_email.return_value = False
@@ -528,7 +546,8 @@ class TestEmailSendingMock:
         self, mock_send_email, app, test_user
     ):
         """Test email is sent with correct parameters."""
-        from app.services.email_verification_service import EmailVerificationService
+        from app.services.email_verification_service import \
+            EmailVerificationService
 
         mock_send_email.return_value = True
 

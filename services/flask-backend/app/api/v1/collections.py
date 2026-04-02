@@ -1,16 +1,13 @@
 """Collections Management Endpoints for API v1."""
 
-from flask import Blueprint, jsonify, request
-
 from app.middleware import auth_required, get_current_user, optional_auth
-from app.schemas.collection_schemas import (
-    AddDrawingToCollectionRequest,
-    CreateCollectionRequest,
-    ReorderCollectionDrawingsRequest,
-    UpdateCollectionRequest,
-)
+from app.schemas.collection_schemas import (AddDrawingToCollectionRequest,
+                                            CreateCollectionRequest,
+                                            ReorderCollectionDrawingsRequest,
+                                            UpdateCollectionRequest)
 from app.services.collection_service import CollectionService
 from app.utils.validation import validate_json
+from flask import Blueprint, jsonify, request
 
 collections_v1_bp = Blueprint("collections_v1", __name__, url_prefix="/collections")
 

@@ -19,16 +19,9 @@ if _FLASK_BACKEND not in sys.path:
     sys.path.insert(0, _FLASK_BACKEND)
 
 # Re-export all fixtures from the flask-backend conftest so pytest can discover them
-from tests.conftest import (  # noqa: F401, E402
-    app,
-    client,
-    db,
-    test_user,
-    test_admin,
-    auth_headers,
-    admin_auth_headers,
-    create_test_user,
-)
+from tests.conftest import (admin_auth_headers, app,  # noqa: F401, E402
+                            auth_headers, client, create_test_user, db,
+                            test_admin, test_user)
 
 # ---------------------------------------------------------------------------
 # Endpoint registry

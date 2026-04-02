@@ -12,14 +12,9 @@ from google.cloud import storage
 from google.cloud.exceptions import Forbidden, NotFound
 from google.oauth2 import service_account
 
-from .base import (
-    StorageAuthenticationError,
-    StorageConfigError,
-    StorageConnectionError,
-    StorageError,
-    StorageFile,
-    StorageProvider,
-)
+from .base import (StorageAuthenticationError, StorageConfigError,
+                   StorageConnectionError, StorageError, StorageFile,
+                   StorageProvider)
 
 
 class GCSProvider(StorageProvider):

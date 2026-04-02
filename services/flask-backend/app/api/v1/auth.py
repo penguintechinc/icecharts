@@ -9,18 +9,10 @@ import jwt
 from flask import Blueprint, current_app, jsonify, request
 
 from ...middleware import auth_required, get_current_user
-from ...models import (
-    create_user,
-    get_db,
-    get_user_by_email,
-    get_user_by_google_id,
-    get_user_by_id,
-    is_refresh_token_valid,
-    revoke_all_user_tokens,
-    revoke_refresh_token,
-    store_refresh_token,
-    update_user,
-)
+from ...models import (create_user, get_db, get_user_by_email,
+                       get_user_by_google_id, get_user_by_id,
+                       is_refresh_token_valid, revoke_all_user_tokens,
+                       revoke_refresh_token, store_refresh_token, update_user)
 from ...oauth import GoogleOAuthHandler
 from ...schemas.auth_schemas import LoginRequest, RegisterRequest
 from ...services.email_verification_service import EmailVerificationService

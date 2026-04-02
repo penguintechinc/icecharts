@@ -168,8 +168,9 @@ class TestAPIRateLimiting:
             db.commit()
 
             import uuid
-            import jwt
             from datetime import datetime, timedelta
+
+            import jwt
 
             jti = str(uuid.uuid4())
             db.service_account_tokens.insert(

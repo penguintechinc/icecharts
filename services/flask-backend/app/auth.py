@@ -8,14 +8,9 @@ import jwt
 from flask import Blueprint, current_app, jsonify, request
 
 from .middleware import auth_required, get_current_user
-from .models import (
-    create_user,
-    get_user_by_email,
-    is_refresh_token_valid,
-    revoke_all_user_tokens,
-    revoke_refresh_token,
-    store_refresh_token,
-)
+from .models import (create_user, get_user_by_email, is_refresh_token_valid,
+                     revoke_all_user_tokens, revoke_refresh_token,
+                     store_refresh_token)
 
 auth_bp = Blueprint("auth", __name__)
 

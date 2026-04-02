@@ -4,7 +4,8 @@ from datetime import datetime
 
 from flask import Blueprint, jsonify
 
-from .middleware import auth_required, get_current_user, maintainer_or_admin_required
+from .middleware import (auth_required, get_current_user,
+                         maintainer_or_admin_required)
 
 hello_bp = Blueprint("hello", __name__)
 

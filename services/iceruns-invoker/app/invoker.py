@@ -1,22 +1,23 @@
 """Main invoker loop for IceRuns execution (OpenWhisk pattern)."""
 
-import os
-import sys
 import io
 import json
+import logging
+import os
 import socket
+import sys
+import tarfile
 import tempfile
 import zipfile
-import tarfile
-import logging
 from datetime import datetime
-from typing import Dict, Any, Optional
-import redis
+from typing import Any, Dict, Optional
+
 import docker
-from pydal import DAL
-from app.container_pool import ContainerPool
+import redis
 from app.action_runtime import RuntimeManager
-from app.metrics import MetricsRecorder, QUEUE_SIZE
+from app.container_pool import ContainerPool
+from app.metrics import QUEUE_SIZE, MetricsRecorder
+from pydal import DAL
 
 logging.basicConfig(
     level=os.getenv("LOG_LEVEL", "INFO"),
@@ -333,6 +334,7 @@ class IceRunsInvoker:
 def main():
     """Entry point."""
     import threading
+
     from app.metrics_server import run_metrics_server
 
     # Start metrics server in background thread

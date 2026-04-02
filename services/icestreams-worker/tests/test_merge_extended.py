@@ -11,11 +11,11 @@ Covers:
 - non-dict values in object mode
 """
 
-import pytest
 from unittest.mock import MagicMock
 
-from nodes.transforms.merge import MergeTransform
+import pytest
 from nodes.base import NodeContext
+from nodes.transforms.merge import MergeTransform
 
 
 def _make_context(config: dict) -> NodeContext:

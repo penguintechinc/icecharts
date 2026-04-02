@@ -22,8 +22,8 @@ import pytest
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from nodes.base import BaseNode, NodeContext, NodeResult
 from executor.node_registry import NodeRegistry
+from nodes.base import BaseNode, NodeContext, NodeResult
 
 
 @pytest.fixture(autouse=True)

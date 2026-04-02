@@ -5,7 +5,8 @@ from typing import Optional
 
 from flask import Blueprint, current_app, jsonify, request
 
-from ...middleware import auth_required, get_current_user, maintainer_or_admin_required
+from ...middleware import (auth_required, get_current_user,
+                           maintainer_or_admin_required)
 from ...models import get_db, get_user_by_id
 
 groups_v1_bp = Blueprint("groups_v1", __name__, url_prefix="/groups")

@@ -16,12 +16,13 @@ from typing import Any, Callable, Dict, List
 
 try:
     # Try relative imports first (when run as a package)
-    from ..base import BaseNode, NodeContext, NodeInput, NodeOutput, NodeResult
     from ...executor.node_registry import register_node
+    from ..base import BaseNode, NodeContext, NodeInput, NodeOutput, NodeResult
 except ImportError:
     # Fallback for direct execution or alternative import paths
-    from nodes.base import BaseNode, NodeContext, NodeInput, NodeOutput, NodeResult
     from executor.node_registry import register_node
+    from nodes.base import (BaseNode, NodeContext, NodeInput, NodeOutput,
+                            NodeResult)
 
 logger = logging.getLogger(__name__)
 

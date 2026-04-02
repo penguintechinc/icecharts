@@ -282,9 +282,8 @@ class ServiceAccountService:
         Raises:
             ValueError: If account not found or token generation fails
         """
-        from flask import current_app
-
         from app.auth.jwt_handler import generate_service_token
+        from flask import current_app
 
         # Get max days from config
         max_days = current_app.config.get("SERVICE_ACCOUNT_TOKEN_MAX_DAYS", 365)

@@ -1,7 +1,8 @@
 """Prometheus metrics for IceRuns Invoker service."""
 
-from prometheus_client import Counter, Histogram, Gauge, generate_latest
 import os
+
+from prometheus_client import Counter, Gauge, Histogram, generate_latest
 
 # Metric 1: Total executions counter
 EXECUTIONS_TOTAL = Counter(

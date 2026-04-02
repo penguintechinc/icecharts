@@ -1,8 +1,9 @@
 """IceRuns API test fixtures and utilities."""
 
 import json
-import pytest
 from datetime import datetime, timedelta
+
+import pytest
 
 
 @pytest.fixture

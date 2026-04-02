@@ -2,11 +2,10 @@
 
 import logging
 
-from flask import Blueprint, jsonify, request
-
 from app.config import Config
 from app.middleware import admin_required, auth_required, get_current_user
 from app.services.system_settings_service import SystemSettingsService
+from flask import Blueprint, jsonify, request
 
 logger = logging.getLogger(__name__)
 

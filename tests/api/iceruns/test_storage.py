@@ -1,8 +1,9 @@
 """Tests for IceRuns package storage operations."""
 
-import pytest
 import io
-from unittest.mock import patch, MagicMock
+from unittest.mock import MagicMock, patch
+
+import pytest
 
 
 class TestPackageStorage:

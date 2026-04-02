@@ -1,11 +1,12 @@
 #!/usr/bin/env python3
 """Action container server for Python runtime (OpenWhisk /init and /run pattern)."""
 
-from flask import Flask, request, jsonify
-import sys
-import json
 import importlib.util
+import json
 import os
+import sys
+
+from flask import Flask, jsonify, request
 
 app = Flask(__name__)
 

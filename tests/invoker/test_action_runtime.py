@@ -1,8 +1,9 @@
 """Tests for IceRuns action runtime /init and /run protocol."""
 
-import pytest
 import json
 from unittest.mock import MagicMock, patch
+
+import pytest
 
 
 class TestActionRuntime:

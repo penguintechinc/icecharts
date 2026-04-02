@@ -13,10 +13,10 @@ from typing import Any, Dict, List
 
 import aiohttp
 
-from ...base import NodeContext, NodeInput, NodeOutput, NodeResult
-from ...auth.oidc import OIDCClient, OIDCConfig
-from .base_cloud import BaseCloudFunction
 from ....executor.node_registry import register_node
+from ...auth.oidc import OIDCClient, OIDCConfig
+from ...base import NodeContext, NodeInput, NodeOutput, NodeResult
+from .base_cloud import BaseCloudFunction
 
 
 @register_node(

@@ -4,7 +4,8 @@ import json
 import logging
 import time
 from abc import ABC, abstractmethod
-from typing import Dict, Any, List
+from typing import Any, Dict, List
+
 import docker
 
 logger = logging.getLogger(__name__)

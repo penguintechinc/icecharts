@@ -9,13 +9,8 @@ from datetime import datetime, timedelta
 from unittest.mock import MagicMock, patch
 
 import pytest
-
-from app.tasks.export_tasks import (
-    export_drawing_task,
-    get_export_metadata,
-    get_export_result,
-    get_export_status,
-)
+from app.tasks.export_tasks import (export_drawing_task, get_export_metadata,
+                                    get_export_result, get_export_status)
 
 _REDIS_PATCH = "redis.Redis"
 _EXPORT_PATCH = "app.tasks.export_tasks.ExportService.export"

@@ -8,9 +8,10 @@ but strictly enforces scopes for service account tokens.
 """
 
 import uuid
-import pytest
-import jwt
 from datetime import datetime, timedelta
+
+import jwt
+import pytest
 
 
 def _make_sa_token(app, db, scopes, sa_name=None):

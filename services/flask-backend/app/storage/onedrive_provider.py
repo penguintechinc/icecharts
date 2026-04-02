@@ -12,14 +12,9 @@ from typing import Any, Dict, List, Optional
 import msal
 import requests
 
-from .base import (
-    StorageAuthenticationError,
-    StorageConfigError,
-    StorageConnectionError,
-    StorageError,
-    StorageFile,
-    StorageProvider,
-)
+from .base import (StorageAuthenticationError, StorageConfigError,
+                   StorageConnectionError, StorageError, StorageFile,
+                   StorageProvider)
 
 
 class OneDriveProvider(StorageProvider):

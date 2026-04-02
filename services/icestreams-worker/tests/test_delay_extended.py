@@ -9,11 +9,11 @@ Covers:
 """
 
 import asyncio
-import pytest
-from unittest.mock import MagicMock, patch, AsyncMock
+from unittest.mock import AsyncMock, MagicMock, patch
 
-from nodes.transforms.delay import DelayTransform
+import pytest
 from nodes.base import NodeContext, NodeResult
+from nodes.transforms.delay import DelayTransform
 
 
 def _make_context(config: dict) -> NodeContext:

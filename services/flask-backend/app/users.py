@@ -4,15 +4,8 @@ from flask import Blueprint, jsonify, request
 
 from .auth import hash_password
 from .middleware import admin_required, auth_required
-from .models import (
-    VALID_ROLES,
-    create_user,
-    delete_user,
-    get_user_by_email,
-    get_user_by_id,
-    list_users,
-    update_user,
-)
+from .models import (VALID_ROLES, create_user, delete_user, get_user_by_email,
+                     get_user_by_id, list_users, update_user)
 
 users_bp = Blueprint("users", __name__)
 
