@@ -16,16 +16,22 @@ RUN apt-get update && apt-get install -y \
 
 WORKDIR /app
 
+# Create non-root user
+RUN useradd --create-home --shell /bin/bash appuser
+
 # Python dependencies
 COPY requirements.txt .
 RUN pip3 install --no-cache-dir --break-system-packages -r requirements.txt
 
 # Copy application code
-COPY app/ ./app/
+COPY --chown=appuser:appuser app/ ./app/
+
+RUN chown -R appuser:appuser /app
 
 # Health check
 HEALTHCHECK --interval=30s --timeout=5s --start-period=10s --retries=3 \
     CMD python3 -c "import redis; redis.from_url('redis://localhost:6379/0').ping()" || exit 1
 
 # Run invoker
+USER appuser
 CMD ["python3", "-m", "app.invoker"]
