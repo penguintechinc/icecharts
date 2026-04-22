@@ -32,6 +32,19 @@ ingress:
     enabled: true
     secretName: icecharts-tls
 
+httproute:
+  enabled: true
+  gatewayName: shared
+  gatewayNamespace: gateway
+  host: "icecharts.penguintech.cloud"
+  rules:
+    - path: /api
+      service: "icecharts-api-service"
+      port: 5000
+    - path: /
+      service: "icecharts-web-service"
+      port: 8080
+
 # Minio image from dal2 registry (Docker Hub not accessible from cluster)
 minio:
   image:
