@@ -23,45 +23,40 @@ jobs:
     outputs:
       version: ${{ steps.version.outputs.version }}
       tag: ${{ steps.version.outputs.tag }}
+      epoch: ${{ steps.version.outputs.epoch }}
 
     steps:
       - name: Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd  # v6
 
       - name: Read version from .version file
         id: version
         run: |
-          # Read version file and extract semantic version (first 3 components)
           if [ -f .version ]; then
             FULL_VERSION=$(cat .version | tr -d '[:space:]')
             VERSION=$(echo "$FULL_VERSION" | cut -d'.' -f1-3)
           else
             VERSION="0.0.0"
           fi
-
+          EPOCH=$(date +%s)
+          EPOCH64=$(printf '%016x' $EPOCH | sed 's/^0*//')
           echo "version=$VERSION" >> $GITHUB_OUTPUT
+          echo "epoch=$EPOCH64" >> $GITHUB_OUTPUT
 
-          # Determine tag suffix based on trigger
           if [[ "${{ github.event_name }}" == "release" ]]; then
-            # Release: v1.0.0
             TAG="v${VERSION}"
-            echo "Release build: $TAG"
           elif [[ "${{ github.ref }}" == "refs/heads/main" ]]; then
-            # Main branch: v1.0.0-beta
             TAG="v${VERSION}-beta"
-            echo "Main branch build: $TAG"
+          elif [[ "${{ github.ref }}" == refs/heads/v* ]]; then
+            TAG="v${VERSION}-beta"
           else
-            # Other branches: v1.0.0-alpha
             TAG="v${VERSION}-alpha"
-            echo "Feature/develop build: $TAG"
           fi
-
           echo "tag=$TAG" >> $GITHUB_OUTPUT
-          echo "Final tag: $TAG"
 
-  # Build and push multi-arch images
-  build:
-    name: Build ${{ matrix.service.name }}
+  # Build platform matrix for each service
+  build-platform:
+    name: Build ${{ matrix.service.name }}-${{ matrix.platform }}
     runs-on: ubuntu-latest
     needs: version
     permissions:
@@ -78,65 +73,129 @@ jobs:
           - name: webui
             context: services/webui
             dockerfile: services/webui/Dockerfile
+        platform:
+          - linux/amd64
+          - linux/arm64
 
     steps:
       - name: Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd  # v6
 
       - name: Set up QEMU
-        uses: docker/setup-qemu-action@v3
+        uses: docker/setup-qemu-action@ce360397dd3f832beb865e1373c09c0e9f86d70a  # v4
         with:
-          platforms: linux/amd64,linux/arm64
+          platforms: ${{ matrix.platform }}
 
       - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
+        uses: docker/setup-buildx-action@4d04d5d9486b7bd6fa91e7baf45bbb4f8b9deedd  # v4
         with:
           driver-opts: |
             image=moby/buildkit:latest
             network=host
 
       - name: Log in to GitHub Container Registry
-        uses: docker/login-action@v3
+        uses: docker/login-action@4907a6ddec9925e35a0a9e82d7399ccc52663121  # v4
         with:
           registry: ${{ env.REGISTRY }}
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
+      - name: Determine platform suffix
+        id: platform-suffix
+        run: |
+          case "${{ matrix.platform }}" in
+            linux/amd64)
+              echo "suffix=amd64" >> $GITHUB_OUTPUT
+              ;;
+            linux/arm64)
+              echo "suffix=arm64" >> $GITHUB_OUTPUT
+              ;;
+          esac
+
       - name: Extract metadata
         id: meta
-        uses: docker/metadata-action@v5
+        uses: docker/metadata-action@030e881283bb7a6894de51c315a6bfe6a94e05cf  # v6
         with:
           images: ${{ env.REGISTRY }}/${{ env.IMAGE_PREFIX }}/${{ matrix.service.name }}
           tags: |
-            type=raw,value=${{ needs.version.outputs.tag }}
-            type=raw,value=latest,enable=${{ github.ref == 'refs/heads/main' }}
-            type=sha,prefix=${{ needs.version.outputs.tag }}-,format=short
+            type=raw,value=${{ needs.version.outputs.tag }}-${{ steps.platform-suffix.outputs.suffix }}
 
       - name: Build and push Docker image
-        uses: docker/build-push-action@v5
+        uses: docker/build-push-action@bcafcacb16a39f128d818304e6c9c0c18556b85f  # v7
         with:
           context: ${{ matrix.service.context }}
           file: ${{ matrix.service.dockerfile }}
-          platforms: linux/amd64,linux/arm64
+          platforms: ${{ matrix.platform }}
           push: true
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
-          cache-from: type=gha,scope=${{ matrix.service.name }}
-          cache-to: type=gha,mode=max,scope=${{ matrix.service.name }}
+          cache-from: type=gha,scope=${{ matrix.service.name }}-${{ steps.platform-suffix.outputs.suffix }}
+          cache-to: type=gha,mode=max,scope=${{ matrix.service.name }}-${{ steps.platform-suffix.outputs.suffix }}
           build-args: |
-            BUILD_DATE=${{ fromJSON(steps.meta.outputs.json).labels['org.opencontainers.image.created'] }}
+            BUILD_DATE=$(date -u +'%Y-%m-%dT%H:%M:%SZ')
             VCS_REF=${{ github.sha }}
             VERSION=${{ needs.version.outputs.version }}
             GITHUB_TOKEN=${{ secrets.GITHUB_TOKEN }}
 
-      - name: Image digest
-        run: echo "Image pushed with digest - ${{ steps.meta.outputs.tags }}"
+  # Merge manifests after all platforms build
+  merge-manifests:
+    name: Merge Manifests
+    runs-on: ubuntu-latest
+    needs: [version, build-platform]
+    if: github.event_name != 'pull_request'
+    permissions:
+      contents: read
+      packages: write
+
+    strategy:
+      fail-fast: false
+      matrix:
+        service:
+          - name: flask-backend
+          - name: webui
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd  # v6
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@4d04d5d9486b7bd6fa91e7baf45bbb4f8b9deedd  # v4
+
+      - name: Log in to GitHub Container Registry
+        uses: docker/login-action@4907a6ddec9925e35a0a9e82d7399ccc52663121  # v4
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Create and push manifest list
+        env:
+          IMAGE_BASE: ${{ env.REGISTRY }}/${{ env.IMAGE_PREFIX }}/${{ matrix.service.name }}
+          TAG: ${{ needs.version.outputs.tag }}
+          EPOCH: ${{ needs.version.outputs.epoch }}
+        run: |
+          docker buildx imagetools create \
+            -t "${IMAGE_BASE}:${TAG}" \
+            "${IMAGE_BASE}:${TAG}-amd64" \
+            "${IMAGE_BASE}:${TAG}-arm64"
+
+          if [[ "${{ github.event_name }}" == "release" ]]; then
+            docker buildx imagetools create \
+              -t "${IMAGE_BASE}:latest" \
+              "${IMAGE_BASE}:${TAG}-amd64" \
+              "${IMAGE_BASE}:${TAG}-arm64"
+          elif [[ "${{ github.ref }}" == "refs/heads/main" ]]; then
+            docker buildx imagetools create \
+              -t "${IMAGE_BASE}:gamma-${EPOCH}" \
+              "${IMAGE_BASE}:${TAG}-amd64" \
+              "${IMAGE_BASE}:${TAG}-arm64"
+          fi
 
   # Security scan with Trivy
   security:
     name: Security Scan ${{ matrix.service }}
     runs-on: ubuntu-latest
-    needs: [version, build]
+    needs: [version, merge-manifests]
     permissions:
       contents: read
       security-events: write
@@ -148,10 +207,10 @@ jobs:
 
     steps:
       - name: Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd  # v6
 
       - name: Run Trivy vulnerability scanner
-        uses: aquasecurity/trivy-action@v0.35.0
+        uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25  # v0.36.0
         with:
           image-ref: ${{ env.REGISTRY }}/${{ env.IMAGE_PREFIX }}/${{ matrix.service }}:${{ needs.version.outputs.tag }}
           format: 'sarif'
@@ -159,7 +218,7 @@ jobs:
           severity: 'CRITICAL,HIGH'
 
       - name: Upload Trivy results to GitHub Security
-        uses: github/codeql-action/upload-sarif@v3
+        uses: github/codeql-action/upload-sarif@95e58e9a2cdfd71adc6e0353d5c52f41a045d225  # v4
         if: always()
         with:
           sarif_file: 'trivy-results-${{ matrix.service }}.sarif'
@@ -174,31 +233,48 @@ jobs:
   summary:
     name: Build Summary
     runs-on: ubuntu-latest
-    needs: [version, build, security]
+    needs: [version, build-platform, merge-manifests, security]
     if: always()
 
     steps:
       - name: Create summary
+        env:
+          VERSION: ${{ needs.version.outputs.version }}
+          TAG: ${{ needs.version.outputs.tag }}
+          COMMIT: ${{ github.sha }}
+          BRANCH: ${{ github.ref_name }}
+          BUILD_STATUS: ${{ needs.build-platform.result }}
+          MERGE_STATUS: ${{ needs.merge-manifests.result }}
+          SECURITY_STATUS: ${{ needs.security.result }}
         run: |
           echo "# Docker Build Summary" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "## Version Information" >> $GITHUB_STEP_SUMMARY
-          echo "- Version: \`${{ needs.version.outputs.version }}\`" >> $GITHUB_STEP_SUMMARY
-          echo "- Tag: \`${{ needs.version.outputs.tag }}\`" >> $GITHUB_STEP_SUMMARY
-          echo "- Commit: \`${{ github.sha }}\`" >> $GITHUB_STEP_SUMMARY
-          echo "- Branch: \`${{ github.ref_name }}\`" >> $GITHUB_STEP_SUMMARY
+          echo "- Version: \`$VERSION\`" >> $GITHUB_STEP_SUMMARY
+          echo "- Tag: \`$TAG\`" >> $GITHUB_STEP_SUMMARY
+          echo "- Commit: \`$COMMIT\`" >> $GITHUB_STEP_SUMMARY
+          echo "- Branch: \`$BRANCH\`" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "## Images Built" >> $GITHUB_STEP_SUMMARY
-          echo "- \`${{ env.REGISTRY }}/${{ env.IMAGE_PREFIX }}/flask-backend:${{ needs.version.outputs.tag }}\`" >> $GITHUB_STEP_SUMMARY
-          echo "- \`${{ env.REGISTRY }}/${{ env.IMAGE_PREFIX }}/webui:${{ needs.version.outputs.tag }}\`" >> $GITHUB_STEP_SUMMARY
+          echo "- \`${{ env.REGISTRY }}/${{ env.IMAGE_PREFIX }}/flask-backend:$TAG\`" >> $GITHUB_STEP_SUMMARY
+          echo "- \`${{ env.REGISTRY }}/${{ env.IMAGE_PREFIX }}/webui:$TAG\`" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "## Platforms" >> $GITHUB_STEP_SUMMARY
+          echo "- linux/amd64" >> $GITHUB_STEP_SUMMARY
+          echo "- linux/arm64" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "## Job Status" >> $GITHUB_STEP_SUMMARY
-          echo "- Build: ${{ needs.build.result }}" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-          echo "- Security: ${{ needs.security.result }}" >> $GITHUB_STEP_SUMMARY
+          echo "- Build Platform: $BUILD_STATUS" >> $GITHUB_STEP_SUMMARY
+          echo "- Merge Manifests: $MERGE_STATUS" >> $GITHUB_STEP_SUMMARY
+          echo "- Security: $SECURITY_STATUS" >> $GITHUB_STEP_SUMMARY
 
       - name: Check if all jobs succeeded
-        if: needs.build.result != 'success' || needs.security.result != 'success'
+        env:
+          BUILD_STATUS: ${{ needs.build-platform.result }}
+          MERGE_STATUS: ${{ needs.merge-manifests.result }}
+          SECURITY_STATUS: ${{ needs.security.result }}
         run: |
-          echo "One or more jobs failed"
-          exit 1
+          if [[ "$BUILD_STATUS" != "success" ]] || [[ "$MERGE_STATUS" != "success" ]] || [[ "$SECURITY_STATUS" != "success" ]]; then
+            echo "One or more jobs failed"
+            exit 1
+          fi

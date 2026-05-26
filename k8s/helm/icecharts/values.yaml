@@ -550,6 +550,16 @@ ingress:
     socket: /socket.io
 
 # ============================================================================
+# HTTPRoute Configuration (Cilium Gateway API)
+# ============================================================================
+httproute:
+  enabled: false
+  gatewayName: shared
+  gatewayNamespace: gateway
+  host: ""
+  rules: []
+
+# ============================================================================
 # Monitoring Configuration (Prometheus + Grafana)
 # ============================================================================
 monitoring:
